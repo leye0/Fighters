@@ -79,7 +79,7 @@
 - [ ] Implémenter avant, arrière, accroupissement, diagonales, saut, dash et garde directionnelle.
 - [ ] Prendre en charge les inputs relatifs à l'orientation du combattant.
 - [ ] Ajouter buffer d'input en frames, tolérance des diagonales et historique des commandes.
-- [ ] Détecter quart de cercle, demi-cercle, double quart de cercle, charge, double impulsion et commandes à 360°.
+- [ ] Détecter quart de cercle, demi-cercle, double quart de cercle, charge, double impulsion et commandes à 360°. (Quart de cercle, demi-cercle et double quart de cercle reconnus ; intégration des commandes quart de cercle et dragon-punch au moteur de combat.)
 - [ ] Définir des règles de priorité lorsque plusieurs mouvements spéciaux correspondent.
 - [ ] Gérer répétition clavier, ghosting possible, perte de focus, pause et déconnexion de manette.
 - [ ] Permettre le remappage complet des commandes et la sauvegarde des préférences.

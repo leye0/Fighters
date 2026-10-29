@@ -30,6 +30,10 @@ Le plan couvre l'intégralité du produit : moteur de combat déterministe, rend
 
 Ces choix sont des décisions de départ documentées ; tout changement doit être argumenté dans le plan.
 
+## Commandes de combat
+
+La [reconnaissance des coups spéciaux et les contrôles](docs/combat-commands.md) sont décrits avec leurs limites actuelles et les tests.
+
 ## Ressources et licences
 
 - [Mixamo (Adobe)](https://www.mixamo.com/) — personnages et animations utilisables dans des jeux ; ne pas présumer que les fichiers bruts peuvent être redistribués publiquement.

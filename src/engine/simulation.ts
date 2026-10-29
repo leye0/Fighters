@@ -3,7 +3,11 @@
  * Coordinates, velocities and timing are integers. Rendering, Mixamo and audio
  * must consume events; they never decide whether a hit succeeds.
  */
+import { directionCode, matchesMotion, MOTIONS, type MotionName, type MotionSample } from "./commands.ts";
+
 export const TICKS_PER_SECOND = 60;
+/** Keep enough history for double motions, with a bounded replay state. */
+export const INPUT_HISTORY_TICKS = 32;
 
 export type Direction = -1 | 0 | 1;
 export type Facing = -1 | 1;
@@ -27,6 +31,10 @@ export interface MoveDefinition {
   readonly hitstunTicks: number;
   readonly blockstunTicks: number;
   readonly pushbackMm: number;
+  /** Optional facing-relative command; omitted for normal attacks. */
+  readonly motion?: MotionName;
+  /** Higher numbers win when multiple special commands complete together. */
+  readonly commandPriority?: number;
 }
 
 export interface FighterDefinition {
@@ -75,6 +83,8 @@ export interface MatchState {
   readonly tick: number;
   readonly phase: "fight" | "ko";
   readonly fighters: readonly [FighterState, FighterState];
+  /** Facing-relative direction changes are authoritative and replayable. */
+  readonly inputHistory: readonly [readonly MotionSample[], readonly MotionSample[]];
 }
 
 export type CombatEvent =
@@ -126,6 +136,10 @@ export function validateMatchDefinition(definition: MatchDefinition): void {
         ["pushbackMm", 0],
       ] as const) assertInt(move[name], move.id + "." + name, min);
       if (move.chipDamage > move.damage) throw new Error("Chip damage exceeds full damage");
+      if (move.motion !== undefined && !Object.hasOwn(MOTIONS, move.motion)) {
+        throw new Error("Unknown motion: " + move.motion);
+      }
+      if (move.commandPriority !== undefined) assertInt(move.commandPriority, move.id + ".commandPriority");
     }
   }
   const requiredDistance = fighters[0].pushboxHalfWidthMm + fighters[1].pushboxHalfWidthMm;
@@ -152,7 +166,7 @@ export function createMatch(definition: MatchDefinition): MatchState {
     moveHitOpponent: false,
     stunRemainingTicks: 0,
   })) as unknown as [FighterState, FighterState];
-  return { tick: 0, phase: "fight", fighters };
+  return { tick: 0, phase: "fight", fighters, inputHistory: [[], []] };
 }
 
 function moveById(config: FighterDefinition, id: string | null): MoveDefinition | undefined {
@@ -163,6 +177,37 @@ function clamp(x: number, left: number, right: number): number {
   return Math.max(left, Math.min(right, x));
 }
 
+/** Only direction transitions count: holding the final direction cannot refresh an expired command. */
+function recordDirection(
+  history: readonly MotionSample[], input: InputFrame, facing: Facing, tick: number,
+): readonly MotionSample[] {
+  const recent = history.filter(sample => sample.tick >= tick - INPUT_HISTORY_TICKS);
+  const code = directionCode(input, facing);
+  if (recent.at(-1)?.direction === code) return recent;
+  return [...recent, { tick, direction: code }];
+}
+
+/** Longest/specific commands first; authored order breaks exact ties deterministically. */
+function resolveAttackMove(
+  moves: readonly MoveDefinition[], input: InputFrame,
+  history: readonly MotionSample[], tick: number,
+): MoveDefinition | undefined {
+  if (!input.attacks.length) return undefined;
+  const candidates = moves.filter(move => input.attacks.includes(move.button));
+  const specials = candidates.filter(move => move.motion !== undefined &&
+    matchesMotion(history, MOTIONS[move.motion], tick));
+  if (specials.length) {
+    return specials.reduce((best, move) => {
+      const bestPriority = best.commandPriority ?? 0;
+      const movePriority = move.commandPriority ?? 0;
+      return movePriority > bestPriority ||
+        (movePriority === bestPriority && MOTIONS[move.motion!].length > MOTIONS[best.motion!].length)
+        ? move : best;
+    });
+  }
+  return candidates.find(move => move.motion === undefined);
+}
+
 function moveFighter(
   previous: FighterState,
   input: InputFrame,
@@ -170,6 +215,8 @@ function moveFighter(
   stage: StageDefinition,
   index: 0 | 1,
   events: CombatEvent[],
+  history: readonly MotionSample[],
+  tick: number,
 ): FighterState {
   let f = { ...previous };
   if (f.action === "ko") return f;
@@ -203,8 +250,7 @@ function moveFighter(
     return f;
   }
 
-  const chosen = input.attacks.map((button) => config.moves.find((move) => move.button === button))
-    .find((move): move is MoveDefinition => move !== undefined);
+  const chosen = resolveAttackMove(config.moves, input, history, tick);
   if (chosen) {
     events.push({ type: "attack", fighter: index, moveId: chosen.id });
     return { ...f, action: "attack", moveId: chosen.id, moveFrame: 0, moveHitOpponent: false };
@@ -276,9 +322,14 @@ export function stepMatch(
 ): StepResult {
   if (previous.phase === "ko") return { state: previous, events: [] };
   const events: CombatEvent[] = [];
+  const tick = previous.tick + 1;
+  const histories = [
+    recordDirection(previous.inputHistory[0], inputs[0], previous.fighters[0].facing, tick),
+    recordDirection(previous.inputHistory[1], inputs[1], previous.fighters[1].facing, tick),
+  ] as const;
   const next = [
-    moveFighter(previous.fighters[0], inputs[0], definition.fighters[0], definition.stage, 0, events),
-    moveFighter(previous.fighters[1], inputs[1], definition.fighters[1], definition.stage, 1, events),
+    moveFighter(previous.fighters[0], inputs[0], definition.fighters[0], definition.stage, 0, events, histories[0], tick),
+    moveFighter(previous.fighters[1], inputs[1], definition.fighters[1], definition.stage, 1, events, histories[1], tick),
   ] as [FighterState, FighterState];
   const positioned = resolvePushboxes(next, definition);
   const [left, right] = positioned;
@@ -329,5 +380,11 @@ export function stepMatch(
     }
   }
   const separated = resolvePushboxes(fighters, definition);
-  return { state: { tick: previous.tick + 1, phase, fighters: separated }, events };
+  // When fighters switch sides, old facing-relative commands may not be combined
+  // with commands from their new orientation.
+  const inputHistory: [readonly MotionSample[], readonly MotionSample[]] = [
+    separated[0].facing === previous.fighters[0].facing ? histories[0] : [],
+    separated[1].facing === previous.fighters[1].facing ? histories[1] : [],
+  ];
+  return { state: { tick, phase, fighters: separated, inputHistory }, events };
 }
