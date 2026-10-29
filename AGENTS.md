@@ -1,0 +1,48 @@
+# AGENTS.md — Fighters
+
+Ce document s'applique à toute intervention dans le dépôt **Fighters**.
+
+## Mandat
+
+Construire un jeu de combat **2,5D photoréaliste pour le navigateur** : simulation de combat déterministe, personnages et environnements 3D réalistes, contrôles arcade, coups spéciaux, HUD, audio et modes de jeu de niveau production.
+
+Le document directeur est **docs/production-plan.md**. Le consulter avant toute modification, mettre à jour les cases réalisées dans le même commit que le travail associé et ne jamais marquer une case terminée sans preuve concrète.
+
+## Méthode demandée par le propriétaire
+
+1. **Toujours travailler directement dans main.** Ne pas créer de branche de fonctionnalité ou de pull request. Ne pas forcer les pushes et ne pas réécrire l'historique.
+2. **Production dès le départ.** Aucun MVP, prototype jetable ou faux mécanisme présenté comme complet. Les étapes de réalisation peuvent être ordonnées par dépendances mais n'annulent aucune exigence du plan.
+3. **Qualité mesurable.** Définir le comportement attendu, implémenter, tester, vérifier les régressions pertinentes, puis committer sur main.
+4. **Architecture extensible.** Combattants, coups, animations, arènes, sons et effets sont pilotés par des données ou des composants réutilisables, pas des exceptions propres à un seul personnage.
+5. **Ne pas inventer de validation visuelle.** Lorsque la perception humaine du rendu ou du gameplay est nécessaire, fournir une version testable et demander au propriétaire de juger ; ne pas créer un processus « Lab » autonome qui s'arrogerait cette validation.
+6. **Respecter les changements existants.** Vérifier l'état et les instructions du dépôt avant d'éditer. Ne pas supprimer de travail sans ordre explicite.
+7. **Ne pas multiplier inutilement les actions CI payantes.** Privilégier validations locales adaptées, workflows ciblés, cache et annulation des exécutions périmées.
+
+## Architecture cible
+
+- TypeScript/Vite, Three.js avec WebGL 2 ; WebGPU seulement derrière un adaptateur et après évaluation.
+- Simulation autoritative à **60 ticks/s** séparée du rendu et de l'animation.
+- Affichage 3D avec caméra latérale, déplacement déterministe sur un plan de combat.
+- Les hitboxes, hurtboxes, timings, états et dégâts proviennent des données de simulation ; le squelette visuel ne décide jamais du résultat d'un coup.
+- Replays reproductibles, tests de règles, données de frame, tests navigateur et mesure de performance.
+- Priorité à la qualité graphique sans sacrifier lisibilité ni contrôle.
+
+## Ressources tierces
+
+- Dépôt **public** : **ne jamais committer** un modèle, une animation, un son ou une texture dont la redistribution publique n'est pas expressément compatible avec sa licence.
+- Mixamo autorise son utilisation dans des jeux ; cela ne suffit pas à établir le droit de republier ses sources brutes dans Git.
+- Privilégier CC0. CC BY est envisageable avec crédits corrects et conditions vérifiées. Les licences NC et les droits incertains ne doivent pas entrer dans le produit commercialisable.
+- Pour tout asset : URL source, auteur, licence, obligations, date, formats, hash et statut de validation dans le registre.
+- Respecter droits à l'image, marques et personnages protégés. Fighters doit posséder une identité visuelle originale.
+- Ne jamais affirmer qu'une licence est validée sans l'avoir vérifiée pour **l'asset précis**.
+
+## Définition de terminé
+
+Une tâche est terminée seulement lorsqu'elle a :
+- un résultat fonctionnel concret ;
+- les tests et contrôles pertinents exécutés avec résultat connu ;
+- une qualité/performance proportionnée à l'usage ;
+- ses données et droits documentés le cas échéant ;
+- le plan mis à jour.
+
+Rapporter honnêtement ce qui reste à faire et tout blocage. Ne jamais présenter une coquille vide comme un jeu jouable.
