@@ -17,6 +17,8 @@ Le document directeur est **docs/production-plan.md**. Le consulter avant toute 
 5. **Ne pas inventer de validation visuelle.** Lorsque la perception humaine du rendu ou du gameplay est nécessaire, fournir une version testable et demander au propriétaire de juger ; ne pas créer un processus « Lab » autonome qui s'arrogerait cette validation.
 6. **Respecter les changements existants.** Vérifier l'état et les instructions du dépôt avant d'éditer. Ne pas supprimer de travail sans ordre explicite.
 7. **Ne pas multiplier inutilement les actions CI payantes.** Privilégier validations locales adaptées, workflows ciblés, cache et annulation des exécutions périmées.
+8. **Double objectif indissociable : puissance et photoréalisme.** Ne jamais considérer une belle image figée comme une preuve de jeu performant ; ne pas dégrader silencieusement le rendu haut de gamme pour atteindre une cible FPS. Mesurer CPU/GPU, cadence et qualité visuelle ensemble.
+9. **Captures Web : réutiliser WebSuite de WarConquer.** La version générique est dans [WarConquer/scripts/websuite.mjs](https://github.com/leye0/WarConquer/blob/main/scripts/websuite.mjs). Pour Fighters, l'adapter au serveur Vite, à l'initialisation du canvas WebGL et aux profils GPU. Voir [docs/visual-qa.md](docs/visual-qa.md). Ne pas importer le workflow WarConquer tel quel, ses PR, ses scènes de démonstration ou son Perception Lab.
 
 ## Architecture cible
 
@@ -25,7 +27,7 @@ Le document directeur est **docs/production-plan.md**. Le consulter avant toute 
 - Affichage 3D avec caméra latérale, déplacement déterministe sur un plan de combat.
 - Les hitboxes, hurtboxes, timings, états et dégâts proviennent des données de simulation ; le squelette visuel ne décide jamais du résultat d'un coup.
 - Replays reproductibles, tests de règles, données de frame, tests navigateur et mesure de performance.
-- Priorité à la qualité graphique sans sacrifier lisibilité ni contrôle.
+- Priorité simultanée au **rendu photoréaliste maximal** et à la **fluidité/puissance mesurée**. Les profils dégradés restent explicites ; la référence de qualité Ultra ne doit pas être abaissée tacitement.
 
 ## Ressources tierces
 

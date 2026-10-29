@@ -6,6 +6,8 @@
 >
 > **Ambition :** jeu de combat arcade **2,5D**, à défilement latéral, avec personnages et décors **3D photoréalistes**, rendu sur navigateur Web, combats nerveux, HUD et ergonomie inspirés des conventions du genre sans reproduire la propriété intellectuelle d'un jeu existant.
 
+**Deux critères inséparables :** (1) **puissance de combat et fluidité** (simulation 60 Hz et FPS mesurés), (2) **finesse photoréaliste** (personnages, peau, matériaux, lumière et décors). Aucun compromis silencieux entre les deux : profils graphiques explicites et mesure par machine de référence.
+
 ## 0. Gouvernance et définition de terminé
 
 - [x] Créer le dépôt **leye0/Fighters**, public, avec **main** comme branche par défaut.
@@ -214,6 +216,8 @@ Le but n'est pas de télécharger aveuglément toute la bibliothèque Adobe, mai
 - [ ] Créer des profils Ultra / High / Medium / Low / Auto avec budgets mesurés.
 - [ ] Prévenir aliasing, z-fighting, shadow acne, clipping et artefacts de transparence.
 - [ ] Vérifier la fidélité de chaque combattant dans une scène de comparaison à éclairage constant.
+- [ ] Créer des captures de référence à qualité Ultra (peau, cheveux, yeux, ombres, décors) avec caméra et éclairage contrôlés.
+- [ ] Documenter pour chaque effet photoréaliste son coût CPU/GPU et son gain visuel à résolution identique.
 
 ## 10. Arènes 3D réalistes
 
@@ -382,6 +386,8 @@ Le HUD suit les **conventions fonctionnelles** des jeux de combat classiques (ba
 - [ ] Mesurer FPS au 1er percentile, frame time GPU/CPU, input delay et mémoire.
 - [ ] Définir un objectif d'affichage de 60 FPS en 1080p sur le profil de référence.
 - [ ] Établir budgets explicites de texture, animation, géométrie, post-process et audio.
+- [ ] Comparer sur le même appareil la qualité photographique et les mesures 1% low FPS, frame time, VRAM et temps de chargement.
+- [ ] Préserver un profil Ultra visuellement ambitieux tout en rendant Auto/High/Medium/Low adaptatifs et honnêtes sur leurs compromis.
 - [ ] Vérifier chargements à connexion ralentie et éviter gros téléchargements initiaux.
 - [ ] Optimiser skinning, draw calls, instancing, culling et shaders.
 - [ ] Gérer device pixel ratio et résolution interne adaptative.
@@ -402,6 +408,11 @@ Le HUD suit les **conventions fonctionnelles** des jeux de combat classiques (ba
 - [ ] Ajouter tests de régression de frame data par personnage.
 - [ ] Ajouter tests E2E Playwright : démarrage, menu, sélection, combat, victoire, revanche, réglages.
 - [ ] Ajouter des tests de rendu visuel des poses et arènes sur configuration stable.
+- [ ] Réutiliser WebSuite générique de WarConquer, après adaptation à Vite/localhost et au véritable canvas WebGL de Fighters.
+- [ ] Attendre le chargement des GLB/textures et un signal de frame réellement présentée avant toute capture WebSuite.
+- [ ] Ajouter scénarios WebSuite reproductibles : portrait des combattants, poses extrêmes, impact, HUD, arène nocturne et lumière du jour.
+- [ ] Distinguer les snapshots automatisés en Chrome logiciel et les mesures de qualité/performance sur un vrai GPU.
+- [ ] Garder les captures CI à la demande ou ciblées pour préserver les minutes GitHub Actions ; ne pas recopier les règles PR/Perception Lab de WarConquer.
 - [ ] Ajouter tests de licence/manifeste et refus des assets sans provenance.
 - [ ] Ajouter tests de budget bundle et temps de chargement.
 - [ ] Ajouter tests de son (déclenchement attendu), tolérant aux limites AudioContext navigateur.
