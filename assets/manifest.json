@@ -47,20 +47,6 @@
       "qualityNotes": "Rigged realistic male as described; inspect topology and animation compatibility."
     },
     {
-      "id": "CHAR-CAND-004",
-      "kind": "character",
-      "title": "Human Models Set Male/Female (Rigged)",
-      "author": "lzyassoul",
-      "sourceUrl": "https://sketchfab.com/3d-models/human-models-set-malefemale-rigged-7311fcfdc03e4234900eeced42a1e669",
-      "licenseClaim": "CC-BY (as displayed on source page, 2026-10-29)",
-      "licenseStatus": "candidate_unverified",
-      "redistributionStatus": "not_assessed",
-      "integrationStatus": "not_downloaded",
-      "sha256": null,
-      "attribution": null,
-      "qualityNotes": "Human base meshes, not production photoreal ready."
-    },
-    {
       "id": "CHAR-CAND-005",
       "kind": "character",
       "title": "Rigged Clothed Body",
@@ -73,6 +59,76 @@
       "sha256": null,
       "attribution": null,
       "qualityNotes": "Rigged clothed body as described; examine quality and asset origins."
+    },
+    {
+      "id": "CHAR-CAND-006",
+      "kind": "character",
+      "title": "Claudia Rigged 002 — 3D Rigged Business Women",
+      "author": "Renderpeople",
+      "sourceUrl": "https://sketchfab.com/3d-models/claudia-rigged-002-3d-rigged-business-women-c659bd0accab47c6bbe390cf822a2b92",
+      "licenseClaim": "CC-BY; NoAI tag",
+      "licenseStatus": "candidate_unverified",
+      "redistributionStatus": "not_assessed",
+      "integrationStatus": "not_downloaded",
+      "sha256": null,
+      "attribution": null,
+      "qualityNotes": "Photoreal scanned rigged woman; 8K textures; no generative AI processing."
+    },
+    {
+      "id": "CHAR-CAND-007",
+      "kind": "character",
+      "title": "Carla Rigged 001 — Rigged 3D Business Women",
+      "author": "Renderpeople",
+      "sourceUrl": "https://sketchfab.com/3d-models/carla-rigged-001-rigged-3d-business-women-acf520f450d14dd799f98a6fede3edf5",
+      "licenseClaim": "CC-BY; NoAI tag",
+      "licenseStatus": "candidate_unverified",
+      "redistributionStatus": "not_assessed",
+      "integrationStatus": "not_downloaded",
+      "sha256": null,
+      "attribution": null,
+      "qualityNotes": "Photoreal scanned rigged woman; 8K textures; no generative AI processing."
+    },
+    {
+      "id": "CHAR-CAND-008",
+      "kind": "character",
+      "title": "Alina Ip, realistic Asian woman (Animated)",
+      "author": "Jungle Jim",
+      "sourceUrl": "https://sketchfab.com/3d-models/alina-ip-realistic-asian-woman-animated-600d4d4aa71c4181b2567a3605ce8c57",
+      "licenseClaim": "CC-BY as displayed",
+      "licenseStatus": "candidate_unverified",
+      "redistributionStatus": "not_assessed",
+      "integrationStatus": "not_downloaded",
+      "sha256": null,
+      "attribution": null,
+      "qualityNotes": "High legal caution: model made with FaceGen, DAZ3D, Character Creator 4; check original license chain."
+    },
+    {
+      "id": "CHAR-CAND-009",
+      "kind": "character",
+      "title": "Realistic woman walking (animated)",
+      "author": "Jungle Jim",
+      "sourceUrl": "https://sketchfab.com/3d-models/realistic-woman-walking-animated-d1ce2b8009b8401481408aeecea903d0",
+      "licenseClaim": "CC-BY as displayed",
+      "licenseStatus": "candidate_unverified",
+      "redistributionStatus": "not_assessed",
+      "integrationStatus": "not_downloaded",
+      "sha256": null,
+      "attribution": null,
+      "qualityNotes": "Photoreal woman with animation/facial rig; check underlying content rights."
+    },
+    {
+      "id": "CHAR-CAND-010",
+      "kind": "character",
+      "title": "Rigged Woman in Green Mini Dress Full Body 3D",
+      "author": "kindman-boy",
+      "sourceUrl": "https://sketchfab.com/3d-models/rigged-woman-in-green-mini-dress-full-body-3d-53c48f928f4b456b8f885333a5f0e669",
+      "licenseClaim": "CC-BY as displayed",
+      "licenseStatus": "candidate_unverified",
+      "redistributionStatus": "not_assessed",
+      "integrationStatus": "not_downloaded",
+      "sha256": null,
+      "attribution": null,
+      "qualityNotes": "Photoreal woman, rigged PBR, approx 821k triangles; significant optimization required."
     }
   ]
 }
