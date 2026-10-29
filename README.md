@@ -39,7 +39,7 @@ Ces choix sont des décisions de départ documentées ; tout changement doit êt
 - [Sketchfab](https://sketchfab.com/) — vérifier **chaque modèle** et sa licence (CC0 / CC BY ou autre).
 - [Freesound](https://freesound.org/) — vérifier **chaque effet sonore** et sa licence (préférence CC0).
 
-Voir le registre de provenance et les règles de distribution dans le [plan](docs/production-plan.md).
+Consulter le [registre des ressources, avec les premiers candidats photoréalistes](docs/asset-register.md) et son [manifeste JSON](assets/manifest.json). Les règles de distribution détaillées figurent aussi dans le [plan](docs/production-plan.md).
 
 ## État
 
