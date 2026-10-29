@@ -43,7 +43,7 @@
 - [ ] Définir les interfaces portables : FighterDefinition, MoveDefinition, AnimationClipRef, StageDefinition, MatchRules, InputFrame, ReplayFrame.
 - [ ] Construire une boucle de simulation à pas fixe avec accumulateur et interpolation de rendu.
 - [ ] Isoler l'état autoritatif de combat du moteur 3D et des animations visibles.
-- [ ] Utiliser des nombres/arrondis et ordres d'opérations reproductibles pour les résultats de simulation.
+- [x] Utiliser des nombres/arrondis et ordres d'opérations reproductibles pour les résultats de simulation.
 - [ ] Ajouter un système d'événements typés entre simulation, effets, interface et sons.
 - [ ] Prévoir un système de chargement et de cache des personnages/arènes avec progression.
 - [ ] Définir la politique de mémoire GPU, libération des textures, géométries et animations.
@@ -53,8 +53,8 @@
 
 ## 3. Simulation de combat déterministe
 
-- [ ] Définir le repère 2,5D, limites d'arène et contraintes au sol.
-- [ ] Gérer deux combattants, leur position, vitesse, orientation et distance mutuelle.
+- [x] Définir le repère 2,5D, limites d'arène et contraintes au sol.
+- [x] Gérer deux combattants, leur position, vitesse, orientation et distance mutuelle.
 - [ ] Implémenter les états : idle, marche, course/dash, saut, chute, garde, attaque, recovery, stun, projection, knockdown, relève, KO.
 - [ ] Gérer la gravité, les trajectoires de saut, les collisions au sol et les sauts directionnels via règles déterministes.
 - [ ] Gérer le retournement automatique selon la position relative et les transitions de côté.
@@ -66,7 +66,7 @@
 - [ ] Définir les règles d'enchaînement, cancel, juggle, wall interaction et combo scaling.
 - [ ] Prévenir les collisions inversées, téléportations, traversées et glitches de face.
 - [ ] Sérialiser l'état de chaque tick pour replay et synchronisation réseau.
-- [ ] Tester la reproduction exacte d'un combat à partir d'une suite d'entrées.
+- [x] Tester la reproduction exacte d'un combat à partir d'une suite d'entrées.
 - [ ] Fournir une visualisation de debug des volumes et frames, activable hors interface normale.
 
 ## 4. Contrôles arcade et saisie

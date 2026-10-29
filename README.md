@@ -43,4 +43,6 @@ Consulter le [registre des ressources, avec les premiers candidats photoréalist
 
 ## État
 
-La création du dépôt est accomplie ; les fonctionnalités de jeu restent à développer. Les cases à cocher du plan font foi.
+Le **noyau autoritatif TypeScript** est en chantier : positions et orientations 2,5D, pas fixes de 60 Hz, saut et gravité, gardes, coups temporels, dégâts, collisions de corps, déterminisme et commandes directionnelles (quart/demi-cercle et variantes). Il est couvert par **19 tests exécutés**. **Il n'y a pas encore de jeu graphique jouable** : rendu 3D, personnages, sons et interface restent à intégrer. Les cases à cocher du plan font foi.
+
+Pour le noyau (Node.js 24) : installer les dépendances avec npm, puis exécuter **npm test** et **npm run typecheck**.
