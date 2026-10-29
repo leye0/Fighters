@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "project": "Fighters",
+  "updatedAt": "2026-10-29",
+  "policy": "No third-party asset files may be committed or distributed until the precise license, author attribution, and redistribution rights have been assessed. Candidate status is not approval.",
+  "assets": [
+    {
+      "id": "CHAR-CAND-001",
+      "kind": "character",
+      "title": "Human 3D model scanned with iPhone X",
+      "author": "in3D",
+      "sourceUrl": "https://sketchfab.com/3d-models/human-3d-model-scanned-with-iphone-x-73e467dfc8a04914bb314a9410077858",
+      "licenseClaim": "CC-BY (as displayed on source page, 2026-10-29)",
+      "licenseStatus": "candidate_unverified",
+      "redistributionStatus": "not_assessed",
+      "integrationStatus": "not_downloaded",
+      "sha256": null,
+      "attribution": null,
+      "qualityNotes": "Photoreal human scan, rigged/animated as described; check scan subject consent."
+    },
+    {
+      "id": "CHAR-CAND-002",
+      "kind": "character",
+      "title": "Rigged T-Pose Human Male w 50 Face Blendshapes",
+      "author": "Mike Alger",
+      "sourceUrl": "https://sketchfab.com/3d-models/rigged-t-pose-human-male-w-50-face-blendshapes-cc7e4596bcd145208a6992c757854c07",
+      "licenseClaim": "CC-BY (as displayed on source page, 2026-10-29)",
+      "licenseStatus": "candidate_unverified",
+      "redistributionStatus": "not_assessed",
+      "integrationStatus": "not_downloaded",
+      "sha256": null,
+      "attribution": null,
+      "qualityNotes": "Rigged scan with face blendshapes; PBR material work likely needed."
+    },
+    {
+      "id": "CHAR-CAND-003",
+      "kind": "character",
+      "title": "Realistic man basic rig",
+      "author": "J.azali",
+      "sourceUrl": "https://sketchfab.com/3d-models/realistic-man-basic-rig-eaea58da1b3c4d4d9a75a68830959122",
+      "licenseClaim": "CC-BY (as displayed on source page, 2026-10-29)",
+      "licenseStatus": "candidate_unverified",
+      "redistributionStatus": "not_assessed",
+      "integrationStatus": "not_downloaded",
+      "sha256": null,
+      "attribution": null,
+      "qualityNotes": "Rigged realistic male as described; inspect topology and animation compatibility."
+    },
+    {
+      "id": "CHAR-CAND-004",
+      "kind": "character",
+      "title": "Human Models Set Male/Female (Rigged)",
+      "author": "lzyassoul",
+      "sourceUrl": "https://sketchfab.com/3d-models/human-models-set-malefemale-rigged-7311fcfdc03e4234900eeced42a1e669",
+      "licenseClaim": "CC-BY (as displayed on source page, 2026-10-29)",
+      "licenseStatus": "candidate_unverified",
+      "redistributionStatus": "not_assessed",
+      "integrationStatus": "not_downloaded",
+      "sha256": null,
+      "attribution": null,
+      "qualityNotes": "Human base meshes, not production photoreal ready."
+    },
+    {
+      "id": "CHAR-CAND-005",
+      "kind": "character",
+      "title": "Rigged Clothed Body",
+      "author": "Abduleleah Alshreef",
+      "sourceUrl": "https://sketchfab.com/3d-models/rigged-clothed-body-9998b92d12554d67a2788aaf05e66729",
+      "licenseClaim": "CC-BY (as displayed on source page, 2026-10-29)",
+      "licenseStatus": "candidate_unverified",
+      "redistributionStatus": "not_assessed",
+      "integrationStatus": "not_downloaded",
+      "sha256": null,
+      "attribution": null,
+      "qualityNotes": "Rigged clothed body as described; examine quality and asset origins."
+    }
+  ]
+}
