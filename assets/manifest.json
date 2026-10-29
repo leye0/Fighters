@@ -16,7 +16,9 @@
       "integrationStatus": "not_downloaded",
       "sha256": null,
       "attribution": null,
-      "qualityNotes": "Photoreal human scan, rigged/animated as described; check scan subject consent."
+      "qualityNotes": "Photoreal human scan, rigged/animated as described; check scan subject consent.",
+      "genderPresentation": "male",
+      "selectionPriority": "normal"
     },
     {
       "id": "CHAR-CAND-002",
@@ -30,7 +32,9 @@
       "integrationStatus": "not_downloaded",
       "sha256": null,
       "attribution": null,
-      "qualityNotes": "Rigged scan with face blendshapes; PBR material work likely needed."
+      "qualityNotes": "Rigged scan with face blendshapes; PBR material work likely needed.",
+      "genderPresentation": "male",
+      "selectionPriority": "normal"
     },
     {
       "id": "CHAR-CAND-003",
@@ -44,7 +48,9 @@
       "integrationStatus": "not_downloaded",
       "sha256": null,
       "attribution": null,
-      "qualityNotes": "Rigged realistic male as described; inspect topology and animation compatibility."
+      "qualityNotes": "Rigged realistic male as described; inspect topology and animation compatibility.",
+      "genderPresentation": "male",
+      "selectionPriority": "normal"
     },
     {
       "id": "CHAR-CAND-005",
@@ -58,7 +64,9 @@
       "integrationStatus": "not_downloaded",
       "sha256": null,
       "attribution": null,
-      "qualityNotes": "Rigged clothed body as described; examine quality and asset origins."
+      "qualityNotes": "Rigged clothed body as described; examine quality and asset origins.",
+      "genderPresentation": "not_assessed",
+      "selectionPriority": "normal"
     },
     {
       "id": "CHAR-CAND-006",
@@ -72,7 +80,9 @@
       "integrationStatus": "not_downloaded",
       "sha256": null,
       "attribution": null,
-      "qualityNotes": "Photoreal scanned rigged woman; 8K textures; no generative AI processing."
+      "qualityNotes": "Photoreal scanned rigged woman; 8K textures; no generative AI processing.",
+      "genderPresentation": "female",
+      "selectionPriority": "high"
     },
     {
       "id": "CHAR-CAND-007",
@@ -86,7 +96,9 @@
       "integrationStatus": "not_downloaded",
       "sha256": null,
       "attribution": null,
-      "qualityNotes": "Photoreal scanned rigged woman; 8K textures; no generative AI processing."
+      "qualityNotes": "Photoreal scanned rigged woman; 8K textures; no generative AI processing.",
+      "genderPresentation": "female",
+      "selectionPriority": "high"
     },
     {
       "id": "CHAR-CAND-008",
@@ -100,7 +112,9 @@
       "integrationStatus": "not_downloaded",
       "sha256": null,
       "attribution": null,
-      "qualityNotes": "High legal caution: model made with FaceGen, DAZ3D, Character Creator 4; check original license chain."
+      "qualityNotes": "High legal caution: model made with FaceGen, DAZ3D, Character Creator 4; check original license chain.",
+      "genderPresentation": "female",
+      "selectionPriority": "high"
     },
     {
       "id": "CHAR-CAND-009",
@@ -114,7 +128,9 @@
       "integrationStatus": "not_downloaded",
       "sha256": null,
       "attribution": null,
-      "qualityNotes": "Photoreal woman with animation/facial rig; check underlying content rights."
+      "qualityNotes": "Photoreal woman with animation/facial rig; check underlying content rights.",
+      "genderPresentation": "female",
+      "selectionPriority": "high"
     },
     {
       "id": "CHAR-CAND-010",
@@ -128,7 +144,9 @@
       "integrationStatus": "not_downloaded",
       "sha256": null,
       "attribution": null,
-      "qualityNotes": "Photoreal woman, rigged PBR, approx 821k triangles; significant optimization required."
+      "qualityNotes": "Photoreal woman, rigged PBR, approx 821k triangles; significant optimization required.",
+      "genderPresentation": "female",
+      "selectionPriority": "high"
     }
   ]
 }
