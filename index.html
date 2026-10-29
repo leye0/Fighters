@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="fr-CA">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b1018" />
+    <meta name="description" content="Fighters — jeu de combat 2,5D photoréaliste pour le navigateur." />
+    <title>Fighters — Combat 2,5D</title>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="site-header">
+        <div class="brand"><span class="brand-mark">F</span><span>FIGHTERS</span></div>
+        <span class="edition">COMBAT 2,5D · WEBGL 2</span>
+        <label class="quality">
+          Qualité
+          <select id="quality-select" aria-label="Qualité graphique">
+            <option value="ultra">Ultra</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </label>
+      </header>
+
+      <section class="arena-container" id="stage-container" aria-label="Arène de combat rendue en trois dimensions">
+        <canvas id="game-canvas" aria-label="Rendu 3D de l'arène"></canvas>
+        <div class="viewport-gradient" aria-hidden="true"></div>
+        <div class="hud" id="match-hud" hidden>
+          <div class="fighter-panel left">
+            <span class="fighter-label" id="name-left">COMBATTANT 1</span>
+            <div class="health-track"><div id="health-left" class="health-fill"></div></div>
+          </div>
+          <div class="round-marker">FIGHT</div>
+          <div class="fighter-panel right">
+            <span class="fighter-label" id="name-right">COMBATTANT 2</span>
+            <div class="health-track"><div id="health-right" class="health-fill"></div></div>
+          </div>
+        </div>
+        <div class="stage-title" id="stage-title">
+          <span class="eyebrow">RENDERING ENGINE</span>
+          <h1>REAL IMPACT.<br /><em>REAL PRESENCE.</em></h1>
+        </div>
+        <div class="status-strip" role="status" aria-live="polite" id="load-status">Préparation de l'arène…</div>
+        <div class="metrics" id="metrics" aria-label="Métriques de rendu">Mesure GPU en attente…</div>
+      </section>
+
+      <footer class="footer">
+        <div>
+          <span class="footer-label">DIRECTION</span>
+          <p>Simulation déterministe à 60 Hz. Personnages photoréalistes sous licences vérifiées.</p>
+        </div>
+        <div>
+          <span class="footer-label">COMMANDES À DEUX JOUEURS</span>
+          <p>P1 : WASD + J/K/L/U/I/O · P2 : flèches + pavé numérique 1–6</p>
+        </div>
+      </footer>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

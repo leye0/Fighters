@@ -1,6 +1,6 @@
 # Fighters — plan de production détaillé
 
-> **Statut :** feuille de route active. Chaque case désigne un livrable concret à vérifier avant de la cocher.
+> **Statut :** feuille de route active. Chaque case désigne un livrable concret à vérifier avant de la cocher. Le code de rendu Three.js/Vite et WebSuite adapté a été préparé ; aucun rendu photoréaliste de combattants n'est encore considéré validé tant que le build et les modèles licenciés ne sont pas testés.
 >
 > **Directives du projet :** dépôt **public**, travail **directement sur main**, **aucune PR**, **aucune branche de fonctionnalité**, **aucun MVP** ni prototype jetable. Le produit est conçu en architecture de production dès la première ligne ; les tâches restent ordonnées par dépendances techniques. On ne coche jamais une tâche sur une simple intention.
 >
@@ -412,7 +412,7 @@ Le HUD suit les **conventions fonctionnelles** des jeux de combat classiques (ba
 - [ ] Attendre le chargement des GLB/textures et un signal de frame réellement présentée avant toute capture WebSuite.
 - [ ] Ajouter scénarios WebSuite reproductibles : portrait des combattants, poses extrêmes, impact, HUD, arène nocturne et lumière du jour.
 - [ ] Distinguer les snapshots automatisés en Chrome logiciel et les mesures de qualité/performance sur un vrai GPU.
-- [ ] Garder les captures CI à la demande ou ciblées pour préserver les minutes GitHub Actions ; ne pas recopier les règles PR/Perception Lab de WarConquer.
+- [x] Garder les captures CI à la demande ou ciblées pour préserver les minutes GitHub Actions ; ne pas recopier les règles PR/Perception Lab de WarConquer.
 - [ ] Ajouter tests de licence/manifeste et refus des assets sans provenance.
 - [ ] Ajouter tests de budget bundle et temps de chargement.
 - [ ] Ajouter tests de son (déclenchement attendu), tolérant aux limites AudioContext navigateur.

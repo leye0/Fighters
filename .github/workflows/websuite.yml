@@ -1,0 +1,70 @@
+name: WebSuite · Fighters WebGL captures
+
+on:
+  workflow_dispatch:
+    inputs:
+      quality:
+        description: 'Render quality profile'
+        required: true
+        default: ultra
+        type: choice
+        options: [ultra, high, medium, low]
+      require_fighters:
+        description: 'Fail unless two approved fighter models are loaded'
+        required: true
+        default: false
+        type: boolean
+      scenario_path:
+        description: 'Optional repository JSON scenario with a localhost url'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fighters-websuite-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install and build
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run build
+      - name: Start production preview
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/fighters-preview.log 2>&1 &
+          for i in {1..50}; do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
+            sleep 0.2
+          done
+          cat /tmp/fighters-preview.log
+          exit 1
+      - name: Capture real WebGL canvas
+        env:
+          WEBSUITE_RENDER_BACKEND: software
+          WEBSUITE_REQUIRE_FIGHTERS: ${{ inputs.require_fighters && '1' || '0' }}
+          QUALITY: ${{ inputs.quality }}
+          SCENARIO_PATH: ${{ inputs.scenario_path }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$SCENARIO_PATH" ]]; then
+            node scripts/websuite.mjs --scenario "$SCENARIO_PATH" captures
+          else
+            node scripts/websuite.mjs --url "http://127.0.0.1:4173/?quality=$QUALITY" captures/render.png
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fighters-websuite
+          path: captures/
+          retention-days: 1
+          if-no-files-found: error

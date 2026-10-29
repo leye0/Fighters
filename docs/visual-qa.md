@@ -14,6 +14,24 @@ WebSuite est déjà développé dans **[leye0/WarConquer](https://github.com/ley
 
 Il gère des captures PNG, des interactions clavier/souris, des assertions DOM et des scénarios JSON, sans dépendance Playwright. **Il n'est pas encore copié dans Fighters.** Nous le réutiliserons et l'adapterons lors de l'intégration du rendu WebGL.
 
+## Exécution prévue
+
+Démarrer l'application :
+
+~~~bash
+npm install
+npm run dev
+~~~
+
+Puis, sous Linux avec Chrome :
+
+~~~bash
+node scripts/websuite.mjs --url http://127.0.0.1:5173 render.png
+WEBSUITE_REQUIRE_FIGHTERS=1 node scripts/websuite.mjs --url http://127.0.0.1:5173 capture-fighters.png
+~~~
+
+La seconde commande échoue tant que deux personnages autorisés ne sont pas réellement chargés. Le workflow **Actions → WebSuite · Fighters WebGL captures → Run workflow** est **uniquement manuel** : il construit Vite, démarre un serveur local puis capture un vrai canvas WebGL. Le runner utilise SwiftShader (logiciel) : ces images ne constituent **aucune preuve de FPS GPU réel**.
+
 ## Adaptations indispensables à Fighters
 
 - **Serveur Vite et modules ES** : le WebSuite initial ouvre les fichiers via file://. Fighters utilisera une application servie en HTTP local ; ajouter la navigation contrôlée vers un URL localhost autorisé, ou préparer un bundle statique avec serveur local. Ne pas contourner CORS avec un navigateur non sécurisé.

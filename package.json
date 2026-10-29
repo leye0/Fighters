@@ -3,17 +3,25 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "A photorealistic 2.5D browser fighting game — deterministic engine core.",
+  "description": "Fighters — photorealistic 2.5D WebGL fighting game",
   "engines": {
     "node": ">=24"
   },
   "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "npm run typecheck && vite build",
+    "preview": "vite preview --host 127.0.0.1",
     "test": "node --test tests/*.test.ts",
     "test:engine": "node --test tests/*.test.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "@types/three": "^0.186.0",
+    "vite": "8.3.5"
+  },
+  "dependencies": {
+    "three": "0.186.1"
   }
 }

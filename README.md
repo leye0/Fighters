@@ -43,6 +43,8 @@ Consulter le [registre des ressources, avec les premiers candidats photoréalist
 
 ## État
 
-Le **noyau autoritatif TypeScript** est en chantier : positions et orientations 2,5D, pas fixes de 60 Hz, saut et gravité, gardes, coups temporels, dégâts, collisions de corps, déterminisme et commandes directionnelles (quart/demi-cercle et variantes). Il est couvert par **19 tests exécutés**. **Il n'y a pas encore de jeu graphique jouable** : rendu 3D, personnages, sons et interface restent à intégrer. Les cases à cocher du plan font foi.
+Le noyau TypeScript reste séparé du rendu. **L'application Vite/Three.js et sa caméra WebGL 2 sont maintenant codées** : éclairage physique de référence, sol de collision visuel, chargement GLB licencié, animations squelettiques, HUD conditionnel et métriques FPS/draw calls. **Les modèles encore candidats ne sont pas chargés** ; aucun personnage de remplacement n'est présenté comme photoréaliste ou jouable. La compilation Vite et le rendu navigateur doivent encore être vérifiés sur la version publiée. Les cases à cocher du plan font foi.
 
-Pour le noyau (Node.js 24) : installer les dépendances avec npm, puis exécuter **npm test** et **npm run typecheck**.
+Pour le projet (Node.js 24) : **npm install**, **npm run dev**, **npm test**, **npm run typecheck**, **npm run build**. Les modèles de combattants juridiquement autorisés doivent être déposés dans public/models/ et décrits comme intégrés dans le manifeste avant d'apparaître en jeu.
+
+Les captures navigateur utilisent l'[adaptation de WebSuite](docs/visual-qa.md) de WarConquer ; le workflow GitHub Actions est **manuel uniquement** pour préserver les minutes.
