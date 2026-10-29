@@ -347,7 +347,7 @@ Le HUD suit les **conventions fonctionnelles** des jeux de combat classiques (ba
 | [Freesound](https://freesound.org/help/faq/) | Impacts, voix, ambiances | Variable, CC0/CC BY/NC | CC0 prioritaire, CC BY avec attribution |
 | Créations internes | HUD, personnages complémentaires, décors et audio | À définir pour le dépôt | Documenter auteurs et droits |
 
-- [ ] Créer **docs/asset-register.md** et un manifeste machine-readable des ressources.
+- [x] Créer **docs/asset-register.md** et un manifeste machine-readable des ressources.
 - [ ] Enregistrer par ressource : ID interne, nom, auteur, URL source, date, licence/version, permission de modification, permission de redistribution, attribution.
 - [ ] Enregistrer SHA-256 du téléchargement, format original, formats dérivés et chaîne de transformation.
 - [ ] Séparer trois statuts : **candidat**, **licence vérifiée**, **intégré et validé**.
