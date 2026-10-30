@@ -49,12 +49,19 @@ jobs:
             --name Walking_6.fbx --name Walking_Backwards.fbx --name Left_Turn_3.fbx \
             --name Jump.fbx --name Falling_Idle.fbx
 
+      - name: Restore clean pre-retarget source rigs (no animation-on-animation rebuild)
+        run: |
+          for character in claudia carla realistic-man; do
+            git show 8979a7f8550ab78f5906eea9eca9ddbbd0ce2c88:public/models/$character.glb > "$ANIM_WORK_DIR/$character.clean.glb"
+            test -s "$ANIM_WORK_DIR/$character.clean.glb"
+          done
+
       - name: Embed seven retargeted Mixamo motions inside licensed game character GLBs
         run: |
           node scripts/embed-mixamo-gameplay.mjs "$ANIM_WORK_DIR/glb" \
-            public/models/claudia.glb "$ANIM_WORK_DIR/claudia.game.glb" \
-            public/models/carla.glb "$ANIM_WORK_DIR/carla.game.glb" \
-            public/models/realistic-man.glb "$ANIM_WORK_DIR/realistic-man.game.glb"
+            "$ANIM_WORK_DIR/claudia.clean.glb" "$ANIM_WORK_DIR/claudia.game.glb" \
+            "$ANIM_WORK_DIR/carla.clean.glb" "$ANIM_WORK_DIR/carla.game.glb" \
+            "$ANIM_WORK_DIR/realistic-man.clean.glb" "$ANIM_WORK_DIR/realistic-man.game.glb"
           node scripts/check-baked-gameplay-motion.mjs \
             "$ANIM_WORK_DIR/claudia.game.glb" \
             "$ANIM_WORK_DIR/carla.game.glb" \
@@ -74,6 +81,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No gameplay motion changes."
           else
-            git commit -m "Embed verified Mixamo locomotion and 180 turn in real fighter rigs"
+            git commit -m "Rebuild Mixamo motions with WarConquer inverse-bind retarget"
             git push origin HEAD:main
           fi
