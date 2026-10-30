@@ -1,31 +1,19 @@
 import {
-  AmbientLight, BoxGeometry, CapsuleGeometry, Color, DirectionalLight, Fog, Group,
-  HemisphereLight, Mesh, MeshStandardMaterial, PCFSoftShadowMap, Scene,
-  SphereGeometry, SRGBColorSpace, WebGLRenderer,
+  AmbientLight, BoxGeometry, Color, DirectionalLight, Fog, Group,
+  HemisphereLight, Material, Mesh, MeshStandardMaterial, PCFSoftShadowMap, Scene,
+  SRGBColorSpace, WebGLRenderer,
 } from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { clone as cloneSkeleton } from "three/addons/utils/SkeletonUtils.js";
 import type { BeatActor, BeatStage, BeatWorldState } from "../engine/beat-em-up-world.ts";
 import type { ScrollBounds, ScrollCameraFrame, WorldToScreenProjection } from "./beat-scroll-camera.ts";
 import { makeBeatCamera, placeBeatCamera } from "./beat-camera-three.ts";
+import { CHARACTER_MODEL_FILES, fitRigToActor, requireSkinnedRig,
+  type AcquiredCharacterKey } from "./rigged-character.ts";
 
 const meters = (mm: number): number => mm / 1000;
 
-function diagnosticActor(color: number): Group {
-  const root = new Group();
-  const body = new Mesh(new CapsuleGeometry(0.31, 1.08, 6, 12),
-    new MeshStandardMaterial({ color, roughness: 0.67 }));
-  body.position.y = 0.85;
-  body.castShadow = true;
-  const front = new Mesh(new SphereGeometry(0.12, 10, 8),
-    new MeshStandardMaterial({ color: 0x101620, emissive: 0x202530 }));
-  front.position.set(0.32, 1.27, 0);
-  const marker = new Mesh(new BoxGeometry(0.4, 0.12, 0.12),
-    new MeshStandardMaterial({ color: 0xf7d46d, emissive: 0x614500 }));
-  marker.position.set(0.42, 1, 0);
-  root.add(body, front, marker);
-  return root;
-}
-
-/** Diagnostic scene only: no model, combat, or visual quality is represented as final. */
+/** Diagnostic navigation scene: real rigs, but no certified combat clips yet. */
 export class BeatEmUpScene {
   readonly scene = new Scene();
   readonly camera = makeBeatCamera();
@@ -35,6 +23,7 @@ export class BeatEmUpScene {
   private readonly projection: WorldToScreenProjection;
   private readonly bounds: ScrollBounds;
   private readonly heroId: string;
+  private readonly actorIds: readonly string[];
   private readonly viewportCanvas: HTMLCanvasElement;
 
   constructor(canvas: HTMLCanvasElement, stage: BeatStage, projection: WorldToScreenProjection,
@@ -43,6 +32,7 @@ export class BeatEmUpScene {
     this.projection = projection;
     this.bounds = bounds;
     this.heroId = heroId;
+    this.actorIds = actors.map(actor => actor.id);
     this.viewportCanvas = canvas;
     this.renderer = new WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -65,11 +55,48 @@ export class BeatEmUpScene {
     this.scene.add(sun);
     this.addStageVolumes();
     for (const actor of actors) {
-      const visual = diagnosticActor(actor.id === heroId ? 0x62c6ee : 0xec8076);
+      const visual = new Group();
       this.visuals.set(actor.id, visual);
       this.scene.add(visual);
     }
     this.resize(canvas.clientWidth || 960, canvas.clientHeight || 540);
+  }
+
+  /**
+   * Load actual skinned GLB humans for every actor. There are no capsule
+   * fallbacks: a missing/invalid asset fails the preview visibly.
+   * Repeated enemies clone the same cached skeleton, not a static mesh clone.
+   */
+  async loadActorModels(
+    roleModels: Readonly<{ hero: AcquiredCharacterKey; enemy: AcquiredCharacterKey }>,
+  ): Promise<void> {
+    const loader = new GLTFLoader();
+    const keys = new Set<AcquiredCharacterKey>([roleModels.hero, roleModels.enemy]);
+    const sources = new Map<AcquiredCharacterKey, Group>();
+    await Promise.all([...keys].map(async key => {
+      const url = new URL(CHARACTER_MODEL_FILES[key], document.baseURI).href;
+      const gltf = await loader.loadAsync(url);
+      requireSkinnedRig(gltf.scene);
+      sources.set(key, gltf.scene);
+    }));
+    for (const actorId of this.actorIds) {
+      const isHero = actorId === this.heroId;
+      const key = isHero ? roleModels.hero : roleModels.enemy;
+      const source = sources.get(key);
+      const visual = this.visuals.get(actorId);
+      if (!source || !visual) throw new Error("Character asset mapping is incomplete");
+      const clone = cloneSkeleton(source) as Group;
+      const holder = new Group();
+      holder.add(clone);
+      fitRigToActor(holder, isHero ? 1.73 : 1.80);
+      clone.traverse(object => {
+        if (object instanceof Mesh) {
+          object.castShadow = true;
+          object.receiveShadow = true;
+        }
+      });
+      visual.add(holder);
+    }
   }
 
   private addStageVolumes(): void {
@@ -119,7 +146,7 @@ export class BeatEmUpScene {
       const visual = this.visuals.get(actor.id);
       if (visual) {
         visual.position.set(meters(focus.xMm), meters(focus.heightMm), meters(focus.depthMm));
-        visual.scale.x = actor.facing;
+        visual.rotation.y = actor.facing === 1 ? Math.PI / 2 : -Math.PI / 2;
         visual.visible = actor.alive;
       }
       if (actor.id === this.heroId) heroFocus = focus;
@@ -135,13 +162,17 @@ export class BeatEmUpScene {
   }
 
   dispose(): void {
+    const geometries = new Set<Mesh["geometry"]>();
+    const materials = new Set<Material>();
     this.scene.traverse(object => {
       if (object instanceof Mesh) {
-        object.geometry.dispose();
-        const materials = Array.isArray(object.material) ? object.material : [object.material];
-        materials.forEach(material => material.dispose());
+        geometries.add(object.geometry);
+        const list = Array.isArray(object.material) ? object.material : [object.material];
+        list.forEach(material => materials.add(material));
       }
     });
+    geometries.forEach(geometry => geometry.dispose());
+    materials.forEach(material => material.dispose());
     this.visuals.clear();
     this.renderer.dispose();
     this.renderer.forceContextLoss();

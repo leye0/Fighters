@@ -25,9 +25,16 @@ const diagnostics = get<HTMLElement>("beat-diagnostics");
 const status = get<HTMLElement>("beat-status");
 const toggle = get<HTMLButtonElement>("beat-debug-toggle");
 
-function startBeatScene(): void {
+async function startBeatScene(): Promise<void> {
   const scene = new BeatEmUpScene(canvas, DIAGNOSTIC_STAGE, BEAT_PROJECTION,
     diagnosticScrollBounds(DIAGNOSTIC_STAGE, BEAT_PROJECTION), DIAGNOSTIC_ACTORS, "hero");
+  status.textContent = "Chargement des vrais personnages 3D riggés…";
+  try {
+    await scene.loadActorModels({ hero: "claudia", enemy: "realistic-man" });
+  } catch (error) {
+    scene.dispose();
+    throw error;
+  }
   const controls = new BeatControls(document.body);
   const resize = new ResizeObserver(() => scene.resize(viewport.clientWidth, viewport.clientHeight));
   resize.observe(viewport);
@@ -74,7 +81,7 @@ function startBeatScene(): void {
         `Vitesse Y ${hero.verticalVelocityMmPerTick} mm/tick · Appui ${hero.supportingPlatformId ?? "air"}\n` +
         `Cible ${hero.targetId ?? "aucune"} · Regard ${hero.facing > 0 ? "droite" : "gauche"}\n` +
         `Caméra : bords ${pinned} · ${scene.metrics.drawCalls} draws · ${scene.metrics.triangles} triangles`;
-      status.textContent = `Scène de diagnostic active · ${framesPerSecond} FPS · ` +
+      status.textContent = `Vrais rigs (pose source, sans animations de combat) · ${framesPerSecond} FPS · ` +
         (hero.targetId ? `menace : ${hero.targetId}` : "aucune menace proche");
     }
     requestAnimationFrame(frame);
@@ -91,12 +98,10 @@ function startBeatScene(): void {
   requestAnimationFrame(frame);
 }
 
-try {
-  startBeatScene();
-} catch (error) {
+void startBeatScene().catch(error => {
   window.__fightersBeatReady = false;
-  status.textContent = "Impossible d'initialiser WebGL sur ce navigateur ou appareil.";
+  status.textContent = "Impossible de charger les vrais rigs 3D ou d'initialiser WebGL.";
   diagnostics.textContent = String(error);
   diagnostics.hidden = false;
   toggle.setAttribute("aria-pressed", "true");
-}
+});
