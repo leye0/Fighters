@@ -197,7 +197,7 @@ try {
   async function press(key) {
     const map = {
       Enter: ['Enter', 13], Escape: ['Escape', 27], Tab: ['Tab', 9],
-      Backspace: ['Backspace', 8], ArrowUp: ['ArrowUp', 38],
+      Backspace: ['Backspace', 8], Space: ['Space', 32], ArrowUp: ['ArrowUp', 38],
       ArrowDown: ['ArrowDown', 40], ArrowLeft: ['ArrowLeft', 37],
       ArrowRight: ['ArrowRight', 39]
     };
@@ -209,6 +209,14 @@ try {
     const params = { key: key.startsWith('Key') ? key.slice(3).toLowerCase() : key, code, windowsVirtualKeyCode };
     await client.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', ...params });
     await client.send('Input.dispatchKeyEvent', { type: 'keyUp', ...params });
+  }
+  async function heldKey(key, down) {
+    const map = { ArrowLeft: 37, ArrowRight: 39, Space: 32 };
+    if (!Object.hasOwn(map, key)) throw new Error('Unsupported held QA key: ' + key);
+    await client.send('Input.dispatchKeyEvent', {
+      type: down ? 'rawKeyDown' : 'keyUp', key, code: key,
+      windowsVirtualKeyCode: map[key]
+    });
   }
   async function typeInto(selector, text) {
     if (typeof text !== 'string') throw new Error('Type action requires text');
@@ -250,7 +258,7 @@ try {
     if (url) {
       // A fighter-specific capture can require both GLB characters to be loaded.
       const requireFighters = process.env.WEBSUITE_REQUIRE_FIGHTERS === '1';
-      const readyExpression = "new Promise((done, fail) => { const started = performance.now(); function check() { if (window.__fightersVisualReady === true && (!" + requireFighters + " || window.__fightersAssetsReady === true)) done(true); else if (performance.now() - started > 8000) fail(new Error('Fighters did not render requested assets in time')); else setTimeout(check, 50); } check(); })";
+      const readyExpression = "new Promise((done, fail) => { const started = performance.now(); function check() { if (window.__fightersBeatReady === true || (window.__fightersVisualReady === true && (!" + requireFighters + " || window.__fightersAssetsReady === true))) done(true); else if (performance.now() - started > 20000) fail(new Error('Fighters did not render requested assets in time')); else setTimeout(check, 50); } check(); })";
       const result = await client.send('Runtime.evaluate', {
         expression: readyExpression,
         awaitPromise: true, returnByValue: true
@@ -270,6 +278,21 @@ try {
         case 'click': await click(step.selector); break;
         case 'type': await typeInto(step.selector, step.text); break;
         case 'press': await press(step.key); break;
+        case 'keyDown': await heldKey(step.key, true); break;
+        case 'keyUp': await heldKey(step.key, false); break;
+        case 'assert': {
+          if (typeof step.expression !== 'string' || step.expression.length > 1000) {
+            throw new Error('Expected concise QA assertion expression');
+          }
+          const result = await client.send('Runtime.evaluate', {
+            expression: step.expression, returnByValue: true
+          });
+          if (result.exceptionDetails || result.result?.value !== true) {
+            throw new Error('Browser QA assertion failed: ' + step.expression +
+              ' → ' + JSON.stringify(result.result?.value));
+          }
+          break;
+        }
         case 'wait':
           if (!Number.isInteger(step.ms) || step.ms < 0 || step.ms > 5000) throw new Error('wait.ms must be 0-5000');
           await pause(step.ms); break;
