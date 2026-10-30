@@ -38,6 +38,7 @@ button { font: inherit; cursor: pointer; }
 @media (max-width: 480px) { .beat-header { padding: 8px 10px; } .beat-header span { font-size: .62rem; } .beat-footer { font-size: .67rem; padding: 7px 10px; } .beat-watermark { font-size: .54rem; } .beat-diagnostics { font-size: .65rem; } }
 @media (orientation: landscape) and (max-height: 440px) {
   .beat-header { padding: 4px 12px; }
+  .beat-diagnostics { top: 8px; left: 8px; max-height: min(30dvh, 125px); max-width: min(480px, calc(100% - 16px)); font-size: .62rem; }
   .beat-header span { display: none; }
   .beat-footer { padding: 3px 10px; font-size: .62rem; }
   .beat-footer > span:last-of-type { display: none; }
