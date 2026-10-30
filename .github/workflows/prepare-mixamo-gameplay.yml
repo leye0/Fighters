@@ -20,6 +20,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # pinned clean GLBs are in previous history
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
@@ -82,5 +84,7 @@ jobs:
             echo "No gameplay motion changes."
           else
             git commit -m "Rebuild Mixamo motions with WarConquer inverse-bind retarget"
+            git fetch origin main
+            git rebase origin/main
             git push origin HEAD:main
           fi
