@@ -10,6 +10,10 @@ declare global {
   interface Window {
     __fightersBeatReady?: boolean;
     __fightersBeatTick?: number;
+    /** Read-only browser QA snapshot of the actual authoritative hero state. */
+    __fightersBeatHero?: { xMm: number; depthMm: number; heightMm: number;
+      facing: -1 | 1; verticalVelocityMmPerTick: number;
+      supportingPlatformId: string | null };
     __fightersBeatCamera?: { x: number; vertical: number; pinned: string[] };
   }
 }
@@ -107,6 +111,12 @@ async function startBeatScene(): Promise<void> {
     const camera = scene.render(previous, current, accumulator / tickDuration);
     window.__fightersBeatReady = true;
     window.__fightersBeatTick = current.tick;
+    const liveHero = current.actors.find(actor => actor.id === "hero")!;
+    window.__fightersBeatHero = {
+      xMm: liveHero.xMm, depthMm: liveHero.depthMm, heightMm: liveHero.heightMm,
+      facing: liveHero.facing, verticalVelocityMmPerTick: liveHero.verticalVelocityMmPerTick,
+      supportingPlatformId: liveHero.supportingPlatformId,
+    };
     window.__fightersBeatCamera = {
       x: camera.center.xMm, vertical: camera.center.verticalMm,
       pinned: Object.entries(camera.pinned).filter(([, pinned]) => pinned).map(([side]) => side),
