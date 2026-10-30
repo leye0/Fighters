@@ -98,9 +98,12 @@ async function startBeatScene(): Promise<void> {
         ...demoEnemyInputs(current, DIAGNOSTIC_STAGE),
         hero: controls.snapshot(),
       }, DIAGNOSTIC_STAGE);
+      // Animation and authored movement are advanced on EACH simulation tick.
+      // A 30 FPS display must not halve Mixamo gait speed by applying only the
+      // last of two physics ticks to a full render-frame elapsed time.
+      scene.updateAnimations(1 / 60, previous, current);
       accumulator -= tickDuration;
     }
-    scene.updateAnimations(elapsedMs / 1000, previous, current);
     const camera = scene.render(previous, current, accumulator / tickDuration);
     window.__fightersBeatReady = true;
     window.__fightersBeatTick = current.tick;
