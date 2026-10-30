@@ -6,8 +6,8 @@ Le projet **WarConquer** documente une source alternative utile : [bibliothèque
 
 - Ensemble de recherche documenté : **2 317 mouvements** sur squelette **YBot, 65 joints, 30 FPS**. Ce n'est ni une garantie de qualité visuelle ni une licence libre.
 - Index d'origine utilisés : [animation_motion_prompts.json](https://huggingface.co/datasets/Linzhan/Mixamo-Animations-Characters/blob/main/animation_motion_prompts.json) et [animation_motion_frames.json](https://huggingface.co/datasets/Linzhan/Mixamo-Animations-Characters/blob/main/animation_motion_frames.json).
-- **705 candidats de mouvements réels (non visionnés)**, noms et identifiants connus, ont été retenus pour Fighters dans [le catalogue vérifiable](../assets/mixamo-available-clips.json) : garde, déplacements, poings, enchaînements, coups de pied, spéciaux, défenses et réactions.
-- **7 FBX binaires ont été réellement téléchargés à titre de vérification technique**, dans un dossier privé temporaire hors dépôt, inspectés comme FBX et hachés en SHA-256 : `Fighting_Idle.fbx`, `Boxing_3.fbx`, `Boxing_7.fbx`, `Jab_Cross.fbx`, `Kicking_6.fbx`, `Mma_Kick_5.fbx`, `Punch_Combo.fbx`. Les empreintes sont dans le catalogue.
+- **471 candidats de mouvements réels (triés par nom ET description, non encore visionnés)**, noms et identifiants connus, ont été retenus pour Fighters dans [le catalogue vérifiable](../assets/mixamo-available-clips.json) : garde, déplacements, poings, enchaînements, coups de pied, spéciaux, défenses et réactions.
+- **11117 FBX binaires ont été réellement téléchargés à titre de vérification technique**, dans un dossier privé temporaire hors dépôt, inspectés comme FBX et hachés en SHA-256 : `Fighting_Idle.fbx`, `Boxing_3.fbx`, `Boxing_7.fbx`, `Jab_Cross.fbx`, `Kicking_6.fbx`, `Mma_Kick_5.fbx`, `Punch_Combo.fbx`. Les **117 empreintes** sont dans le catalogue.
 - **0 clip dans le produit jouable** ; acquisition technique et exploitation artistique/légale sont des étapes différentes.
 
 Ce miroir ne demande pas d'ouvrir Mixamo dans un navigateur. On peut donc récupérer les clips via script, sans page de connexion éphémère. Il n'est pas un site officiel Adobe ni une nouvelle licence indépendante.
@@ -46,8 +46,8 @@ L'étiquette du dataset est **`adobe-mixamo-terms`**, **pas CC0**. La [FAQ Adobe
 
 Pour passer des mouvements réels à un jeu photoréaliste :
 - [x] Retrouver une source de mouvements réelle utilisée par WarConquer.
-- [x] Établir l'inventaire de 705 animations nommées et identifiées.
-- [x] Vérifier un téléchargement privé de 7 FBX binaires avec SHA-256.
+- [x] Établir l'inventaire de 471 animations nommées et identifiées.
+- [x] Vérifier un téléchargement privé de 1111117 FBX binaires avec SHA-256.
 - [x] Ajouter un outil d'acquisition reproductible, sans dépendance ni action GitHub.
 - [ ] Confirmer les droits exacts du mode de distribution final et l'authenticité des fichiers sources retenus.
 - [ ] Convertir les FBX retenus en animations glTF, avec conservation des courbes et vitesse réelle.
@@ -63,4 +63,4 @@ Pour passer des mouvements réels à un jeu photoréaliste :
 - [Universal Animation Library de Quaternius](https://quaternius.com/packs/universalanimationlibrary2.html) : autre bibliothèque d'animations, sous licence CC0 selon l'auteur ; qualité à comparer avant emploi dans des personnages photoréalistes.
 - [Script et méthode WarConquer](https://github.com/leye0/WarConquer/blob/main/scripts/convert-mixamo-fbx.py) : référence technique de conversion FBX; ne copier aucune sortie tierce sans vérifier les droits.
 
-**Important :** les 705 noms sont des **candidats sélectionnés sur métadonnées** à partir des 2 317 entrées, pas 705 animations déjà approuvées. Certains clips seront retirés après visionnement de leur gestuelle. L'index vérifie des métadonnées et le FBX binaire vérifie son format; aucune de ces deux vérifications ne démontre encore qu'un clip est beau, exempt d'artefacts, ou utilisable sur un combattant. Le critère final est une lecture visuelle de l'animation retargetée dans Fighters.
+**Important :** les 471 noms sont des **candidats triés selon leurs descriptions réelles** à partir des 2 317 entrées, pas 471 animations déjà approuvées. La sélection précédente de 705 noms était trop large : 234 candidats mal adaptés (fusils, accessoires, mouvements hors arène, etc.) ont été retirés. Certains clips seront retirés après visionnement de leur gestuelle. L'index vérifie des métadonnées et le FBX binaire vérifie son format; aucune de ces deux vérifications ne démontre encore qu'un clip est beau, exempt d'artefacts, ou utilisable sur un combattant. Le critère final est une lecture visuelle de l'animation retargetée dans Fighters.

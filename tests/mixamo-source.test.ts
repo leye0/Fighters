@@ -5,7 +5,7 @@ import test from 'node:test';
 
 type Clip = {
   id: string; filename: string; motionId: string; sourcePath: string;
-  originalFrames: number; sourceFps: number; family: string;
+  originalFrames: number; sourceFps: number; family: string; sourceDescription: string;
   sha256: string | null; binaryChecked?: boolean; runtimeStatus: string;
   licenseReview: string; animationReview: string;
 };
@@ -17,10 +17,14 @@ const catalog = JSON.parse(readFileSync(new URL('../assets/mixamo-available-clip
   clips: Clip[];
 };
 
-test('catalog contains 705 indexed Mixamo motion candidates, with valid source metadata', () => {
+test('catalog contains 471 indexed Mixamo motion candidates, with valid source metadata', () => {
   assert.equal(catalog.schemaVersion, 1);
-  assert.equal(catalog.clips.length, 705);
+  assert.equal(catalog.clips.length, 471);
   assert.equal(catalog.selection.totalIndexedHere, catalog.clips.length);
+  assert.equal(catalog.selection.broaderNameOnlyCandidatesDiscarded, 234);
+  assert.equal(catalog.clips.some(c => c.filename === 'Walking_14.fbx'), true);
+  assert.equal(catalog.clips.some(c => c.filename === 'Walking_20.fbx'), true);
+  assert.equal(catalog.clips.some(c => c.filename === 'Walking_17.fbx'), false);
   assert.equal(new Set(catalog.clips.map(c => c.family)).size >= 10, true);
   assert.equal(new Set(catalog.clips.map(c => c.filename)).size, catalog.clips.length);
   assert.equal(new Set(catalog.clips.map(c => c.id)).size, catalog.clips.length);
@@ -29,6 +33,7 @@ test('catalog contains 705 indexed Mixamo motion candidates, with valid source m
     assert.equal(clip.sourcePath, catalog.source.folder + clip.filename);
     assert.match(clip.motionId, /^[a-f0-9-]{36}$/);
     assert.ok(clip.originalFrames > 0);
+    assert.ok(clip.sourceDescription.trim().length > 0);
     assert.equal(clip.sourceFps, 30);
     assert.ok(clip.family.length > 0);
   }
@@ -38,8 +43,8 @@ test('research downloads are checked separately from playable animations', () =>
   assert.equal(catalog.source.license, 'adobe-mixamo-terms');
   assert.equal(catalog.source.rawRedistributionInPublicRepoAllowed, false);
   assert.equal(catalog.selection.convertedIntoRuntime, 0);
-  assert.equal(catalog.clips.filter(c => c.binaryChecked).length, 7);
-  assert.equal(catalog.selection.binaryFbxVerifiedInPrivateResearch, 7);
+  assert.equal(catalog.clips.filter(c => c.binaryChecked).length, 117);
+  assert.equal(catalog.selection.binaryFbxVerifiedInPrivateResearch, 117);
   for (const clip of catalog.clips) {
     assert.equal(clip.runtimeStatus, 'not_integrated');
     assert.equal(clip.licenseReview, 'pending_for_integration');

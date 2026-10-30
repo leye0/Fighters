@@ -38,7 +38,7 @@ Le document directeur est **docs/production-plan.md**. Le consulter avant toute 
 
 ## Sources Mixamo WarConquer (réel, pas théorique)
 
-- Consulter [docs/mixamo-real-sources.md](docs/mixamo-real-sources.md) et [assets/mixamo-available-clips.json](assets/mixamo-available-clips.json) : 705 clips identifiés dans des index réels, 7 FBX binaires téléchargés/hachés en privé.
+- Consulter [docs/mixamo-real-sources.md](docs/mixamo-real-sources.md) et [assets/mixamo-available-clips.json](assets/mixamo-available-clips.json) : 471 candidats triés sur noms et descriptions dans les index réels, 11117 FBX binaires téléchargés/hachés en privé.
 - Le script `scripts/acquire-mixamo.py` acquiert les sources dans une destination **hors repo Git public**. Ne pas committer les FBX bruts ni les GLB de clips isolés à droits incertains.
 - Ces clips **ne sont pas validés pour le jeu** : `assets/animation-inventory.json` reste vide. Seuls des clips légalement vérifiés, retargetés, visionnés et avec frames de contact mesurées autorisent un coup jouable.
 - Ne pas dépendre d'un transfert de navigateur Adobe fragile pour les essais techniques. Préserver la provenance Adobe; le miroir tiers ne crée aucune autorisation nouvelle.
