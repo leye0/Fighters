@@ -205,7 +205,7 @@ export function retargetBindPoseClip(targetData, sourceData, clipName) {
         // WarConquer formula: source animated WORLD delta from TRUE bind,
         // applied to target WORLD bind, then solved back into target local.
         const delta = sourcePoseWorld[sourceIndex].clone().multiply(sourceBind.get(sourceIndex).clone().invert());
-        const desired = delta.multiply(targetBind.get(i));
+        const desired = delta.multiply(targetStaticWorld[i]);
         local = parentWorld.clone().invert().multiply(desired).normalize();
         samples.get(i).push(local.toArray());
       }
@@ -234,7 +234,7 @@ export function retargetBindPoseClip(targetData, sourceData, clipName) {
   }
   const clip = new AnimationClip(clipName, duration, jointClips);
   const audit = { mappedJoints: pairs.size, duration, frames, initialUpperArmOffsetDegrees: shoulders,
-    sourceRest: "skin.inverseBindMatrices", targetRest: "skin.inverseBindMatrices",
+    sourceRest: "skin.inverseBindMatrices", targetRest: "target node hierarchy (WarConquer reference)",
     strategy: "WarConquer world-space inverse-bind-relative retarget (not frame-zero subtraction)",
     maxJointRotationDegrees: Math.round(Math.max(...[...samples].flatMap(([i, q]) => {
       const first = new Quaternion().fromArray(q[0]);
