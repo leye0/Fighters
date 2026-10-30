@@ -24,7 +24,7 @@ test('catalog contains 103 indexed Mixamo motions, with valid source metadata', 
   assert.equal(new Set(catalog.clips.map(c => c.filename)).size, 103);
   assert.equal(new Set(catalog.clips.map(c => c.id)).size, 103);
   for (const clip of catalog.clips) {
-    assert.match(clip.filename, /^[A-Za-z0-9_.-]+\\.fbx$/);
+    assert.match(clip.filename, /^[A-Za-z0-9_.-]+\.fbx$/);
     assert.equal(clip.sourcePath, catalog.source.folder + clip.filename);
     assert.match(clip.motionId, /^[a-f0-9-]{36}$/);
     assert.ok(clip.originalFrames > 0);
@@ -55,7 +55,7 @@ test('no raw Mixamo FBX is stored in tracked asset folders', () => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       const target = path.join(dir, entry.name);
       if (entry.isDirectory()) walk(target);
-      else assert.equal(/\\.fbx$/i.test(entry.name), false, `forbidden public FBX: ${target}`);
+      else assert.equal(/\.fbx$/i.test(entry.name), false, `forbidden public FBX: ${target}`);
     }
   }
   walk(assetRoot);
