@@ -3,6 +3,26 @@
   "steps": [
     {
       "action": "assert",
+      "expression": "document.querySelector('#beat-diagnostics').hidden===true && document.querySelector('#beat-debug-toggle').getAttribute('aria-expanded')==='false'"
+    },
+    {
+      "action": "click",
+      "selector": "#beat-debug-toggle"
+    },
+    {
+      "action": "assert",
+      "expression": "document.querySelector('#beat-diagnostics').hidden===false && document.querySelector('#beat-debug-toggle').getAttribute('aria-expanded')==='true'"
+    },
+    {
+      "action": "click",
+      "selector": "#beat-debug-toggle"
+    },
+    {
+      "action": "assert",
+      "expression": "document.querySelector('#beat-diagnostics').hidden===true && document.querySelector('#beat-debug-toggle').textContent==='Stats'"
+    },
+    {
+      "action": "assert",
       "expression": "window.__fightersBeatReady === true && window.__fightersBeatHero?.facing === 1"
     },
     {
