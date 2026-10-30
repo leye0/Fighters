@@ -51,6 +51,31 @@ export function jumpSourcePoseWindow(phase: number):
   return { a: 0.89 + (phase - 0.84) * (0.11 / 0.16), b: 0, blend: 0 };
 }
 
+/** Sample a real GLB quaternion keyframe track with normalized slerp.
+ * The imported gameplay clips use LINEAR glTF quaternion interpolation.
+ * Avoid relying on private Three.js interpolant methods or type definitions.
+ */
+export function sampleMixamoQuaternion(track: QuaternionKeyframeTrack, time: number): Quaternion {
+  const times = track.times;
+  if (!times.length || !Number.isFinite(time)) {
+    throw new Error("Invalid Mixamo quaternion track sample time");
+  }
+  const frame = (index: number) =>
+    new Quaternion().fromArray(track.values, index * 4).normalize();
+  if (time <= times[0]) return frame(0);
+  const last = times.length - 1;
+  if (time >= times[last]) return frame(last);
+  let low = 0, high = last;
+  while (high - low > 1) {
+    const mid = (low + high) >> 1;
+    if (times[mid] <= time) low = mid;
+    else high = mid;
+  }
+  const duration = times[high] - times[low];
+  if (duration <= 0) throw new Error("Invalid Mixamo quaternion track timeline");
+  return frame(low).slerp(frame(high), (time - times[low]) / duration).normalize();
+}
+
 /** Build once per rig; all output tracks are quaternion samples from genuine
  * Mixamo keyframes or slerp between two such samples.
  */
@@ -65,9 +90,8 @@ export function makeArcadeJumpClip(source: AnimationClip): AnimationClip {
     if (!(track instanceof QuaternionKeyframeTrack)) {
       throw new Error("Unexpected non-quaternion bone track in Mixamo jump");
     }
-    const interp = track.createInterpolant();
-    const poseAt = (fraction: number) => new Quaternion().fromArray(
-      interp.evaluate(source.duration * fraction)).normalize();
+    const poseAt = (fraction: number) =>
+      sampleMixamoQuaternion(track, source.duration * fraction);
     const values: number[] = [];
     for (const time of timeline) {
       const { a, b, blend } = jumpSourcePoseWindow(time / source.duration);
