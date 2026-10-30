@@ -14,6 +14,10 @@
       "expression": "JSON.stringify(window.__fightersBeatActorBounds)"
     },
     {
+      "action": "assert",
+      "expression": "Array.isArray(window.__fightersBeatActorBounds) && window.__fightersBeatActorBounds.length === 3 && window.__fightersBeatActorBounds.every(a => a.visible && a.skinnedMeshes > 0 && a.height > 1 && a.height < 2.2 && Math.abs(a.centerNdcX) < 1 && Math.abs(a.centerNdcY) < 1)"
+    },
+    {
       "action": "screenshot",
       "name": "01-idle"
     },
@@ -48,6 +52,10 @@
     {
       "action": "wait",
       "ms": 1300
+    },
+    {
+      "action": "logExpr",
+      "expression": "JSON.stringify({hero:window.__fightersBeatHero,rightX:window.__qaRightX,bounds:window.__fightersBeatActorBounds})"
     },
     {
       "action": "assert",
