@@ -11,7 +11,7 @@
     <main class="beat-shell">
       <header class="beat-header">
         <div><strong>FIGHTERS</strong><span> · BEAT’EM UP 3D</span></div>
-        <button type="button" id="beat-debug-toggle" aria-pressed="true">Diagnostics</button>
+        <button type="button" id="beat-debug-toggle" aria-controls="beat-diagnostics" aria-expanded="false">Stats</button>
       </header>
       <section id="beat-viewport" class="beat-viewport" aria-label="Niveau de diagnostic en trois dimensions">
         <canvas id="beat-canvas" aria-label="Parcours 3D à défilement latéral"></canvas>
@@ -25,7 +25,7 @@
           </div>
         </div>
         <div class="beat-watermark">GÉOMÉTRIE ET ACTEURS DE DIAGNOSTIC · PAS LE JEU FINAL</div>
-        <pre id="beat-diagnostics" class="beat-diagnostics" aria-live="off"></pre>
+        <pre id="beat-diagnostics" class="beat-diagnostics" aria-live="off" hidden></pre>
         <div class="beat-mobile-controls" aria-label="Commandes tactiles">
           <div class="beat-direction-pad">
             <button data-beat-key="ArrowUp" class="up" aria-label="Aller en profondeur">↑</button>
