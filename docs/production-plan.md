@@ -16,6 +16,14 @@
 >
 > **Archives :** [plan historique du duel/arène](production-plan-arena-archive.md) conservé à titre de trace, mais ses rounds, six boutons imposés et règles compétitives ne dirigent plus ce produit. Voir aussi [l’architecture beat’em up](beat-em-up-architecture.md) et [la politique animation-first](animation-first.md).
 
+## Incident de retargeting Mixamo — rendu iPhone du 30 octobre 2026
+
+**Régression observée par Léon :** la démo publiée avec le premier pack `21582972` déforme gravement Claudia (tronc couché, bras et jambes hors orientation), malgré des tests qui confirmaient seulement des os en mouvement. **Ne pas présenter cette version comme jouable ni visuellement validée.**
+
+**Cause technique diagnostiquée :** le pipeline Fighters utilisait `SkeletonUtils.retargetClip` sans reconstruire le mouvement relativement aux `inverseBindMatrices`. Le pipeline WarConquer `scripts/build-mixamo-playable.py` avait déjà résolu le problème des FBX dont les rotations par défaut représentent une première image animée, et non la vraie bind pose.
+
+**Correctif en cours de validation :** `scripts/retarget-mixamo-bind.mjs` reprend le calcul WarConquer (delta de rotation monde relatif à la vraie bind pose, puis résolution parent→enfant des quaternions locaux du rig cible). L'Action repart des **GLB originaux propres** du commit `8979a7f`, sans réutiliser les anciens clips déformés. `check-baked-gameplay-motion.mjs` impose désormais des contrôles tête/bassin/pieds sur plusieurs instants de garde, marche et demi-tour. Le runtime refuse explicitement les anciens assets dépourvus du marqueur `warconquer-inverse-bind-world-v1`. La requête de reconstruction finale a été poussée à `a53fef6`. **Ne cocher la réparation comme terminée qu'après réussite de l'Action ET inspection des postures réellement rendues**, séparées de l'analyse numérique.
+
 ## Situation actuelle — preuves et limites
 
 | Système | Acquis vérifié | Pas encore accompli |
