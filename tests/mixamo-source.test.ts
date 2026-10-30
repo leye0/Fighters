@@ -15,7 +15,7 @@ const root = new URL('../', import.meta.url);
 const catalog = JSON.parse(readFileSync(new URL('../assets/mixamo-available-clips.json', import.meta.url), 'utf8')) as {
   schemaVersion: number;
   source: { license: string; rawRedistributionInPublicRepoAllowed: boolean; folder: string };
-  selection: { totalIndexedHere: number; convertedIntoRuntime: number; binaryFbxVerifiedInPrivateResearch: number };
+  selection: { totalIndexedHere: number; convertedIntoRuntime: number; binaryFbxVerifiedInPrivateResearch: number; broaderNameOnlyCandidatesDiscarded: number; researchGlbConverted: number; researchGlbFailed: number; researchGlbTotalBytes: number; sourceFbxMissingForFullResearchSet: number };
   clips: Clip[];
 };
 
@@ -45,11 +45,14 @@ test('research downloads are checked separately from playable animations', () =>
   assert.equal(catalog.source.license, 'adobe-mixamo-terms');
   assert.equal(catalog.source.rawRedistributionInPublicRepoAllowed, false);
   assert.equal(catalog.selection.convertedIntoRuntime, 0);
-  assert.equal(catalog.selection.researchGlbConverted, 158);
+  const verified = catalog.clips.filter(c => c.binaryChecked);
+  const converted = catalog.clips.filter(c => c.researchConversionStatus === 'validated_private_glb');
+  assert.equal(catalog.selection.researchGlbConverted, converted.length);
   assert.equal(catalog.selection.researchGlbFailed, 0);
-  assert.equal(catalog.selection.sourceFbxMissingForFullResearchSet, 313);
-  assert.equal(catalog.clips.filter(c => c.binaryChecked).length, 158);
-  assert.equal(catalog.selection.binaryFbxVerifiedInPrivateResearch, 158);
+  assert.equal(catalog.selection.sourceFbxMissingForFullResearchSet, catalog.clips.length - verified.length);
+  assert.equal(catalog.selection.binaryFbxVerifiedInPrivateResearch, verified.length);
+  assert.equal(converted.length, verified.length, 'every acquired candidate must have a validated research GLB');
+  assert.equal(catalog.selection.researchGlbTotalBytes, converted.reduce((bytes, c) => bytes + (c.researchGlb?.bytes ?? 0), 0));
   for (const clip of catalog.clips) {
     assert.equal(clip.runtimeStatus, 'not_integrated');
     assert.equal(clip.licenseReview, 'pending_for_integration');
