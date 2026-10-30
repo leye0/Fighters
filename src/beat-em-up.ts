@@ -10,6 +10,8 @@ declare global {
   interface Window {
     __fightersBeatReady?: boolean;
     __fightersBeatTick?: number;
+    /** Freeze simulation/animation for repeatable screenshots, only with ?qa. */
+    __fightersBeatFreeze?: boolean;
     /** Read-only browser QA snapshot of the actual authoritative hero state. */
     __fightersBeatActorBounds?: ReadonlyArray<{ id: string; width: number;
       height: number; centerNdcX: number; centerNdcY: number;
@@ -93,6 +95,16 @@ async function startBeatScene(): Promise<void> {
       accumulator = 0;
       window.__fightersBeatReady = false;
       status.textContent = "Mode paysage requis : tourne ton téléphone pour continuer.";
+      requestAnimationFrame(frame);
+      return;
+    }
+    if (new URLSearchParams(location.search).has("qa") && window.__fightersBeatFreeze) {
+      // The GPU/software renderer can take several seconds per capture.
+      // Freeze game time so snapshots show the exact tested pose and controls
+      // do not keep moving under a long screenshot operation.
+      lastTime = now;
+      accumulator = 0;
+      scene.render(current, current, 0);
       requestAnimationFrame(frame);
       return;
     }
