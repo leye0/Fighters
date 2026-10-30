@@ -108,18 +108,44 @@ test("leaving a roof starts an actual fall and lands on the street, not a telepo
   assert.equal(world.actors[0].supportingPlatformId, "street");
 });
 
-test("hero faces a nearby enemy even while retreating; loses lock only beyond release", () => {
-  let world = createBeatWorld(stage, [actor("hero", 0, { facing: -1 }), actor("enemy", 1100, { depthMm: 600 })]);
+test("enemy never controls facing: only explicit left/right input turns the hero", () => {
+  let world = createBeatWorld(stage, [
+    actor("hero", 0, { facing: -1 }),
+    actor("enemy", 1100, { depthMm: 600 }),
+  ]);
   world = step(world);
-  assert.equal(world.actors[0].targetId, "enemy");
-  assert.equal(world.actors[0].facing, 1);
+  assert.equal(world.actors[0].targetId, "enemy", "target metadata remains available to combat");
+  assert.equal(world.actors[0].facing, -1, "idle must not turn toward an enemy");
   world = step(world, { hero: { horizontal: -1, depth: 0, jump: false } });
-  assert.equal(world.actors[0].facing, 1);
+  assert.equal(world.actors[0].facing, -1, "left must always face left");
   assert.equal(world.actors[0].xMm, -150);
+  world = step(world, { hero: { horizontal: 1, depth: 0, jump: false } });
+  assert.equal(world.actors[0].facing, 1, "right must always face right even if target is behind");
+  world = step(world);
+  assert.equal(world.actors[0].facing, 1, "releasing direction preserves last chosen facing");
   for (let i = 0; i < 8; i++) {
     world = step(world, { hero: { horizontal: -1, depth: 0, jump: false } });
+    assert.equal(world.actors[0].facing, -1, "moving left never locks toward enemy");
   }
-  assert.equal(world.actors[0].targetId, null);
+  assert.equal(world.actors[0].targetId, null, "target selection still releases at the proper range");
+});
+
+test("crossing and circling enemies cannot toggle facing without player command", () => {
+  let world = createBeatWorld(stage, [
+    actor("hero", 0, { facing: 1 }),
+    actor("enemy-a", -850),
+    actor("enemy-b", 850),
+  ]);
+  for (let i = 0; i < 20; i++) {
+    const inputs = {
+      "enemy-a": { horizontal: 1 as const, depth: 0 as const, jump: false },
+      "enemy-b": { horizontal: -1 as const, depth: 0 as const, jump: false },
+    };
+    world = step(world, inputs);
+    assert.equal(world.actors[0].facing, 1,
+      "hostile movement and retargeting cannot change visual facing");
+  }
+  world = step(world, { hero: { horizontal: -1, depth: 0, jump: false } });
   assert.equal(world.actors[0].facing, -1);
 });
 
