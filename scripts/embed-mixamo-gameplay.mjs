@@ -105,7 +105,8 @@ export function embedClip(sourceBinary, clip, name) {
       count: values.length / size, type, ...(min ? { min, max } : {}) }) - 1;
   };
 
-  const animation = { name, samplers: [], channels: [] };
+  const animation = { name, samplers: [], channels: [],
+    extras: { retargeting: "warconquer-inverse-bind-world-v1" } };
   for (const track of clip.tracks) {
     const match = /^\.bones\[([^\]]+)\]\.quaternion$/.exec(track.name);
     if (!match) throw Error(`Unexpected non-quaternion animation track: ${track.name}`);
