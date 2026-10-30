@@ -1,9 +1,17 @@
 {
-  "url": "http://127.0.0.1:4173/site/beat-em-up.html",
+  "url": "http://127.0.0.1:4173/site/beat-em-up.html?qa=1",
   "steps": [
     {
       "action": "assert",
       "expression": "window.__fightersBeatReady === true && window.__fightersBeatHero?.facing === 1"
+    },
+    {
+      "action": "wait",
+      "ms": 550
+    },
+    {
+      "action": "logExpr",
+      "expression": "JSON.stringify(window.__fightersBeatActorBounds)"
     },
     {
       "action": "screenshot",
@@ -20,6 +28,10 @@
     {
       "action": "assert",
       "expression": "window.__fightersBeatHero?.facing === 1 && (window.__qaRightX=window.__fightersBeatHero.xMm) > -10700"
+    },
+    {
+      "action": "logExpr",
+      "expression": "JSON.stringify(window.__fightersBeatActorBounds)"
     },
     {
       "action": "screenshot",
