@@ -1,6 +1,9 @@
 name: Publish Fighters animation review
 
 on:
+  workflow_run:
+    workflows: ["Prepare real character GLB for browser"]
+    types: [completed]
   push:
     branches: [main]
     paths:
@@ -20,6 +23,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: ${{ github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     environment:

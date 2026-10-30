@@ -24,7 +24,7 @@ Le joueur avance et recule librement. Lorsqu’un ennemi pertinent est proche, l
 
 Le héros se trouve au **centre exact de l’image** tant que la caméra peut se déplacer. La caméra suit la projection du héros sur les deux axes écran : X (progression) et axe vertical projeté (hauteur Y + éventuelle profondeur Z). Les limites de chaque section forment un rectangle de scrolling ; on **borne le centre caméra** avec la demi-largeur et la demi-hauteur visibles. Quand la caméra atteint le bord gauche, droit, haut ou bas, le héros continue vers ce bord de l’image tandis que le décor cesse de défiler sur cet axe. Une autre dimension peut continuer à défiler indépendamment ; aux coins, les deux s’arrêtent. Si le niveau est plus petit que l’écran, on cadre le niveau entier sans mouvement inutile.
 
-Le calcul pur est dans `src/render/beat-scroll-camera.ts`, testé pour les quatre frontières, les coins, les petits espaces et le portrait. **Son branchement sur la vraie caméra Three.js et ses bornes de perspective reste à faire** : ce n’est pas encore une vérification visuelle.
+Le calcul pur est dans `src/render/beat-scroll-camera.ts`, testé pour les quatre frontières, les coins, les petits espaces et le portrait. L'adaptateur PerspectiveCamera (`beat-camera-three.ts`) est maintenant raccordé à la scène diagnostique et testé numériquement en projection réelle. **L'inspection visuelle sur appareil reste à faire.**
 
 ## Repère déterministe, 60 ticks/s
 
@@ -70,7 +70,8 @@ Les trois valeurs sont en **millimètres entiers** dans la simulation. La camér
 - **Acquis :** `src/engine/beat-em-up-world.ts` : déplacement entier X/profondeur, diagonales normalisées, appui sur des surfaces de hauteurs différentes, saut/chute, blocage des hautes marches, acquisition d’une cible proche avec hystérésis, orientation gauche/droite indépendante du déplacement, ennemis multiples ; tests de simulation.
 - **Acquis :** `src/render/beat-scroll-camera.ts` : centrage logique exact et quatre frontières indépendantes, neuf tests ; rendu Three.js pas encore connecté.
 - **Acquis :** [63 animations source retenues par Léon](../assets/mixamo-selected.json), avec identité et empreintes. Le script `scripts/pack-selected-mixamo.py` sait construire depuis 63 GLB privés **un seul GLB YBot de recherche** à 63 noms distincts en ne recopiant que les canaux d’animation et une seule géométrie source.
-- **Pas encore fait :** connexion de ce monde aux contrôles/rendu/états de combat de production, hitboxes/hurtboxes de coups, rebords complexes, escalade contextuelle animée, navigation des IA et retargeting sur personnages photoréalistes. **Les collisions solides entre acteurs sont volontairement exclues**, pas « manquantes ».
+- **Acquis depuis le pivot :** le noyau X/Z/Y et la caméra sont branchés à une scène Three.js avec contrôles clavier/manette/tactiles ; la scène a maintenant un chargeur de véritables rigs GLB et des plateformes 3D géométriques.
+- **Pas encore fait :** états de combat de production, hitboxes/hurtboxes de coups, rebords complexes, escalade contextuelle animée, navigation des IA, retargeting et validation visuelle des rigs. **Les collisions solides entre acteurs sont volontairement exclues**, pas « manquantes ».
 - **Pas encore certifié :** rendu sur les personnages définitifs, retargeting, appuis de pieds, transitions, contacts et compatibilité des mélanges marche/frappe/saut. Les tests d’assemblage de GLB utilisent des fichiers synthétiques ; les 63 vrais fichiers doivent encore être réacquis pour un test réel de pack.
 - **Historique maintenu :** `src/engine/simulation.ts` et les tests 1v1 prouvent certains comportements de combat à 60 Hz, mais ne définissent plus la géométrie ou la limite d’acteurs du jeu final.
 

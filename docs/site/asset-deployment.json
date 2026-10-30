@@ -1,0 +1,6 @@
+{
+  "purpose": "Agent-triggered Pages publish after real character conversion",
+  "sourceCommit": "4da42b1ef0b7d204874f5d28ac81aec1fc328a89",
+  "models": ["claudia", "carla", "realistic-man"],
+  "date": "2026-10-30"
+}
