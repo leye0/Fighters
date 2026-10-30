@@ -48,6 +48,37 @@ test("horizontal travel, depth and diagonal movement are independent of facing",
   assert.throws(() => step(world, { hero: { horizontal: 5 as 1, depth: 0, jump: false } }), /Invalid beat/);
 });
 
+test("optional old-school physics accelerates, coasts, brakes and still uses real jump gravity", () => {
+  const tuned = { ...stage, movement: {
+    groundAccelerationMmPerTick2: 12, groundBrakingMmPerTick2: 8,
+    airAccelerationMmPerTick2: 5, airBrakingMmPerTick2: 3,
+  } };
+  let world = createBeatWorld(tuned, [actor("hero", 0, { speedMmPerTick: 30 })]);
+  const forward = { hero: { horizontal: 1 as const, depth: 0 as const, jump: false } };
+  world = stepBeatWorld(world, forward, tuned);
+  assert.equal(world.actors[0].xMm, 12);
+  world = stepBeatWorld(world, forward, tuned);
+  assert.equal(world.actors[0].xMm, 36);
+  world = stepBeatWorld(world, forward, tuned);
+  assert.equal(world.actors[0].velocityXMmPerTick, 30);
+  const beforeRelease = world.actors[0].xMm;
+  world = stepBeatWorld(world, {}, tuned);
+  assert.equal(world.actors[0].velocityXMmPerTick, 22);
+  assert.equal(world.actors[0].xMm, beforeRelease + 22);
+  for (let i = 0; i < 3; i++) world = stepBeatWorld(world, {}, tuned);
+  assert.equal(world.actors[0].velocityXMmPerTick, 0);
+  const atRest = world.actors[0].xMm;
+  world = stepBeatWorld(world, {}, tuned);
+  assert.equal(world.actors[0].xMm, atRest);
+  world = stepBeatWorld(world, { hero: { horizontal: 0, depth: 0, jump: true } }, tuned);
+  assert.equal(world.actors[0].supportingPlatformId, null);
+  assert.equal(world.actors[0].verticalVelocityMmPerTick, 240);
+  assert.equal(world.actors[0].heightMm, 240);
+  assert.throws(() => validateBeatStage({ ...tuned, movement: {
+    ...tuned.movement, airBrakingMmPerTick2: 0,
+  } }), /movement\.airBraking/);
+});
+
 test("a raised dumpster blocks walking but permits jumping onto its real top surface", () => {
   let world = createBeatWorld(stage, [actor("hero", 850)]);
   world = step(world, { hero: { horizontal: 1, depth: 0, jump: false } });

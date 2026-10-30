@@ -23,7 +23,8 @@ export function mixamoBoneForRigBone(
 ): string | undefined {
   // Both glTF exporters suffix names with numbers that vary per asset.
   const semantic = targetName.replace(/_\d+$/, "");
-  const suffix = boneEquivalents[semantic];
+  const suffix = semantic.startsWith("mixamorig")
+    ? semantic.replace(/^mixamorig:?/, "") : boneEquivalents[semantic];
   if (!suffix) return undefined;
   // Three.js GLTFLoader sanitizes ':' in node names (mixamorig:Hips ->
   // mixamorigHips); other loaders may preserve the original spelling.

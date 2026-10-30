@@ -1,13 +1,14 @@
 :root { font-family: system-ui, -apple-system, Segoe UI, sans-serif; color: #e9f0fa; background: #0d1320; }
 * { box-sizing: border-box; }
-body { margin: 0; overscroll-behavior: none; }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; }
+.beat-shell { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 button { font: inherit; cursor: pointer; }
-.beat-shell { display: flex; flex-direction: column; height: 100dvh; min-height: 360px; }
+.beat-shell { display: flex; flex-direction: column; height: 100dvh; min-height: 0; overflow: hidden; }
 .beat-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; background: #101b2d; border-bottom: 1px solid #33455c; }
 .beat-header strong { letter-spacing: .14em; color: #85d8f5; }
 .beat-header span { font-size: .76rem; color: #b6c2d2; }
 .beat-header button { border: 1px solid #60748b; border-radius: 6px; padding: 6px 11px; color: #e9f0fa; background: #22324b; }
-.beat-viewport { position: relative; flex: 1; min-height: 0; overflow: hidden; background: #141c2b; }
+.beat-viewport { position: relative; flex: 1; min-height: 0; overflow: hidden; background: #141c2b; touch-action: none; }
 #beat-canvas { width: 100%; height: 100%; display: block; touch-action: none; }
 .beat-watermark { position: absolute; top: 12px; left: 12px; max-width: calc(100% - 24px); font-size: .63rem; letter-spacing: .08em; color: #f1dcb4; background: #182335dd; padding: 7px 9px; pointer-events: none; }
 .beat-diagnostics { position: absolute; top: 44px; left: 12px; margin: 0; padding: 10px; border-radius: 5px; font: .76rem/1.65 ui-monospace, monospace; white-space: pre-wrap; background: #101927d9; color: #c6e4eb; pointer-events: none; max-width: calc(100% - 24px); }
@@ -18,6 +19,14 @@ button { font: inherit; cursor: pointer; }
 .beat-direction-pad { width: 156px; height: 156px; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); }
 .beat-mobile-controls button { pointer-events: auto; touch-action: none; border: 1px solid #aec6d880; border-radius: 12px; background: #2b425bc9; color: white; font-size: 1.4rem; font-weight: 700; user-select: none; -webkit-user-select: none; }
 .beat-mobile-controls button:active { background: #68aaca; }
+.beat-orientation-gate { display: none; position: absolute; z-index: 20; inset: 0; background: #0d1422f5; align-items: center; justify-content: center; padding: 22px; text-align: center; pointer-events: auto; }
+.beat-orientation-card { max-width: 340px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.beat-rotate-icon { font-size: 3.2rem; color: #85d8f5; line-height: 1; }
+.beat-orientation-card strong { font-size: 1.4rem; color: #f4f7fa; }
+.beat-orientation-card p { margin: 0; color: #d4dfea; }
+.beat-orientation-card small { color: #9aaabb; }
+.beat-orientation-card button { background: #235a82; color: white; border: 1px solid #85d8f5; border-radius: 8px; font-weight: bold; padding: 11px 15px; }
+@media (orientation: portrait) { .beat-orientation-gate { display: flex; } .beat-mobile-controls { visibility: hidden; } }
 .beat-direction-pad .up { grid-column: 2; grid-row: 1; }
 .beat-direction-pad .left { grid-column: 1; grid-row: 2; }
 .beat-direction-pad .down { grid-column: 2; grid-row: 3; }
@@ -27,3 +36,14 @@ button { font: inherit; cursor: pointer; }
 .beat-drop { min-width: 75px; height: 48px; margin-bottom: 20px; padding: 0 8px; font-size: .63rem !important; }
 @media (min-width: 900px) and (pointer: fine) { .beat-mobile-controls { opacity: .4; } }
 @media (max-width: 480px) { .beat-header { padding: 8px 10px; } .beat-header span { font-size: .62rem; } .beat-footer { font-size: .67rem; padding: 7px 10px; } .beat-watermark { font-size: .54rem; } .beat-diagnostics { font-size: .65rem; } }
+@media (orientation: landscape) and (max-height: 440px) {
+  .beat-header { padding: 4px 12px; }
+  .beat-header span { display: none; }
+  .beat-footer { padding: 3px 10px; font-size: .62rem; }
+  .beat-footer > span:last-of-type { display: none; }
+  .beat-mobile-controls { bottom: 5px; }
+  .beat-direction-pad { width: 120px; height: 120px; }
+  .beat-mobile-controls button { font-size: 1.05rem; border-radius: 8px; }
+  .beat-jump { width: 65px; height: 65px; margin: 0 2px 0 0; }
+  .beat-drop { min-width: 60px; height: 36px; margin-bottom: 6px; }
+}

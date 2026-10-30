@@ -11,6 +11,7 @@ import { makeBeatCamera, placeBeatCamera } from "./beat-camera-three.ts";
 import { CHARACTER_MODEL_FILES, fitRigToActor, requireSkinnedRig,
   type AcquiredCharacterKey } from "./rigged-character.ts";
 import { playEmbeddedMotion, retargetEmbeddedMotion } from "./character-motion.ts";
+import { BeatCharacterAnimator, canAnimateRealGameMotions } from "./beat-character-animator.ts";
 
 const meters = (mm: number): number => mm / 1000;
 
@@ -21,11 +22,13 @@ export class BeatEmUpScene {
   readonly renderer: WebGLRenderer;
   private readonly visuals = new Map<string, Group>();
   private readonly mixers = new Map<string, AnimationMixer>();
+  private readonly gameAnimators = new Map<string, BeatCharacterAnimator>();
   private readonly stage: BeatStage;
   private readonly projection: WorldToScreenProjection;
   private readonly bounds: ScrollBounds;
   private readonly heroId: string;
   private readonly actorIds: readonly string[];
+  private readonly initialActors: readonly BeatActor[];
   private readonly viewportCanvas: HTMLCanvasElement;
 
   constructor(canvas: HTMLCanvasElement, stage: BeatStage, projection: WorldToScreenProjection,
@@ -35,6 +38,7 @@ export class BeatEmUpScene {
     this.bounds = bounds;
     this.heroId = heroId;
     this.actorIds = actors.map(actor => actor.id);
+    this.initialActors = actors;
     this.viewportCanvas = canvas;
     this.renderer = new WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -105,15 +109,30 @@ export class BeatEmUpScene {
         }
       });
       visual.add(holder);
-      const mixer = isHero
-        ? retargetEmbeddedMotion(clone, enemySource, sourceAnimation).mixer
-        : playEmbeddedMotion(clone, sourceAnimation);
-      this.mixers.set(actorId, mixer);
+      const ownClips = animations.get(key) ?? [];
+      if (canAnimateRealGameMotions(ownClips)) {
+        const actor = this.actorIds.indexOf(actorId);
+        const initial = this.initialActors[actor];
+        this.gameAnimators.set(actorId,
+          new BeatCharacterAnimator(visual, clone, ownClips, initial.facing, isHero,
+            this.stage.gravityMmPerTick2));
+      } else {
+        // Compatibility while the agent-driven Mixamo packaging action runs.
+        const mixer = isHero
+          ? retargetEmbeddedMotion(clone, enemySource, sourceAnimation).mixer
+          : playEmbeddedMotion(clone, sourceAnimation);
+        this.mixers.set(actorId, mixer);
+      }
     }
   }
 
-  updateAnimations(elapsedSeconds: number): void {
+  updateAnimations(elapsedSeconds: number, previous: BeatWorldState, current: BeatWorldState): void {
     for (const mixer of this.mixers.values()) mixer.update(Math.max(0, Math.min(0.05, elapsedSeconds)));
+    const preceding = new Map(previous.actors.map(actor => [actor.id, actor]));
+    for (const actor of current.actors) {
+      const animator = this.gameAnimators.get(actor.id);
+      if (animator) animator.update(preceding.get(actor.id) ?? actor, actor, elapsedSeconds);
+    }
   }
 
   private addStageVolumes(): void {
@@ -165,7 +184,9 @@ export class BeatEmUpScene {
       const visual = this.visuals.get(actor.id);
       if (visual) {
         visual.position.set(meters(focus.xMm), meters(focus.heightMm), meters(focus.depthMm));
-        visual.rotation.y = actor.facing === 1 ? Math.PI / 2 : -Math.PI / 2;
+        if (!this.gameAnimators.has(actor.id)) {
+          visual.rotation.y = actor.facing === 1 ? Math.PI / 2 : -Math.PI / 2;
+        }
         visual.visible = actor.alive;
       }
       if (actor.id === this.heroId) heroFocus = focus;
@@ -178,6 +199,12 @@ export class BeatEmUpScene {
 
   get metrics(): Readonly<{ drawCalls: number; triangles: number }> {
     return { drawCalls: this.renderer.info.render.calls, triangles: this.renderer.info.render.triangles };
+  }
+
+  get animationMode(): string {
+    return this.gameAnimators.size === this.actorIds.length
+      ? "Mixamo : garde + vraie marche + recul + demi-tour + saut/chute"
+      : "clip source de diagnostic (pack Mixamo non déployé)";
   }
 
   dispose(): void {
@@ -195,6 +222,8 @@ export class BeatEmUpScene {
     this.visuals.clear();
     for (const mixer of this.mixers.values()) mixer.stopAllAction();
     this.mixers.clear();
+    for (const animator of this.gameAnimators.values()) animator.dispose();
+    this.gameAnimators.clear();
     this.renderer.dispose();
     this.renderer.forceContextLoss();
     this.viewportCanvas.width = 0;

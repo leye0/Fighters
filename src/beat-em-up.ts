@@ -25,6 +25,31 @@ const viewport = get<HTMLElement>("beat-viewport");
 const diagnostics = get<HTMLElement>("beat-diagnostics");
 const status = get<HTMLElement>("beat-status");
 const toggle = get<HTMLButtonElement>("beat-debug-toggle");
+const landscapeButton = get<HTMLButtonElement>("beat-landscape-lock");
+const orientationGate = get<HTMLElement>("beat-orientation-gate");
+
+// Mobile browsers, especially iOS Safari, may refuse to lock orientation.
+// The fullscreen request is best-effort, while the portrait gate is mandatory.
+landscapeButton.addEventListener("click", () => {
+  void (async () => {
+    try {
+      const viewport = get<HTMLElement>("beat-viewport");
+      if (viewport.requestFullscreen && !document.fullscreenElement) {
+        await viewport.requestFullscreen();
+      }
+      const orientation = screen.orientation as ScreenOrientation & {
+        lock?: (orientation: "landscape") => Promise<void>;
+      };
+      await orientation?.lock?.("landscape");
+    } catch {
+      get<HTMLElement>("beat-status").textContent =
+        "Tourne le téléphone horizontalement ; le verrouillage automatique n'est pas offert ici.";
+    }
+  })();
+});
+
+orientationGate.addEventListener("contextmenu", event => event.preventDefault());
+viewport.addEventListener("contextmenu", event => event.preventDefault());
 
 async function startBeatScene(): Promise<void> {
   const scene = new BeatEmUpScene(canvas, DIAGNOSTIC_STAGE, BEAT_PROJECTION,
@@ -55,6 +80,15 @@ async function startBeatScene(): Promise<void> {
 
   function frame(now: number): void {
     if (!active) return;
+    if (window.matchMedia("(orientation: portrait)").matches) {
+      controls.reset();
+      lastTime = now;
+      accumulator = 0;
+      window.__fightersBeatReady = false;
+      status.textContent = "Mode paysage requis : tourne ton téléphone pour continuer.";
+      requestAnimationFrame(frame);
+      return;
+    }
     const elapsedMs = Math.min(250, Math.max(0, now - lastTime));
     accumulator += elapsedMs;
     lastTime = now;
@@ -66,7 +100,7 @@ async function startBeatScene(): Promise<void> {
       }, DIAGNOSTIC_STAGE);
       accumulator -= tickDuration;
     }
-    scene.updateAnimations(elapsedMs / 1000);
+    scene.updateAnimations(elapsedMs / 1000, previous, current);
     const camera = scene.render(previous, current, accumulator / tickDuration);
     window.__fightersBeatReady = true;
     window.__fightersBeatTick = current.tick;
@@ -87,7 +121,7 @@ async function startBeatScene(): Promise<void> {
         `Vitesse Y ${hero.verticalVelocityMmPerTick} mm/tick · Appui ${hero.supportingPlatformId ?? "air"}\n` +
         `Cible ${hero.targetId ?? "aucune"} · Regard ${hero.facing > 0 ? "droite" : "gauche"}\n` +
         `Caméra : bords ${pinned} · ${scene.metrics.drawCalls} draws · ${scene.metrics.triangles} triangles`;
-      status.textContent = `Vrais rigs animés par un clip source (retarget en essai, pas de combat certifié) · ${framesPerSecond} FPS · ` +
+      status.textContent = `Vrais rigs · ${scene.animationMode} · ${framesPerSecond} FPS · ` +
         (hero.targetId ? `menace : ${hero.targetId}` : "aucune menace proche");
     }
     requestAnimationFrame(frame);

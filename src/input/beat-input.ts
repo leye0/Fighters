@@ -72,6 +72,8 @@ export class BeatControls {
     this.wasDropping = false;
   };
 
+  reset(): void { this.clear(); }
+
   snapshot(): BeatInput {
     const combined = new Set(this.held);
     for (const key of this.touch.values()) combined.add(key);

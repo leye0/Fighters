@@ -31,6 +31,13 @@ export interface BeatStage {
   readonly targetAcquireMm: number;
   readonly targetReleaseMm: number;
   readonly targetMaxHeightMm: number;
+  /** Optional deterministic arcade acceleration; never enables rigid bodies. */
+  readonly movement?: Readonly<{
+    groundAccelerationMmPerTick2: number;
+    groundBrakingMmPerTick2: number;
+    airAccelerationMmPerTick2: number;
+    airBrakingMmPerTick2: number;
+  }>;
   readonly platforms: readonly WalkablePlatform[];
 }
 
@@ -42,6 +49,8 @@ export interface BeatActor {
   readonly depthMm: number;
   readonly heightMm: number;
   readonly verticalVelocityMmPerTick: number;
+  readonly velocityXMmPerTick?: number;
+  readonly velocityZMmPerTick?: number;
   readonly supportingPlatformId: string | null;
   readonly speedMmPerTick: number;
   readonly jumpSpeedMmPerTick: number;
@@ -87,6 +96,11 @@ export function validateBeatStage(stage: BeatStage): void {
     "gravityMmPerTick2", "targetAcquireMm", "targetReleaseMm", "targetMaxHeightMm",
   ] as const) integer(stage[key], key, 1);
   for (const key of ["stepUpMm", "stepDownMm"] as const) integer(stage[key], key);
+  if (stage.movement) {
+    for (const [key, value] of Object.entries(stage.movement)) {
+      integer(value, "movement." + key, 1);
+    }
+  }
   if (stage.targetReleaseMm < stage.targetAcquireMm) {
     throw new Error("Target release range must cover acquisition range");
   }
@@ -138,6 +152,9 @@ export function createBeatWorld(stage: BeatStage, actors: readonly BeatActor[]):
     }
     integer(actor.speedMmPerTick, actor.id + ".speedMmPerTick", 1);
     integer(actor.jumpSpeedMmPerTick, actor.id + ".jumpSpeedMmPerTick", 1);
+    for (const key of ["velocityXMmPerTick", "velocityZMmPerTick"] as const) {
+      if (actor[key] !== undefined) integer(actor[key], actor.id + "." + key, -Number.MAX_SAFE_INTEGER);
+    }
     if (actor.xMm < stage.leftMm || actor.xMm > stage.rightMm ||
         actor.depthMm < stage.nearMm || actor.depthMm > stage.farMm) {
       throw new Error("Actor spawn outside stage: " + actor.id);
@@ -163,8 +180,24 @@ function advance(actor: BeatActor, input: BeatInput, stage: BeatStage): BeatActo
   }
   const diagonal = input.horizontal !== 0 && input.depth !== 0;
   const speed = diagonal ? Math.trunc(actor.speedMmPerTick * 181 / 256) : actor.speedMmPerTick;
-  let x = clamp(actor.xMm + input.horizontal * speed, stage.leftMm, stage.rightMm);
-  let depth = clamp(actor.depthMm + input.depth * speed, stage.nearMm, stage.farMm);
+  const accelerate = (current: number, target: number, limit: number): number =>
+    current < target ? Math.min(current + limit, target) : Math.max(current - limit, target);
+  const air = actor.supportingPlatformId === null;
+  const tuning = stage.movement;
+  let velocityX = input.horizontal * speed;
+  let velocityZ = input.depth * speed;
+  if (tuning) {
+    const acceleration = air ? tuning.airAccelerationMmPerTick2 : tuning.groundAccelerationMmPerTick2;
+    const braking = air ? tuning.airBrakingMmPerTick2 : tuning.groundBrakingMmPerTick2;
+    velocityX = accelerate(actor.velocityXMmPerTick ?? 0, velocityX,
+      input.horizontal === 0 ? braking : acceleration);
+    velocityZ = accelerate(actor.velocityZMmPerTick ?? 0, velocityZ,
+      input.depth === 0 ? braking : acceleration);
+  }
+  let x = clamp(actor.xMm + velocityX, stage.leftMm, stage.rightMm);
+  let depth = clamp(actor.depthMm + velocityZ, stage.nearMm, stage.farMm);
+  if (x === actor.xMm && velocityX * input.horizontal >= 0 && velocityX !== 0) velocityX = 0;
+  if (depth === actor.depthMm && velocityZ * input.depth >= 0 && velocityZ !== 0) velocityZ = 0;
   let height = actor.heightMm;
   let velocity = actor.verticalVelocityMmPerTick;
   let platformId = actor.supportingPlatformId;
@@ -180,6 +213,7 @@ function advance(actor: BeatActor, input: BeatInput, stage: BeatStage): BeatActo
   if (destination && destination.topMm > height + (platformId ? stage.stepUpMm : 0)) {
     x = actor.xMm;
     depth = actor.depthMm;
+    velocityX = velocityZ = 0;
     destination = support(stage, x, depth, Number.MAX_SAFE_INTEGER);
   }
   const launched = Boolean(platformId && input.jump && !dropping);
@@ -193,6 +227,7 @@ function advance(actor: BeatActor, input: BeatInput, stage: BeatStage): BeatActo
     return {
       ...actor, xMm: x, depthMm: depth, heightMm: destination.topMm,
       verticalVelocityMmPerTick: 0, supportingPlatformId: destination.id,
+      ...(tuning ? { velocityXMmPerTick: velocityX, velocityZMmPerTick: velocityZ } : {}),
     };
   }
 
@@ -214,6 +249,7 @@ function advance(actor: BeatActor, input: BeatInput, stage: BeatStage): BeatActo
   return {
     ...actor, xMm: x, depthMm: depth, heightMm: height,
     verticalVelocityMmPerTick: velocity, supportingPlatformId: platformId,
+    ...(tuning ? { velocityXMmPerTick: velocityX, velocityZMmPerTick: velocityZ } : {}),
   };
 }
 

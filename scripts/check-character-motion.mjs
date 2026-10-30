@@ -4,7 +4,7 @@
  * node scripts/check-character-motion.mjs claudia.glb realistic-man.glb
  */
 import { readFile } from "node:fs/promises";
-import { SkinnedMesh } from "three";
+import { Quaternion, SkinnedMesh } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { clone as cloneSkeleton } from "three/addons/utils/SkeletonUtils.js";
 import { playEmbeddedMotion, retargetEmbeddedMotion } from "../src/render/character-motion.ts";
@@ -73,7 +73,15 @@ maleMixer.update(Math.min(0.5, animation.duration / 3));
 const changedMaleBones = maleRig.skeleton.bones.filter((bone, i) =>
   bone.quaternion.angleTo(before[i]) > 0.001).length;
 if (changedMaleBones < 5) throw Error(`Male source clip animated only ${changedMaleBones} bones`);
+const hipTrack = animation.tracks.find(track => track.name.includes("Hips") && track.name.endsWith(".quaternion"));
+let hipTurnDegrees = null;
+if (hipTrack) {
+  const values = hipTrack.values;
+  const first = new Quaternion().fromArray(values, 0);
+  const last = new Quaternion().fromArray(values, values.length - 4);
+  hipTurnDegrees = Math.round(first.angleTo(last) * 180 / Math.PI);
+}
 console.log(JSON.stringify({ femaleJoints: target.skeleton.bones.length, sourceJoints: sourceNames.size,
   sourceClip: animation.name, duration: animation.duration, mappedJoints,
   retargetedTracks: retargeted.tracks.length, varyingTracks: varying.length,
-  changedMaleBones }, null, 2));
+  changedMaleBones, hipTurnDegrees }, null, 2));

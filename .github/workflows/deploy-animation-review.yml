@@ -2,7 +2,7 @@ name: Publish Fighters animation review
 
 on:
   workflow_run:
-    workflows: ["Prepare real character GLB for browser"]
+    workflows: ["Prepare real character GLB for browser", "Prepare Mixamo gameplay animations for real fighters"]
     types: [completed]
   push:
     branches: [main]

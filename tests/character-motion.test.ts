@@ -11,5 +11,6 @@ test("retarget map covers torso, legs and both arms despite exporter suffixes", 
   assert.equal(mixamoBoneForRigBone("upperarm_r_049", source), "mixamorig:RightArm_17");
   assert.equal(mixamoBoneForRigBone("upperleg_l_074", source), "mixamorig:LeftUpLeg_26");
   assert.equal(mixamoBoneForRigBone("foot_r_083", source), "mixamorig:RightFoot_29");
+  assert.equal(mixamoBoneForRigBone("mixamorigLeftArm_987", source), "mixamorig:LeftArm_9");
   assert.equal(mixamoBoneForRigBone("eyelid_l_017", source), undefined);
 });
