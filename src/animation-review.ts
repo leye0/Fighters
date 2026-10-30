@@ -42,6 +42,7 @@ if (!root) throw new Error("Missing animation review element");
 root.className = "review-shell";
 root.innerHTML = `
   <a href="/">← Fighters</a>
+  <a href="/animation-composite.html" style="margin-left: 20px">Tester la superposition des GLB en 3D →</a>
   <h1>Choisir les animations de Fighters</h1>
   <p>63 mouvements Mixamo candidats (60 premiers choix et 3 pas arrière de boxe), avec <strong>4 angles vidéo chacun</strong>. Visionne-les, choisis « Garder » ou « Écarter » et exporte ton résultat en JSON. Le navigateur conserve également tes choix sur cet appareil.</p>
   <p class="review-warning">Les notes de présélection sont seulement indicatives. Ce lecteur montre les prévisualisations YBot du dataset, pas les GLB retargetés sur les vrais combattants. Les droits des fichiers sources et la superposition des mouvements restent à vérifier.</p>

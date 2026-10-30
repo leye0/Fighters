@@ -54,6 +54,18 @@ Le tri initial est fondé sur des poses visibles dans les vidéos YBot, **pas su
 
 ### Vérification de la superposition avec de vrais GLB
 
+Le [lecteur 3D de superposition](animation-composite.html) est disponible après `npm run dev` à **`http://127.0.0.1:5173/animation-composite.html`**. Il charge **les cinq GLB privés depuis le disque local** et vérifie leur SHA-256 contre l'inventaire de recherche. Une fois chargés, il affiche un YBot animé en WebGL avec orbite de caméra et quatre combinaisons `Lead_Jab_2` + garde, marche avant, marche arrière ou saut. Le temps est manipulable à la main ; la durée du jab est réglable, et les appréciations du propriétaire sont exportées avec identités, SHA et commentaires. **Les GLB ne sont jamais envoyés à un serveur ni ajoutés au dépôt public.**
+
+Pour recréer exactement ces cinq fichiers dans un dossier privé, à partir du dépôt :
+
+```bash
+python3 scripts/acquire-mixamo.py --destination /tmp/fighters-composite-fbx --name Fighting_Idle.fbx --name Medium_Step_Forward.fbx --name Step_Backward_3.fbx --name Jump.fbx --name Lead_Jab_2.fbx --workers 1 --request-interval 5
+npm install --no-save --package-lock=false fbx2gltf@0.9.7-p1
+python3 scripts/convert-mixamo-fbx.py --input /tmp/fighters-composite-fbx --output /tmp/fighters-composite-glb --name Fighting_Idle.fbx --name Medium_Step_Forward.fbx --name Step_Backward_3.fbx --name Jump.fbx --name Lead_Jab_2.fbx --require-all
+```
+
+Les translations horizontales et la trajectoire verticale du lecteur ne sont que des **références illustratives** séparées des os : ce n'est ni le moteur autoritatif du match ni une vérification de vitesse/IK. Même une combinaison convaincante sur YBot doit encore passer la validation sur chaque combattant final.
+
 Quatre mélanges `Lead_Jab_2` + (garde, pas avant, pas arrière, saut) ont désormais été testés sur **cinq GLB Mixamo/YBot réellement reconvertis en privé** dans un seul `AnimationMixer` Three.js : **65 os communs, zéro piste en conflit, zéro liaison manquante**, et mouvement effectif des membres hauts et bas. La piste de translation des hanches ne déplace plus le personnage deux fois ; c'est la simulation qui contrôle sa position. Les pas source avancent d'environ **0,92 m** et reculent d'environ **0,60 m**, avant suppression de ce déplacement par le masque. Voir [les mesures et identifiants exacts](assets/mixamo-layering-research.json).
 
 Pour refaire cette vérification sur tes fichiers privés GLB (aucun actif Mixamo n'est publié) :

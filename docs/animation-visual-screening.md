@@ -15,6 +15,8 @@ Le [rapport par animation](../assets/mixamo-screening.json) contient **36 gestes
 
 ## Premier test des vraies animations superposées
 
+Un [lecteur WebGL des vraies couches GLB](../animation-composite.html) permet désormais de charger sur l'ordinateur de Léon **les cinq fichiers GLB privés**, de vérifier leur SHA-256 (et donc l'identité exacte de la conversion), de regarder les quatre mélanges en mouvement sous trois angles, de ralentir, d'avancer image par image et de consigner les jugements humains. Les décisions exportées portent les `motionId` et les hashes d'origine. L'outil n'embarque ni ne transmet les fichiers tiers. **Sa présence ne signifie pas que quelqu'un ait validé le rendu** : les quatre compositions restent non approuvées sur le rig photoréaliste final.
+
 Après ce premier tri, cinq sources FBX existantes ont été reconverties de façon indépendante : les SHA-256 des GLB obtenus **correspondent au catalogue**. Un seul mélangeur Three.js a été exécuté sur un même YBot en combinant `Lead_Jab_2` (haut du corps) à `Fighting_Idle`, `Medium_Step_Forward`, `Step_Backward_3` et `Jump` (bas du corps).
 
 Les quatre cas ont **65 os identiques**, **0 conflit de piste**, **0 cible de piste absente**, et des rotations réellement animées dans les deux régions du corps. La translation source des hanches est bien retirée des clips superposés. Les GLB originaux portent environ **+0,917 m** de déplacement pour le pas avant et **−0,598 m** pour le pas arrière, ce qui confirme qu'il ne faut pas ajouter leur root motion au mouvement 60 Hz. Les observations et les empreintes sont conservées dans [le rapport de superposition](../assets/mixamo-layering-research.json).

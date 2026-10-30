@@ -7,6 +7,7 @@ export default defineConfig({
       input: {
         game: resolve(import.meta.dirname, "index.html"),
         animationReview: resolve(import.meta.dirname, "animation-review.html"),
+        animationComposite: resolve(import.meta.dirname, "animation-composite.html"),
       },
     },
   },
