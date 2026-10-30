@@ -37,6 +37,12 @@ const toggle = get<HTMLButtonElement>("beat-debug-toggle");
 const landscapeButton = get<HTMLButtonElement>("beat-landscape-lock");
 const orientationGate = get<HTMLElement>("beat-orientation-gate");
 
+// Diagnostics must never obscure the game on first load, including when
+// Safari restores a prior page session or the application is hot-reloaded.
+diagnostics.hidden = true;
+toggle.textContent = "Stats";
+toggle.setAttribute("aria-expanded", "false");
+
 // Mobile browsers, especially iOS Safari, may refuse to lock orientation.
 // The fullscreen request is best-effort, while the portrait gate is mandatory.
 landscapeButton.addEventListener("click", () => {
