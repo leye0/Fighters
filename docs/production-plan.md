@@ -6,6 +6,8 @@
 > 
 > **Méthode :** directement sur `main`, sans PR ; architecture de production dès le départ, sans faux gameplay, sans considérer les tests de simulation comme une validation esthétique. **L’aspect des plateformes et du parcours reste volontairement minimaliste pendant tout le développement des systèmes ; leur véritable design se fera après le reste du gameplay.** Le photoréalisme reste l’objectif final, avec performance mesurée. Les décisions, clip IDs et cases de qualité doivent rester documentés.
 >
+> **Correction de Léon : la simplification ne concerne PAS les personnages.** À partir de maintenant, travailler avec de **vrais modèles humains 3D riggés** issus du [registre déjà établi](asset-register.md) et de [`assets/manifest.json`](../assets/manifest.json). Les capsules actuelles n'étaient que des témoins de position de simulation : elles ne valident pas le rendu, le rigging, les appuis, la locomotion ou la jouabilité. Ne plus investir dans leurs apparences ni chercher de nouveaux candidats avant d'avoir exploité les propositions déjà recensées.
+>
 > **Archives :** [plan historique du duel/arène](production-plan-arena-archive.md) conservé à titre de trace, mais ses rounds, six boutons imposés et règles compétitives ne dirigent plus ce produit. Voir aussi [l’architecture beat’em up](beat-em-up-architecture.md) et [la politique animation-first](animation-first.md).
 
 ## Situation actuelle — preuves et limites
@@ -19,7 +21,7 @@
 | Caméra | `beat-scroll-camera.ts` : centrage exact hors frontières et limites sur quatre côtés ; **9 tests**. Adaptateur `beat-camera-three.ts` à PerspectiveCamera : **3 tests supplémentaires de projection NDC réelle** | Inspection sur navigateur/device du cadrage, occlusions et coins, profiling |
 | Combat hérité | Simulation autoritative 1v1, coups/fenêtres, couches d’animation, IA déterministe ; **93 tests Node** avant ajout des nouveaux tests | Adapter la simulation à une troupe d’ennemis et à la profondeur, sans exposer les 71 coups synthétiques comme arsenal |
 | Rendu | Three.js/Vite/WebGL, éclairage et chargement de GLB, lecteur de clips et superposition YBot expérimentale. Nouvelle page `beat-em-up.html` de navigation 3D en géométrie diagnostique | Vérification visuelle humaine de la page, héros photoréaliste, environnement final, performances sur machine réelle et animations |
-| Publication | [Lecteur mobile des 63 vidéos via GitHub Pages](https://www.streamlev.com/Fighters/site/animation-review.html), Action réussie. Le build statique inclut maintenant `beat-em-up.html` sans supprimer le lecteur | Confirmer le nouveau déploiement et faire tester la scène par Léon ; jeu complet non livré |
+| Publication | [Lecteur mobile des 63 vidéos](https://www.streamlev.com/Fighters/site/animation-review.html) et [scène 3D de diagnostic](https://www.streamlev.com/Fighters/site/beat-em-up.html) servis via GitHub Pages | Faire tester la scène par Léon sur appareil avec WebGL ; jeu complet non livré |
 
 **Convention d’état :** « source sélectionnée » ≠ « clip GLB testé » ≠ « clip retargeté pour un héros » ≠ « coup jouable et validé ». Chaque étape conserve des preuves séparées.
 
@@ -55,9 +57,14 @@ Ce guide est **opérationnel** : il décrit ce qui est réellement présent sur 
 | `.github/workflows/deploy-animation-review.yml` | GitHub Actions publie **`docs/` déjà compilé**, sans exécuter Vite, et se déclenche seulement sur `docs/index.html`, `docs/site/**` ou le workflow. Les changements de TypeScript seuls **ne republient pas le site**. Préserver la prévisualisation actuelle et limiter les minutes Actions payantes. |
 | `scripts/websuite.mjs`, `docs/visual-qa.md` | Automatisation WebGL/captures déjà adaptée de WarConquer. À réutiliser pour inspecter la nouvelle page, avec assertions et captures réelles. La présence d’un canvas ne démontre ni la physique ni la qualité du gameplay. |
 
-### Prochaine intervention **immédiate** : une scène 3D jouable en blocs
+### Jalon technique de navigation — réalisé partiellement, **personnages réels à intégrer en priorité**
 
-**But :** obtenir **un lien Web de test simple à ouvrir**, avec un personnage de diagnostic visible dans un petit parcours composé de quelques volumes 3D. La scène doit déjà utiliser **les vraies règles** de navigation/caméra, même si l’art final attendra.
+**État :** le lien Web affiche la scène technique en blocs et le moteur réel de navigation/caméra. Le travail de câblage est vérifié par tests, mais **Léon refuse explicitement de considérer les capsules de diagnostic comme une avancée sur les personnages**. Le prochain effort doit viser l'acquisition/intégration de véritables humains 3D riggés, avant de qualifier la scène de gameplay jouable.
+
+**Sources de personnages à exploiter en premier, sans relancer une recherche :** `CHAR-CAND-006` **Claudia** et `CHAR-CAND-007` **Carla** (Renderpeople, femmes), `CHAR-CAND-003` **Realistic man basic rig** (J.azali, homme), puis les autres candidats de `assets/manifest.json` selon leurs rigs et la qualité. Les trois fiches Sketchfab ont été vérifiées dans l'API publique : `isDownloadable=true`, licence affichée **CC BY 4.0**, mesh et rig déclarés ; **aucun fichier GLB réellement acquis** et aucun retargeting validé. L'API officielle de téléchargement nécessite une autorisation (`401` sans session) : respecter cet accès, obtenir les archives par la voie légitime puis auditer les fichiers. Ne pas remplacer ces modèles par des silhouettes, et ne pas cocher une intégration avant le rendu réel.
+
+- [ ] Obtenir les archives des modèles déjà sélectionnés, établir licence/provenance/crédits et inspecter les fichiers réels (rig, textures, poses et dimensions).
+- [ ] Charger au moins un héros **humain riggé réel** et un ennemi humain riggé réel dans la scène, aligner pieds, dimensions, origine et orientation, puis retargeter la locomotion retenue pour examiner les appuis.
 
 - [x] Créer une page dédiée `beat-em-up.html` et son entrée TypeScript `src/beat-em-up.ts`, isolées du duel d’`index.html`.
 - [x] Construire un composant de rendu Three.js `src/render/beat-em-up-scene.ts` et un niveau **piloté par données** : rue Y=0, bloc surélevé, seconde plateforme haute, limites X/Z ; noms d'objets génériques.
@@ -68,10 +75,10 @@ Ce guide est **opérationnel** : il décrit ce qui est réellement présent sur 
 - [x] Montrer la cible et l’orientation calculées : marqueur frontal 3D, recul qui conserve la cible. La rotation du vrai rig reste à valider.
 - [x] Ajouter diagnostics commutables : tick, X/Z/Y, vitesse verticale, `supportingPlatformId`, `targetId`, bord(s) caméra actifs, FPS et draw calls. La page affiche son statut de diagnostic.
 - [ ] Tester l’absence de traversée d’une plateforme trop haute, le saut sur le bloc, la chute depuis la plateforme haute et la liberté de marche en profondeur. **Attention :** le noyau actuel utilise des surfaces rectangulaires et le point d’appui central ; les collisions latérales complexes, sous-face, capsule du corps, pentes, rebords, interactions et IA de navigation restent des tâches distinctes. Ne pas annoncer ces capacités comme faites.
-- [ ] Ajouter et déployer l’entrée Pages du beat’em up **sans supprimer le lecteur des 63 vidéos**. Les deux builds Vite réussissent localement ; le déploiement GitHub Pages et son URL seront confirmés après le push.
+- [x] Ajouter et déployer l’entrée Pages du beat’em up **sans supprimer le lecteur des 63 vidéos**. [URL de la scène](https://www.streamlev.com/Fighters/site/beat-em-up.html) et [lecteur d'animations](https://www.streamlev.com/Fighters/site/animation-review.html) disponibles. Le navigateur de contrôle distant ne dispose pas de contexte WebGL ; **la scène n'y a pas été validée visuellement** et signale maintenant cette indisponibilité.
 - [ ] Faire tester **la vraie page**, caméra et plateforme à la main par Léon, puis inscrire ses observations dans ce plan. Ne pas attendre le design final des bâtiments pour poursuivre.
 
-**Définition de ce jalon :** un agent externe peut fournir un URL et montrer dans le navigateur le héros diagnostic **centré quand le décor défile**, se rapprochant des **quatre bords** uniquement à la frontière, sautant sur un bloc, chutant correctement, se décalant en profondeur et faisant face à un ennemi proche en reculant. Cela **ne** valide ni 63 GLB intégrés, ni les combats et animations finaux, ni les décors photoréalistes.
+**Définition révisée :** les tests d'axes/caméra et la page en blocs constituent seulement la **base technique**. Le jalon visuel jouable devra montrer un **vrai héros riggé**, pas la capsule, centré pendant le scrolling, au voisinage des quatre bords, sautant sur une plateforme, chutant, se décalant en profondeur et faisant face à un véritable ennemi 3D en reculant. Il faudra encore la validation de Léon ; les 63 animations ne sont pas intégrées simplement parce que deux rigs ont été chargés.
 
 ### Commandes de développement et vérifications à conserver
 
