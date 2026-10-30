@@ -66,6 +66,7 @@ Fighters est **non commercial pour le moment**, selon le propriétaire. Ce statu
 - Respecter droits à l'image, marques et personnages protégés. Fighters doit posséder une identité visuelle originale.
 - Ne jamais affirmer qu'une licence est validée sans l'avoir vérifiée pour **l'asset précis**.
 
+- **QA perceptuelle avant d'affirmer qu'une démo est prête :** utiliser le scénario WebGL `tests/browser/beat-em-up-control.json` via `.github/workflows/beat-webgl-qa.yml` et inspecter les PNG de vrais modèles (idle, marche droite/gauche, saut, atterrissage). Les assertions doivent couvrir les dimensions et projections des trois rigs, pas seulement des bones qui bougent ou des URLs 200. Le rendu logiciel CI ne valide pas les FPS iPhone. Ne pas réintroduire la normalisation pré-animation qui rendait les ennemis invisibles (620 m de hauteur animée).\n
 ## Définition de terminé
 
 Une tâche est terminée seulement lorsqu'elle a :
