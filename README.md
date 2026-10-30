@@ -1,6 +1,6 @@
 # Fighters 🥊
 
-Jeu de combat **2,5D photoréaliste pour le Web** : combats rapides vus de côté, personnages et arènes en 3D, contrôles classiques, combos, coups spéciaux, ambiance sonore et effets cinématiques.
+**Beat’em up d’action 3D à défilement latéral** pour le Web : traverser des rues, bâtiments et plateformes surélevées, affronter plusieurs ennemis, sauter sur les obstacles, avancer ou reculer en faisant face aux adversaires proches. Rendu photoréaliste, animations de combat réelles, gameplay déterministe à 60 Hz.
 
 > Projet original inspiré des conventions des jeux de combat arcade, sans reprendre les personnages, marques, graphismes, sons ni interfaces protégés d'autres jeux.
 >
@@ -25,12 +25,16 @@ Le plan couvre l'intégralité du produit : moteur de combat déterministe, rend
 ## Orientation technique initiale
 
 - **TypeScript + Vite + Three.js (WebGL 2)** ; architecture permettant d'évaluer WebGPU ensuite.
-- **Caméra latérale 2,5D** : déplacement sur un plan de combat, géométrie et éclairage entièrement 3D.
+- **Caméra latérale 3D à scrolling** : progression X, déplacement en profondeur Z, hauteur Y avec plateformes et chutes ; héros tourné vers un ennemi proche indépendamment de son déplacement.
 - **glTF/GLB**, matériaux PBR, environnements HDRI, animations squelettiques, textures compressées et LOD.
 - Moteur de règles fixe et déterministe à **60 ticks/s**, sans collision physique non déterministe pour la validation des coups.
 - Tests : unitaires, intégration, performance visuelle, Playwright en navigateur.
 
 Ces choix sont des décisions de départ documentées ; tout changement doit être argumenté dans le plan.
+
+## Direction beat’em up : rues, toits et ennemis multiples
+
+**[Architecture actualisée — esprit Double Dragon](docs/beat-em-up-architecture.md).** Le moteur possède maintenant un noyau de navigation à 60 Hz avec marche en profondeur, plateformes à hauteurs différentes, vrais sauts/chutes et ciblage stable d’ennemis proches ; ce noyau est testé mais n’est pas encore branché à une scène jouable. Le duel 1v1 existant demeure un banc de tests du combat, non le format final du jeu.
 
 ## Animations Mixamo réellement retrouvées
 
@@ -109,6 +113,16 @@ Le serveur du miroir peut retourner **HTTP 429** pendant une acquisition massive
 python3 scripts/acquire-mixamo.py --destination /tmp/fighters-research-fbx --workers 1 --request-interval 5
 ```
 
+### Préparer un seul GLB avec les 63 animations retenues
+
+Depuis un environnement disposant du convertisseur `fbx2gltf@0.9.7-p1`, la commande suivante télécharge les **63 sources exactes**, reprend les fichiers déjà présents, convertit en GLB et assemble un pack YBot de recherche :
+
+```bash
+python3 scripts/prepare-selected-mixamo.py --workspace /tmp/fighters-selected-mixamo
+```
+
+Les étapes respectent les empreintes enregistrées, cadencent les téléchargements et s’arrêtent en cas de HTTP 429. Si les GLB convertis existent déjà, utiliser `--pack-only`. La sortie est `/tmp/fighters-selected-mixamo/Fighters-selected-63.glb` et son manifeste de contrôle, **hors du dépôt**. Le pack permet de charger et comparer les clips sur un rig YBot commun ; il **ne suffit pas** à valider le retargeting ni les coups sur les personnages définitifs.
+
 ## Commandes de combat
 
 La [reconnaissance des coups spéciaux et les contrôles](docs/combat-commands.md) sont décrits avec leurs limites actuelles et les tests.
@@ -130,11 +144,11 @@ Consulter le [registre des ressources, avec les premiers candidats photoréalist
 
 [70 rôles Mixamo sont recensés pour la recherche](assets/mixamo-catalog.json), mais aucun ne prouve qu'un clip existe ou qu'il est intégré. Le nouvel [inventaire de clips approuvés](assets/animation-inventory.json) démarre vide et pilote la **création des vrais coups** ; les frames de simulation sont déduites des contacts observés dans chaque animation.
 
-## Duels IA contre IA et QA du gameplay
+## IA, ennemis multiples et QA du gameplay
 
-Le [banc de combats IA contre IA](docs/ai-combat-qa.md) exécute de vrais affrontements dans la simulation déterministe, avec attaques, gardes, coups spéciaux et bilan de rythme. Lancer `npm run simulate:ai` ou `npm run test:ai` ; l'option **Mode → IA contre IA** est branchée dans le navigateur dès que deux GLB autorisés avec animations seront intégrés. **Cela ne constitue pas encore un test visuel du plaisir de jeu.**
+Le [banc hérité de duels IA contre IA](docs/ai-combat-qa.md) vérifie des affrontements déterministes de simulation, avec attaques, gardes, coups spéciaux et bilan de rythme. Le **jeu final** demandera aussi des groupes d’ennemis, navigation entre plateformes, suivi caméra et IA de beat’em up ; ces systèmes restent à relier au noyau de déplacement. Lancer `npm run simulate:ai` ou `npm run test:ai` ; l'option **Mode → IA contre IA** est branchée dans le navigateur dès que deux GLB autorisés avec animations seront intégrés. **Cela ne constitue pas encore un test visuel du plaisir de jeu.**
 
-Concernant les animations de combat Mixamo : **302 sont réellement téléchargées et converties en privé, mais aucune n'est encore intégrée au runtime**. La [procédure d'acquisition et de retargeting](docs/mixamo-integration.md) liste les mouvements nécessaires et les précautions de licence.
+Concernant les animations de combat Mixamo : **63 ont été retenues par Léon**, parmi 302 déjà converties en privé, mais aucune n'est encore intégrée au runtime. Le nouveau [regroupeur GLB](scripts/pack-selected-mixamo.py) assemble la sélection sur un rig commun, sans recopier 63 fois la géométrie ; ses tests binaires synthétiques passent, les 63 vrais GLB restent à lui soumettre. La [procédure d'acquisition et de retargeting](docs/mixamo-integration.md) liste les mouvements nécessaires et les précautions de licence.
 
 ## État
 

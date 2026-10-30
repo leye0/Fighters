@@ -6,7 +6,7 @@
 >
 > **Directives du projet :** dépôt **public**, travail **directement sur main**, **aucune PR**, **aucune branche de fonctionnalité**, **aucun MVP** ni prototype jetable. Le produit est conçu en architecture de production dès la première ligne ; les tâches restent ordonnées par dépendances techniques. On ne coche jamais une tâche sur une simple intention.
 >
-> **Ambition :** jeu de combat arcade **2,5D**, à défilement latéral, avec personnages et décors **3D photoréalistes**, rendu sur navigateur Web, combats nerveux, HUD et ergonomie inspirés des conventions du genre sans reproduire la propriété intellectuelle d'un jeu existant.
+> **Ambition :** **beat’em up d’action 3D à défilement latéral**, sur navigateur Web : parcours urbains (rue, bâtiment, plateformes et toits), ennemis multiples, sauts sur des surfaces réelles, progression caméra et combats nerveux animation-first. [Décision de conception du 30 octobre 2026](beat-em-up-architecture.md). Les tests de duel 1v1 restent des fixtures techniques, non le gameplay final.
 
 **Deux critères inséparables :** (1) **puissance de combat et fluidité** (simulation 60 Hz et FPS mesurés), (2) **finesse photoréaliste** (personnages, peau, matériaux, lumière et décors). Aucun compromis silencieux entre les deux : profils graphiques explicites et mesure par machine de référence.
 
@@ -29,13 +29,13 @@
 
 - [ ] Formaliser le style visuel : réalisme cinématographique, anatomie crédible, peau, tissus, éclairages et environnements à échelle humaine.
 - [ ] Établir un langage visuel original pour les personnages, arènes, icônes, logos et interface.
-- [ ] Définir l'aire de jeu 2,5D : combattants confinés à un plan horizontal, déplacements et sauts, profondeur 3D purement visuelle.
+- [x] Définir l’espace d’action : axe X de scrolling, profondeur Z réellement jouable, élévation Y sur plateformes ; plusieurs ennemis, saut/chute et orientation vers menace proche indépendamment du déplacement. [Spécification](beat-em-up-architecture.md), contrats déterministes et tests de base. La connexion au jeu/rendu reste à faire.
 - [ ] Préciser la distance caméra, le cadrage des combattants et l'échelle des arènes sur formats d'écran variés.
 - [ ] Fixer les objectifs de réponse : simulation à **60 ticks/s**, commande ressentie sans latence inutile et affichage cible **60 FPS**.
 - [ ] Définir les machines/navigateurs pris en charge, avec qualité graphique adaptative et seuil d'entrée explicite.
 - [ ] Définir les systèmes de difficulté, d'équilibrage et les options compétitives.
 - [ ] Définir les règles de contenu : violence arcade stylisée dans les réactions, sans exigence de gore ; options de réduction des effets.
-- [ ] Définir la liste évolutive de combattants et arènes ; aucun plafond artificiel de roster.
+- [ ] Définir la liste évolutive de héros, ennemis et niveaux urbains ; aucun plafond artificiel de nombre d’acteurs ou de parcours.
 - [ ] Rédiger des critères d'acceptation jouables pour chaque grande fonctionnalité.
 
 ## 2. Choix techniques et infrastructure
@@ -57,6 +57,14 @@
 
 ## 3. Simulation de combat déterministe
 
+**Le simulateur 1v1 existant est désormais un banc hérité.** La production suit [le modèle beat’em up à scrolling](beat-em-up-architecture.md), où la navigation est à plusieurs acteurs, sur trois axes avec véritables élévations.
+
+- [x] Créer le noyau typé `src/engine/beat-em-up-world.ts` : surfaces praticables X/Z et hauteur Y, déplacements sur deux axes, saut/chute à gravité fixe, murs hauts non traversables, petite marche franchissable, cible proche avec hystérésis et marche arrière orientée vers l’ennemi. Huit tests de navigation et ciblage passent sur scénarios synthétiques ; **pas encore branché à une scène de jeu**.
+- [ ] Relier `BeatWorldState` à la simulation de combat, aux entrées clavier/manette, à la caméra, au rendu des personnages et aux replays à 60 Hz.
+- [ ] Généraliser les hitbox, hurtbox et pushbox en X/Z/Y pour plusieurs adversaires ; collision/occlusion 3D, hauteurs de plateformes et attaques orientées vers la cible sélectionnée.
+- [ ] Ajouter volumes latéraux des obstacles, surfaces de pente/escalier, collisions de tête, corniches et escalade contextuelle, sans collision décidée par la seule mesh visuelle.
+- [ ] Simuler groupes et vagues d’ennemis, poursuite sur plateformes et navigation autour des obstacles avec sérialisation déterministe.
+
 - [x] Définir le repère 2,5D, limites d'arène et contraintes au sol.
 - [x] Gérer deux combattants, leur position, vitesse, orientation et distance mutuelle.
 - [ ] Implémenter les états : idle, marche, course/dash, saut, chute, garde, attaque, recovery, stun, projection, knockdown, relève, KO.
@@ -77,9 +85,9 @@
 
 - [ ] Supporter clavier à deux joueurs sur une même machine, avec touches configurables.
 - [ ] Supporter Gamepad API : manettes USB/Bluetooth, sticks, croix directionnelle et boutons.
-- [ ] Définir un mapping par défaut de **6 attaques** : poings faible/moyen/fort et pieds faible/moyen/fort.
-- [ ] Implémenter avant, arrière, accroupissement, diagonales, saut, dash et garde directionnelle.
-- [ ] Prendre en charge les inputs relatifs à l'orientation du combattant.
+- [ ] Définir les commandes du **beat’em up** (frappe, coup de pied, saut, prise, interaction/arme, esquive) à partir des 63 animations et des possibilités des personnages ; le mapping historique à six attaques reste une fixture de duel, pas un carcan.
+- [ ] Implémenter déplacement X, profondeur Z, diagonales, saut distinct, recul orienté vers l’ennemi, dash, escalade et garde selon les gestes effectivement disponibles.
+- [ ] Séparer l’orientation vers la cible des axes de marche et adapter attaques, garde et commandes relatives à la direction du héros.
 - [ ] Ajouter buffer d'input en frames, tolérance des diagonales et historique des commandes.
 - [ ] Détecter quart de cercle, demi-cercle, double quart de cercle, charge, double impulsion et commandes à 360°. (Quart de cercle, demi-cercle et double quart de cercle reconnus ; intégration des commandes quart de cercle et dragon-punch au moteur de combat.)
 - [x] Définir des règles de priorité lorsque plusieurs mouvements spéciaux correspondent. (Priorité explicite, longueur du mouvement, ordre stable, tests.)
@@ -100,7 +108,7 @@
 - [x] Autoriser des **combos cancel après contact** vers des coups explicitement permis, dans des fenêtres temporelles vérifiées ; refuser le cancel sur whiff.
 - [x] Permettre les attaques aériennes sans figer la gravité et limiter la collision par séparation verticale.
 - [x] Ajouter la mobilité paramétrable pendant une frappe (avance/recul au sol, contrôle horizontal aérien), et l'option de déclencher un saut sans interrompre un coup compatible, sous contrôle de la simulation à 60 Hz. Tests de déplacements et de gravité ; aucune animation réelle certifiée.
-- [ ] Compléter le buffering des accords quasi simultanés, les charges, les dash et les projections.
+- [ ] Compléter le buffering des accords quasi simultanés, les charges, les dash, les prises et les interactions de décor/objets propres au beat’em up.
 - [x] Mettre en place le registre **animation-first** par combattant, où seuls les clips approuvés créent un coup ; FPS/contact mesurés déterminent les frames, cancels vers clips absents filtrés et noms GLB contrôlés avant un combat. (Tests unitaires ; 299 FBX acquis temporairement hors Git, aucun clip intégré ni approuvé.)
 - [x] Établir un inventaire sourcé de 471 mouvements Mixamo réels et un téléchargement privé reproductible, sans déposer de FBX brut dans le dépôt public.
 - [x] Valider la conversion FBX → GLB avec un vrai clip Mixamo : Jab_Cross, 1 animation / 67 canaux. Outil de conversion batch et tests structurels.
@@ -140,16 +148,16 @@
 - [ ] Prévoir des correctifs de données sans changer le code de simulation.
 - [ ] Documenter les combinaisons de touches et commandes de chaque personnage.
 
-## 6. Match, rounds et règles
+## 6. Parcours, ennemis, séquences et règles du beat’em up
 
-- [ ] Implémenter sélection des combattants, position de départ et introduction d'un round.
-- [ ] Implémenter barres de vie, timer, fin du temps, double KO et attribution du round.
-- [ ] Gérer meilleur de trois rounds et règles configurables de nombre de rounds.
-- [ ] Implémenter transitions READY, FIGHT, KO, TIME UP, résultat et revanche.
-- [ ] Gérer pause locale, reprise, abandon et retour menu sans corruption d'état.
-- [ ] Gérer victoire par KO, décision au temps et égalité.
-- [ ] Définir persistance des paramètres de combat et règles personnalisées.
-- [ ] Concevoir des scénarios d'acceptation pour toutes les fins de manche.
+- [ ] Créer des niveaux 3D découpés en tronçons de scrolling, avec entrées, sorties et objectifs de progression.
+- [ ] Définir apparitions, vagues, renforts, zones à dégager, changement de section et éventuels boss.
+- [ ] Gérer un nombre variable d’ennemis vivants, leur KO, leurs déplacements et leurs réactions simultanées.
+- [ ] Gérer les transitions exploration → menace → combat → accès au tronçon suivant, sans duel 1v1 imposé.
+- [ ] Gérer santé, KO du héros, récupération, points de reprise et fin de niveau.
+- [ ] Gérer pause locale, reprise, abandon et sauvegarde de progression sans corruption d’état.
+- [ ] Définir règles par niveau, difficulté, multiplicité des ennemis et coopératif futur dans les données.
+- [ ] Concevoir des scénarios d’acceptation pour toutes les fins de section et de niveau.
 
 ## 7. Pipeline de personnages photoréalistes
 
@@ -271,27 +279,27 @@ Le but n'est pas de télécharger aveuglément toute la bibliothèque Adobe, mai
 - [ ] Créer des captures de référence à qualité Ultra (peau, cheveux, yeux, ombres, décors) avec caméra et éclairage contrôlés.
 - [ ] Documenter pour chaque effet photoréaliste son coût CPU/GPU et son gain visuel à résolution identique.
 
-## 10. Arènes 3D réalistes
+## 10. Niveaux et plateformes 3D réalistes
 
-- [ ] Définir le système de StageDefinition : géométrie, limites de combat, éclairages, ciel, sons, FX, arrière-plan.
+- [ ] Définir `BeatStage` de production par zones : rue, intérieur, bâtiment, plateformes accessibles, volumes solides, limites de scrolling, éclairage et sons ; rapprocher géométrie 3D et surfaces de navigation déterministes.
 - [ ] Construire le pipeline d'assemblage depuis modèles CC0, textures PBR et HDRI.
-- [ ] Concevoir plusieurs thèmes originaux : rue nocturne humide, entrepôt, toit urbain, temple/cour, zone industrielle, décor naturel.
-- [ ] Créer un véritable premier plan jouable avec sol, matériaux et contacts.
-- [ ] Créer arrière-plan multi-profondeur pour parallaxe naturelle lors du suivi caméra.
+- [ ] Concevoir plusieurs **parcours reliés** : rue nocturne humide, entrée d’immeuble, escaliers, bacs de poubelles praticables, toits, entrepôt et zone industrielle.
+- [ ] Créer de vraies surfaces 3D jouables à différentes hauteurs avec collision au sol, flanc des obstacles, appui des pieds, sauts et chutes mesurés.
+- [ ] Créer décor et arrière-plan réellement volumétriques avec parallaxe lors du scrolling et profondeur navigable contrôlée.
 - [ ] Ajouter éléments dynamiques : lumières, enseignes, pluie, poussière, vapeur, feuillage et foule distante si pertinent.
-- [ ] Définir l'interactivité purement cosmétique de l'arène sans casser la simulation.
+- [ ] Définir objets destructibles, bacs escaladables, armes ramassables et interactions comme données de simulation ; réserver les effets purement décoratifs au rendu.
 - [ ] Optimiser occlusion, instancing, LOD, impostors et taille des textures.
 - [ ] Éviter toute géométrie traversant les combattants ou masquant les hitboxes lisibles.
 - [ ] Calibrer exposition et silhouettes dans chaque scène, de jour comme de nuit.
 - [ ] Définir audio ambiant et réverbération propres à chaque scène.
-- [ ] Tester chaque arène sur profils GPU variés.
+- [ ] Tester chaque section de niveau et ses passages entre plateformes sur profils GPU variés.
 
 ## 11. Caméra et mise en scène
 
-- [ ] Construire caméra orthographique ou perspective longue focale avec cadrage latéral constant.
-- [ ] Suivre le centre des combattants avec limites de scène et zoom adaptatif.
-- [ ] Garantir que les deux personnages restent visibles, y compris lors de sauts et projections.
-- [ ] Gérer les mouvements de caméra de KO, super-attaques et introduction sans perte de repères.
+- [ ] Construire une vraie caméra 3D principalement latérale, perspective réglable, rails de scrolling, anticipation de progression et cadrage sur différentes hauteurs.
+- [ ] Suivre le héros et les ennemis importants dans des limites de section ; adapter cadrage et hauteur aux plateformes accessibles.
+- [ ] Garantir la lisibilité du héros et des ennemis proches, y compris lors de sauts, projections, descentes de toits et changements de profondeur ; gérer les occlusions de bâtiments.
+- [ ] Gérer transitions entre sections, apparition de vagues, boss, KO et moments d’impact sans perdre les repères de progression.
 - [ ] Ajouter screenshake bref et proportionné aux impacts.
 - [ ] Gérer ralenti cinématique uniquement dans les moments autorisés et synchronisés.
 - [ ] Interdire que la caméra change les collisions ou l'état du combat.
@@ -340,6 +348,13 @@ Le HUD suit les **conventions fonctionnelles** des jeux de combat classiques (ba
 
 ## 15. Intelligence artificielle et entraînement
 
+**Les tests IA contre IA actuels ne concernent que le simulateur 1v1 hérité.** La production exigera des ennemis nombreux capables de naviguer en profondeur et en hauteur.
+
+- [ ] Percevoir un héros parmi plusieurs acteurs, choisir une cible à distance et hauteur pertinentes et garder l’orientation stable pendant marche arrière/attaque.
+- [ ] Développer navigation des ennemis entre plateformes et obstacles, poursuite et placement 3D sans oscillation ni empilement.
+- [ ] Orchestrer groupe, vagues, renforts, répartition des rôles d’attaque et fenêtres d’attente sans attaques simultanées absurdes.
+- [ ] Tester combats héros contre groupes, détours autour des bacs, niveaux verticaux et replays reproductibles à 60 Hz.
+
 - [x] Définir une IA consommant les mêmes inputs et règles que les joueurs humains. (Contrôleurs déterministes via InputFrame, testés 2026-10-29.)
 - [ ] Programmer profils : agressif, défensif, zoner, grappler, équilibré. (Agressif, défensif et équilibré implémentés ; zoner et grappler restent à faire.)
 - [ ] Définir perception limitée, réaction configurable et prise de décision sans triche.
@@ -355,25 +370,25 @@ Le HUD suit les **conventions fonctionnelles** des jeux de combat classiques (ba
 
 ## 16. Modes de jeu et progression
 
-- [ ] Combat local Joueur contre Joueur.
-- [ ] Combat Joueur contre IA et IA contre IA pour diagnostics. (IA contre IA simulée et option navigateur branchée, mais modèles animés encore absents.)
-- [ ] Mode arcade avec adversaires et difficulté progressifs.
-- [ ] Mode entraînement complet.
-- [ ] Mode versus personnalisable et revanche rapide.
-- [ ] Parcours de démonstration des commandes et tutoriels interactifs.
-- [ ] Sauvegarder préférences, statistiques locales et progression sans exiger de compte.
-- [ ] Prévoir classement local et historique des combats.
-- [ ] Prévoir rejouabilité des combats et export/import de replays compatibles.
-- [ ] Définir compatibilité future des replays face aux mises à jour d'équilibrage.
+- [ ] Campagne beat’em up à progression latérale : niveaux, tronçons, ennemis multiples et boss.
+- [ ] Coopération locale à deux héros ou davantage si les tests visuels/performance le permettent.
+- [ ] Système de vies, reprises, difficulté, débloquages et progression sans compte obligatoire.
+- [ ] Mode entraînement sur adversaires de simulation et pratique des animations réellement intégrées.
+- [ ] Parcours de démonstration des commandes et tutoriels interactifs pour les plateformes et les armes.
+- [ ] Sauvegarder préférences, statistiques locales et progression.
+- [ ] Prévoir export/import de replays déterministes et compatibilité entre versions.
+- [ ] Conserver un mode versus 1v1 **optionnel** seulement si l’expérience principale est atteinte.
 
 ## 17. Jeu en ligne et netcode
+
+**L’usage réseau éventuel est d’abord le coopératif sur niveaux à plusieurs ennemis**, avec état des plateformes, spawns et interactions à synchroniser. Le rollback 1v1 n’est plus la priorité de conception.
 
 - [ ] Définir l'architecture de synchronisation réseau sur **inputs + ticks**.
 - [ ] Choisir une signalisation de session et un transport compatible navigateur (WebRTC ou relais approprié).
 - [ ] Implémenter prediction, rollback, resimulation et gestion de latence.
 - [ ] Prévoir protocole versionné et vérification de compatibilité des données de coups.
 - [ ] Gérer reconnexion, abandon, désynchronisation et comportement en pause.
-- [ ] Ajouter parties privées par code/invitation et rencontres publiques si l'infrastructure le permet.
+- [ ] Ajouter sessions coop privées par invitation, reprise de niveau et rencontres publiques si l’infrastructure le permet.
 - [ ] Définir matchmaking, régions, estimation ping et protections anti-abus.
 - [ ] Éviter de divulguer les IP ou données privées au-delà des nécessités techniques.
 - [ ] Instrumenter tests de latence, jitter, packet loss et comparaison d'états.
@@ -506,29 +521,30 @@ Le développement de chaque sous-système suit des dépendances techniques ; **t
 
 - [ ] **Fondations** : structure, moteur déterministe, simulation 60 Hz, contrats de données, tests de base et pipeline 3D.
 - [ ] **Combattants** : première famille de rigs réalistes conformes à la licence, pipeline de retargeting Mixamo, animation en jeu et volumes de collision.
-- [ ] **Combat complet** : six boutons, déplacements, garde, combos, projections, spéciaux, jauges, rounds et équilibre initial.
-- [ ] **Présentation haute fidélité** : PBR, peau/yeux/cheveux, arènes, lumière, caméra, HUD, sons, impacts et FX.
+- [ ] **Parcours 3D complet** : rues, bâtiments, plateformes, sauts, chutes, caméra de scrolling, ennemis multiples et navigation.
+- [ ] **Combat animation-first** : 63 sources retenues, GLB assemblés/retargetés, coups disponibles sur les rigs, enchaînements, garde, prises, objets et réactions réellement animées.
+- [ ] **Présentation haute fidélité** : PBR, peau/yeux/cheveux, niveaux urbains, lumière, caméra de suivi, HUD, sons, impacts et FX.
 - [ ] **Expérience produit** : menus, sélection, modes, IA, entraînement, réglages, accessibilité et progression.
-- [ ] **Fonctions compétitives** : replays, données de frames, options de tournoi et multijoueur avec rollback.
+- [ ] **Fonctions avancées** : replays, sauvegarde de campagne, coop locale, options réseau coop et résimulation déterministe.
 - [ ] **Exploitation** : optimisation, compatibilité, sécurité, tests E2E, publication, monitoring et corrections.
 - [ ] Vérifier les critères d'acceptation de **chaque section** avant de l'annoncer achevée.
 - [ ] Continuer le recrutement d'assets réalistes vérifiés et l'extension du roster tout au long du développement.
 
 ## 25. Critères de validation du produit
 
-- [ ] Un combat complet oppose deux personnages **3D photoréalistes**, animés, avec des commandes classiques et une caméra latérale.
-- [ ] Des combats IA contre IA complets et **visuellement observés** confirment que les échanges sont variés, lisibles et plaisants, et non seulement mathématiquement corrects.
+- [ ] Un **niveau beat’em up complet**, photoréaliste et jouable, fait progresser un héros 3D dans la rue, sur un bac de poubelles et vers une seconde hauteur de bâtiment, avec caméra 3D à scrolling.
+- [ ] Plusieurs ennemis 3D photoréalistes combattent le héros en même temps, le suivent entre plateformes et produisent des échanges **visuellement observés** par Léon, pas seulement valides mathématiquement.
 - [ ] Tous les coups et collisions dépendent du moteur à 60 ticks/s, pas du timing du renderer.
-- [ ] Les coups spéciaux, combos, parades, projections, rounds et HUD sont pleinement jouables et testés.
+- [ ] Avance/recul, profondeur, saut, chutes, ciblage proche, poings/pieds, prises, objets et HUD sont pleinement jouables et testés, sans rounds 1v1 imposés.
 - [ ] Les impacts donnent une réponse cohérente en moins de quelques frames : animation, hitstop, effet, son, HUD.
 - [ ] Les personnages n'ont pas de déformations majeures ni de glissements de pieds visibles en conditions normales.
-- [ ] Les arènes et personnages ont un rendu cohérent et crédible en lumière/matière.
+- [ ] Les niveaux urbains, plateformes et personnages ont un rendu cohérent et crédible en lumière/matière.
 - [ ] L'objectif de 60 FPS est mesuré sur les configurations officiellement prises en charge.
-- [ ] Deux joueurs peuvent jouer localement, et les modes annoncés sont fonctionnels.
+- [ ] Un joueur termine le parcours en solo ; la coopération locale est fonctionnelle si annoncée.
 - [ ] Les fonctions en ligne, lorsqu'exposées, ont des tests de désynchronisation, latence et abandon.
 - [ ] Toutes les ressources distribuées disposent d'un statut de droits validé et d'attributions complètes.
 - [ ] Les tests automatiques et les scénarios manuels pertinents passent sur le build de production.
-- [ ] Le jeu publié se lance et termine un combat sur les navigateurs officiellement pris en charge.
+- [ ] Le jeu publié se lance et termine un niveau beat’em up avec ennemis et plateformes sur les navigateurs officiellement pris en charge.
 
 ---
 
@@ -542,4 +558,4 @@ Le développement de chaque sous-système suit des dépendances techniques ; **t
 - [Sketchfab — conditions des téléchargements](https://sketchfab.com/developers/download-api/guidelines)
 - [Freesound — FAQ et licences](https://freesound.org/help/faq/)
 
-**Mise à jour :** 29 octobre 2026. Les conditions des fournisseurs doivent être revérifiées lors du téléchargement et de l'intégration effective.
+**Mise à jour :** 30 octobre 2026 — pivot beat’em up à scrolling et noyau déterministe de traversée. Les conditions des fournisseurs doivent être revérifiées lors du téléchargement et de l'intégration effective.

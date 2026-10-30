@@ -1,8 +1,7 @@
 # Fighters — découverte Mixamo et arsenal dicté par les animations
 
-**Statut actuel : 471 clips Mixamo réels identifiés, 299 fichiers FBX téléchargés et convertis en GLB privés, [60 présélectionnés selon les descriptions](../assets/mixamo-shortlist.json), aucun clip intégré ou approuvé pour le jeu.**
-Le moteur sait charger une scène GLB et des clips d'animation, mais il n'a
-pas encore les animations de combat ni un retargeting fonctionnel par personnage.
+**Statut actuel : 471 clips Mixamo indexés, 302 fichiers FBX convertis en GLB privés, [63 clips sources retenus par Léon](../assets/mixamo-selected.json), aucun clip retargeté/intégré dans les personnages du beat’em up.**
+Le moteur sait charger une scène GLB et des clips d'animation. Le script [d’assemblage des 63 clips](../scripts/pack-selected-mixamo.py) prépare un seul GLB YBot avec des noms fidèles aux sources, sans duplication de 63 meshes. Le retargeting et le chargement de production par personnage sont encore à faire.
 
 La [FAQ Adobe](https://helpx.adobe.com/creative-cloud/faq/mixamo-faq.html)
 permet l'usage de personnages/animations Mixamo dans les jeux vidéo, y compris

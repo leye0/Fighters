@@ -4,7 +4,7 @@ Ce document s'applique à toute intervention dans le dépôt **Fighters**.
 
 ## Mandat
 
-Construire un jeu de combat **2,5D photoréaliste pour le navigateur** : simulation de combat déterministe, personnages et environnements 3D réalistes, contrôles arcade, coups spéciaux, HUD, audio et modes de jeu de niveau production.
+Construire un **beat’em up d’action 3D à défilement latéral** pour navigateur, inspiré de la structure de *Double Dragon* : exploration de rues, bâtiments et plateformes surélevées, plusieurs ennemis, déplacements X/profondeur/saut, orientation automatique vers les menaces proches et combats animation-first. Le duel d’arène 1v1 existant est un **banc de simulation hérité**, pas l’expérience principale.
 
 Le document directeur est **docs/production-plan.md**. Le consulter avant toute modification, mettre à jour les cases réalisées dans le même commit que le travail associé et ne jamais marquer une case terminée sans preuve concrète.
 
@@ -24,21 +24,23 @@ Le document directeur est **docs/production-plan.md**. Le consulter avant toute 
 
 - TypeScript/Vite, Three.js avec WebGL 2 ; WebGPU seulement derrière un adaptateur et après évaluation.
 - Simulation autoritative à **60 ticks/s** séparée du rendu et de l'animation.
-- Affichage 3D avec caméra latérale, déplacement déterministe sur un plan de combat.
+- Affichage 3D avec caméra latérale qui défile : X = progression, Z = profondeur de la rue, Y = vraie élévation des plateformes (toits, bacs de poubelles, escaliers). Les trois axes sont simulés à 60 Hz en millimètres entiers.
+- Ennemis multiples, orientation du héros vers une cible proche avec hystérésis, indépendamment du déplacement. Reculer en gardant l’ennemi en face est un comportement requis.
+- Décrire les plateformes et obstacles par des données génériques. Voir [docs/beat-em-up-architecture.md](docs/beat-em-up-architecture.md).
 - Les hitboxes, hurtboxes, timings, états et dégâts proviennent des données de simulation ; le squelette visuel ne décide jamais du résultat d'un coup.
 - Replays reproductibles, tests de règles, données de frame, tests navigateur et mesure de performance.
 - Priorité simultanée au **rendu photoréaliste maximal** et à la **fluidité/puissance mesurée**. Les profils dégradés restent explicites ; la référence de qualité Ultra ne doit pas être abaissée tacitement.
 
 ## QA de gameplay IA contre IA
 
-- Le banc `npm run simulate:ai` évalue des combats à 60 ticks/s avec les mêmes `InputFrame` que les joueurs. Les tests doivent vérifier la reproductibilité, la présence d'échanges, les attaques spéciales et les avertissements d'inactivité.
+- Le banc historique `npm run simulate:ai` évalue des **duels 1v1 de simulation** à 60 ticks/s avec les mêmes `InputFrame` que les joueurs ; il n’est pas le scénario principal de production. Les tests doivent vérifier la reproductibilité, la présence d'échanges, les attaques spéciales et les avertissements d'inactivité.
 - **Ne jamais déduire qu'un combat est « fun » à partir de simples statistiques.** Après intégration de deux combattants photoréalistes et d'animations, exécuter un véritable match IA contre IA dans WebGL, l'enregistrer avec WebSuite et demander au propriétaire une appréciation à vitesse réelle. Voir `docs/ai-combat-qa.md`.
 - La simple existence d'un emplacement d'animation dans le catalogue ne signifie pas qu'un clip Mixamo a été acquis ni que sa licence a été vérifiée.
 - **Aucun coup visuellement exécutable sans son vrai clip approuvé pour le personnage** : l'inventaire `assets/animation-inventory.json` doit être exploité pour créer ses moves, et la présence des clips exacts dans le GLB est obligatoire avant de lancer le match.
 
 ## Sources Mixamo WarConquer (réel, pas théorique)
 
-- Consulter [docs/mixamo-real-sources.md](docs/mixamo-real-sources.md) et [assets/mixamo-available-clips.json](assets/mixamo-available-clips.json) : 471 candidats triés sur noms et descriptions dans les index réels, 302 FBX binaires téléchargés/hachés en privé et 302 GLB réellement convertis/vérifiés hors Git (299 initiaux + 3 pas arrière de boxe ciblés).
+- Consulter [docs/mixamo-real-sources.md](docs/mixamo-real-sources.md), [assets/mixamo-available-clips.json](assets/mixamo-available-clips.json) et [assets/mixamo-selected.json](assets/mixamo-selected.json) : 471 candidats indexés, 302 FBX/GLB privés convertis, **63 clips sources conservés par Léon** (noms exacts et SHA). Sélection humaine des vidéos ≠ retargeting ni approbation pour un personnage.
 - En cas de HTTP 429, ne pas multiplier les requêtes : respecter `Retry-After`, stopper et reprendre ensuite. La commande `--workers 1 --request-interval 5` limite volontairement le débit.
 - Le script `scripts/acquire-mixamo.py` acquiert les sources dans une destination **hors repo Git public**. Le script `scripts/convert-mixamo-fbx.py` les transforme en GLB animés dans une autre destination **privée** après validation FBX/SHA et vérification des canaux GLB. Ne pas committer les FBX bruts ni les GLB de clips isolés à droits incertains.
 - Ces clips **ne sont pas validés pour le jeu** : `assets/animation-inventory.json` reste vide. Seuls des clips légalement vérifiés, retargetés, visionnés et avec frames de contact mesurées autorisent un coup jouable.

@@ -2,6 +2,14 @@
 
 > **Décision de conception : animation d'abord, jeu ensuite.** Aucun combo, coup spécial ni coup « normal » n'est promis avant de voir une animation réaliste qui peut le représenter. Les **71 gestes historiques** restent des scénarios de stress-test du moteur, pas un roster jouable.
 
+## Le format de combat a changé
+
+Le produit final est désormais un **beat’em up 3D à scrolling**, avec plusieurs ennemis, décalage en profondeur Z et véritables plateformes à hauteur Y. La bibliothèque de 63 clips est inchangée ; ses noms demeurent identiques. [Architecture de progression](beat-em-up-architecture.md).
+
+Le personnage peut reculer **en restant tourné vers un ennemi proche** ; la marche arrière, l’orientation et l’attaque sont trois états indépendants. Les coups ne doivent pas toucher une cible simplement parce qu’elle est proche : l’alignement en profondeur et en hauteur, la portée, les hitboxes et la trajectoire de la frappe restent à vérifier. Le ciblage par proximité n’invente pas de dégâts.
+
+Pour préparer un seul conteneur de 63 animations sur le rig YBot commun, utiliser `scripts/prepare-selected-mixamo.py`, qui appelle `scripts/pack-selected-mixamo.py` après acquisition et conversion. Ce **pack de recherche** conserve les noms sources ; il ne valide pas le retargeting ni le gameplay des personnages définitifs.
+
 ## Base compacte et superposition des mouvements (30 octobre 2026)
 
 La [présélection initiale de 60 clips](../assets/mixamo-shortlist.json) venait des descriptions des **299 GLB privés déjà convertis** ; trois pas arrière ont été ajoutés ensuite. **Le 30 octobre 2026, Léon a regardé les prévisualisations et conservé les 63 animations, en validant les noms d'origine.** [Manifeste de sélection et identités exactes](../assets/mixamo-selected.json). Cette décision valide les mouvements source pour l'intégration, mais aucun GLB n'est encore retargeté ni intégré au jeu.
