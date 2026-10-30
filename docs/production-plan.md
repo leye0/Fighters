@@ -93,15 +93,22 @@
 
 **Décision animation-first :** les 71 attaques de [docs/arsenal.md](arsenal.md) constituent uniquement un **banc de simulation**, pas le contenu du jeu. Les coups effectivement jouables sont **dérivés des animations réellement acquises, vues, retargetées et approuvées**, puis leurs commandes et cancels sont attribués. Voir [docs/animation-first.md](animation-first.md). Nombre de coups réellement approuvés aujourd'hui : **0**.
 
+**Orientation validée le 30 octobre 2026 :** viser environ **60 animations sources complémentaires** au lieu de chercher une animation intégrale pour chaque combinaison. Un combattant doit pouvoir avancer, reculer et sauter pendant certaines frappes, via une simulation déterministe de déplacement et des couches d'animation par os. Cette capacité n'implique pas que chaque combinaison de clips soit réaliste : autorisation **par coup et par rig**, après examen visuel. [Présélection descriptive des 60 clips](../assets/mixamo-shortlist.json) ; 0 clip visuellement approuvé.
+
 - [x] Définir **71 scénarios synthétiques de test du moteur** : six normaux, six accroupis, six aériens, douze directionnels, six accords de touches et 35 spéciaux/supers ; **non livrés comme arsenal réel**.
 - [x] Reconnaître neuf mouvements directionnels, des accords de boutons et les priorités de sélection.
 - [x] Autoriser des **combos cancel après contact** vers des coups explicitement permis, dans des fenêtres temporelles vérifiées ; refuser le cancel sur whiff.
 - [x] Permettre les attaques aériennes sans figer la gravité et limiter la collision par séparation verticale.
+- [x] Ajouter la mobilité paramétrable pendant une frappe (avance/recul au sol, contrôle horizontal aérien), et l'option de déclencher un saut sans interrompre un coup compatible, sous contrôle de la simulation à 60 Hz. Tests de déplacements et de gravité ; aucune animation réelle certifiée.
 - [ ] Compléter le buffering des accords quasi simultanés, les charges, les dash et les projections.
 - [x] Mettre en place le registre **animation-first** par combattant, où seuls les clips approuvés créent un coup ; FPS/contact mesurés déterminent les frames, cancels vers clips absents filtrés et noms GLB contrôlés avant un combat. (Tests unitaires ; 299 FBX acquis temporairement hors Git, aucun clip intégré ni approuvé.)
 - [x] Établir un inventaire sourcé de 471 mouvements Mixamo réels et un téléchargement privé reproductible, sans déposer de FBX brut dans le dépôt public.
 - [x] Valider la conversion FBX → GLB avec un vrai clip Mixamo : Jab_Cross, 1 animation / 67 canaux. Outil de conversion batch et tests structurels.
 - [x] Convertir les 299 FBX réellement acquis en GLB privés et valider 299/299 sorties animées (0 échec, canaux présents et checksums).
+- [x] Constituer une présélection de **60 clips déjà convertis**, équilibrée selon les descriptions réelles : bases, déplacements, sauts, poings, pieds, défenses, réactions, combos et projections ; test automatisé contre le catalogue et les empreintes. **Ce n'est pas une approbation esthétique.**
+- [x] Préparer les couches d'animation GLB : pistes du haut/bas du corps distinctes, superposition de frappe et locomotion lorsque `animationLayer: upperBody` est explicitement autorisé, sans piloter les hitboxes depuis le squelette. Tests unitaires des masques ; rendu réel non encore évalué.
+- [ ] Visionner les 60 présélectionnées dans les quatre vues du dataset, éliminer les gestes confus/peu convaincants et remplacer les doublons par des alternatives si nécessaire.
+- [ ] Vérifier la superposition marche avant/arrière et saut + frappe **sur le personnage définitif**, notamment les transitions et les articulations du bassin/torse ; ajuster les poids ou imposer le mode `fullBody` si nécessaire.
 - [x] Vérifier qu'un HTTP 429 peut interrompre un gros lot, puis ajouter un limiteur de débit avec `Retry-After`, arrêt et reprise incrémentale.
 - [ ] Récupérer les 172 autres sources sélectionnées et convertir leurs fichiers réels.
 - [ ] Retargeter les GLB vers nos combattants photoréalistes, dont les modèles féminins ; mesurer les contacts et les transitions.

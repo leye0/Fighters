@@ -11,14 +11,18 @@ import type { RuntimeFighterAsset } from "../assets/eligibility.ts";
 import { qualityProfile, renderPixelRatio, type QualityPreset } from "./quality.ts";
 import { animationClipName } from "./animation-map.ts";
 import { missingAnimationClipNames } from "./clip-coverage.ts";
+import { maskClip, type BodyLayer } from "./animation-layers.ts";
 
 interface FighterVisual {
   readonly root: Group;
   readonly mixer: AnimationMixer;
   readonly clips: ReadonlyMap<string, AnimationClip>;
   readonly configuration: RuntimeFighterAsset;
-  action: AnimationAction | null;
-  animationKey: string | null;
+  readonly maskedClips: Map<string, AnimationClip>;
+  baseAction: AnimationAction | null;
+  baseKey: string | null;
+  overlayAction: AnimationAction | null;
+  overlayKey: string | null;
 }
 
 function disposeMaterial(material: Material): void {
@@ -149,7 +153,8 @@ export class ThreeWorld {
     this.scene.add(root);
     this.fighterVisuals.set(asset.id, {
       root, mixer, clips, configuration: asset,
-      action: null, animationKey: null,
+      maskedClips: new Map(), baseAction: null, baseKey: null,
+      overlayAction: null, overlayKey: null,
     });
   }
 
@@ -163,35 +168,98 @@ export class ThreeWorld {
     if (missing.length) {
       throw new Error("Missing real animation clips for " + definition.id + ": " + [...new Set(missing)].join(", "));
     }
+    const mapping = visual.configuration.visual?.animationMap;
+    for (const move of definition.moves.filter(candidate => candidate.animationLayer === "upperBody")) {
+      const name = mapping?.[move.id] ?? (move.animationRole ? mapping?.[move.animationRole] : undefined) ??
+        move.animationRole ?? move.id;
+      const attack = visual.clips.get(name);
+      if (!attack) throw new Error("Missing real layered attack: " + name);
+      this.maskedClip(visual, attack, "upperBody");
+    }
+    if (definition.moves.some(move => move.animationLayer === "upperBody")) {
+      for (const name of ["idle", "walk", "jump", ...(mapping?.walkBack ? ["walkBack"] : [])]) {
+        const clipName = mapping?.[name] ?? name;
+        const locomotion = visual.clips.get(clipName);
+        if (!locomotion) throw new Error("Missing layered locomotion: " + clipName);
+        this.maskedClip(visual, locomotion, "lowerBody");
+      }
+    }
   }
 
-  private updateAnimation(visual: FighterVisual, fighter: FighterState, definition?: FighterDefinition): void {
-    const key = fighter.action === "attack" ? fighter.moveId : fighter.action;
-    if (key === visual.animationKey) return;
-    visual.animationKey = key;
+  private maskedClip(visual: FighterVisual, clip: AnimationClip, layer: BodyLayer): AnimationClip {
+    const key = clip.name + "@" + layer;
+    let masked = visual.maskedClips.get(key);
+    if (!masked) {
+      masked = maskClip(clip, layer);
+      visual.maskedClips.set(key, masked);
+    }
+    return masked;
+  }
+
+  private playLayer(
+    visual: FighterVisual, layer: "base" | "overlay", key: string | null,
+    clip: AnimationClip | null, looping: boolean, duration: number | null = null,
+  ): void {
+    const keyField = layer === "base" ? "baseKey" : "overlayKey";
+    const actionField = layer === "base" ? "baseAction" : "overlayAction";
+    if (visual[keyField] === key) return;
+    const prior = visual[actionField];
+    visual[keyField] = key;
+    if (!clip) {
+      prior?.fadeOut(0.12);
+      visual[actionField] = null;
+      return;
+    }
+    const next = visual.mixer.clipAction(clip);
+    next.setLoop(looping ? LoopRepeat : LoopOnce, looping ? Infinity : 1);
+    next.clampWhenFinished = !looping;
+    next.setEffectiveTimeScale(duration && duration > 0 && clip.duration > 0
+      ? clip.duration / duration : 1);
+    next.reset().fadeIn(0.12).play();
+    if (prior && prior !== next) prior.fadeOut(0.12);
+    visual[actionField] = next;
+  }
+
+  private updateAnimation(
+    visual: FighterVisual, fighter: FighterState, previous: FighterState,
+    definition?: FighterDefinition,
+  ): void {
     const move = fighter.action === "attack"
       ? definition?.moves.find(candidate => candidate.id === fighter.moveId) : undefined;
     const mapped = animationClipName(fighter, definition, visual.configuration.visual?.animationMap);
     const clip = mapped ? visual.clips.get(mapped) : undefined;
-    if (!clip) {
-      // No substitute animation: missing moves must remain visible in QA.
-      visual.action?.fadeOut(0.12);
-      visual.action = null;
+    if (fighter.action === "attack" && move?.animationLayer === "upperBody") {
+      if (!clip) {
+        // Never manufacture a strike from locomotion when its certified clip is absent.
+        this.playLayer(visual, "base", null, null, false);
+        this.playLayer(visual, "overlay", null, null, false);
+        return;
+      }
+      const horizontal = fighter.xMm - previous.xMm;
+      const locomotion = fighter.yMm > 0 ? "jump" : horizontal === 0 ? "idle" :
+        horizontal * fighter.facing < 0 ? "walkBack" : "walk";
+      const mapping = visual.configuration.visual?.animationMap;
+      const mappedLocomotion = mapping?.[locomotion] ??
+        (locomotion === "walkBack" ? mapping?.walk ?? "walk" : locomotion);
+      const baseClip = visual.clips.get(mappedLocomotion);
+      if (!baseClip) {
+        this.playLayer(visual, "base", null, null, false);
+        this.playLayer(visual, "overlay", null, null, false);
+        return;
+      }
+      const duration = (move.startupTicks + move.activeTicks + move.recoveryTicks) / TICKS_PER_SECOND;
+      this.playLayer(visual, "base", "locomotion:" + locomotion + ":" + mappedLocomotion,
+        this.maskedClip(visual, baseClip, "lowerBody"), locomotion !== "jump");
+      this.playLayer(visual, "overlay", "attack:" + fighter.moveId + ":" + mapped,
+        this.maskedClip(visual, clip, "upperBody"), false, duration);
       return;
     }
-    const next = visual.mixer.clipAction(clip);
+    this.playLayer(visual, "overlay", null, null, false);
+    const key = fighter.action === "attack" ? fighter.moveId : fighter.action;
     const looping = fighter.action === "idle" || fighter.action === "walk" || fighter.action === "crouch";
-    next.setLoop(looping ? LoopRepeat : LoopOnce, looping ? Infinity : 1);
-    next.clampWhenFinished = !looping;
-    // An animation may be visually different, but its time must follow the
-    // authoritative startup/active/recovery duration rather than changing it.
     const duration = move ? (move.startupTicks + move.activeTicks + move.recoveryTicks) / TICKS_PER_SECOND : null;
-    next.setEffectiveTimeScale(duration && duration > 0 && clip.duration > 0
-      ? clip.duration / duration : 1);
-    const previousAction = visual.action;
-    next.reset().fadeIn(0.12).play();
-    if (previousAction && previousAction !== next) previousAction.fadeOut(0.12);
-    visual.action = next;
+    // A full-body clip remains exclusive unless an approved move opts into layering.
+    this.playLayer(visual, "base", key, clip ?? null, looping, duration);
   }
 
   sync(previous: MatchState, current: MatchState, alpha: number, deltaSeconds: number, definition?: MatchDefinition): void {
@@ -208,7 +276,7 @@ export class ThreeWorld {
       const axis = visual.configuration.visual?.modelForwardAxis ?? "+Z";
       const adjustment = axis === "+Z" ? 0 : axis === "-Z" ? Math.PI : axis === "+X" ? -Math.PI / 2 : Math.PI / 2;
       visual.root.rotation.y = (fighter.facing === 1 ? Math.PI / 2 : -Math.PI / 2) + adjustment;
-      this.updateAnimation(visual, fighter, definition?.fighters[index]);
+      this.updateAnimation(visual, fighter, old, definition?.fighters[index]);
       visual.mixer.update(Math.min(0.05, deltaSeconds));
     }
     const [a, b] = current.fighters;

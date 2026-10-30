@@ -48,6 +48,76 @@ test("spawns facing each other and never mutates previous state", () => {
   assert.equal(next.fighters[0].xMm, state.fighters[0].xMm + 100);
 });
 
+test("authored strikes permit deterministic advancing and retreating at reduced speed", () => {
+  const original = fixture();
+  const mobile: MoveDefinition = { ...jab, groundMovementPercent: 75, airControlPercent: 50 };
+  const def: MatchDefinition = {
+    ...original,
+    fighters: original.fighters.map(f => ({ ...f, moves: [mobile] })) as unknown as MatchDefinition["fighters"],
+  };
+  let state = createMatch(def);
+  const start = state.fighters[0].xMm;
+  state = step(state, { horizontal: 1, vertical: 0, attacks: ["LP"] }, neutral, def).state;
+  assert.equal(state.fighters[0].xMm, start + 75);
+  state = step(state, { horizontal: -1, vertical: 0, attacks: [] }, neutral, def).state;
+  assert.equal(state.fighters[0].xMm, start);
+  assert.equal(state.fighters[0].action, "attack");
+  const invalid: MatchDefinition = {
+    ...def,
+    fighters: [{ ...def.fighters[0], moves: [{ ...mobile, groundMovementPercent: 101 }] }, def.fighters[1]],
+  };
+  assert.throws(() => validateMatchDefinition(invalid), /exceeds 100%/);
+});
+
+test("airborne punches keep gravity and apply configured midair steering", () => {
+  const original = fixture();
+  const aerial: MoveDefinition = { ...jab, stance: "airborne", groundMovementPercent: 50, airControlPercent: 40 };
+  const def: MatchDefinition = {
+    ...original,
+    fighters: original.fighters.map(f => ({ ...f, moves: [aerial] })) as unknown as MatchDefinition["fighters"],
+  };
+  let state = step(createMatch(def), { horizontal: 0, vertical: 1, attacks: [] }, neutral, def).state;
+  const before = state.fighters[0];
+  state = step(state, { horizontal: -1, vertical: 0, attacks: ["LP"] }, neutral, def).state;
+  // First airborne tick already applies ordinary air steering before starting the attack.
+  assert.equal(state.fighters[0].xMm, before.xMm - 100);
+  const attacking = state.fighters[0];
+  state = step(state, { horizontal: -1, vertical: 0, attacks: [] }, neutral, def).state;
+  assert.equal(state.fighters[0].xMm, attacking.xMm - 40);
+  assert.ok(state.fighters[0].yMm > attacking.yMm);
+  assert.equal(state.fighters[0].action, "attack");
+});
+
+test("a layered grounded punch can initiate a jump without canceling its hit frames", () => {
+  const original = fixture();
+  const jumpPunch: MoveDefinition = {
+    ...jab, animationLayer: "upperBody", allowJumpDuringAttack: true,
+    groundMovementPercent: 80, airControlPercent: 50,
+  };
+  const def: MatchDefinition = {
+    ...original,
+    fighters: original.fighters.map(f => ({ ...f, moves: [jumpPunch] })) as unknown as MatchDefinition["fighters"],
+  };
+  let state = step(createMatch(def), press("LP"), neutral, def).state;
+  const before = state.fighters[0];
+  const started = step(state, { horizontal: -1, vertical: 1, attacks: [] }, neutral, def);
+  state = started.state;
+  assert.equal(state.fighters[0].action, "attack");
+  assert.equal(state.fighters[0].moveId, "jab");
+  assert.equal(state.fighters[0].xMm, before.xMm - 50);
+  assert.ok(state.fighters[0].yMm > 0);
+  assert.equal(started.events.filter(event => event.type === "jump").length, 1);
+  for (let tick = 0; tick < 3; tick++) {
+    const next = step(state, { horizontal: -1, vertical: 1, attacks: [] }, neutral, def);
+    assert.equal(next.events.filter(event => event.type === "jump").length, 0);
+    state = next.state;
+  }
+  const invalid: MatchDefinition = {
+    ...def, fighters: [{ ...def.fighters[0], moves: [{ ...jumpPunch, animationLayer: "fullBody" }] }, def.fighters[1]],
+  };
+  assert.throws(() => validateMatchDefinition(invalid), /upper-body layering/);
+});
+
 test("attack has startup, hits once, and enters recovery", () => {
   let state = createMatch(fixture());
   let result = step(state, press("LP"));

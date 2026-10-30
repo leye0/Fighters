@@ -117,7 +117,7 @@ export function decideAiInput(
         const chosen = eligible[(seed >>> 8) % eligible.length];
         return { input: {
           horizontal: chosen.direction === "forward" ? fighter.facing :
-            chosen.direction === "back" ? -fighter.facing : 0,
+            chosen.direction === "back" ? (fighter.facing === 1 ? -1 : 1) : 0,
           vertical: chosen.stance === "crouching" ? -1 : 0,
           attacks: chosen.buttons ?? [chosen.button],
         }, brain: next };
@@ -138,7 +138,7 @@ export function decideAiInput(
 
   if (tick < next.guardUntilTick) {
     return {
-      input: { horizontal: -fighter.facing, vertical: next.seed % 3 === 0 ? -1 : 0, attacks: [] },
+      input: { horizontal: fighter.facing === 1 ? -1 : 1, vertical: next.seed % 3 === 0 ? -1 : 0, attacks: [] },
       brain: next,
     };
   }
@@ -171,7 +171,7 @@ export function decideAiInput(
       return {
         input: {
           horizontal: chosen.direction === "forward" ? fighter.facing :
-            chosen.direction === "back" ? -fighter.facing : 0,
+            chosen.direction === "back" ? (fighter.facing === 1 ? -1 : 1) : 0,
           vertical: chosen.stance === "crouching" ? -1 : 0,
           attacks: chosen.buttons ?? [chosen.button],
         },
@@ -186,7 +186,7 @@ export function decideAiInput(
     return { input: { horizontal: fighter.facing, vertical: 0, attacks: [] }, brain: next };
   }
   if (distance < 460 && next.profile === "defensive") {
-    return { input: { horizontal: -fighter.facing, vertical: 0, attacks: [] }, brain: next };
+    return { input: { horizontal: fighter.facing === 1 ? -1 : 1, vertical: 0, attacks: [] }, brain: next };
   }
   return { input: NEUTRAL_INPUT, brain: next };
 }

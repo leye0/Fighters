@@ -1,6 +1,6 @@
 # Fighters — découverte Mixamo et arsenal dicté par les animations
 
-**Statut actuel : 471 clips Mixamo réels identifiés, 117 fichiers FBX binaires téléchargés et vérifiés en privé, aucun clip intégré ou approuvé pour le jeu.**
+**Statut actuel : 471 clips Mixamo réels identifiés, 299 fichiers FBX téléchargés et convertis en GLB privés, [60 présélectionnés selon les descriptions](../assets/mixamo-shortlist.json), aucun clip intégré ou approuvé pour le jeu.**
 Le moteur sait charger une scène GLB et des clips d'animation, mais il n'a
 pas encore les animations de combat ni un retargeting fonctionnel par personnage.
 
@@ -32,7 +32,7 @@ pas une affirmation que Mixamo propose un fichier portant exactement ce nom.
 
 ## Pipeline à développer et vérifier
 
-- [x] Retrouver les fichiers réels de Mixamo par le miroir documenté dans WarConquer et les indexer (471 clips, dont 11117 FBX binaires vérifiés).
+- [x] Retrouver les fichiers réels de Mixamo par le miroir documenté dans WarConquer et les indexer (471 clips, dont 299 FBX binaires vérifiés et convertis).
 - [x] Fournir un téléchargeur privé et reproductible sans dépendance ni pop-up Adobe.
 - [ ] Confirmer auprès d'Adobe les droits applicables au mode de distribution visé, et vérifier le contenu des fichiers avant leur inclusion.
 - [ ] Explorer Mixamo officiel si nécessaire pour variantes de rig, vitesses et validation complémentaire.

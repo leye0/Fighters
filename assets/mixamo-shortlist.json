@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "status": "metadata_shortlist_only_not_visually_approved",
+  "goal": "About 60 complementary source clips. Attacks and locomotion can be combined only after per-rig visual approval.",
+  "sourceCatalog": "assets/mixamo-available-clips.json",
+  "groups": [
+    {
+      "purpose": "stance",
+      "reason": "Distinct standing and crouching foundations for layered locomotion and strikes",
+      "filenames": ["Fighting_Idle.fbx", "Boxing_6.fbx", "Mma_Idle.fbx", "Crouch_Idle_2.fbx"]
+    },
+    {
+      "purpose": "locomotion",
+      "reason": "Forward/backward motion, combat sidesteps and low movement",
+      "filenames": ["Dodging_2.fbx", "Dodging_3.fbx", "Medium_Step_Forward.fbx", "Long_Step_Forward.fbx", "Ginga_Backward.fbx", "Crouch_Walk_Back.fbx", "Crouch_Walk_Forward_2.fbx"]
+    },
+    {
+      "purpose": "airborne",
+      "reason": "Vertical, forward and backward jumps with fall and landing phases",
+      "filenames": ["Jump.fbx", "Backward_Jump.fbx", "Forward_Jump.fbx", "Landing.fbx", "Falling_Idle.fbx"]
+    },
+    {
+      "purpose": "punch",
+      "reason": "Jabs, crosses, hooks, uppercuts, elbows, headbutts and knees; upper-body layering candidates, not yet verified",
+      "filenames": ["Boxing.fbx", "Boxing_3.fbx", "Boxing_4.fbx", "Boxing_7.fbx", "Boxing_9.fbx", "Lead_Jab_2.fbx", "Lead_Jab_4.fbx", "Hook_2.fbx", "Hook_5.fbx", "Elbow_Punching.fbx", "Illegal_Knee.fbx", "Headbutt.fbx", "Boxing_8.fbx", "Punching_2.fbx"]
+    },
+    {
+      "purpose": "kick",
+      "reason": "Low/mid/high, front/back, roundhouse, side, sweep and capoeira variety; usually require full-body coordination",
+      "filenames": ["Kicking_4.fbx", "Kicking_6.fbx", "Kicking_7.fbx", "Kicking_8.fbx", "Kicking_2.fbx", "Mma_Kick_5.fbx", "Mma_Kick_6.fbx", "Mma_Kick_2.fbx", "Mma_Kick_3.fbx", "Leg_Sweep_2.fbx", "Armada.fbx", "Bencao.fbx"]
+    },
+    {
+      "purpose": "defense",
+      "reason": "High/low/body guards and retreating avoidance",
+      "filenames": ["Block.fbx", "Body_Block.fbx", "Center_Block.fbx", "Center_Block_2.fbx", "Dodging_Back.fbx"]
+    },
+    {
+      "purpose": "reaction",
+      "reason": "Different impact strengths and essential knockdown, get-up and KO states",
+      "filenames": ["Head_Hit_4.fbx", "Head_Hit_8.fbx", "Head_Hit_2.fbx", "Hit_To_Body_3.fbx", "Knocked_Down.fbx", "Getting_Up.fbx", "Knocked_Out.fbx"]
+    },
+    {
+      "purpose": "combo",
+      "reason": "Short and long sequences to compare with individually blended punches",
+      "filenames": ["Jab_Cross.fbx", "Punch_Combo.fbx", "Flying_Knee_Punch_Combo.fbx"]
+    },
+    {
+      "purpose": "grapple",
+      "reason": "Matched attacker/victim pair for one takedown, not independent single-character moves",
+      "filenames": ["Double_Leg_Takedown_-_Attacker.fbx", "Double_Leg_Takedown_-_Victim.fbx"]
+    },
+    {
+      "purpose": "special",
+      "reason": "One distinctive airborne special to inspect before promising any special move",
+      "filenames": ["Hurricane_Kick.fbx"]
+    }
+  ]
+}

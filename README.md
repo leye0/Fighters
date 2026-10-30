@@ -36,6 +36,8 @@ Ces choix sont des décisions de départ documentées ; tout changement doit êt
 
 Le miroir public déjà utilisé dans **WarConquer** permet d'accéder aux vrais fichiers Mixamo sans passer par une page de connexion Adobe éphémère : **471 candidats d'animations étudiés parmi 2 317 mouvements, 299 FBX binaires récupérés et vérifiés en privé, et 299 animations converties en GLB avec de véritables canaux**. L'intégration au jeu est encore à faire : **0 clip approuvé dans le runtime**.
 
+**Présélection du 30 octobre 2026 : [60 animations complémentaires, sélectionnées d'après les descriptions](assets/mixamo-shortlist.json).** Les coups peuvent disposer d'une mobilité au sol et en l'air configurable ; le moteur a un découpage haut/bas du corps pour superposer la frappe à la locomotion. Ce sont des capacités de code et une liste de **candidats**, pas des composites visuellement validés. Voir [le protocole d'animation](docs/animation-first.md).
+
 - [Sources réelles, droits, commandes de récupération et prochaines vérifications](docs/mixamo-real-sources.md)
 - [Index de 471 mouvements Mixamo réels](assets/mixamo-available-clips.json)
 - `python3 scripts/acquire-mixamo.py --list --family kick` pour inspecter le catalogue.

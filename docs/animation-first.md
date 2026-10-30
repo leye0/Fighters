@@ -2,6 +2,18 @@
 
 > **Décision de conception : animation d'abord, jeu ensuite.** Aucun combo, coup spécial ni coup « normal » n'est promis avant de voir une animation réaliste qui peut le représenter. Les **71 gestes historiques** restent des scénarios de stress-test du moteur, pas un roster jouable.
 
+## Base compacte et superposition des mouvements (30 octobre 2026)
+
+La [présélection de 60 clips](../assets/mixamo-shortlist.json) vient des descriptions des **299 GLB privés déjà convertis**. Elle cherche une bonne couverture des déplacements, sauts, frappes, défenses et réactions. Aucune sélection descriptive ne prouve que le rendu est bon et aucune n'est encore intégrée au jeu.
+
+- **Bas du corps :** locomotion avant/arrière, saut, réception et appuis. **Haut du corps :** une frappe peut se superposer sans effacer les jambes, via des pistes d'os disjointes dans `src/render/animation-layers.ts`.
+- **Bassin et translation :** restent prioritaires à la locomotion et à la simulation autoritative. Les déplacements réels `xMm/yMm`, la gravité, les hitboxes et les contacts sont calculés à 60 Hz. Le root motion d'un GLB ne déplace pas la simulation.
+- **Réglages par coup approuvé :** `groundMovementPercent` (0–100), `airControlPercent` (0–100), `animationLayer` (`upperBody` ou `fullBody`), `allowJumpDuringAttack`. Le dernier exige `upperBody` et ne permet qu'un saut par attaque.
+- **Compatibilité :** un coup de poing peut avoir une variante marchée/reculée/aérienne si la combinaison est visuellement crédible. Les grands coups de pied, balayages, projections et gestes qui dépendent des hanches gardent généralement un clip complet. Les transitions, appuis et glissements restent à examiner pour chaque combattant ; **on ne promet pas le produit cartésien de toutes les animations**.
+- **Chargement :** l'animation de locomotion de base doit exister avec son nom exact (`idle`, `walk`, `jump`, ou `walkBack` via mapping explicite). Une animation de frappe absente n'est jamais remplacée silencieusement. Le rendu actuel sait combiner des pistes du haut et du bas du corps, mais aucun GLB approuvé n'a encore permis de valider cette fonction à l'écran.
+
+Une revue à venir doit mesurer les clips et vérifier si leurs pistes couvrent proprement les deux zones, puis soumettre les combinaisons réellement rendues à Léon. Les manifestes de sélection, d'inventaire et d'approbation restent **séparés**.
+
 ## Ordre obligatoire (top-down)
 
 1. **Découvrir des clips réels** sur Mixamo ou d'autres sources documentées. Noter nom exact, URL, identifiant, auteur, variante, rig et conditions d'usage. Les 70 rôles de recherche dans `assets/mixamo-catalog.json` sont de simples mots-clés, jamais des preuves de disponibilité.

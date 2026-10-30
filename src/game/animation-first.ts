@@ -50,6 +50,12 @@ export interface AnimationMoveReview {
     readonly hitstunTicks: number;
     readonly blockstunTicks: number;
     readonly pushbackMm: number;
+    /** Explicitly reviewed mobility while attacking: 0..100% of normal speed. */
+    readonly groundMovementPercent?: number;
+    readonly airControlPercent?: number;
+    /** Upper-body-only blending requires a separate, valid locomotion clip. */
+    readonly animationLayer?: "upperBody" | "fullBody";
+    readonly allowJumpDuringAttack?: boolean;
     /** Explicitly reviewed transitions, not automatically invented combos. */
     readonly approvedCancels?: readonly string[];
     readonly cancelFromTick?: number;

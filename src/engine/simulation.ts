@@ -51,6 +51,14 @@ export interface MoveDefinition {
   /** Optional vertical collision constraints for anti-air and airborne moves. */
   readonly minTargetHeightMm?: number;
   readonly maxVerticalSeparationMm?: number;
+  /** Percent of authored walking speed allowed during this attack (0..100). */
+  readonly groundMovementPercent?: number;
+  /** Percent of normal midair steering allowed during this attack (0..100). */
+  readonly airControlPercent?: number;
+  /** Animation uses torso/arms on top of a separate lower-body locomotion clip. */
+  readonly animationLayer?: "upperBody" | "fullBody";
+  /** Allow a grounded strike to keep playing when its fighter initiates a jump. */
+  readonly allowJumpDuringAttack?: boolean;
 }
 
 export interface FighterDefinition {
@@ -92,6 +100,7 @@ export interface FighterState {
   readonly moveId: string | null;
   readonly moveFrame: number;
   readonly moveHitOpponent: boolean;
+  readonly attackJumpUsed: boolean;
   readonly stunRemainingTicks: number;
 }
 
@@ -160,6 +169,21 @@ export function validateMatchDefinition(definition: MatchDefinition): void {
       if (move.motionWindowTicks !== undefined) assertInt(move.motionWindowTicks, move.id + ".motionWindowTicks", 1);
       if (move.minTargetHeightMm !== undefined) assertInt(move.minTargetHeightMm, move.id + ".minTargetHeightMm");
       if (move.maxVerticalSeparationMm !== undefined) assertInt(move.maxVerticalSeparationMm, move.id + ".maxVerticalSeparationMm", 1);
+      for (const name of ["groundMovementPercent", "airControlPercent"] as const) {
+        if (move[name] !== undefined) {
+          assertInt(move[name], move.id + "." + name);
+          if (move[name] > 100) throw new Error(move.id + "." + name + " exceeds 100%");
+        }
+      }
+      if (move.animationLayer && move.animationLayer !== "upperBody" && move.animationLayer !== "fullBody") {
+        throw new Error("Unknown animation layer: " + move.id);
+      }
+      if (move.allowJumpDuringAttack !== undefined && typeof move.allowJumpDuringAttack !== "boolean") {
+        throw new Error("Invalid jump-during-attack flag: " + move.id);
+      }
+      if (move.allowJumpDuringAttack && move.animationLayer !== "upperBody") {
+        throw new Error("Jumping during attack requires upper-body layering: " + move.id);
+      }
       if (move.cancelFromTick !== undefined) assertInt(move.cancelFromTick, move.id + ".cancelFromTick");
       if (move.cancelThroughTick !== undefined) assertInt(move.cancelThroughTick, move.id + ".cancelThroughTick");
       if (move.cancelFromTick !== undefined && move.cancelThroughTick !== undefined && move.cancelFromTick > move.cancelThroughTick) throw new Error("Invalid cancel window");
@@ -198,6 +222,7 @@ export function createMatch(definition: MatchDefinition): MatchState {
     moveId: null,
     moveFrame: 0,
     moveHitOpponent: false,
+    attackJumpUsed: false,
     stunRemainingTicks: 0,
   })) as unknown as [FighterState, FighterState];
   return { tick: 0, phase: "fight", fighters, inputHistory: [[], []] };
@@ -248,13 +273,31 @@ function resolveAttackMove(
 /** Gravity remains active while an attack or reaction takes place in the air. */
 function integrateAir(
   fighter: FighterState, input: InputFrame, config: FighterDefinition, stage: StageDefinition,
+  controlPercent = 100,
 ): FighterState {
   if (fighter.yMm <= 0) return fighter;
   const velocity = fighter.verticalVelocityMmPerTick - config.gravityMmPerTick2;
   const height = Math.max(0, fighter.yMm + velocity);
   return {
     ...fighter, yMm: height, verticalVelocityMmPerTick: height > 0 ? velocity : 0,
-    xMm: clamp(fighter.xMm + input.horizontal * config.walkSpeedMmPerTick, stage.leftMm, stage.rightMm),
+    xMm: clamp(fighter.xMm + Math.trunc(input.horizontal * config.walkSpeedMmPerTick * controlPercent / 100), stage.leftMm, stage.rightMm),
+  };
+}
+
+/** Attack movement is simulation-owned; visual root motion cannot alter hitboxes. */
+function integrateAttackMovement(
+  fighter: FighterState, input: InputFrame, config: FighterDefinition,
+  stage: StageDefinition, move: MoveDefinition,
+): FighterState {
+  if (fighter.yMm > 0) {
+    return integrateAir(fighter, input, config, stage, move.airControlPercent ?? 100);
+  }
+  return {
+    ...fighter,
+    xMm: clamp(
+      fighter.xMm + Math.trunc(input.horizontal * config.walkSpeedMmPerTick * (move.groundMovementPercent ?? 0) / 100),
+      stage.leftMm, stage.rightMm,
+    ),
   };
 }
 
@@ -280,6 +323,11 @@ function moveFighter(
   if (f.action === "attack") {
     const move = moveById(config, f.moveId);
     if (!move) throw new Error("Unknown active move: " + f.moveId);
+    if (move.allowJumpDuringAttack && !f.attackJumpUsed && f.yMm === 0 && input.vertical === 1) {
+      f = { ...f, yMm: config.jumpSpeedMmPerTick,
+        verticalVelocityMmPerTick: config.jumpSpeedMmPerTick, attackJumpUsed: true };
+      events.push({ type: "jump", fighter: index });
+    }
     const frame = f.moveFrame + 1;
     const followup = move.cancelInto?.length && f.moveHitOpponent
       ? resolveAttackMove(config.moves, input, history, tick, f.facing, f.yMm > 0)
@@ -289,13 +337,13 @@ function moveFighter(
         frame <= (move.cancelThroughTick ?? move.startupTicks + move.activeTicks + move.recoveryTicks - 1)) {
       events.push({ type: "cancel", fighter: index, fromMoveId: move.id, toMoveId: followup.id });
       events.push({ type: "attack", fighter: index, moveId: followup.id });
-      return { ...integrateAir(f, input, config, stage), action: "attack",
-        moveId: followup.id, moveFrame: 0, moveHitOpponent: false };
+      return { ...integrateAttackMovement(f, input, config, stage, followup), action: "attack",
+        moveId: followup.id, moveFrame: 0, moveHitOpponent: false, attackJumpUsed: f.attackJumpUsed };
     }
-    f = integrateAir(f, input, config, stage);
+    f = integrateAttackMovement(f, input, config, stage, move);
     if (frame >= move.startupTicks + move.activeTicks + move.recoveryTicks) {
       return { ...f, action: f.yMm > 0 ? "jump" : "idle", moveId: null,
-        moveFrame: 0, moveHitOpponent: false };
+        moveFrame: 0, moveHitOpponent: false, attackJumpUsed: false };
     }
     return { ...f, moveFrame: frame };
   }
@@ -305,7 +353,7 @@ function moveFighter(
     f = integrateAir(f, input, config, stage);
     if (chosen && f.yMm > 0) {
       events.push({ type: "attack", fighter: index, moveId: chosen.id });
-      return { ...f, action: "attack", moveId: chosen.id, moveFrame: 0, moveHitOpponent: false };
+      return { ...f, action: "attack", moveId: chosen.id, moveFrame: 0, moveHitOpponent: false, attackJumpUsed: false };
     }
     if (f.yMm <= 0) f = { ...f, action: "idle" };
     return f;
@@ -314,7 +362,14 @@ function moveFighter(
   const chosen = resolveAttackMove(config.moves, input, history, tick, f.facing, false);
   if (chosen) {
     events.push({ type: "attack", fighter: index, moveId: chosen.id });
-    return { ...f, action: "attack", moveId: chosen.id, moveFrame: 0, moveHitOpponent: false };
+    if (chosen.allowJumpDuringAttack && input.vertical === 1) {
+      events.push({ type: "jump", fighter: index });
+      return { ...f, action: "attack", yMm: config.jumpSpeedMmPerTick,
+        verticalVelocityMmPerTick: config.jumpSpeedMmPerTick, moveId: chosen.id,
+        moveFrame: 0, moveHitOpponent: false, attackJumpUsed: true };
+    }
+    return { ...integrateAttackMovement(f, input, config, stage, chosen),
+      action: "attack", moveId: chosen.id, moveFrame: 0, moveHitOpponent: false, attackJumpUsed: false };
   }
   if (input.vertical === 1) {
     events.push({ type: "jump", fighter: index });

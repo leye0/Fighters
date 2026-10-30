@@ -31,7 +31,7 @@ test("seventy-one individually identified arcade attacks have animation roles an
   assert.ok(MOVE_CATALOG.every(move=>(move.animationRole?.length ?? 0)>0));
   assert.ok(MOVE_CATALOG.some(move=>move.stance==="airborne"));
   assert.ok(MOVE_CATALOG.some(move=>move.stance==="crouching"));
-  assert.ok(MOVE_CATALOG.some(move=>move.buttons?.length>=2));
+  assert.ok(MOVE_CATALOG.some(move=>(move.buttons?.length ?? 0)>=2));
   assert.ok(MOVE_CATALOG.some(move=>move.motion==="full-circle"));
   assert.doesNotThrow(()=>createMatch(game()));
 });
