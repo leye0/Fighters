@@ -7,7 +7,7 @@
     },
     {
       "action": "wait",
-      "ms": 550
+      "ms": 450
     },
     {
       "action": "logExpr",
@@ -18,8 +18,16 @@
       "expression": "Array.isArray(window.__fightersBeatActorBounds) && window.__fightersBeatActorBounds.length === 3 && window.__fightersBeatActorBounds.every(a => a.visible && a.skinnedMeshes > 0 && a.height > 1 && a.height < 2.2 && Math.abs(a.centerNdcX) < 1 && Math.abs(a.centerNdcY) < 1)"
     },
     {
+      "action": "assert",
+      "expression": "(window.__fightersBeatFreeze=true,true)"
+    },
+    {
       "action": "screenshot",
       "name": "01-idle"
+    },
+    {
+      "action": "assert",
+      "expression": "(window.__fightersBeatFreeze=false,true)"
     },
     {
       "action": "keyDown",
@@ -27,15 +35,15 @@
     },
     {
       "action": "wait",
-      "ms": 1300
+      "ms": 950
     },
     {
       "action": "assert",
-      "expression": "window.__fightersBeatHero?.facing === 1 && (window.__qaRightX=window.__fightersBeatHero.xMm) > -10700"
+      "expression": "window.__fightersBeatHero?.facing===1 && window.__fightersBeatHero.xMm>-10700"
     },
     {
-      "action": "logExpr",
-      "expression": "JSON.stringify(window.__fightersBeatActorBounds)"
+      "action": "assert",
+      "expression": "(window.__fightersBeatFreeze=true, window.__qaRightX=window.__fightersBeatHero.xMm, true)"
     },
     {
       "action": "screenshot",
@@ -50,8 +58,12 @@
       "key": "ArrowLeft"
     },
     {
+      "action": "assert",
+      "expression": "(window.__fightersBeatFreeze=false,true)"
+    },
+    {
       "action": "wait",
-      "ms": 1300
+      "ms": 950
     },
     {
       "action": "logExpr",
@@ -59,7 +71,11 @@
     },
     {
       "action": "assert",
-      "expression": "window.__fightersBeatHero?.facing === -1 && window.__fightersBeatHero.xMm < window.__qaRightX - 100"
+      "expression": "window.__fightersBeatHero?.facing===-1 && window.__fightersBeatHero.xMm < window.__qaRightX-100"
+    },
+    {
+      "action": "assert",
+      "expression": "(window.__fightersBeatFreeze=true,true)"
     },
     {
       "action": "screenshot",
@@ -70,12 +86,20 @@
       "key": "ArrowLeft"
     },
     {
+      "action": "assert",
+      "expression": "(window.__fightersBeatFreeze=false,true)"
+    },
+    {
       "action": "keyDown",
       "key": "Space"
     },
     {
       "action": "wait",
-      "ms": 250
+      "ms": 280
+    },
+    {
+      "action": "assert",
+      "expression": "(window.__fightersBeatFreeze=true,true)"
     },
     {
       "action": "keyUp",
@@ -83,23 +107,35 @@
     },
     {
       "action": "assert",
-      "expression": "window.__fightersBeatHero?.heightMm > 100 && window.__fightersBeatHero.supportingPlatformId === null"
+      "expression": "window.__fightersBeatHero?.heightMm>100 && window.__fightersBeatHero.supportingPlatformId===null"
     },
     {
       "action": "screenshot",
       "name": "04-airborne-jump"
     },
     {
+      "action": "assert",
+      "expression": "(window.__fightersBeatFreeze=false,true)"
+    },
+    {
       "action": "wait",
-      "ms": 1450
+      "ms": 1500
     },
     {
       "action": "assert",
-      "expression": "window.__fightersBeatHero?.supportingPlatformId === 'ground' && window.__fightersBeatHero.heightMm === 0"
+      "expression": "window.__fightersBeatHero?.heightMm===0 && window.__fightersBeatHero.supportingPlatformId==='ground'"
+    },
+    {
+      "action": "assert",
+      "expression": "(window.__fightersBeatFreeze=true,true)"
     },
     {
       "action": "screenshot",
       "name": "05-landed"
+    },
+    {
+      "action": "assert",
+      "expression": "(window.__fightersBeatFreeze=false,true)"
     }
   ]
 }
