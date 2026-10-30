@@ -257,8 +257,9 @@ function distanceSquared(a: BeatActor, b: BeatActor): number {
   return (a.xMm - b.xMm) ** 2 + (a.depthMm - b.depthMm) ** 2;
 }
 
-/** Reorient only near a suitable enemy; keep a current lock until release range.
- * Locking and facing are independent of player velocity (backward walking works).
+/** Target selection is metadata only: it MUST NEVER steer the actor's facing.
+ * Left/right is exclusively controlled by the player's/enemy AI's horizontal input.
+ * Holding still preserves facing, including when an enemy crosses behind.
  */
 function orient(
   actor: BeatActor, before: BeatActor, all: readonly BeatActor[], input: BeatInput,
@@ -278,10 +279,9 @@ function orient(
       (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
     target = candidates[0] ?? null;
   }
-  const deltaX = target ? target.xMm - actor.xMm : input.horizontal;
   return {
     ...actor, targetId: target?.id ?? null,
-    facing: deltaX === 0 ? before.facing : deltaX > 0 ? 1 : -1,
+    facing: input.horizontal === 0 ? before.facing : input.horizontal,
   };
 }
 
