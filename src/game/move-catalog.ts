@@ -1,9 +1,10 @@
 import type { MoveDefinition } from "../engine/simulation.ts";
 
 /**
- * Arcade move vocabulary, authored as data and independent of graphics.
- * An animationRole is a requested visual clip, not proof of a licensed file.
- * Physics and timing are authoritative; no Mixamo clip may change hit logic.
+ * Simulation stress-test fixture ONLY. The 71 ideas are not the game's roster.
+ * Production moves are derived exclusively from reviewed, retargeted, licensed
+ * clips via animation-first.ts — never from this speculative vocabulary.
+ * This fixture exercises inputs, commands, cancels and deterministic combat.
  */
 export const MOVE_CATALOG: readonly MoveDefinition[] = [
   {"id":"jab","button":"LP","animationRole":"jab","startupTicks":4,"activeTicks":2,"recoveryTicks":8,"damage":6,"chipDamage":0,"rangeMm":950,"maxTargetHeightMm":1600,"level":"mid","hitstunTicks":10,"blockstunTicks":7,"pushbackMm":80,"cancelInto":["straight","hook","surge-punch"],"cancelFromTick":4,"cancelThroughTick":10},

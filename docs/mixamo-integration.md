@@ -1,4 +1,4 @@
-# Fighters — intégration Mixamo pour les vrais combats
+# Fighters — découverte Mixamo et arsenal dicté par les animations
 
 **Statut actuel : aucun fichier d'animation Mixamo n'est intégré.**
 Le moteur sait charger une scène GLB et des clips d'animation, mais il n'a
@@ -10,7 +10,7 @@ commerciaux, et annonce un accès gratuit avec Adobe ID. Cela **n'autorise pas
 automatiquement la republication des fichiers sources bruts** dans un dépôt
 GitHub public. Vérifier les conditions applicables lors de l'acquisition.
 
-Le [catalogue structuré des 70 rôles d'animation](../assets/mixamo-catalog.json) précise les besoins, les statuts `search_pending` et les identifiants encore inconnus. Il ne contient aucun clip Mixamo et ne présume pas que chacun de ces 70 mouvements existe déjà sous cette forme.
+Le [catalogue structuré des 70 pistes de recherche](../assets/mixamo-catalog.json) contient des mots-clés `search_pending` et aucun clip réel. **Il ne détermine pas les coups.** Une fois chaque animation trouvée, nous déterminons ce qu'elle montre réellement, ses points de contact, ses variantes et ses possibles enchaînements, selon [le protocole animation-first](animation-first.md). Les clips approuvés vont dans [l'inventaire de production](../assets/animation-inventory.json).
 
 ## Catalogue de gestes à acquérir et qualifier
 
@@ -40,6 +40,8 @@ pas une affirmation que Mixamo propose un fichier portant exactement ce nom.
   optimisé sans dégrader les courbes de mouvement.
 - [ ] Retargeter et inspecter pour morphologies variées : proportions des bras,
   hanches, pieds, mains, vêtements, et priorité aux personnages féminins.
+- [ ] **Créer les attaques à partir des clips retenus**, puis attribuer les commandes et enchaînements en fonction du geste réellement visible.
+- [x] Préparer le registre typé et le filtre animation-first avec exigence de provenance et de frames d'impact. (Aucun clip réellement intégré.)
 - [ ] Lier chaque clip aux IDs réels des attaques ; intégrer les transitions,
   boucles et l'arrêt à la frame prévue.
 - [ ] Contrôler synchronisation startup/active/recovery, contact, garde et

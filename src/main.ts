@@ -1,12 +1,14 @@
 import "./style.css";
 import manifest from "../assets/manifest.json";
+import animationInventoryJson from "../assets/animation-inventory.json";
 import {
-  createMatch, stepMatch, TICKS_PER_SECOND, type MatchState, type InputFrame,
+  createMatch, stepMatch, TICKS_PER_SECOND, type MatchState, type InputFrame, type MoveDefinition,
 } from "./engine/simulation.ts";
 import { runtimeRoster, type AssetRecord } from "./assets/eligibility.ts";
-import { fighterDefinition, DEFAULT_STAGE } from "./game/roster-config.ts";
+import { DEFAULT_STAGE } from "./game/roster-config.ts";
+import { animationBackedFighter, type AnimationInventory } from "./game/animation-first.ts";
 import { KeyboardInput } from "./input/keyboard.ts";
-import { MOVE_CATALOG } from "./game/move-catalog.ts";
+const animationInventory = animationInventoryJson as AnimationInventory;
 import { moveCategory, moveCommand } from "./game/command-guide.ts";
 import { createAiBrain, decideAiInput, type AiBrain } from "./engine/ai.ts";
 import { ThreeWorld } from "./render/three-world.ts";
@@ -62,10 +64,11 @@ selector.addEventListener("change", () => {
 const filterMoves = required<HTMLInputElement>("move-filter");
 const moveList = required<HTMLUListElement>("move-list");
 const moveCount = required<HTMLElement>("move-count");
-required<HTMLElement>("move-summary").textContent = MOVE_CATALOG.length + " coups";
+let availableMoves: readonly MoveDefinition[] = [];
+required<HTMLElement>("move-summary").textContent = "0 coup validé par animation";
 function renderMoveGuide(): void {
   const query = filterMoves.value.trim().toLocaleLowerCase("fr-CA");
-  const matching = MOVE_CATALOG.filter(move => [
+  const matching = availableMoves.filter(move => [
     move.id, move.animationRole ?? "", moveCategory(move), moveCommand(move),
   ].some(value => value.toLocaleLowerCase("fr-CA").includes(query)));
   const fragment = document.createDocumentFragment();
@@ -82,7 +85,8 @@ function renderMoveGuide(): void {
     fragment.append(item);
   }
   moveList.replaceChildren(fragment);
-  moveCount.textContent = matching.length + " / " + MOVE_CATALOG.length + " coups";
+  moveCount.textContent = matching.length + " / " + availableMoves.length +
+    " coups avec animation réellement validée";
 }
 filterMoves.addEventListener("input", renderMoveGuide);
 renderMoveGuide();
@@ -121,23 +125,29 @@ async function loadApprovedFighters(): Promise<void> {
     status.textContent =
       "Le rendu WebGL est prêt. Aucun duo de modèles humains photoréalistes n'a encore " +
       "terminé la validation de licence, de rigging et d'intégration. " +
+      "Les coups ne sont créés qu'après validation visuelle des clips réels. " +
       "Aucun personnage provisoire n'est simulé à sa place." +
       (aiVsAi ? " Le mode IA contre IA attend aussi deux vrais personnages autorisés." : "");
     return;
   }
   const selected = [roster[0], roster[1]] as const;
-  status.textContent = "Chargement des combattants et de leurs animations 3D…";
+  status.textContent = "Qualification des vraies animations de combat…";
   try {
+    const fighters = [
+      animationBackedFighter(selected[0].id, animationInventory),
+      animationBackedFighter(selected[1].id, animationInventory),
+    ] as const;
+    if (fighters.some(fighter => fighter.moves.length === 0)) {
+      throw new Error("Aucun arsenal réel : au moins une animation de frappe doit être approuvée pour chaque combattant.");
+    }
     await Promise.all(selected.map(asset => world.loadFighter(asset)));
-    matchDefinition = {
-      stage: DEFAULT_STAGE,
-      fighters: [
-        fighterDefinition(selected[0].id),
-        fighterDefinition(selected[1].id),
-      ],
-    };
+    for (const fighter of fighters) world.assertFighterAnimationCoverage(fighter);
+    matchDefinition = { stage: DEFAULT_STAGE, fighters };
     current = createMatch(matchDefinition);
     previous = current;
+    availableMoves = fighters[0].moves;
+    required<HTMLElement>("move-summary").textContent = availableMoves.length + " coups animés";
+    renderMoveGuide();
     for (const index of [0, 1] as const) playerNames[index].textContent = selected[index].title;
     hud.hidden = false;
     stageTitle.hidden = true;

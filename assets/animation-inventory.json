@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "workflow": "animation-first",
+  "description": "Approved character-specific fight clips, reviewed frame-by-frame. A blank list means there are no playable attacks; discovery/search roles are not gameplay.",
+  "clips": []
+}

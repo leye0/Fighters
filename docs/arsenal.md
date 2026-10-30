@@ -1,8 +1,8 @@
-# Fighters — arsenal complet : 71 attaques
+# Fighters — banc de simulation : 71 gestes hypothétiques (non jouables en production)
 
-> **Important :** ces attaques sont **réellement définies dans le moteur de simulation** (entrée, état, startup/active/recovery, portée, dégâts, collision, garde, cancel éventuel). Une entrée « rôle d'animation » n'est **pas** un clip Mixamo installé. Zéro animation Mixamo est actuellement intégrée. Voir [pipeline Mixamo](mixamo-integration.md) et le [plan](production-plan.md).
+> **Important :** les 71 entrées sont des **fixtures synthétiques pour tester le moteur** (inputs, collisions, cancels et physique), pas des coups réellement proposés par le jeu. Zéro animation Mixamo est actuellement intégrée. **La production suit l'[architecture animation-first](animation-first.md)** : seul le geste d'un vrai clip approuvé déterminera un coup, sa commande et son timing. Voir [pipeline Mixamo](mixamo-integration.md) et le [plan](production-plan.md).
 
-Commandes relatives à l'adversaire, vues pour un combattant tourné vers la droite. Les flèches s'inversent automatiquement pour le joueur à droite. `LP/MP/HP` = poing faible/moyen/fort, `LK/MK/HK` = pied faible/moyen/fort. `+` entre boutons signifie **appuyer en même temps**. Pour l'instant, les mêmes données de coups sont offertes à chaque combattant ; styles personnalisés à construire après acquisition des modèles et retargeting.
+Commandes relatives à l'adversaire, vues pour un combattant tourné vers la droite. Les flèches s'inversent automatiquement pour le joueur à droite. `LP/MP/HP` = poing faible/moyen/fort, `LK/MK/HK` = pied faible/moyen/fort. `+` entre boutons signifie **appuyer en même temps**. Cette fixture générique est partagée par les combattants fictifs des tests ; **les personnages de production auront chacun un arsenal distinct issu de leurs animations approuvées**.
 
 | Identifiant | Famille | Commande | Dégâts | Rôle d'animation requis | Cancellables vers… |
 | --- | --- | --- | ---: | --- | --- |

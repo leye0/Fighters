@@ -10,6 +10,7 @@ import { TICKS_PER_SECOND, type FighterDefinition, type FighterState, type Match
 import type { RuntimeFighterAsset } from "../assets/eligibility.ts";
 import { qualityProfile, renderPixelRatio, type QualityPreset } from "./quality.ts";
 import { animationClipName } from "./animation-map.ts";
+import { missingAnimationClipNames } from "./clip-coverage.ts";
 
 interface FighterVisual {
   readonly root: Group;
@@ -150,6 +151,18 @@ export class ThreeWorld {
       root, mixer, clips, configuration: asset,
       action: null, animationKey: null,
     });
+  }
+
+  /** Refuse a match whose certified attacks or essential reactions lack real GLB clips. */
+  assertFighterAnimationCoverage(definition: FighterDefinition): void {
+    const visual = this.fighterVisuals.get(definition.id);
+    if (!visual) throw new Error("Missing fighter visual: " + definition.id);
+    const missing = missingAnimationClipNames(
+      definition, new Set(visual.clips.keys()), visual.configuration.visual?.animationMap,
+    );
+    if (missing.length) {
+      throw new Error("Missing real animation clips for " + definition.id + ": " + [...new Set(missing)].join(", "));
+    }
   }
 
   private updateAnimation(visual: FighterVisual, fighter: FighterState, definition?: FighterDefinition): void {

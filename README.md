@@ -49,9 +49,9 @@ Consulter le [registre des ressources, avec les premiers candidats photoréalist
 
 ## Arsenal arcade et animations
 
-Le [catalogue de **71 coups réellement résolus par la simulation**](docs/arsenal.md) comprend normaux debout, accroupis et aériens, attaques directionnelles, six combinaisons de touches, 35 coups spéciaux/supers et des enchaînements `cancelInto` après contact. Les [commandes](docs/combat-commands.md) et une liste consultable et filtrable sont intégrées à l'interface du jeu.
+**Principe directeur : [animation-first](docs/animation-first.md).** Nous choisissons les coups **uniquement après** avoir identifié, acquis et inspecté de **belles animations réelles**, puis nous attribuons boutons, spéciaux et combos selon leurs gestes et leurs temps de contact. Le [catalogue de 71 attaques](docs/arsenal.md) et ses [commandes](docs/combat-commands.md) constituent un **banc de stress-test du moteur**, pas 71 coups promis au joueur. L'interface de production n'affiche que les mouvements réellement approuvés par combattant ; aujourd'hui, **0**.
 
-Chaque coup porte un **rôle d'animation** synchronisable au temps de l'attaque ; [70 rôles Mixamo sont recensés](assets/mixamo-catalog.json), mais **aucun clip Mixamo réel n'est intégré pour l'instant**. Les droits du dépôt public restent à vérifier, même pendant cette phase non commerciale.
+[70 rôles Mixamo sont recensés pour la recherche](assets/mixamo-catalog.json), mais aucun ne prouve qu'un clip existe ou qu'il est intégré. Le nouvel [inventaire de clips approuvés](assets/animation-inventory.json) démarre vide et pilote la **création des vrais coups** ; les frames de simulation sont déduites des contacts observés dans chaque animation.
 
 ## Duels IA contre IA et QA du gameplay
 

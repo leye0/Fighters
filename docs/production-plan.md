@@ -91,14 +91,17 @@
 
 ## 5. Coups, combos et équilibre
 
-**Arsenal défini :** 71 attaques consultables dans [docs/arsenal.md](arsenal.md). Les rôles d'animations ne sont **pas** des clips effectivement acquis.
+**Décision animation-first :** les 71 attaques de [docs/arsenal.md](arsenal.md) constituent uniquement un **banc de simulation**, pas le contenu du jeu. Les coups effectivement jouables sont **dérivés des animations réellement acquises, vues, retargetées et approuvées**, puis leurs commandes et cancels sont attribués. Voir [docs/animation-first.md](animation-first.md). Nombre de coups réellement approuvés aujourd'hui : **0**.
 
-- [x] Définir **71 coups** pilotés par données : six normaux, six accroupis, six aériens, douze directionnels, six accords de touches et 35 spéciaux/supers, avec frames, dégâts, portée et rôle d'animation.
+- [x] Définir **71 scénarios synthétiques de test du moteur** : six normaux, six accroupis, six aériens, douze directionnels, six accords de touches et 35 spéciaux/supers ; **non livrés comme arsenal réel**.
 - [x] Reconnaître neuf mouvements directionnels, des accords de boutons et les priorités de sélection.
 - [x] Autoriser des **combos cancel après contact** vers des coups explicitement permis, dans des fenêtres temporelles vérifiées ; refuser le cancel sur whiff.
 - [x] Permettre les attaques aériennes sans figer la gravité et limiter la collision par séparation verticale.
 - [ ] Compléter le buffering des accords quasi simultanés, les charges, les dash et les projections.
+- [x] Mettre en place le registre **animation-first** par combattant, où seuls les clips approuvés créent un coup ; FPS/contact mesurés déterminent les frames, cancels vers clips absents filtrés et noms GLB contrôlés avant un combat. (Tests unitaires ; aucune animation réelle acquise.)
 - [ ] Intégrer les vrais clips de combat et valider leur qualité avec les combattants photoréalistes.
+- [ ] Choisir les commandes, les catégories de coups et les combos **après** l'inspection visuelle de chaque clip acquis, et non à partir d'un catalogue hypothétique.
+- [ ] Valider les transitions esthétiques entre clips retenus et ne créer des spéciaux que lorsqu'une animation convaincante existe.
 
 - [ ] Définir les coups par données : ID, commande, animation, startup, active, recovery, dégâts, portée, hitboxes et sons.
 - [ ] Définir un ensemble original de coups normaux debout, accroupis et aériens pour chaque combattant.
@@ -148,7 +151,7 @@
 
 ## 8. Bibliothèque Mixamo — catalogue de mouvements à acquérir
 
-**État présent :** [70 rôles d'animations recherchés](../assets/mixamo-catalog.json), **0 clip acquis ou intégré**. Parmi eux, 34 rôles sont directement référencés par les 71 coups. Les identifiants Mixamo réels restent à déterminer.
+**État présent :** [70 rôles de recherche](../assets/mixamo-catalog.json), **0 clip acquis ou intégré**, donc **0 coup réel**. Le catalogue test du moteur reprend 34 rôles hypothétiques ; il ne prescrit pas les animations à trouver. **L'inventaire des animations réelles décide de l'arsenal**, et non l'inverse.
 
 Le but n'est pas de télécharger aveuglément toute la bibliothèque Adobe, mais de **recenser, comparer, intégrer et retoucher toutes les animations utiles à un jeu de combat**, avec variantes quand elles existent. Chaque entrée devra avoir son identifiant Mixamo, son fichier source autorisé, son personnage/rig de référence, sa durée, ses tags et son statut de retargeting.
 
@@ -208,6 +211,7 @@ Le but n'est pas de télécharger aveuglément toute la bibliothèque Adobe, mai
 ### 8.5 Traitement des clips
 
 - [x] Définir un résolveur `moveId → animationRole → nom de clip du combattant`, avec override par personnage. (Tests unitaires du mapping présents ; aucune animation acquise.)
+- [x] Refuser la création d'un coup de production sans fiche d'animation réellement inspectée et licenciée, ou sans son clip dans le GLB ; supprimer les cancels non couverts. (Pipeline et tests unitaires ; 0 clip réel approuvé.)
 - [ ] Vérifier sur de vrais GLB le time scaling, les transitions/crossfades, les impacts et les poses, en Ultra et Low. (Branchement de durée codé mais pas validé visuellement.)
 
 - [ ] Inventorier les variantes disponibles dans Mixamo avec une table source → clip interne.

@@ -13,7 +13,7 @@ Le document directeur est **docs/production-plan.md**. Le consulter avant toute 
 1. **Toujours travailler directement dans main.** Ne pas créer de branche de fonctionnalité ou de pull request. Ne pas forcer les pushes et ne pas réécrire l'historique.
 2. **Production dès le départ.** Aucun MVP, prototype jetable ou faux mécanisme présenté comme complet. Les étapes de réalisation peuvent être ordonnées par dépendances mais n'annulent aucune exigence du plan.
 3. **Qualité mesurable.** Définir le comportement attendu, implémenter, tester, vérifier les régressions pertinentes, puis committer sur main.
-4. **Architecture extensible.** Combattants, coups, animations, arènes, sons et effets sont pilotés par des données ou des composants réutilisables, pas des exceptions propres à un seul personnage.
+4. **Architecture extensible et animation-first.** Combattants, coups, animations, arènes, sons et effets sont pilotés par des données. **Les coups du vrai jeu doivent provenir de clips réellement disponibles, inspectés et retargetés**, puis leurs commandes et combos sont choisis. Le `MOVE_CATALOG` de 71 idées n'est qu'une fixture du moteur et ne doit jamais servir d'arsenal de production. Voir `docs/animation-first.md`.
 5. **Ne pas inventer de validation visuelle.** Lorsque la perception humaine du rendu ou du gameplay est nécessaire, fournir une version testable et demander au propriétaire de juger ; ne pas créer un processus « Lab » autonome qui s'arrogerait cette validation.
 6. **Respecter les changements existants.** Vérifier l'état et les instructions du dépôt avant d'éditer. Ne pas supprimer de travail sans ordre explicite.
 7. **Ne pas multiplier inutilement les actions CI payantes.** Privilégier validations locales adaptées, workflows ciblés, cache et annulation des exécutions périmées.
@@ -34,6 +34,7 @@ Le document directeur est **docs/production-plan.md**. Le consulter avant toute 
 - Le banc `npm run simulate:ai` évalue des combats à 60 ticks/s avec les mêmes `InputFrame` que les joueurs. Les tests doivent vérifier la reproductibilité, la présence d'échanges, les attaques spéciales et les avertissements d'inactivité.
 - **Ne jamais déduire qu'un combat est « fun » à partir de simples statistiques.** Après intégration de deux combattants photoréalistes et d'animations, exécuter un véritable match IA contre IA dans WebGL, l'enregistrer avec WebSuite et demander au propriétaire une appréciation à vitesse réelle. Voir `docs/ai-combat-qa.md`.
 - La simple existence d'un emplacement d'animation dans le catalogue ne signifie pas qu'un clip Mixamo a été acquis ni que sa licence a été vérifiée.
+- **Aucun coup visuellement exécutable sans son vrai clip approuvé pour le personnage** : l'inventaire `assets/animation-inventory.json` doit être exploité pour créer ses moves, et la présence des clips exacts dans le GLB est obligatoire avant de lancer le match.
 
 ## Statut du projet
 

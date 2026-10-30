@@ -1,12 +1,10 @@
 # Fighters — commandes de combat
 
-**71 attaques de simulation**, réparties entre poings, pieds, coups accroupis et
+**71 scénarios fictifs de tests de simulation**, répartis entre poings, pieds, coups accroupis et
 aériens, attaques directionnelles, accords de plusieurs touches, spéciaux et supers.
 Voir le [catalogue complet](arsenal.md) et la [liste filtrable du navigateur](../index.html).
 
-Ces commandes fonctionnent dans les règles déterministes à 60 ticks/s ; elles ne
-signifient pas que 71 clips photoréalistes ont été téléchargés. L'association
-aux animations est prévue **par rôle**, puis adaptable par personnage.
+Ces commandes sont des **exemples pour valider le moteur déterministe à 60 ticks/s**, pas un contrat de commandes finales. Dans le vrai jeu, les mouvements et leurs combinaisons **seront décidés après examen des animations effectivement disponibles**, séparément pour chaque personnage. Voir [animation-first](animation-first.md).
 
 ## Clavier
 
@@ -55,8 +53,7 @@ Exemples : `↓ ↘ → + MP` = Surge Punch ; `→ ↓ ↘ + HP` = Rising Upperc
   l'échelle du temps de startup/active/recovery. Il **n'invente aucun clip manquant**.
 
 Le [catalogue d'animations Mixamo recherchées](../assets/mixamo-catalog.json)
-contient 70 rôles, tous `search_pending`. Aucun fichier de combat Mixamo n'a
-encore été approuvé et intégré.
+contient 70 mots-clés de recherche, tous `search_pending`. Aucun fichier de combat Mixamo n'a encore été approuvé et intégré ; l'[inventaire de production](../assets/animation-inventory.json) est vide.
 
 ## Ce qui reste
 
