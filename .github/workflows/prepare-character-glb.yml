@@ -54,7 +54,7 @@ jobs:
           npm install --no-save --package-lock=false @gltf-transform/cli@4.5.0
           mkdir -p public/models
           ./node_modules/.bin/gltf-transform optimize "$SRC" "public/models/$CHARACTER.glb" \
-            --compress none --texture-compress webp --texture-size 4096
+            --compress false --texture-compress webp --texture-size 4096
           python3 scripts/inspect-runtime-glb.py "public/models/$CHARACTER.glb"
           cp "assets/source/characters/$CHARACTER/ATTRIBUTION.md" "public/models/$CHARACTER.ATTRIBUTION.md"
 
