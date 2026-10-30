@@ -280,6 +280,17 @@ try {
         case 'press': await press(step.key); break;
         case 'keyDown': await heldKey(step.key, true); break;
         case 'keyUp': await heldKey(step.key, false); break;
+        case 'logExpr': {
+          if (typeof step.expression !== 'string' || step.expression.length > 1000) {
+            throw new Error('Expected concise QA metrics expression');
+          }
+          const result = await client.send('Runtime.evaluate', {
+            expression: step.expression, returnByValue: true
+          });
+          if (result.exceptionDetails) throw new Error('Cannot read browser QA metrics');
+          console.log('BROWSER_QA_METRICS ' + JSON.stringify(result.result?.value));
+          break;
+        }
         case 'assert': {
           if (typeof step.expression !== 'string' || step.expression.length > 1000) {
             throw new Error('Expected concise QA assertion expression');
