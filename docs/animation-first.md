@@ -4,7 +4,7 @@
 
 ## Base compacte et superposition des mouvements (30 octobre 2026)
 
-La [présélection de 60 clips](../assets/mixamo-shortlist.json) vient des descriptions des **299 GLB privés déjà convertis**. Elle cherche une bonne couverture des déplacements, sauts, frappes, défenses et réactions. Aucune sélection descriptive ne prouve que le rendu est bon et aucune n'est encore intégrée au jeu.
+La [présélection initiale de 60 clips](../assets/mixamo-shortlist.json) venait des descriptions des **299 GLB privés déjà convertis** ; trois pas arrière ont été ajoutés ensuite. **Le 30 octobre 2026, Léon a regardé les prévisualisations et conservé les 63 animations, en validant les noms d'origine.** [Manifeste de sélection et identités exactes](../assets/mixamo-selected.json). Cette décision valide les mouvements source pour l'intégration, mais aucun GLB n'est encore retargeté ni intégré au jeu.
 
 - **Bas du corps :** locomotion avant/arrière, saut, réception et appuis. **Haut du corps :** une frappe peut se superposer sans effacer les jambes, via des pistes d'os disjointes dans `src/render/animation-layers.ts`.
 - **Bassin et translation :** restent prioritaires à la locomotion et à la simulation autoritative. Les déplacements réels `xMm/yMm`, la gravité, les hitboxes et les contacts sont calculés à 60 Hz. Le root motion d'un GLB ne déplace pas la simulation.
@@ -12,7 +12,7 @@ La [présélection de 60 clips](../assets/mixamo-shortlist.json) vient des descr
 - **Compatibilité :** un coup de poing peut avoir une variante marchée/reculée/aérienne si la combinaison est visuellement crédible. Les grands coups de pied, balayages, projections et gestes qui dépendent des hanches gardent généralement un clip complet. Les transitions, appuis et glissements restent à examiner pour chaque combattant ; **on ne promet pas le produit cartésien de toutes les animations**.
 - **Chargement :** l'animation de locomotion de base doit exister avec son nom exact (`idle`, `walk`, `jump`, ou `walkBack` via mapping explicite). Une animation de frappe absente n'est jamais remplacée silencieusement. Le rendu actuel sait combiner des pistes du haut et du bas du corps, mais aucun GLB approuvé n'a encore permis de valider cette fonction à l'écran.
 
-Une revue à venir doit mesurer les clips et vérifier si leurs pistes couvrent proprement les deux zones, puis soumettre les combinaisons réellement rendues à Léon. Les manifestes de sélection, d'inventaire et d'approbation restent **séparés**.
+La sélection des vidéos source est terminée : **63 sur 63 à conserver**. La prochaine revue doit mesurer les clips GLB retargetés, vérifier si leurs pistes couvrent proprement les deux zones, puis soumettre les combinaisons réellement rendues à Léon. Les manifestes de sélection, d'inventaire et d'approbation runtime restent **séparés**.
 
 ## Ordre obligatoire (top-down)
 
@@ -27,6 +27,7 @@ Une revue à venir doit mesurer les clips et vérifier si leurs pistes couvrent 
 ## Manifestes séparés
 
 - `assets/mixamo-catalog.json` : **recherche**, source possible, état `search_pending`. Ce fichier n'autorise aucun coup.
+- `assets/mixamo-selected.json` : **63 animations retenues par Léon** d'après leurs vidéos source ; noms, identifiants et empreintes exacts, sans statut d'approbation runtime.
 - `assets/animation-inventory.json` : **preuve exploitable par combattant**. Sa liste `clips` démarre vide, à juste titre : aujourd'hui, aucun clip n'est intégré.
 - `src/game/move-catalog.ts` : **fixture de simulation** pour tester la richesse des inputs et cancels, aucun lien automatique vers la production.
 - `src/game/animation-first.ts` : **seule source des attaques de production**. Il filtre les clips approuvés avec provenance, retargeting et visionnage réussis ; les durées et contacts viennent de l'analyse réelle.

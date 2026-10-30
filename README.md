@@ -36,7 +36,7 @@ Ces choix sont des décisions de départ documentées ; tout changement doit êt
 
 Le miroir public déjà utilisé dans **WarConquer** permet d'accéder aux vrais fichiers Mixamo sans passer par une page de connexion Adobe éphémère : **471 candidats d'animations étudiés parmi 2 317 mouvements, 302 FBX binaires récupérés et vérifiés en privé, et 302 animations converties en GLB avec de véritables canaux**. L'intégration au jeu est encore à faire : **0 clip approuvé dans le runtime**.
 
-**Présélection du 30 octobre 2026 : [60 animations complémentaires puis 3 pas arrière de boxe supplémentaires, soit 63 candidates](assets/mixamo-shortlist.json).** Les coups peuvent disposer d'une mobilité au sol et en l'air configurable ; le moteur a un découpage haut/bas du corps pour superposer la frappe à la locomotion. Ce sont des capacités de code et une liste de **candidats**, pas des composites visuellement validés. Voir [le protocole d'animation](docs/animation-first.md).
+**Sélection confirmée par Léon le 30 octobre 2026 : [les 63 animations conservées, sans changement de nom](assets/mixamo-selected.json)** (60 de la présélection initiale + 3 pas arrière). Les coups peuvent disposer d'une mobilité au sol et en l'air configurable ; le moteur a un découpage haut/bas du corps pour superposer la frappe à la locomotion. Les 63 clips sont retenus sur la base des vidéos source ; ces capacités de code ne constituent pas encore des composites visuellement validés sur les combattants. Voir [le protocole d'animation](docs/animation-first.md).
 
 ### Choisir soi-même les animations
 
@@ -56,7 +56,7 @@ Pour inspecter les prévisualisations en privé sans dépendre du navigateur :
 python3 scripts/review-mixamo-previews.py --destination /tmp/fighters-visual-qa --views 4 --request-interval 1
 ```
 
-Le tri initial est fondé sur des poses visibles dans les vidéos YBot, **pas sur le rendu des GLB retargetés**. Les animations définitives, leurs superpositions (saut/frappe, avance/frappe, recul/frappe) et les contacts nécessitent toujours une validation humaine sur le personnage final.
+Le tri initial automatisé est fondé sur des poses visibles dans les vidéos YBot ; **Léon a ensuite explicitement conservé les 63 clips et accepté leurs noms originaux**. Cette décision figure dans [le manifeste sélectionné](assets/mixamo-selected.json), distinct de l'inventaire des clips prêts à jouer. Elle **ne valide pas les GLB retargetés**. Les animations définitives, leurs superpositions (saut/frappe, avance/frappe, recul/frappe) et les contacts nécessitent toujours une validation humaine sur le personnage final.
 
 [Compte rendu de l'examen et principales lacunes repérées](docs/animation-visual-screening.md).
 
