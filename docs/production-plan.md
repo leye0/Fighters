@@ -139,7 +139,15 @@
 
 Le but n'est pas de télécharger aveuglément toute la bibliothèque Adobe, mais de **recenser, comparer, intégrer et retoucher toutes les animations utiles à un jeu de combat**, avec variantes quand elles existent. Chaque entrée devra avoir son identifiant Mixamo, son fichier source autorisé, son personnage/rig de référence, sa durée, ses tags et son statut de retargeting.
 
+**État au 29 octobre 2026 : 0 animation Mixamo téléchargée ou intégrée.** Le lecteur GLB/animation existe, mais les clips de combat ne sont pas encore acquis. Voir [docs/mixamo-integration.md](mixamo-integration.md).
+
+- [ ] Recenser et valider de vrais clips Mixamo de garde, poings, kicks, esquives, réceptions de coups, chute et relève, avec identifiants exacts et variantes.
+- [ ] Exporter légalement depuis un Adobe ID ; distinguer droit d'utilisation en jeu et droit de republier les fichiers sources dans le dépôt public.
+- [ ] Retargeter sur différentes morphologies, dont au moins deux personnages féminins, et vérifier pieds, bassin, mains, transitions et timings.
+- [ ] Synchroniser réellement les clips de chaque coup avec startup, active, recovery, impact et réaction du moteur.
+
 ### 8.1 Locomotion et posture
+
 
 - [ ] Idle neutre et plusieurs **fighting idle** avec respiration.
 - [ ] Transition vers garde et sortie de garde.
@@ -288,8 +296,8 @@ Le HUD suit les **conventions fonctionnelles** des jeux de combat classiques (ba
 
 ## 15. Intelligence artificielle et entraînement
 
-- [ ] Définir une IA consommant les mêmes inputs et règles que les joueurs humains.
-- [ ] Programmer profils : agressif, défensif, zoner, grappler, équilibré.
+- [x] Définir une IA consommant les mêmes inputs et règles que les joueurs humains. (Contrôleurs déterministes via InputFrame, testés 2026-10-29.)
+- [ ] Programmer profils : agressif, défensif, zoner, grappler, équilibré. (Agressif, défensif et équilibré implémentés ; zoner et grappler restent à faire.)
 - [ ] Définir perception limitée, réaction configurable et prise de décision sans triche.
 - [ ] Gérer défense, anti-air, punition, projection, combos et usage stratégique de jauge.
 - [ ] Définir difficulté progressive par qualité décisionnelle et non par triche de dégâts.
@@ -297,11 +305,14 @@ Le HUD suit les **conventions fonctionnelles** des jeux de combat classiques (ba
 - [ ] Ajouter affichage hitboxes, frame data, inputs, dégâts et avantage de frames.
 - [ ] Ajouter exercices de combos et scénarios reproductibles.
 - [ ] Tester l'IA contre différentes morphologies et styles de coups.
+- [x] Tester plusieurs duels **IA contre IA déterministes**, avec plusieurs graines et profils, sans modifier les règles du moteur : attaques, gardes, coups spéciaux, KO et statistiques. (Tests automatisés exécutés.)
+- [ ] Étendre le banc IA contre IA à au moins 30 graines et styles et mesurer durée, touches, gardes, variété, phases sans contact, équilibrage et régressions.
+- [ ] Évaluer des critères observables de rythme et de plaisir : alternance offensive/défensive, lisibilité, tension, variété et absence de combats absurdes. Les métriques seules ne prouvent jamais qu'un jeu est plaisant.
 
 ## 16. Modes de jeu et progression
 
 - [ ] Combat local Joueur contre Joueur.
-- [ ] Combat Joueur contre IA et IA contre IA pour diagnostics.
+- [ ] Combat Joueur contre IA et IA contre IA pour diagnostics. (IA contre IA simulée et option navigateur branchée, mais modèles animés encore absents.)
 - [ ] Mode arcade avec adversaires et difficulté progressifs.
 - [ ] Mode entraînement complet.
 - [ ] Mode versus personnalisable et revanche rapide.
@@ -399,8 +410,13 @@ Le HUD suit les **conventions fonctionnelles** des jeux de combat classiques (ba
 
 ## 22. Tests, QA et automatisation
 
+**Banc IA contre IA :** voir [docs/ai-combat-qa.md](ai-combat-qa.md). Les statistiques automatiques ne remplacent pas le contrôle du rendu et des sensations.
+
 - [ ] Mettre en place unit tests sur règles de combats, commandes, jauges, collisions et temporalité.
 - [ ] Créer des fixtures déterministes de coups, combats complets et états attendus.
+- [x] Ajouter un **test automatisé IA contre IA** : graines reproductibles, KO, touches, gardes, spéciaux, cadence et avertissements de stagnation ; rapport CLI sans GPU.
+- [ ] Exécuter des combats **IA contre IA réellement rendus** dans le navigateur avec deux GLB photoréalistes autorisés, Mixamo retargeté, HUD, caméra, impacts et sons ; produire vidéos et captures WebSuite.
+- [ ] Faire évaluer par Léon des duels IA contre IA observés à vitesse réelle, en Ultra et en mode optimisé : rythme, lisibilité, intérêt, photoréalisme et fluidité. Ne pas cocher sur métriques automatiques.
 - [ ] Tester les mêmes inputs avec framerate rendu différent et vérifier même état final.
 - [ ] Tester tous les états et transitions de la machine d'état du combattant.
 - [ ] Tester collisions simultanées, coin, saut croisé, projections, trades, KO et fin au temps.
@@ -455,6 +471,7 @@ Le développement de chaque sous-système suit des dépendances techniques ; **t
 ## 25. Critères de validation du produit
 
 - [ ] Un combat complet oppose deux personnages **3D photoréalistes**, animés, avec des commandes classiques et une caméra latérale.
+- [ ] Des combats IA contre IA complets et **visuellement observés** confirment que les échanges sont variés, lisibles et plaisants, et non seulement mathématiquement corrects.
 - [ ] Tous les coups et collisions dépendent du moteur à 60 ticks/s, pas du timing du renderer.
 - [ ] Les coups spéciaux, combos, parades, projections, rounds et HUD sont pleinement jouables et testés.
 - [ ] Les impacts donnent une réponse cohérente en moins de quelques frames : animation, hitstop, effet, son, HUD.

@@ -29,6 +29,12 @@ Le document directeur est **docs/production-plan.md**. Le consulter avant toute 
 - Replays reproductibles, tests de règles, données de frame, tests navigateur et mesure de performance.
 - Priorité simultanée au **rendu photoréaliste maximal** et à la **fluidité/puissance mesurée**. Les profils dégradés restent explicites ; la référence de qualité Ultra ne doit pas être abaissée tacitement.
 
+## QA de gameplay IA contre IA
+
+- Le banc `npm run simulate:ai` évalue des combats à 60 ticks/s avec les mêmes `InputFrame` que les joueurs. Les tests doivent vérifier la reproductibilité, la présence d'échanges, les attaques spéciales et les avertissements d'inactivité.
+- **Ne jamais déduire qu'un combat est « fun » à partir de simples statistiques.** Après intégration de deux combattants photoréalistes et d'animations, exécuter un véritable match IA contre IA dans WebGL, l'enregistrer avec WebSuite et demander au propriétaire une appréciation à vitesse réelle. Voir `docs/ai-combat-qa.md`.
+- La simple existence d'un emplacement d'animation dans le catalogue ne signifie pas qu'un clip Mixamo a été acquis ni que sa licence a été vérifiée.
+
 ## Ressources tierces
 
 - Dépôt **public** : **ne jamais committer** un modèle, une animation, un son ou une texture dont la redistribution publique n'est pas expressément compatible avec sa licence.

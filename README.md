@@ -45,6 +45,12 @@ La [reconnaissance des coups spéciaux et les contrôles](docs/combat-commands.m
 
 Consulter le [registre des ressources, avec les premiers candidats photoréalistes](docs/asset-register.md) et son [manifeste JSON](assets/manifest.json). Les règles de distribution détaillées figurent aussi dans le [plan](docs/production-plan.md).
 
+## Duels IA contre IA et QA du gameplay
+
+Le [banc de combats IA contre IA](docs/ai-combat-qa.md) exécute de vrais affrontements dans la simulation déterministe, avec attaques, gardes, coups spéciaux et bilan de rythme. Lancer `npm run simulate:ai` ou `npm run test:ai` ; l'option **Mode → IA contre IA** est branchée dans le navigateur dès que deux GLB autorisés avec animations seront intégrés. **Cela ne constitue pas encore un test visuel du plaisir de jeu.**
+
+Concernant les animations de combat Mixamo : **aucune n'est encore téléchargée/intégrée**. La [procédure d'acquisition et de retargeting](docs/mixamo-integration.md) liste les mouvements nécessaires et les précautions de licence.
+
 ## État
 
 Le noyau TypeScript reste séparé du rendu. **L'application Vite/Three.js et sa caméra WebGL 2 sont maintenant codées** : éclairage physique de référence, sol de collision visuel, chargement GLB licencié, animations squelettiques, HUD conditionnel et métriques FPS/draw calls. **Les modèles encore candidats ne sont pas chargés** ; aucun personnage de remplacement n'est présenté comme photoréaliste ou jouable. La compilation Vite et le rendu navigateur doivent encore être vérifiés sur la version publiée. Les cases à cocher du plan font foi.
