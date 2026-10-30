@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#141c2b" />
     <meta name="description" content="Fighters : parcours de diagnostic 3D, caméra latérale et plateformes." />
     <title>Fighters — Scène beat’em up 3D</title>
-    <script type="module" crossorigin src="./assets/beatEmUp-Der_c7cZ.js"></script>
+    <script type="module" crossorigin src="./assets/beatEmUp-CrJ-UJEF.js"></script>
     <link rel="modulepreload" crossorigin href="./assets/modulepreload-polyfill-P2Xu9kJm.js">
-    <link rel="stylesheet" crossorigin href="./assets/beatEmUp-BtcJhQ2Z.css">
+    <link rel="stylesheet" crossorigin href="./assets/beatEmUp-Y9ST4knu.css">
   </head>
   <body>
     <main class="beat-shell">
@@ -18,6 +18,15 @@
       </header>
       <section id="beat-viewport" class="beat-viewport" aria-label="Niveau de diagnostic en trois dimensions">
         <canvas id="beat-canvas" aria-label="Parcours 3D à défilement latéral"></canvas>
+        <div id="beat-orientation-gate" class="beat-orientation-gate" role="alert" aria-live="polite">
+          <div class="beat-orientation-card">
+            <div class="beat-rotate-icon" aria-hidden="true">↻</div>
+            <strong>Mode paysage requis</strong>
+            <p>Tourne ton téléphone à l'horizontale pour jouer à Fighters.</p>
+            <button id="beat-landscape-lock" type="button">Essayer le plein écran</button>
+            <small>Si l'écran ne tourne pas, désactive le verrouillage d'orientation de ton téléphone.</small>
+          </div>
+        </div>
         <div class="beat-watermark">GÉOMÉTRIE ET ACTEURS DE DIAGNOSTIC · PAS LE JEU FINAL</div>
         <pre id="beat-diagnostics" class="beat-diagnostics" aria-live="off"></pre>
         <div class="beat-mobile-controls" aria-label="Commandes tactiles">
@@ -27,12 +36,15 @@
             <button data-beat-key="ArrowDown" class="down" aria-label="Revenir vers l’avant">↓</button>
             <button data-beat-key="ArrowRight" class="right" aria-label="Aller à droite">→</button>
           </div>
-          <button data-beat-key="Space" class="beat-jump" aria-label="Sauter">SAUT</button>
+          <div class="beat-action-pad">
+            <button data-beat-key="KeyK" class="beat-drop" aria-label="Se laisser tomber à travers une plateforme adaptée">DESCENDRE</button>
+            <button data-beat-key="Space" class="beat-jump" aria-label="Sauter">SAUT</button>
+          </div>
         </div>
       </section>
       <div class="beat-footer">
         <span id="beat-status" role="status">Initialisation WebGL…</span>
-        <span>Clavier : WASD / flèches · Espace / J : saut · Manette : stick + A</span>
+        <span>WASD / flèches · Espace / J : saut · K : descendre · Manette : stick + A / B</span>
         <a href="./animation-review.html">Les 63 animations</a>
       </div>
     </main>
