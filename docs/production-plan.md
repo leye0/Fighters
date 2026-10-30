@@ -153,6 +153,16 @@ Le vrai clip Mixamo `Left_Turn_3` reste disponible pour le demi-tour demandé au
 
 **Critère de livraison :** tests unitaires et GLB réels réussis, puis contrôle navigateur et images disponibles. Un succès de compilation seul n'est jamais une validation perceptuelle. Le comportement tactile iPhone doit ensuite être confirmé sur appareil.
 
+## Validation finale de la passe du 30 octobre 2026 — tests WebGL réels
+
+**Exécution GitHub [41135955894](https://github.com/leye0/Fighters/actions/runs/41135955894) : RÉUSSIE.** Build `npm run build:review`, tests Node, contrôle des trois GLB animés et séquence Chrome/WebGL logiciel `tests/browser/beat-em-up-control.json` ont terminé sans échec. Archive de **7 captures** : artifact `fighters-arcade-motion-qa` (`13016821463`). GitHub Pages [41135938023](https://github.com/leye0/Fighters/actions/runs/41135938023) a réussi la publication du code de gameplay.
+
+**Bug visuel découvert et réparé durant cette QA :** les deux ennemis de Realistic Man étaient effectivement chargés, mais leur boite animée mesurait **environ 315 × 620 m**, plaçant leur centre à `NDC Y ≈ -7.2`, complètement hors image. La normalisation avait été calculée **avant** la pose Mixamo. En la déplaçant après la pose initiale et en mesurant temporairement le rig avec une orientation parente neutre, les adversaires occupent désormais **environ 1,74 m de haut**, leurs centres sont dans le champ et les **deux hommes sont présents dans les captures**. L'Action vérifie maintenant ces dimensions explicitement. Ne plus accepter un simple test « rig chargé » comme preuve d'ennemi visible.
+
+**Contrôles reproductibles observés :** appui droite maintenu puis gauche maintenu → le `facing` et le déplacement autoritatif suivent les commandes ; le snapshot est gelé pendant la capture pour ne pas mélanger entrée et plusieurs secondes de rendu logiciel. Saut → `Y > 100 mm`, support `null`, puis retour `Y=0` / support `ground`. Le test s'exécute avec de vrais GLB et de vrais clips Mixamo. La marche standard en capture présente un personnage debout sans déformation extrême apparente.
+
+**Limites encore visibles :** la pose du saut pendant la phase descendante semble **trop raide**, même si le vol cinématique est plus lent et le vrai clip joue. À réviser sur les images réelles et sur iPhone, sans inventer une animation. Chrome SwiftShader n'exécute la scène qu'à quelques FPS dans cette Action : **ceci n'est pas une mesure des performances sur le téléphone ou sur un GPU de référence**. Aucun combat complet ni rendu artistique final n'est validé.
+
 ## 0. Gouvernance et architecture globale
 
 - [x] Travailler directement sur `main` et conserver l’historique Git.
