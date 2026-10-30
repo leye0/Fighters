@@ -19,7 +19,7 @@
     "totalIndexedHere": 471,
     "archivedTotalMotionClips": 2317,
     "initialHandCuratedNamesPreserved": 103,
-    "binaryFbxVerifiedInPrivateResearch": 117,
+    "binaryFbxVerifiedInPrivateResearch": 158,
     "checkedFilenames": [
       "Action_Idle_To_Fight_Idle.fbx",
       "Aerial_Evade.fbx",
@@ -133,7 +133,48 @@
       "Falling_2.fbx",
       "Falling_Back_Death.fbx",
       "Falling_Back_Death_2.fbx",
+      "Falling_Down.fbx",
+      "Falling_Flat_Impact.fbx",
+      "Falling_Forward_Death.fbx",
+      "Falling_From_Losing_Balance.fbx",
+      "Falling_Idle.fbx",
+      "Falling_To_Landing.fbx",
+      "Falling_To_Roll.fbx",
+      "Falling_To_Roll_2.fbx",
+      "Fight_Idle.fbx",
+      "Fight_Idle_2.fbx",
+      "Fight_Idle_To_Action_Idle.fbx",
+      "Fight_Idle_To_Standing_Idle.fbx",
       "Fighting_Idle.fbx",
+      "Fireball.fbx",
+      "Fist_Fight_A.fbx",
+      "Fist_Fight_B.fbx",
+      "Flip_Kick.fbx",
+      "Flip_Kick_2.fbx",
+      "Flying_Back_Death.fbx",
+      "Flying_Bicycle_Kick.fbx",
+      "Flying_Kick.fbx",
+      "Flying_Knee_Punch_Combo.fbx",
+      "Flying_Shoulder_Throw.fbx",
+      "Forward_Jump.fbx",
+      "Front_Flip.fbx",
+      "Front_Twist_Flip.fbx",
+      "Getting_Hit.fbx",
+      "Getting_Hit_Backwards.fbx",
+      "Getting_Up.fbx",
+      "Ginga_Backward.fbx",
+      "Ginga_Forward.fbx",
+      "Ginga_Sideways_1.fbx",
+      "Ginga_Sideways_2.fbx",
+      "Ginga_Sideways_To_Au.fbx",
+      "Ginga_Variation_1.fbx",
+      "Ginga_Variation_2.fbx",
+      "Ginga_Variation_3.fbx",
+      "Grab_And_Slam.fbx",
+      "Hard_Landing.fbx",
+      "Hard_Landing_2.fbx",
+      "Head_Hit_2.fbx",
+      "Head_Hit_3.fbx",
       "Jab_Cross.fbx",
       "Kicking_6.fbx",
       "Mma_Kick_5.fbx",
@@ -157,10 +198,11 @@
     "originalArchiveClips": 2317,
     "broaderNameOnlyCandidatesDiscarded": 234,
     "descriptionScreened": 471,
-    "researchGlbConverted": 117,
+    "researchGlbConverted": 158,
     "researchGlbFailed": 0,
-    "researchGlbTotalBytes": 289971112,
-    "sourceFbxMissingForFullResearchSet": 354
+    "researchGlbTotalBytes": 391687476,
+    "sourceFbxMissingForFullResearchSet": 313,
+    "lastAcquisitionOutcome": "HTTP 200 on retry followed by HTTP 429 Too Many Requests during bulk. Reattempt after server cooldown, with request pacing."
   },
   "clips": [
     {
@@ -184,7 +226,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3048300,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "21bc078e8883d002872ac1d8fe864abcb400e208860300ebe7f83b0a23cd1e6a",
@@ -216,7 +258,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3154620,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "142d0d5eb38565ac774d9d7a21a753acaa0c579869b725ceac208cafa43d2985",
@@ -248,7 +290,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3175500,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "0b5a53689d65c7f864ded593e8db4b1fe2d316adfdc632742c1c806f38701914",
@@ -280,7 +322,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3079900,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "b11a8e7928dadb122ec87aec72b89a47f1d33d85c22ff23bca662a806d877ab6",
@@ -312,7 +354,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3151004,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "9286602f21c1937b6b704a5c49dbdf9bbc9e8634c93469dab112105aa73745c9",
@@ -344,7 +386,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3126444,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "f1782958ed1eb18ebca9efcaba62063caeb7feb3504f858d2c805fab4ffa35ad",
@@ -376,7 +418,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3199772,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "9919ff9f61cfa32e3190e6cbc64e1b6db7dde06d36416d1007c5706eba639e0f",
@@ -408,7 +450,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3086300,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "15bad120a1b93758d438429ef7624f2ceb3545bd809540c4f9e423e41f835e83",
@@ -440,7 +482,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3130828,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "594cecf08d9ddb27843461f275a2b3a25dd514ec75bc45063bb0583f7b347318",
@@ -472,7 +514,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3036604,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "9c5b44df129fdd82babeb0ee139f28313bb0eb9fd3fe56b18ddf43997f3dd5e5",
@@ -504,7 +546,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3142300,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "b5dd286c7f72e50e125c2c13792a58bcdd7cc9ae50684afdb4784547d55f4142",
@@ -536,7 +578,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3067836,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "95f04d5d5fdbd63debf0f8aaf0f1c9f4c18e205030c54d33e48731ca75b28eb9",
@@ -568,7 +610,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3102236,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "a7e0b0ba936d6b6c86c07b1d95e36142e8be20f199c2e51a1861f0cbe594006e",
@@ -600,7 +642,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3031196,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "c1822dd01e70d6955b4b9a0a7bc35607724c34a900521b66f262fd74c331efd4",
@@ -632,7 +674,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3026700,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "50cc229b7169a2569bbe99e0c163aba6a0e690e6b8516bc04d972a75a442c3f2",
@@ -664,7 +706,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3034908,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "4204609b3c34c0435e344c0b441b6edb0a4e624d841c1981161753ac82fd4653",
@@ -696,7 +738,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3093292,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "2334c35f34805a0853381f9b956dd757e68537e16cc5e9642fa64206d03ab812",
@@ -728,7 +770,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3033196,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "c7e991af75d304e154a35072e1fa5604c992bf1e7654bd5df41b27bd04aaa6bc",
@@ -760,7 +802,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3033244,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "e42da32568f631f4d20f833aec7b89c0ed41c209ec7498dc56120a96d67b9fe5",
@@ -792,7 +834,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3030588,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "71d99bf5233c2b409a2664fa2826287715de7761afbb127650056855ab8dd563",
@@ -824,7 +866,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3029356,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "033cd313342e5608b111f79f08cdaad376caee7e7a84d893c2fc2db287e46c20",
@@ -856,7 +898,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3111804,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "fd7682c44dcbd602f1a36579b035f4d8b73d97b1db81d13b7cc512dce3ae7235",
@@ -888,7 +930,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3025244,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "15352015167e0a356d6afeeba1f851c76e2cb1f463c664844d69d35d08a0e34f",
@@ -920,7 +962,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3027708,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "f4f5c58b169af220b8afe1a115c0f57c958bcf38a29ca88685fefaa6281ec502",
@@ -952,7 +994,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3123452,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "8f49b599b26f0ae629e9f3183089cef121ebc80ccf9d1355a1999425aeadba47",
@@ -984,7 +1026,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3044876,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "ec2edb2820a73c4e92e78da3b9c7df7b38d05506acd027edec882e97828028e7",
@@ -1016,7 +1058,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3029996,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "3a0c8d6fbb3b91c533818cec164d2381182ee61a911039520967e8c16c57ec10",
@@ -1048,7 +1090,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3043324,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "e6515c41f6b973b16355ec9ee437e5c3ea5540ed7dceb231e594426acdf263ed",
@@ -1080,7 +1122,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3053244,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "d1f8a9716acceda77eeb6f34e9bfa17407b43bbec7b11531638fec2503c0dc2a",
@@ -1112,7 +1154,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3041756,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "c7034b40bda0bb1d5e6db586fbf20026af9a6379654535b99cc69ec95da5dd5f",
@@ -1144,7 +1186,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3043404,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "3524b4bd03e0186063b643cf9d0114de3ecf407f4221bef23f75200ac01bba69",
@@ -1172,7 +1214,7 @@
       "runtimeStatus": "not_integrated",
       "sha256": "fcab800ef8efba3bafa795aa867ce3b84f8e6571d6610f97e384bd1bae80d4c7",
       "binaryChecked": true,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
@@ -1208,7 +1250,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3044428,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "89a972cc9ec3fd94fc26d237c5f416560b3dc6401158e4e54452a71ee190cfd6",
@@ -1240,7 +1282,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3049404,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "655b55827080f6b03d85f68d832ebb3e2cf41752d2e059babc4d4dbff1545991",
@@ -1272,7 +1314,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3045228,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "a1585110e8fca44592e1d6cf41c64c7191a314bf8cb615600f96ca1f2d59ae78",
@@ -1300,7 +1342,7 @@
       "runtimeStatus": "not_integrated",
       "sha256": "23ad04922120f8e6c6c7ce6b9b8d4ce230b166abac948a7666a957b8aee0a2c5",
       "binaryChecked": true,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
@@ -1336,7 +1378,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3144220,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "9dbf4b7317716ec478f6f275899105fdd866dbef1368be660124fcaf521e82a3",
@@ -1368,7 +1410,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3044620,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "0d3857d8fd118333c011caa9c318558e68827cbfbe687645cf7ec024718ccd73",
@@ -1400,7 +1442,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3037420,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "44b22dff144ab7626f09b6f5d8ce2ae38464d2f0abb5fadcd7dbaf19d8e12f89",
@@ -1432,7 +1474,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3361308,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "df3fd9d1dabde507014bdce20974ee8de3dc12da45918fefd0a0704c2af06ab0",
@@ -1464,7 +1506,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3707500,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "7b75ec440f0a3138c5c296ce8bb2a6161d5b1b3f7fdc0be5a6b0aa102d86055e",
@@ -1496,7 +1538,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3189484,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "acb74f98848eb60a9ccc09333ef4bae3b37b2856c1f90ad5f17016afcae14884",
@@ -1528,7 +1570,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3153324,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "2a78ace5daf8a8d5d339ae0a40fb08b136c0e5ce9cca91558e465b219ea60ed7",
@@ -1560,7 +1602,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3140652,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "12099f377c98fc439eeb02dc2874749625729cb5655aba3f5a0345e19322980f",
@@ -1592,7 +1634,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3307868,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "cc91c4f4230ba8665e4387a4bd9569c96901903c4260280cc8ae24f35acaa197",
@@ -1624,7 +1666,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3066956,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "b1343245a113ebafefdceac9d67a9396458d8af6b38a28a06e0b65a930d5471c",
@@ -1656,7 +1698,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3031948,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "5af11e12b04a91de541e0652b1560b5f896f0527498a4bef47fd741ddf4691c0",
@@ -1688,7 +1730,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3062956,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "bb9346eaa044054289896d69e13d0fa0f6ff332c396d0543870ddfce2f98fe4b",
@@ -1720,7 +1762,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3110620,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "13a229d1bc2b2237087b387f3fc29ba5ff41117e0eb00345a5463680fd69fa85",
@@ -1752,7 +1794,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3134124,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "56646ef204de774c6af703a9935e6b51e170b38dda2b592d248c24a313130319",
@@ -1784,7 +1826,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3156572,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "01491b5a497882ad4099340b049a40f654a97ae4506aadea9cbe6d4bfcc9a26a",
@@ -1816,7 +1858,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3201132,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "4cce672ab38329cfad4f33ee3f9ffa77c1c3473ec219bf8b96b729ad4fef8884",
@@ -1848,7 +1890,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3053804,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "e8a2c897adda6dab117f1577511c498e184daa846fc2297883237436fbfe6e0b",
@@ -1880,7 +1922,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3113500,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "cf49902fde4f31b09f405ee3d3249dae61a4d351965a064c6752b5fb1bf9a740",
@@ -1912,7 +1954,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3039500,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "3adc5c25e56a05e6b8f0cf2f2829d2d559dfb067452c090e033211670a618c76",
@@ -1944,7 +1986,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3094892,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "2ee7ebd250563d96bc67a0bbd7391e39e008a5f2869331cf432c2627cf6ce813",
@@ -1976,7 +2018,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3061132,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "001beacc269cb6a4e7cdb0365c7d185d6b692321c7b0e89d0c54efbda097ea1a",
@@ -2008,7 +2050,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3046380,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "2606374e0367eaf18537c7dc0f95e6cb8d287b4663c649d19732348b1bf1879f",
@@ -2040,7 +2082,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3045724,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "3780a39c3c40be4569458f2eb59e035ffa501a8773ca03fd093648883ec1ad74",
@@ -2072,7 +2114,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3023132,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "4ae72968528055374f4cba8c6926ae5279387d246a016773ea6b877796853b2f",
@@ -2104,7 +2146,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3084156,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "01468207f6d6df3236a01d9f1dd93a32052d92dd2540e59bf3d992d58a0feb41",
@@ -2136,7 +2178,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3074140,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "dbbf7e29d014f2b8732849f015e46ce6caef3fb3c2ebc59ab592b24c6fcd3d8f",
@@ -2168,7 +2210,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3032748,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "8aaf03b010dcb8f1e55693b149d52e5f6c1e010957f7bb29058f6cfbfdbd38cc",
@@ -2200,7 +2242,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3058876,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "05fbe8857484aa84fbda6fade47441db87614d34ca69161f9995644004a0ca20",
@@ -2232,7 +2274,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3053564,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "8eec5054cf8997cc2dd2268ae3eaf540419b6b091526b40f86ca650f24c25756",
@@ -2264,7 +2306,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3054764,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "8535270fbb1772b285ea4420e29127d1904edcf5560d2aaf262b3d6f77b1eaff",
@@ -2296,7 +2338,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3061244,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "766eb39d7f427bd28b18b8b296181eb52756e4243f8e4f0339478095c8fe7dad",
@@ -2328,7 +2370,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3025244,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "043e9ff097b60b50c7af411bea48c3916994e4bdd15a3be27efddbb6e1a85c60",
@@ -2360,7 +2402,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3027388,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "d03fb22cbbd76939ab8953ce417ec7829365e729063a390e16d40c5163e3b35a",
@@ -2392,7 +2434,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3022300,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "2a48a2318bb9a42379574812688deb9fdbf28e433d38c6fbaeaa9693883ccdef",
@@ -2424,7 +2466,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3062940,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "5a7af4116756454b1d79154f395e340a0c11e31fa11d6683d121e5745aa24d5e",
@@ -2456,7 +2498,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3141932,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "510f16c5ca1523862c7e08cb34260a9a3ec0f8829537eaf9c26a44a5446e03b4",
@@ -2488,7 +2530,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3117324,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "b051f17d48d6bac64d6db2818a39229890e21a2feda70abd25c3c2eb0128b000",
@@ -2520,7 +2562,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3077820,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "6db009f628e078facd7329c5b89c74403627ac2dc44ecfd05fe1f5141653a944",
@@ -2552,7 +2594,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3076396,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "fb573a982cecc4a4eea0a1ddaa5d5cfe51058a2cafc6b87abf8c7b411ad1fb30",
@@ -2584,7 +2626,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3051916,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "efb077d55fdb452307e435c3170061ac3f116c1cbf12f267bb7845ddc19ee9fd",
@@ -2616,7 +2658,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3063948,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "6e94d943fe63f9404659f6665ca1e2af0d6b43d083f1bab899ca42e9d05b0c7b",
@@ -2648,7 +2690,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3235372,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "6c7bc713d26c7a1b3881df6d7f4170ed0644314c38fd2c476fe44f1cb0170b64",
@@ -2680,7 +2722,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3228140,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "7c824b725d753a8c9f62fe76ef2771be8370258552c63fc4a2b8ff6dabc012e1",
@@ -2712,7 +2754,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3122652,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "3d8f3a763c8712d144da0ec5ee79f4222adb6ae651ba3b564d97afb8118b5ace",
@@ -2744,7 +2786,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3047500,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "7a75f6bcf950ceece539a94d3dc22a4a0d38c0ad03729f79733ff382374897d6",
@@ -2776,7 +2818,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3043436,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "eae40ceaa595a3b360032978c1a9ec16c4ca7e24d6c8376044146df061de63ea",
@@ -2808,7 +2850,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3103244,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "5d7fc69bdbf61e6666356af796e67542916d8a23ff724783026f408058fa3f2b",
@@ -2840,7 +2882,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3034316,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "aef5c2115d37cdf9cc069839e24052ce016f671f1e6cef2dc53269cf2f834210",
@@ -2872,7 +2914,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3125484,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "147bcb471ebd8b1499bf392baf7c762ef3f05548d6dbdd6f120714ffe3861e4e",
@@ -2904,7 +2946,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3175308,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "480a26a1899a49d1f84c7ec9a88e020b5b3d15300f235676b44bfa0bc8054dec",
@@ -2936,7 +2978,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3105948,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "9851f8b12c2b81d74f783597b3e4b446b5225773b792f45759300283d094d842",
@@ -2968,7 +3010,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3260412,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "05260f342427c02bdb099d9629cb22513db9008034c537b51cc27bd90bdcca57",
@@ -3000,7 +3042,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3123084,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "feb636a351862289c576c66f8dfa2cba73114790acb3a54e88d6508a688129ea",
@@ -3032,7 +3074,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3043260,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "b76fdeb30322419befc92703a89daebd907768cddef97100b5aef567cd7a0980",
@@ -3064,7 +3106,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3186076,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "c4108c67c7afc3387f1ef3f8871fbee3f8f24392171f654eee166307cedffa5a",
@@ -3096,7 +3138,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3068300,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "af570ee9e64b498f75211d8640847fc1c9be373e6b6a739212efc5092e535a54",
@@ -3128,7 +3170,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3079244,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "6cd3f44c737514a7d4daf7e182a8d1b077feff3cfb349327b326bd9138d5227a",
@@ -3160,7 +3202,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3089916,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "9e94c45b469fed65fb6573a0b0843e5c7bc78e322e4cb63e75aa63f8b27083df",
@@ -3192,7 +3234,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3212364,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "ad476d09a7a11e2a6d600fd6ab185fe975ba0112ee242aae5f261ea57ac9dc9f",
@@ -3224,7 +3266,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3073452,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "561ace4fe28a8f99465c76c598228b9a760fdece80c63430f3baac56443d260d",
@@ -3256,7 +3298,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3037724,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "8bc9a60a162ed570b9de9c78198ce56917581c34b68a899f5bf137ce744276d4",
@@ -3288,7 +3330,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3035932,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "262412fda6e49d90fddd9039ad4a441859c50a298d65e4dcc8c5ab1c8f4d3ee1",
@@ -3320,7 +3362,7 @@
       "visualScreened": false,
       "binaryChecked": true,
       "binarySize": 3057164,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "11df4c75d72b1d6ee20b025c3aebf6ac8b430ce1b0d09e4d42b8757c11645249",
@@ -3352,7 +3394,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3146108,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "d31f98060962815bad12d8a60026e2ccf40b284f666bf6ccb82a8792d763205e",
@@ -3384,7 +3426,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3089292,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "76fc30ff710ef01d88fdd36918c76229a1e1b727ee44953f8d4d1eced9f63ecc",
@@ -3416,7 +3458,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3093804,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "dd9aeca891bd4ce339add973f76cfa4e93111c71881bdd1b2032d80ab51c6986",
@@ -3448,7 +3490,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3122700,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "2067a5ffc5fbbd02fcf642766fd5f270428938fb60627b636c5afaa544728511",
@@ -3480,7 +3522,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3100956,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "c19ea450d05ea07d898d357c5484892745644f4c503fabc54e3963d30c050486",
@@ -3512,7 +3554,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3038492,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "9d1deaea512770ebe03f9d04de994b665461d6bc0e2b22d81df0db72cac03f92",
@@ -3544,7 +3586,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3025788,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "fc5d0e2b5337d26b7df26d06831b7689475e60ad4099252e8e960cd1caae7a1b",
@@ -3576,7 +3618,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3061612,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "89429876495eab9cbf3193093f956afe0b04b95df0c0f2d51fa689b2afbf8351",
@@ -3608,7 +3650,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3056892,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "f315ff65c0e4ce10c4ab59d2f7f5053e9a24b37ad2b5406674a88dcc68c7d990",
@@ -3640,7 +3682,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3100156,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "873d40c8e27a94bbc6dccec2ec8e474c917034e795844b8bdccca5f5cac249fb",
@@ -3672,7 +3714,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3167644,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "a260365ee014d399c0877529a39925301ae84f5c361c2e8cfe98aabc4261b884",
@@ -3704,7 +3746,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3071676,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "efd281817888a4cd14497ff5729a73f1e3de436f53a7db9421e16d5c15672233",
@@ -3736,7 +3778,7 @@
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
       "binarySize": 3072796,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "researchConversionStatus": "validated_private_glb",
       "researchGlb": {
         "sha256": "4813c38d6b99c0edf882b76b0ddae6b1ce09f73ebd9748da48957e21a040e524",
@@ -3762,12 +3804,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "0799f9cb2ef1a2cfe0d21e0b7020581f9fdbefb1a98e89b54f12610476755a33",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "31515309b4011e557be4924d3a2d571ec83d014f41dec189ea109ad0cf523a72",
+        "bytes": 2456112,
+        "animations": 1,
+        "channels": 87,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-234",
@@ -3784,12 +3835,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "c7a74caec52cf9d70ec18f9ae605409542c61854f4e16ce192ced0a3e991a3b7",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "7c9c77df6164c07486a30b3c071a6f86351263b37ed4c1d82fbff104a41595e2",
+        "bytes": 2456488,
+        "animations": 1,
+        "channels": 115,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-235",
@@ -3806,12 +3866,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "3e349a1073f766c90f29daffe8d249d84429375c8eacf3fef2af196c0f1ffc79",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "168dc259ac4561d86194448d56480ba1aa871c4dc4a449b30f34e03e5fea2c67",
+        "bytes": 2448928,
+        "animations": 1,
+        "channels": 73,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-236",
@@ -3828,12 +3897,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "e2d3598d05483bb85735d200f337a0a9260f352a8f8eddc9aec4cef7bc6794b5",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "61f3b4e51012acfb1165d8639c3d796859bbf0fd626dbdf178715d6d5f235299",
+        "bytes": 2688932,
+        "animations": 1,
+        "channels": 112,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-237",
@@ -3850,12 +3928,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "216640b45ecfdd845ecd303675709103196a05bd03ea116178d11417b6837f74",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "7c61fc082f26109f71d3d5253491851c88c27bd7a67749da8eb5b3ad89c469d8",
+        "bytes": 2396052,
+        "animations": 1,
+        "channels": 84,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-238",
@@ -3872,12 +3959,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "e602968c0b3a53ba6638198a8d581a91470d4e85b0e655790ee7dda7b754b978",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "b4ed303dbed8ad45ffd114f035bf6939c5d54469de059991f55e3032656c3cd0",
+        "bytes": 2417940,
+        "animations": 1,
+        "channels": 96,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-239",
@@ -3894,12 +3990,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "62d0ecfbeeddefffde6781c9ed80cdb099ee3fd3bdd760f82559fe20d47df15d",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "633fb0a27fc9487f93cde7355bdcbf6f75812b04200f3e5dc96035e855e907f4",
+        "bytes": 2457776,
+        "animations": 1,
+        "channels": 107,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-240",
@@ -3916,12 +4021,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "fa6a55e165c734c0557a837e0ac839da15708808db65db061d4be6d68c60363e",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "7d340d394535323f1b2b5afb021b75312b2d828490c81cb45d2e11ffe0909b90",
+        "bytes": 2472368,
+        "animations": 1,
+        "channels": 107,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-242",
@@ -3938,12 +4052,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "0950ce0e0309d84bfdfcab6568dafefd8e6075a96c282b8eecd55de14b20a672",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "a48b2b018337737bec717b8ec6c9479e399274a005fbb028e42089c9d5df88a8",
+        "bytes": 2535884,
+        "animations": 1,
+        "channels": 56,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-243",
@@ -3960,12 +4083,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "df9888c12cd6353f77ec011d09b91db11de28be0ffa16b0c4bb0f58a563cc940",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "f9cc4fafe44d197ba4c6830944ee87f67fb532146547621a68e6824869cb25e5",
+        "bytes": 2409852,
+        "animations": 1,
+        "channels": 95,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-244",
@@ -3982,12 +4114,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "ae6ae4d2769b34dc00a7db3e6b158fd8c04e4f43196e27c7a60197ef4b338e29",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "3167a0e764244d25b3022ee8f029c6e34f8a11d22b73502978394f3605bc7ba4",
+        "bytes": 2422384,
+        "animations": 1,
+        "channels": 100,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-245",
@@ -4004,12 +4145,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "56f50910dcf9cd0e1a84f531702be178e68dd1c6e37ccd0ba3ff2b5719e7dc32",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "26e0d320e90eecf7dbb5cfcb2966b41cc84617006e2355f6189932e6a8c27805",
+        "bytes": 2427800,
+        "animations": 1,
+        "channels": 64,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-001",
@@ -4028,7 +4178,7 @@
       "runtimeStatus": "not_integrated",
       "sha256": "ef9b189e01f448d070ad378b7ac8ebcf712cf296943dbf1e25251f1027e193aa",
       "binaryChecked": true,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
@@ -4058,12 +4208,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
+      "sha256": "4184a4d052dfdfc9b1410b3f74285cdef5d4e4ce1fcc9befee64087ce4db8a61",
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "binaryChecked": false,
-      "researchConversionStatus": "not_converted"
+      "binaryChecked": true,
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "6341207a40bb43fa690e2c6640eb72c570b099eb3b4f52b1841234d876b72418",
+        "bytes": 2527812,
+        "animations": 1,
+        "channels": 105,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-246",
@@ -4080,12 +4239,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "5fefb979a6209c70ca33de623eeb5f380e7e9ffdcb64014d5d675386e0f48df3",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "182f1af671dd1e0035f28f9a728f6f755031d4c53bcf2dd5170edc9704bdcbe7",
+        "bytes": 2575324,
+        "animations": 1,
+        "channels": 100,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-247",
@@ -4102,12 +4270,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "41275a31c18adaebb380361edb7c4bdd6ae53734a7621ac3ee0569b65d7896b8",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "b0db27a80cef47b6eb25e5b7db2fcfaea909f1e2064b0ad4b035de7b760743d6",
+        "bytes": 2583056,
+        "animations": 1,
+        "channels": 104,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-248",
@@ -4124,12 +4301,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "bd1f8532b1b16197a87672c495f27c1cbd35f4799f0ec49ef8f280977ccf39fd",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "93c8c5a2ee0c45b7b6a3b832506eddee9cb89c62ae9a6aa580f3ddbb0903ff5c",
+        "bytes": 2467512,
+        "animations": 1,
+        "channels": 104,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-249",
@@ -4146,12 +4332,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "8a2be0d2321aac73ebe22e79659835dcb6808931d86701171d78fe84591778aa",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "2d14e5c81e72fb3b399a87e2272dd6c6221052731bbf507dd12ffa36fc080193",
+        "bytes": 2511116,
+        "animations": 1,
+        "channels": 113,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-250",
@@ -4168,12 +4363,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "9c1442d412901154e03350d0b97513a510df5ca3765558b9e7ddfa81082d110a",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "8b9e82950f2413a7723700a20eddd47c08e2f55bcd461bea2f4f3a5c68e1f0e2",
+        "bytes": 2476164,
+        "animations": 1,
+        "channels": 83,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-251",
@@ -4190,12 +4394,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "1c473a6d8acda46efcc51ed28f400a06db0624edbffd377f0ba9ad9ff165fb00",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "7cb6fab1a0f5e6262974f21fca5638f2259924c94e435443865abcaa30013cc3",
+        "bytes": 2388096,
+        "animations": 1,
+        "channels": 72,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-075",
@@ -4212,12 +4425,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
+      "sha256": "770e29dc02d5ef7b7258ca1f8084fd0c256614c66511da6151894c843225a68e",
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "binaryChecked": false,
-      "researchConversionStatus": "not_converted"
+      "binaryChecked": true,
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "f2e12def989b9f02f3e9bcb3c35ae87975aeed98e1c9cb948d5ba74548a9a92a",
+        "bytes": 2451216,
+        "animations": 1,
+        "channels": 113,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-049",
@@ -4234,12 +4456,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
+      "sha256": "c04394bdd39f1d1724e20f3bb81ea86b136e940b43a77284ab2e093b7ca06330",
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "binaryChecked": false,
-      "researchConversionStatus": "not_converted"
+      "binaryChecked": true,
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "42b00a5ac72f0804b22f2ee56382a9b225b58aac0589132886d017b3314d576a",
+        "bytes": 2502840,
+        "animations": 1,
+        "channels": 110,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-252",
@@ -4256,12 +4487,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "42721c62c01305a0a3edf0cd421674069568524f2de01bc60a816aa120b39562",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "3ee8915e7f9761cdbcb82537add643d442df88f439973076fcd677d5079d2c2b",
+        "bytes": 2560064,
+        "animations": 1,
+        "channels": 116,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-253",
@@ -4278,12 +4518,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "a1c45c4253511e60f72f2bfc210a5c5230acfc87014aafda42fe7489e1e64c67",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "517ddb4bbc4a22bda868edc1b041a0359bf806a9cb679f6aca349d275568dd29",
+        "bytes": 2471948,
+        "animations": 1,
+        "channels": 94,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-254",
@@ -4300,12 +4549,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "b449b99e09d2486bdc47b24069983e25d03f94f90f959d488ab5c4ebf86529c1",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "dc105de31df75cac424dfde6b638aaa6d652405536abab12be5e1e01a1003ae7",
+        "bytes": 2462244,
+        "animations": 1,
+        "channels": 116,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-255",
@@ -4322,12 +4580,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "17d09214d7dd39a3bc3b22afb312e9fb0015c59c120ff50fd899dab4d3d77452",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "6b50f6dc8de6d3e2a3230ce45684ed55c439b1f0bc5aef138f7645ea61f5a32b",
+        "bytes": 2488920,
+        "animations": 1,
+        "channels": 117,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-256",
@@ -4344,12 +4611,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "2c2300e6c596b709121491f4e8241033723180d1bd712dd04a0166be4386b505",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "d6a88b6039a58c122c3c5bb919f74b69c7746e4a96df8e5f82ad53069db8c2d2",
+        "bytes": 2504164,
+        "animations": 1,
+        "channels": 111,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-257",
@@ -4366,12 +4642,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "18fda225152e6d24d54fae175324245afea7989625f928ab035deeda3930d7ba",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "b06eeeaecf12f08658799a2850c403b542ac55214d8af783af24d508fc7b248d",
+        "bytes": 2524868,
+        "animations": 1,
+        "channels": 77,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-258",
@@ -4388,12 +4673,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "0d9fd41e65e352ce14edf858bc5fac1b4514e8126319d9948713e1c9761b661c",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "fe435a4886a88cefb4cf30e7bc63b85d9b0696ffad1f823efad61d22fecf01e7",
+        "bytes": 2446940,
+        "animations": 1,
+        "channels": 67,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-259",
@@ -4410,12 +4704,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "4ae7f6817777dba487f4e7a5ee71837a320ebb6286b6c43932bfa71227f308c6",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "54a54dd811a853485afb70304ae96fbbedfde2b0f05e00eb2f4e1cddbf24fcf5",
+        "bytes": 2422984,
+        "animations": 1,
+        "channels": 97,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-260",
@@ -4432,12 +4735,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "731f54056918e994bd2eb84f58fd15aa5f3ce76e134cb336175fe5cc0fa8e20e",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "28a2c4a249ecf7446200cb8cbf14b12f574a3755b765e0f1cc40a50bc501fa20",
+        "bytes": 2434648,
+        "animations": 1,
+        "channels": 107,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-261",
@@ -4454,12 +4766,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "e11f21001d6f0cce23ac4cd1f95de964c724a71dadb5606fecbba08423a0d952",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "54c873292e0d1bfd782218eb5f4136f46085a7b2ce5dba005c86217608e7de10",
+        "bytes": 2455688,
+        "animations": 1,
+        "channels": 109,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-262",
@@ -4476,12 +4797,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "c3bc7cc9c6d65f847467ac1ea3d677e981b55f1b2b733f0f2e9f01c1be823ecb",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "b4ac4a234d80c66cae3811fd7d74a63c1514e8b2632272242182529162c6d549",
+        "bytes": 2483300,
+        "animations": 1,
+        "channels": 109,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-263",
@@ -4498,12 +4828,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "9bceaeeed2b4c113c67f314575404990d49ca6d1f072e67c1d6f841b5bf57b76",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "8b236317c27631cbbfabd18f3a1b0439855e5a6b0d82fa47e1d7a91a61826335",
+        "bytes": 2546840,
+        "animations": 1,
+        "channels": 106,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-264",
@@ -4520,12 +4859,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "2a30fa010eb6a6607f2098844d2392b6879db7adb780d3b7b4df51c0e2e35f20",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "e6ce46be0aac3d19ae42aadc690a82d58db242ea77fa59d98911238724b645de",
+        "bytes": 2513816,
+        "animations": 1,
+        "channels": 92,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-265",
@@ -4542,12 +4890,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "ac7df9396e1e3b8bca21afc78c1711bd713942dd34986589d23b1da9a0d82800",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "a2e1659f6f78122e884fb438f0d1ccf1f2052fec469f83e352f9499f3531f85f",
+        "bytes": 2529924,
+        "animations": 1,
+        "channels": 94,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-266",
@@ -4564,12 +4921,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "2bcb8b9f1be3080df0805b4602a4b24d4e7feb48e9cca41ed337a90a7f6281a7",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "508af89577212549fbe26c181579d8dc29c7c156e717a419b238619ab0048f8a",
+        "bytes": 2491880,
+        "animations": 1,
+        "channels": 94,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-267",
@@ -4586,12 +4952,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "53cb4ce1babe85516b5343e742f03e23fd582dea8fc0c51f0d28d5817ee29120",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "3eea5ac887c40b8c309d0e787c23ae48932409d1e2391fe391e5b676a3e3f509",
+        "bytes": 2556368,
+        "animations": 1,
+        "channels": 99,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-268",
@@ -4608,12 +4983,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "c5b65cdd7a5af7298653c03395f7f7edb2dbe291a5fe0aa95cf24c9500dd6e68",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "1d6ff737c9b26125f3da9b99c9a9f4b99c5b137e3e9d5b1716e2c40f6c65cdf3",
+        "bytes": 2486148,
+        "animations": 1,
+        "channels": 105,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-269",
@@ -4630,12 +5014,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
-      "binaryChecked": false,
+      "sha256": "ebc23ad4919a98b7eab8a04ac6bf3aa9270007017cf2d4d1170f1ae88b9255c5",
+      "binaryChecked": true,
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "researchConversionStatus": "not_converted"
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "8d35f051a1dcf533a906623f6bc162e47fe22ad19dee8cab58794c7dc66da959",
+        "bytes": 2452500,
+        "animations": 1,
+        "channels": 93,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-088",
@@ -4652,12 +5045,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
+      "sha256": "2ede31ac2dc92d0fc051771f14f9d0cf700540162ccd78f1e596d0b798df904b",
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "binaryChecked": false,
-      "researchConversionStatus": "not_converted"
+      "binaryChecked": true,
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "4928dcc5d83c30dabfcce44c1b25ef067fdda44f5acd8a901d284f4e1a67a193",
+        "bytes": 2406120,
+        "animations": 1,
+        "channels": 67,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-089",
@@ -4674,12 +5076,21 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
+      "sha256": "655b53a019c476b4f8914305065d83ddd620ecd71473c170f2afdc1c8621eff1",
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "binaryChecked": false,
-      "researchConversionStatus": "not_converted"
+      "binaryChecked": true,
+      "researchConversionStatus": "validated_private_glb",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
+      "researchGlb": {
+        "sha256": "4edaed8e81cf4e20bd2d29a16bb93579779144d30bea1d9af248c8615cd805b7",
+        "bytes": 2403348,
+        "animations": 1,
+        "channels": 73,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-090",
@@ -5512,7 +5923,7 @@
       "runtimeStatus": "not_integrated",
       "sha256": "171ac79fe2f9a9d8b3bd89fe525d5fb16ee8e50df4a5c25c9f912c15ae191f50",
       "binaryChecked": true,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
@@ -6358,7 +6769,7 @@
       "runtimeStatus": "not_integrated",
       "sha256": "0aa9c9b85e3cf1b22a515c6cf606ee073c968bb70213b7f6f560f8ced520c93a",
       "binaryChecked": true,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
@@ -7732,7 +8143,7 @@
       "runtimeStatus": "not_integrated",
       "sha256": "3b90765c58aba81075d2186595b4afadfd1389324b091c275314ec50bed0fe5a",
       "binaryChecked": true,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
@@ -7852,7 +8263,7 @@
       "runtimeStatus": "not_integrated",
       "sha256": "604bc2bb362e0f33a5f227072cc049bba6028ea85f1c9cd402a3f0a18b4b6620",
       "binaryChecked": true,
-      "binaryCheckNote": "Valid binary FBX + SHA-256 in private research cache; no visual or legal approval and not in public repo",
+      "binaryCheckNote": "Validated real FBX in private research cache, not publicly redistributed.",
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,

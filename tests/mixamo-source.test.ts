@@ -45,11 +45,11 @@ test('research downloads are checked separately from playable animations', () =>
   assert.equal(catalog.source.license, 'adobe-mixamo-terms');
   assert.equal(catalog.source.rawRedistributionInPublicRepoAllowed, false);
   assert.equal(catalog.selection.convertedIntoRuntime, 0);
-  assert.equal(catalog.selection.researchGlbConverted, 117);
+  assert.equal(catalog.selection.researchGlbConverted, 158);
   assert.equal(catalog.selection.researchGlbFailed, 0);
-  assert.equal(catalog.selection.sourceFbxMissingForFullResearchSet, 354);
-  assert.equal(catalog.clips.filter(c => c.binaryChecked).length, 117);
-  assert.equal(catalog.selection.binaryFbxVerifiedInPrivateResearch, 117);
+  assert.equal(catalog.selection.sourceFbxMissingForFullResearchSet, 313);
+  assert.equal(catalog.clips.filter(c => c.binaryChecked).length, 158);
+  assert.equal(catalog.selection.binaryFbxVerifiedInPrivateResearch, 158);
   for (const clip of catalog.clips) {
     assert.equal(clip.runtimeStatus, 'not_integrated');
     assert.equal(clip.licenseReview, 'pending_for_integration');

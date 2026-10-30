@@ -34,7 +34,7 @@ Ces choix sont des décisions de départ documentées ; tout changement doit êt
 
 ## Animations Mixamo réellement retrouvées
 
-Le miroir public déjà utilisé dans **WarConquer** permet d'accéder aux vrais fichiers Mixamo sans passer par une page de connexion Adobe éphémère : **471 candidats d'animations issus d'une recherche sur 2 317 mouvements, 117 FBX binaires récupérés et vérifiés en privé, et **117 animations converties en GLB avec des canaux réels**. L'intégration au jeu est encore à faire : **0 clip validé dans le runtime**.
+Le miroir public déjà utilisé dans **WarConquer** permet d'accéder aux vrais fichiers Mixamo sans passer par une page de connexion Adobe éphémère : **471 candidats d'animations issus d'une recherche sur 2 317 mouvements, 158 FBX binaires récupérés et vérifiés en privé, et **158 animations converties en GLB avec des canaux réels**. L'intégration au jeu est encore à faire : **0 clip validé dans le runtime**.
 
 - [Sources réelles, droits, commandes de récupération et prochaines vérifications](docs/mixamo-real-sources.md)
 - [Index de 471 mouvements Mixamo réels](assets/mixamo-available-clips.json)
@@ -49,6 +49,12 @@ python3 scripts/convert-mixamo-fbx.py --input /tmp/fighters-research-fbx --outpu
 ```
 
 Le chargement/retargeting sur nos combattants photoréalistes nécessite encore la validation des rigs, des droits et des frames de contact.
+
+Le serveur du miroir peut retourner **HTTP 429** pendant une acquisition massive. Le téléchargeur cadence les requêtes et s'arrête lorsqu'il détecte ce code. Pour une reprise prudente :
+
+```bash
+python3 scripts/acquire-mixamo.py --destination /tmp/fighters-research-fbx --workers 1 --request-interval 5
+```
 
 ## Commandes de combat
 

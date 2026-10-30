@@ -7,8 +7,8 @@ Le projet **WarConquer** documente une source alternative utile : [bibliothèque
 - Ensemble de recherche documenté : **2 317 mouvements** sur squelette **YBot, 65 joints, 30 FPS**. Ce n'est ni une garantie de qualité visuelle ni une licence libre.
 - Index d'origine utilisés : [animation_motion_prompts.json](https://huggingface.co/datasets/Linzhan/Mixamo-Animations-Characters/blob/main/animation_motion_prompts.json) et [animation_motion_frames.json](https://huggingface.co/datasets/Linzhan/Mixamo-Animations-Characters/blob/main/animation_motion_frames.json).
 - **471 candidats de mouvements réels (triés par nom ET description, non encore visionnés)**, noms et identifiants connus, ont été retenus pour Fighters dans [le catalogue vérifiable](../assets/mixamo-available-clips.json) : garde, déplacements, poings, enchaînements, coups de pied, spéciaux, défenses et réactions.
-- **117 FBX binaires ont été réellement téléchargés à titre de vérification technique**, dans un dossier privé temporaire hors dépôt, inspectés comme FBX et hachés en SHA-256 : `Fighting_Idle.fbx`, `Boxing_3.fbx`, `Boxing_7.fbx`, `Jab_Cross.fbx`, `Kicking_6.fbx`, `Mma_Kick_5.fbx`, `Punch_Combo.fbx`. Les **117 empreintes** sont dans le catalogue.
-- **117 GLB animés réellement convertis en privé** (117/117, 0 erreur, environ 290 Mo), avec nombre de canaux et empreintes dans l'inventaire ; **0 clip dans le produit jouable**. Acquisition, conversion, retargeting, validation visuelle et licence sont des étapes différentes.
+- **158 FBX binaires ont été réellement téléchargés à titre de vérification technique**, dans un dossier privé temporaire hors dépôt, inspectés comme FBX et hachés en SHA-256 : `Fighting_Idle.fbx`, `Boxing_3.fbx`, `Boxing_7.fbx`, `Jab_Cross.fbx`, `Kicking_6.fbx`, `Mma_Kick_5.fbx`, `Punch_Combo.fbx`. Les **158 empreintes** sont dans le catalogue.
+- **158 GLB animés réellement convertis en privé** (158/158, 0 erreur, environ 290 Mo), avec nombre de canaux et empreintes dans l'inventaire ; **0 clip dans le produit jouable**. Acquisition, conversion, retargeting, validation visuelle et licence sont des étapes différentes.
 
 Ce miroir ne demande pas d'ouvrir Mixamo dans un navigateur. On peut donc récupérer les clips via script, sans page de connexion éphémère. Il n'est pas un site officiel Adobe ni une nouvelle licence indépendante.
 
@@ -22,7 +22,7 @@ python3 scripts/acquire-mixamo.py --summary
 python3 scripts/acquire-mixamo.py --list --family kick
 
 # Télécharger toute la sélection dans un dossier PRIVÉ hors du repo, en parallèle.
-python3 scripts/acquire-mixamo.py --destination /tmp/fighters-research-fbx --workers 10
+python3 scripts/acquire-mixamo.py --destination /tmp/fighters-research-fbx --workers 1 --request-interval 5
 
 # Ou télécharger un ensemble de mouvements réels dans un dossier PRIVÉ hors du repo.
 python3 scripts/acquire-mixamo.py --destination /tmp/fighters-research-fbx --family punch --limit 12
@@ -30,6 +30,8 @@ python3 scripts/acquire-mixamo.py --destination /tmp/fighters-research-fbx --fam
 # Cibler une animation déjà vérifiée.
 python3 scripts/acquire-mixamo.py --destination /tmp/fighters-research-fbx --name Jab_Cross.fbx
 ```
+
+**Limitation réellement observée :** le miroir a répondu HTTP 200 au test isolé, puis HTTP **429 Too Many Requests** pendant le lot. Après avoir acquis 41 nouveaux fichiers, le lot a été arrêté. Le script lit désormais `Retry-After` quand disponible, cadence les demandes entre tous les workers et interrompt la session dès le premier 429 pour respecter le serveur. Une reprise après refroidissement réutilise automatiquement les fichiers existants.
 
 Le script :
 1. n'accepte que des noms précis recensés dans le catalogue ;
@@ -42,7 +44,7 @@ Exemples de gestes présents dans l'index : `Boxing_3.fbx` (cross), `Boxing_7.fb
 
 ## Conversion réelle FBX vers GLB animé
 
-Le même convertisseur que WarConquer (binaire `FBX2glTF` du paquet `fbx2gltf@0.9.7-p1`) a été testé avec succès sur le vrai `Jab_Cross.fbx` : GLB valide de 2,4 Mo avec **1 animation, 67 canaux, 69 nœuds et 2 skins**. Ce fichier a été généré hors du dépôt public. **L'acquisition privée de 117 sources correspondantes a ensuite été convertie en lot : 117 GLB valides, 0 erreur et 289 971 112 octets au total.** Toutes les sorties contiennent au moins une animation et un canal actif ; aucune n'est encore approuvée pour des coups dans le jeu.
+Le même convertisseur que WarConquer (binaire `FBX2glTF` du paquet `fbx2gltf@0.9.7-p1`) a été testé avec succès sur le vrai `Jab_Cross.fbx` : GLB valide de 2,4 Mo avec **1 animation, 67 canaux, 69 nœuds et 2 skins**. Ce fichier a été généré hors du dépôt public. **L'acquisition privée de 158 sources correspondantes a ensuite été convertie en lot : 158 GLB valides, 0 erreur et 391 687 476 octets au total.** Toutes les sorties contiennent au moins une animation et un canal actif ; aucune n'est encore approuvée pour des coups dans le jeu.
 
 ```bash
 # Installer le convertisseur dans un environnement local (ne pas stocker ses sorties dans Git).
@@ -69,11 +71,11 @@ L'étiquette du dataset est **`adobe-mixamo-terms`**, **pas CC0**. La [FAQ Adobe
 Pour passer des mouvements réels à un jeu photoréaliste :
 - [x] Retrouver une source de mouvements réelle utilisée par WarConquer.
 - [x] Établir l'inventaire de 471 animations nommées et identifiées.
-- [x] Vérifier 117 téléchargements privés de FBX binaires avec SHA-256.
+- [x] Vérifier 158 téléchargements privés de FBX binaires avec SHA-256.
 - [x] Ajouter un outil d'acquisition reproductible, sans dépendance ni action GitHub.
 - [ ] Confirmer les droits exacts du mode de distribution final et l'authenticité des fichiers sources retenus.
-- [x] Convertir en privé les 117 FBX acquis en GLB contenant de vrais canaux d'animation (117/117 valides).
-- [ ] Récupérer les 354 FBX sources restant dans la sélection et les convertir. Le téléchargement depuis le CDN du miroir est bloqué dans cet environnement ; le script est repris de façon incrémentale ailleurs.
+- [x] Convertir en privé les 158 FBX acquis en GLB contenant de vrais canaux d'animation (158/158 valides).
+- [ ] Récupérer les 313 FBX sources restant dans la sélection et les convertir. Le téléchargement depuis le CDN du miroir est bloqué dans cet environnement ; le script est repris de façon incrémentale ailleurs.
 - [ ] Sélectionner des combattants photoréalistes, notamment des femmes, avec rigs appropriés.
 - [ ] Retargeter, inspecter de profil et corriger les glissements et déformations sur ces corps réels.
 - [ ] Mesurer les frames de contact et choisir les commandes de combat sur la base des gestes rendus.
