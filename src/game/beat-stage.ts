@@ -4,7 +4,7 @@ import type { ScrollBounds, WorldToScreenProjection } from "../render/beat-scrol
 /** Data-only diagnostic level. Geometry is derived from these collision surfaces. */
 export const DIAGNOSTIC_STAGE: BeatStage = {
   leftMm: -18000, rightMm: 18000, nearMm: -4500, farMm: 4500,
-  gravityMmPerTick2: 8, stepUpMm: 180, stepDownMm: 220,
+  gravityMmPerTick2: 5, stepUpMm: 180, stepDownMm: 220,
   movement: { groundAccelerationMmPerTick2: 20, groundBrakingMmPerTick2: 12,
     airAccelerationMmPerTick2: 5, airBrakingMmPerTick2: 3 },
   targetAcquireMm: 2000, targetReleaseMm: 2600, targetMaxHeightMm: 1000,
@@ -45,16 +45,16 @@ export const DIAGNOSTIC_ACTORS: readonly BeatActor[] = [
   {
     id: "hero", team: "heroes", alive: true, xMm: -11000, depthMm: 0,
     heightMm: 0, verticalVelocityMmPerTick: 0, supportingPlatformId: "ground",
-    speedMmPerTick: 30, jumpSpeedMmPerTick: 210, facing: 1, targetId: null,
+    speedMmPerTick: 30, jumpSpeedMmPerTick: 165, facing: 1, targetId: null,
   },
   {
     id: "enemy-a", team: "hostiles", alive: true, xMm: -10100, depthMm: 250,
     heightMm: 0, verticalVelocityMmPerTick: 0, supportingPlatformId: "ground",
-    speedMmPerTick: 30, jumpSpeedMmPerTick: 195, facing: -1, targetId: null,
+    speedMmPerTick: 30, jumpSpeedMmPerTick: 150, facing: -1, targetId: null,
   },
   {
     id: "enemy-b", team: "hostiles", alive: true, xMm: -11900, depthMm: -500,
     heightMm: 0, verticalVelocityMmPerTick: 0, supportingPlatformId: "ground",
-    speedMmPerTick: 30, jumpSpeedMmPerTick: 195, facing: -1, targetId: null,
+    speedMmPerTick: 30, jumpSpeedMmPerTick: 150, facing: -1, targetId: null,
   },
 ];
