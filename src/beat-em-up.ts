@@ -11,6 +11,9 @@ declare global {
     __fightersBeatReady?: boolean;
     __fightersBeatTick?: number;
     /** Read-only browser QA snapshot of the actual authoritative hero state. */
+    __fightersBeatActorBounds?: ReadonlyArray<{ id: string; width: number;
+      height: number; centerNdcX: number; centerNdcY: number;
+      skinnedMeshes: number; visible: boolean }>;
     __fightersBeatHero?: { xMm: number; depthMm: number; heightMm: number;
       facing: -1 | 1; verticalVelocityMmPerTick: number;
       supportingPlatformId: string | null };
@@ -109,6 +112,11 @@ async function startBeatScene(): Promise<void> {
       accumulator -= tickDuration;
     }
     const camera = scene.render(previous, current, accumulator / tickDuration);
+    // Only explicit, local screenshot QA needs the expensive skinned bounds.
+    if (new URLSearchParams(location.search).has("qa") &&
+        (!window.__fightersBeatActorBounds || current.tick % 30 === 0)) {
+      window.__fightersBeatActorBounds = scene.actorVisualDiagnostics;
+    }
     window.__fightersBeatReady = true;
     window.__fightersBeatTick = current.tick;
     const liveHero = current.actors.find(actor => actor.id === "hero")!;
