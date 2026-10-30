@@ -1,4 +1,5 @@
-import { AnimationAction, AnimationClip, AnimationMixer, Group, LoopOnce } from "three";
+import { AnimationAction, AnimationClip, AnimationMixer, Group, LoopOnce,
+  Quaternion, QuaternionKeyframeTrack } from "three";
 import type { BeatActor, Facing } from "../engine/beat-em-up-world.ts";
 
 export const GAME_MOTION_NAMES = {
@@ -20,6 +21,64 @@ const SOURCE_WALK_METERS_PER_SECOND: Readonly<Record<string, number>> = {
   [GAME_MOTION_NAMES.walkFeminine]: 1.607,
   [GAME_MOTION_NAMES.walkBackward]: 1.337,
 };
+
+/**
+ * The acquired Mixamo "Jumping In Place" includes a DOUBLE knee tuck (about
+ * 138 degrees on Claudia) around 40–55% of its 2.167s authored performance.
+ * The arcade world already supplies the vertical jump; this is not a jump
+ * attack or a somersault. Re-time ORIGINAL MIXAMO joint poses so the feet
+ * extend through flight, preserving launch and landing poses with a smooth
+ * quaternion transition instead of replaying the implausible tucked section.
+ *
+ * Values refer to the specific, verified Jump.fbx motion, not all jumps.
+ * Source poses remain authentic Mixamo frames, including during the blend.
+ * No authored hip/world translation is added to the kinematic game position.
+ */
+export function jumpSourcePoseWindow(phase: number):
+  Readonly<{ a: number; b: number; blend: number }> {
+  if (!Number.isFinite(phase) || phase < 0 || phase > 1) {
+    throw new Error("Jump phase must be between 0 and 1");
+  }
+  if (phase <= 0.11) {
+    return { a: phase * (0.10 / 0.11), b: 0, blend: 0 };
+  }
+  if (phase <= 0.26) {
+    return { a: 0.10, b: 0.76, blend: (phase - 0.11) / 0.15 };
+  }
+  if (phase <= 0.84) {
+    return { a: 0.76 + (phase - 0.26) * (0.13 / 0.58), b: 0, blend: 0 };
+  }
+  return { a: 0.89 + (phase - 0.84) * (0.11 / 0.16), b: 0, blend: 0 };
+}
+
+/** Build once per rig; all output tracks are quaternion samples from genuine
+ * Mixamo keyframes or slerp between two such samples.
+ */
+export function makeArcadeJumpClip(source: AnimationClip): AnimationClip {
+  if (source.name !== GAME_MOTION_NAMES.jump || source.duration < 0.2) {
+    throw new Error("Expected the genuine baked Mixamo Jump clip");
+  }
+  const frames = Math.ceil(source.duration * 30) + 1;
+  const timeline = Array.from({ length: frames },
+    (_, index) => index * source.duration / (frames - 1));
+  const tracks = source.tracks.map(track => {
+    if (!(track instanceof QuaternionKeyframeTrack)) {
+      throw new Error("Unexpected non-quaternion bone track in Mixamo jump");
+    }
+    const interp = track.createInterpolant();
+    const poseAt = (fraction: number) => new Quaternion().fromArray(
+      interp.evaluate(source.duration * fraction)).normalize();
+    const values: number[] = [];
+    for (const time of timeline) {
+      const { a, b, blend } = jumpSourcePoseWindow(time / source.duration);
+      const pose = poseAt(a);
+      if (blend > 0) pose.slerp(poseAt(b), Math.min(1, blend)).normalize();
+      values.push(...pose.toArray());
+    }
+    return new QuaternionKeyframeTrack(track.name, timeline, values);
+  });
+  return new AnimationClip(source.name, source.duration, tracks);
+}
 
 export function canAnimateRealGameMotions(clips: readonly AnimationClip[]): boolean {
   const names = new Set(clips.map(clip => clip.name));
@@ -68,7 +127,9 @@ export class BeatCharacterAnimator {
     this.mixer = new AnimationMixer(animatedRig);
     for (const clip of clips) {
       if (Object.values(GAME_MOTION_NAMES).includes(clip.name as typeof GAME_MOTION_NAMES[keyof typeof GAME_MOTION_NAMES])) {
-        this.actions.set(clip.name, this.mixer.clipAction(clip));
+        const playable = clip.name === GAME_MOTION_NAMES.jump
+          ? makeArcadeJumpClip(clip) : clip;
+        this.actions.set(clip.name, this.mixer.clipAction(playable));
       }
     }
     this.visualFacing = facing;
