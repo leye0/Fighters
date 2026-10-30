@@ -1,0 +1,2 @@
+# Preserve original downloaded character packages in GitHub using LFS.
+assets/source/characters/**/original-sketchfab-gltf.zip filter=lfs diff=lfs merge=lfs -text

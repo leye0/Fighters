@@ -1,0 +1,49 @@
+name: Import Sketchfab character into GitHub
+
+# Deliberately manual: avoids paid CI minutes on routine pushes.
+on:
+  workflow_dispatch:
+    inputs:
+      character:
+        description: Existing candidate to acquire (one model per run)
+        required: true
+        type: choice
+        default: claudia
+        options:
+          - claudia
+          - carla
+          - realistic-man
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fighters-sketchfab-${{ inputs.character }}
+  cancel-in-progress: false
+
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - name: Checkout acquisition script and candidate registry
+        uses: actions/checkout@v4
+
+      - name: Download from the official authenticated Sketchfab API
+        env:
+          SKETCHFAB_KEY: ${{ secrets.SKETCHFAB_KEY }}
+          CHARACTER: ${{ inputs.character }}
+        run: python3 scripts/import-sketchfab-character.py --character "$CHARACTER" --output assets/source/characters
+
+      - name: Commit original model, attribution and audit directly on main
+        run: |
+          git lfs install --local
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/source/characters assets/manifest.json
+          if git diff --cached --quiet; then
+            echo "Selected model is already up to date in GitHub."
+          else
+            git commit -m "Import Sketchfab character source: ${{ inputs.character }}"
+            git push origin HEAD:main
+          fi

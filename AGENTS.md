@@ -57,6 +57,7 @@ Fighters est **non commercial pour le moment**, selon le propriétaire. Ce statu
 ## Ressources tierces
 
 - Dépôt **public** : **ne jamais committer** un modèle, une animation, un son ou une texture dont la redistribution publique n'est pas expressément compatible avec sa licence.
+- **Décision de Léon pour Sketchfab :** télécharger et conserver directement dans GitHub les **modèles humains bruts** dont la licence permet la redistribution (notamment CC BY avec attribution), même si les archives sont volumineuses (Git LFS). **Aucune interdiction générale des modèles bruts ou obligation de les garder seulement hors Git.** Le contrôle de provenance, la licence et les crédits s'appliquent au fichier exact ; leur acquisition ne signifie pas que le modèle est validé visuellement ou retargeté.
 - Mixamo autorise son utilisation dans des jeux ; cela ne suffit pas à établir le droit de republier ses sources brutes dans Git.
 - Privilégier CC0. CC BY est envisageable avec crédits corrects et conditions vérifiées. Les licences NC et les droits incertains ne doivent pas entrer dans le produit commercialisable.
 - Pour tout asset : URL source, auteur, licence, obligations, date, formats, hash et statut de validation dans le registre.

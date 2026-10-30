@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "project": "Fighters",
   "updatedAt": "2026-10-29",
-  "policy": "No third-party asset files may be committed or distributed until the precise license, author attribution, and redistribution rights have been assessed. Candidate status is not approval.",
+  "policy": "Original Sketchfab human model downloads may be committed directly to GitHub (including Git LFS) when their redistribution-compatible source license is confirmed and attribution recorded. Source acquisition does not imply visual or gameplay approval. Mixamo animation sources have separate restrictions.",
   "assets": [
     {
       "id": "CHAR-CAND-001",
