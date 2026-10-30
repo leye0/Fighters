@@ -7,7 +7,7 @@ Le projet **WarConquer** documente une source alternative utile : [bibliothèque
 - Ensemble de recherche documenté : **2 317 mouvements** sur squelette **YBot, 65 joints, 30 FPS**. Ce n'est ni une garantie de qualité visuelle ni une licence libre.
 - Index d'origine utilisés : [animation_motion_prompts.json](https://huggingface.co/datasets/Linzhan/Mixamo-Animations-Characters/blob/main/animation_motion_prompts.json) et [animation_motion_frames.json](https://huggingface.co/datasets/Linzhan/Mixamo-Animations-Characters/blob/main/animation_motion_frames.json).
 - **471 candidats de mouvements réels (triés par nom ET description, non encore visionnés)**, noms et identifiants connus, ont été retenus pour Fighters dans [le catalogue vérifiable](../assets/mixamo-available-clips.json) : garde, déplacements, poings, enchaînements, coups de pied, spéciaux, défenses et réactions.
-- **11117 FBX binaires ont été réellement téléchargés à titre de vérification technique**, dans un dossier privé temporaire hors dépôt, inspectés comme FBX et hachés en SHA-256 : `Fighting_Idle.fbx`, `Boxing_3.fbx`, `Boxing_7.fbx`, `Jab_Cross.fbx`, `Kicking_6.fbx`, `Mma_Kick_5.fbx`, `Punch_Combo.fbx`. Les **117 empreintes** sont dans le catalogue.
+- **117 FBX binaires ont été réellement téléchargés à titre de vérification technique**, dans un dossier privé temporaire hors dépôt, inspectés comme FBX et hachés en SHA-256 : `Fighting_Idle.fbx`, `Boxing_3.fbx`, `Boxing_7.fbx`, `Jab_Cross.fbx`, `Kicking_6.fbx`, `Mma_Kick_5.fbx`, `Punch_Combo.fbx`. Les **117 empreintes** sont dans le catalogue.
 - **0 clip dans le produit jouable** ; acquisition technique et exploitation artistique/légale sont des étapes différentes.
 
 Ce miroir ne demande pas d'ouvrir Mixamo dans un navigateur. On peut donc récupérer les clips via script, sans page de connexion éphémère. Il n'est pas un site officiel Adobe ni une nouvelle licence indépendante.
@@ -40,6 +40,28 @@ Le script :
 
 Exemples de gestes présents dans l'index : `Boxing_3.fbx` (cross), `Boxing_7.fbx` (uppercut), `Jab_Cross.fbx` (enchaînement court), `Punch_Combo.fbx`, `Mma_Kick_5.fbx` (low kick), `Kicking_6.fbx` (roundhouse), `Fighting_Idle.fbx`. Le **geste réellement vu** décide du coup, de la portée et de la commande assignée ; le titre ne suffit pas.
 
+## Conversion réelle FBX vers GLB animé
+
+Le même convertisseur que WarConquer (binaire `FBX2glTF` du paquet `fbx2gltf@0.9.7-p1`) a été testé avec succès sur le vrai `Jab_Cross.fbx` : GLB valide de 2,4 Mo avec **1 animation, 67 canaux, 69 nœuds et 2 skins**. Ce fichier a été généré hors du dépôt public.
+
+```bash
+# Installer le convertisseur dans un environnement local (ne pas stocker ses sorties dans Git).
+npm install --no-save --package-lock=false fbx2gltf@0.9.7-p1
+
+# Inspecter les sources déjà disponibles, sans conversion.
+python3 scripts/convert-mixamo-fbx.py --input /tmp/fighters-research-fbx --output /tmp/fighters-research-glb --summary
+
+# Convertir toutes les sources effectivement présentes, en privé, avec quatre processus.
+python3 scripts/convert-mixamo-fbx.py --input /tmp/fighters-research-fbx --output /tmp/fighters-research-glb --workers 4
+
+# Convertir un clip particulier (exemple testable).
+python3 scripts/convert-mixamo-fbx.py --input /tmp/fighters-research-fbx --output /tmp/fighters-research-glb --name Jab_Cross.fbx
+```
+
+Le script contrôle la signature FBX et ses SHA connus, génère le GLB avec les animations à 30 FPS, vérifie **l'existence de véritables canaux d'animation**, et laisse un rapport dans le dossier privé. Il accepte de reprendre les GLB déjà convertis ; l'absence de fichiers non encore téléchargés est comptabilisée sans fabriquer de clips.
+
+Ces GLB sont des **animations de recherche**, ni des coups approuvés ni des fichiers librement redistribuables. Il reste à appliquer leurs os aux rigs photoréalistes, examiner les gestes, les transitions et les collisions.
+
 ## Limites de droit et de qualité
 
 L'étiquette du dataset est **`adobe-mixamo-terms`**, **pas CC0**. La [FAQ Adobe officielle](https://helpx.adobe.com/creative-cloud/faq/mixamo-faq.html) autorise l'utilisation de Mixamo dans des jeux vidéo, mais cela ne signifie pas que nous pouvons **republier librement les FBX sources sur GitHub**. Le caractère actuellement non commercial de Fighters ne change pas la question de redistribution. Ne committer ni fichiers bruts ni GLB isolés dérivés tant que le mode de distribution n'est pas juridiquement vérifié ; le jeu final devra respecter les conditions applicables. Les résultats d'un miroir tiers sont à revalider au besoin auprès d'Adobe.
@@ -47,7 +69,7 @@ L'étiquette du dataset est **`adobe-mixamo-terms`**, **pas CC0**. La [FAQ Adobe
 Pour passer des mouvements réels à un jeu photoréaliste :
 - [x] Retrouver une source de mouvements réelle utilisée par WarConquer.
 - [x] Établir l'inventaire de 471 animations nommées et identifiées.
-- [x] Vérifier un téléchargement privé de 1111117 FBX binaires avec SHA-256.
+- [x] Vérifier 117 téléchargements privés de FBX binaires avec SHA-256.
 - [x] Ajouter un outil d'acquisition reproductible, sans dépendance ni action GitHub.
 - [ ] Confirmer les droits exacts du mode de distribution final et l'authenticité des fichiers sources retenus.
 - [ ] Convertir les FBX retenus en animations glTF, avec conservation des courbes et vitesse réelle.
