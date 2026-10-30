@@ -165,6 +165,17 @@ export class BeatCharacterAnimator {
 
   update(before: BeatActor, actor: BeatActor, seconds: number): void {
     const dt = Math.max(0, Math.min(0.05, seconds));
+    // A mid-air 180° standing-turn clip can replace the jump pose and
+    // fold knees for no gameplay reason. Honor manual facing in flight,
+    // but reserve the authored standing turn for actors on solid ground.
+    if (actor.supportingPlatformId === null && (
+        this.turningTo !== null || actor.facing !== this.visualFacing)) {
+      this.mixer.stopAllAction();
+      this.activeName = null;
+      this.turningTo = null;
+      this.visualFacing = actor.facing;
+      this.outer.rotation.y = this.yaw;
+    }
     // If the player changes their mind mid-turn, stop the old visual turn
     // immediately. Never finish an obsolete 180° animation against input.
     if (this.turningTo !== null && actor.facing === this.visualFacing) {
@@ -172,7 +183,8 @@ export class BeatCharacterAnimator {
       this.turningTo = null;
       this.activeName = null;
     }
-    if (this.turningTo === null && actor.facing !== this.visualFacing) {
+    if (actor.supportingPlatformId !== null &&
+        this.turningTo === null && actor.facing !== this.visualFacing) {
       this.turningTo = actor.facing;
       this.turnElapsed = 0;
       this.mixer.stopAllAction();
