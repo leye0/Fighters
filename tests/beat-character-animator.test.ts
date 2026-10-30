@@ -106,3 +106,21 @@ test("arcade airborne jump samples ONLY authored Mixamo quaternions and blends c
   assert.ok(source.tracks[0].times.length === sourceTimes.length,
     "source GLB animation remains intact");
 });
+
+test("airborne facing changes never play a standing 180-degree turn over the jump", () => {
+  const before = DIAGNOSTIC_ACTORS[0];
+  const outer = new Group(), rig = new Group();
+  outer.add(rig);
+  const animations = Object.values(GAME_MOTION_NAMES).map(name =>
+    new AnimationClip(name, name === GAME_MOTION_NAMES.turn ? 1.633 : 1,
+      name === GAME_MOTION_NAMES.jump
+        ? [new QuaternionKeyframeTrack(".bones[Head].quaternion", [0,1],
+            [0,0,0,1,0,0,0,1])] : []));
+  const controller = new BeatCharacterAnimator(outer, rig, animations, 1, true);
+  const airborne = { ...before, supportingPlatformId: null,
+    heightMm: 300, verticalVelocityMmPerTick: 120, facing: -1 as const };
+  controller.update(before, airborne, 1/60);
+  assert.equal(outer.rotation.y, -Math.PI/2,
+    "air control should rotate the visual root immediately, without a ground-turn clip");
+  controller.dispose();
+});
