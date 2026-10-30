@@ -16,6 +16,22 @@
 >
 > **Archives :** [plan historique du duel/arène](production-plan-arena-archive.md) conservé à titre de trace, mais ses rounds, six boutons imposés et règles compétitives ne dirigent plus ce produit. Voir aussi [l’architecture beat’em up](beat-em-up-architecture.md) et [la politique animation-first](animation-first.md).
 
+## Preuve d'intégration du nouveau saut — 30 octobre 2026
+
+**Action [41141860770](https://github.com/leye0/Fighters/actions/runs/41141860770) réussie :** **138/138 tests Node**, typecheck et `build:review` réussis, analyse des **trois GLB originaux annotés de clips Mixamo** et scénario WebGL en navigateur avec vrais personnages et contrôles gauche/droite/saut. Le panneau `Stats` est vérifié fermé au chargement, ouvrable puis refermable, sans recouvrir le jeu après fermeture.
+
+**Flexion maximale des genoux sur les 25–49 poses analysées :**
+
+| Modèle | Source Mixamo non modifiée | Animation rejouée par le contrôleur arcade |
+| --- | ---: | ---: |
+| Claudia | 138,3° | 34,4° |
+| Carla | 140,8° | 37,1° |
+| Realistic Man | 143,5° | 42,9° |
+
+Ces valeurs décrivent le profil de mouvement corrigé, et non une garantie sur chaque mélange/transfert à l'image. L'Action produit aussi sept captures WebGL incluant le saut, le repos et l'atterrissage. Sur la capture examinée, **la flexion excessive disparaît, mais la pose aérienne reste plutôt raide et mérite une validation sur iPhone**. Cela ne valide pas encore la qualité d'un saut de production.
+
+**Publication :** [GitHub Pages action 41142001693](https://github.com/leye0/Fighters/actions/runs/41142001693) réussie pour le vrai bundle Vite le plus récent. L'ancienne version pouvait plier les genoux violemment en l'air ; ne pas restaurer l'ancienne lecture intégrale du clip Jump.
+
 ## Correction du saut Mixamo et de l'affichage des stats — 30 octobre 2026
 
 **Symptômes remontés sur iPhone :** Claudia replie brusquement les jambes une fois en l'air ; le cadre de télémétrie cache le jeu.
