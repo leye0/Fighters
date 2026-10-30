@@ -36,7 +36,7 @@ les projectiles, les coups et les personnages évolueront.
 ### Valeurs observées au 29 octobre 2026
 
 Pour cinq paires de graines de référence, les duels de base se sont terminés
-par KO en environ 12 à 18 secondes, sans alerte automatique. Les tests de trois
+par KO en environ 9 à 12 secondes, sans alerte automatique. Les tests de trois
 profils ont aussi produit des KO. Ces chiffres ne sont pas des FPS mesurés.
 
 ## Mode navigateur — branchement présent, **validation visuelle bloquée**

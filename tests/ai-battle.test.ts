@@ -31,6 +31,7 @@ test("AI battle is byte-for-byte deterministic from seeds and profiles", () => {
 
 test("several real simulated duels produce hits, special moves and a KO", () => {
   const seeds: [number, number][] = [[1, 2], [5, 19], [123, 456], [42, 999], [8765, 4321]];
+  let sawCombo = false;
   for (const pair of seeds) {
     const report = runAiBattle(definition(), pair);
     assert.equal(report.conclusion, "ko", JSON.stringify(report));
@@ -38,7 +39,9 @@ test("several real simulated duels produce hits, special moves and a KO", () => 
     assert.ok(report.specialAttacks[0] + report.specialAttacks[1] >= 2, JSON.stringify(report));
     assert.ok(report.attacks.every(value => value >= 4), JSON.stringify(report));
     assert.deepEqual(report.diagnosticWarnings, [], JSON.stringify(report));
+    sawCombo ||= report.cancels[0] + report.cancels[1] > 0;
   }
+  assert.equal(sawCombo, true, "at least one AI should execute a real hit-confirmed chain");
 });
 
 test("defensive and balanced AI profiles can still finish a match", () => {

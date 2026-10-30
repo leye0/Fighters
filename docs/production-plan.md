@@ -2,6 +2,8 @@
 
 > **Statut :** feuille de route active. Chaque case désigne un livrable concret à vérifier avant de la cocher. Le code de rendu Three.js/Vite et WebSuite adapté a été préparé ; aucun rendu photoréaliste de combattants n'est encore considéré validé tant que le build et les modèles licenciés ne sont pas testés.
 >
+> **Diffusion actuelle :** Fighters est un projet **non commercial pour le moment**. Son dépôt reste public, donc la republication des fichiers tiers doit malgré tout respecter leurs conditions. Une éventuelle commercialisation future exigera une nouvelle vérification des droits.
+>
 > **Directives du projet :** dépôt **public**, travail **directement sur main**, **aucune PR**, **aucune branche de fonctionnalité**, **aucun MVP** ni prototype jetable. Le produit est conçu en architecture de production dès la première ligne ; les tâches restent ordonnées par dépendances techniques. On ne coche jamais une tâche sur une simple intention.
 >
 > **Ambition :** jeu de combat arcade **2,5D**, à défilement latéral, avec personnages et décors **3D photoréalistes**, rendu sur navigateur Web, combats nerveux, HUD et ergonomie inspirés des conventions du genre sans reproduire la propriété intellectuelle d'un jeu existant.
@@ -80,7 +82,7 @@
 - [ ] Prendre en charge les inputs relatifs à l'orientation du combattant.
 - [ ] Ajouter buffer d'input en frames, tolérance des diagonales et historique des commandes.
 - [ ] Détecter quart de cercle, demi-cercle, double quart de cercle, charge, double impulsion et commandes à 360°. (Quart de cercle, demi-cercle et double quart de cercle reconnus ; intégration des commandes quart de cercle et dragon-punch au moteur de combat.)
-- [ ] Définir des règles de priorité lorsque plusieurs mouvements spéciaux correspondent.
+- [x] Définir des règles de priorité lorsque plusieurs mouvements spéciaux correspondent. (Priorité explicite, longueur du mouvement, ordre stable, tests.)
 - [ ] Gérer répétition clavier, ghosting possible, perte de focus, pause et déconnexion de manette.
 - [ ] Permettre le remappage complet des commandes et la sauvegarde des préférences.
 - [ ] Ajouter un affichage d'inputs en entraînement et un outil de validation des séquences.
@@ -88,6 +90,15 @@
 - [ ] Prévoir une interface tactile dédiée si la jouabilité mobile est retenue, sans compromettre les contrôles physiques.
 
 ## 5. Coups, combos et équilibre
+
+**Arsenal défini :** 71 attaques consultables dans [docs/arsenal.md](arsenal.md). Les rôles d'animations ne sont **pas** des clips effectivement acquis.
+
+- [x] Définir **71 coups** pilotés par données : six normaux, six accroupis, six aériens, douze directionnels, six accords de touches et 35 spéciaux/supers, avec frames, dégâts, portée et rôle d'animation.
+- [x] Reconnaître neuf mouvements directionnels, des accords de boutons et les priorités de sélection.
+- [x] Autoriser des **combos cancel après contact** vers des coups explicitement permis, dans des fenêtres temporelles vérifiées ; refuser le cancel sur whiff.
+- [x] Permettre les attaques aériennes sans figer la gravité et limiter la collision par séparation verticale.
+- [ ] Compléter le buffering des accords quasi simultanés, les charges, les dash et les projections.
+- [ ] Intégrer les vrais clips de combat et valider leur qualité avec les combattants photoréalistes.
 
 - [ ] Définir les coups par données : ID, commande, animation, startup, active, recovery, dégâts, portée, hitboxes et sons.
 - [ ] Définir un ensemble original de coups normaux debout, accroupis et aériens pour chaque combattant.
@@ -136,6 +147,8 @@
 - [ ] Maintenir une liste de candidats refusés avec raison (licence, qualité, rig, performances).
 
 ## 8. Bibliothèque Mixamo — catalogue de mouvements à acquérir
+
+**État présent :** [70 rôles d'animations recherchés](../assets/mixamo-catalog.json), **0 clip acquis ou intégré**. Parmi eux, 34 rôles sont directement référencés par les 71 coups. Les identifiants Mixamo réels restent à déterminer.
 
 Le but n'est pas de télécharger aveuglément toute la bibliothèque Adobe, mais de **recenser, comparer, intégrer et retoucher toutes les animations utiles à un jeu de combat**, avec variantes quand elles existent. Chaque entrée devra avoir son identifiant Mixamo, son fichier source autorisé, son personnage/rig de référence, sa durée, ses tags et son statut de retargeting.
 
@@ -193,6 +206,9 @@ Le but n'est pas de télécharger aveuglément toute la bibliothèque Adobe, mai
 - [ ] Tester et retenir plusieurs variantes par mouvement pour éviter l'uniformité du roster.
 
 ### 8.5 Traitement des clips
+
+- [x] Définir un résolveur `moveId → animationRole → nom de clip du combattant`, avec override par personnage. (Tests unitaires du mapping présents ; aucune animation acquise.)
+- [ ] Vérifier sur de vrais GLB le time scaling, les transitions/crossfades, les impacts et les poses, en Ultra et Low. (Branchement de durée codé mais pas validé visuellement.)
 
 - [ ] Inventorier les variantes disponibles dans Mixamo avec une table source → clip interne.
 - [ ] Télécharger les clips dans une zone autorisée **hors dépôt public** si leur redistribution brute n'est pas permise.
@@ -409,6 +425,8 @@ Le HUD suit les **conventions fonctionnelles** des jeux de combat classiques (ba
 - [ ] Évaluer WebGPU séparément derrière un contrat de rendu, sans compromettre la compatibilité WebGL2.
 
 ## 22. Tests, QA et automatisation
+
+- [x] Ajouter des tests pour 71 coups, chords, directionnels, supers, sauts/attaques aériennes, combos cancel et mapping de rôles. (60 tests exécutés sous Node, 0 échec ; Vite/WebGL toujours à valider.)
 
 **Banc IA contre IA :** voir [docs/ai-combat-qa.md](ai-combat-qa.md). Les statistiques automatiques ne remplacent pas le contrôle du rendu et des sensations.
 

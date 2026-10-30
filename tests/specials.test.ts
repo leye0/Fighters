@@ -44,7 +44,7 @@ test("wrong direction order does not activate the special", () => {
   state=advance(state,forward).state;
   state=advance(state,downForward).state;
   state=advance(state,key(0,-1,["MP"])).state;
-  assert.equal(state.fighters[0].moveId,"straight");
+  assert.equal(state.fighters[0].moveId,"crouch-cross");
 });
 test("holding final direction does not refresh an expired motion", () => {
   let state=createMatch(fixture());
@@ -53,7 +53,7 @@ test("holding final direction does not refresh an expired motion", () => {
   state=advance(state,forward).state;
   for(let i=0;i<6;i++) state=advance(state,forward).state;
   state=advance(state,special).state;
-  assert.equal(state.fighters[0].moveId,"straight");
+  assert.equal(state.fighters[0].moveId,"elbow-drive");
 });
 test("dragon-punch command with HP triggers uppercut", () => {
   let state=createMatch(fixture());
@@ -65,7 +65,7 @@ test("dragon-punch command with HP triggers uppercut", () => {
 test("longer double-quarter-circle command wins over a basic quarter-circle", () => {
   const def=fixture();
   const augmented: FighterDefinition={...def.fighters[0],moves:[
-    ...def.fighters[0].moves,
+    ...def.fighters[0].moves.filter(move => move.id !== "meteor-fist"),
     {...def.fighters[0].moves.find(move=>move.id==="surge-punch")!,
       id:"double-surge",motion:"double-quarter-circle-forward" as const,commandPriority:0},
   ]};

@@ -6,6 +6,8 @@ import {
 import { runtimeRoster, type AssetRecord } from "./assets/eligibility.ts";
 import { fighterDefinition, DEFAULT_STAGE } from "./game/roster-config.ts";
 import { KeyboardInput } from "./input/keyboard.ts";
+import { MOVE_CATALOG } from "./game/move-catalog.ts";
+import { moveCategory, moveCommand } from "./game/command-guide.ts";
 import { createAiBrain, decideAiInput, type AiBrain } from "./engine/ai.ts";
 import { ThreeWorld } from "./render/three-world.ts";
 import { type QualityPreset } from "./render/quality.ts";
@@ -56,6 +58,34 @@ selector.addEventListener("change", () => {
   next.searchParams.set("quality", selector.value);
   location.assign(next.href);
 });
+
+const filterMoves = required<HTMLInputElement>("move-filter");
+const moveList = required<HTMLUListElement>("move-list");
+const moveCount = required<HTMLElement>("move-count");
+required<HTMLElement>("move-summary").textContent = MOVE_CATALOG.length + " coups";
+function renderMoveGuide(): void {
+  const query = filterMoves.value.trim().toLocaleLowerCase("fr-CA");
+  const matching = MOVE_CATALOG.filter(move => [
+    move.id, move.animationRole ?? "", moveCategory(move), moveCommand(move),
+  ].some(value => value.toLocaleLowerCase("fr-CA").includes(query)));
+  const fragment = document.createDocumentFragment();
+  for (const move of matching) {
+    const item = document.createElement("li");
+    const name = document.createElement("strong");
+    const command = document.createElement("code");
+    const info = document.createElement("small");
+    name.textContent = move.id.replaceAll("-", " ");
+    command.textContent = moveCommand(move);
+    info.textContent = moveCategory(move) + " · " + move.damage + " dégâts · " +
+      move.startupTicks + "/" + move.activeTicks + "/" + move.recoveryTicks + " frames";
+    item.append(name, command, info);
+    fragment.append(item);
+  }
+  moveList.replaceChildren(fragment);
+  moveCount.textContent = matching.length + " / " + MOVE_CATALOG.length + " coups";
+}
+filterMoves.addEventListener("input", renderMoveGuide);
+renderMoveGuide();
 
 const roster = runtimeRoster(manifest.assets as AssetRecord[]);
 const keyboard = new KeyboardInput();
@@ -152,7 +182,7 @@ function frame(now: number): void {
       updateHud(current);
     }
     if (steps === 6 || current.phase === "ko") accumulator = 0; // Bound catch-up and stop on KO.
-    world.sync(previous, current, accumulator / tickMs, elapsedMs / 1000);
+    world.sync(previous, current, accumulator / tickMs, elapsedMs / 1000, matchDefinition);
   } else accumulator = 0;
 
   world.render();

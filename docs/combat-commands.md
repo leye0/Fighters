@@ -1,53 +1,65 @@
 # Fighters — commandes de combat
 
-Les règles ci-dessous sont **implémentées et testées dans le noyau déterministe**.
-Cela ne signifie pas que les animations et les modèles photoréalistes soient intégrés.
+**71 attaques de simulation**, réparties entre poings, pieds, coups accroupis et
+aériens, attaques directionnelles, accords de plusieurs touches, spéciaux et supers.
+Voir le [catalogue complet](arsenal.md) et la [liste filtrable du navigateur](../index.html).
+
+Ces commandes fonctionnent dans les règles déterministes à 60 ticks/s ; elles ne
+signifient pas que 71 clips photoréalistes ont été téléchargés. L'association
+aux animations est prévue **par rôle**, puis adaptable par personnage.
 
 ## Clavier
 
 | Action | Joueur 1 | Joueur 2 |
 | --- | --- | --- |
-| Déplacement | W A S D | Flèches |
-| Poings faible / moyen / fort | J / K / L | Pavé numérique 1 / 2 / 3 |
-| Pieds faible / moyen / fort | U / I / O | Pavé numérique 4 / 5 / 6 |
+| Déplacements et garde | W A S D | Flèches |
+| Poing faible / moyen / fort | J / K / L | Pavé numérique 1 / 2 / 3 |
+| Pied faible / moyen / fort | U / I / O | Pavé numérique 4 / 5 / 6 |
 
-La direction est relative au combattant : en notation pavé numérique,
-`2` = bas, `3` = bas-avant, `6` = avant.
+Les directions sont relatives à l'adversaire, avec inversion selon le côté.
+Notation pavé numérique : `2` bas, `3` bas-avant, `6` avant.
 
-| Coup | Commande | Bouton | Paramètres effectivement simulés |
-| --- | --- | --- | --- |
-| Surge punch | `236`, quart de cercle avant | MP | Mêlée, startup 8 ticks, 16 dégâts |
-| Rising uppercut | `623`, dragon-punch | HP | Mêlée haute, startup 5 ticks, 22 dégâts |
+| Mouvement | Séquence |
+| --- | --- |
+| Quart de cercle avant | `236` |
+| Quart de cercle arrière | `214` |
+| Dragon-punch | `623` |
+| Dragon-punch inversé | `421` |
+| Demi-cercle avant | `41236` |
+| Demi-cercle arrière | `63214` |
+| Double quart de cercle avant | `236236` |
+| Double quart de cercle arrière | `214214` |
+| Cercle, raccourci 270° compatible joystick | `632147` |
 
-Ce sont des coups par données, communs pour l'instant au roster ; ni projectile,
-ni déplacement vertical, ni invincibilité, ni animation spécifique ne sont simulés
-sans leur implémentation réelle.
+Exemples : `↓ ↘ → + MP` = Surge Punch ; `→ ↓ ↘ + HP` = Rising Uppercut ;
+`LP + LK` appuyés simultanément = Palm and Knee ;
+`↓ + LP` = Crouch Jab ;
+`AIR + MP` = Air Cross ;
+`→ ↘ ↓ ↙ ← ↖ + HK` = Ring of Fire.
 
-## Sémantique déterministe
+## Priorité, combos et animations
 
-- Simulation à **60 ticks/s**, indépendante du rendu Three.js.
-- L'historique borné à 32 ticks est inclus dans `MatchState` pour les replays.
-- Seules les transitions directionnelles sont enregistrées : garder `6` enfoncé
-  ne rallonge pas artificiellement le délai d'un quart de cercle.
-- Les mouvements sont trouvés dans une fenêtre de 16 ticks ; leur direction
-  terminale doit être récente (quatre ticks ou moins).
-- Les touches d'attaque ne comptent que sur l'appui initial (front montant).
-- Si plusieurs coups spéciaux correspondent, `commandPriority` l'emporte,
-  puis la longueur de la commande, puis l'ordre stable des définitions.
-- Un mouvement incomplet ou périmé utilise le coup normal de ce bouton.
-- Le changement de côté efface l'historique dépendant de l'orientation.
-- Les coups `236` et `623` sont branchés au moteur. Les mouvements de
-  demi-cercle et double quart de cercle ont une reconnaissance disponible ;
-  la démonstration testée de priorité est la commande double quart de cercle.
+- Les frappes initiales et cancels sont résolus **dans la simulation** sur des
+  commandes temporisées. Les coups ayant touché peuvent enchaîner uniquement
+  vers les `cancelInto` autorisés, dans leurs fenêtres de frames.
+- Un chord (touches simultanées), une commande directionnelle ou un mouvement
+  spécial applicable prend la priorité définie par les données ; en cas d'égalité,
+  la séquence la plus spécifique l'emporte.
+- L'historique d'orientation à 32 ticks fait partie de l'état et peut être rejoué.
+  Le mouvement ordinaire doit terminer dans les quatre ticks et respecte une
+  fenêtre normale de 16 ticks ; les supers longs peuvent en avoir 30.
+- Les coups aériens continuent de subir la gravité et limitent les contacts selon
+  la séparation verticale réelle des combattants.
+- Chaque attaque possède un `animationRole`. Le renderer choisit en priorité
+  un mapping spécifique au combattant, puis le rôle partagé, et met le clip à
+  l'échelle du temps de startup/active/recovery. Il **n'invente aucun clip manquant**.
 
-## Vérification
+Le [catalogue d'animations Mixamo recherchées](../assets/mixamo-catalog.json)
+contient 70 rôles, tous `search_pending`. Aucun fichier de combat Mixamo n'a
+encore été approuvé et intégré.
 
-`tests/specials.test.ts` vérifie le coup normal, les mouvements valides,
-l'inversion des côtés, l'ordre invalide, l'expiration, la priorité,
-la non-mutation, la limitation de l'historique et les replays.
+## Ce qui reste
 
-## Travail prévu
-
-Commandes de charge et 360°, input buffering, remappage, dash, cancels,
-juggles, hitstop, projectiles, animations retargetées, sons et effets.
-Voir `docs/production-plan.md`.
+Tolérance aux pressions quasi simultanées, buffer d'input, dash, charges,
+projections réelles, cancels aériens complexes, rounds, super jauge, hitstop,
+projectiles et validation visuelle du timing des modèles 3D.

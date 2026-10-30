@@ -3,7 +3,9 @@ import type { AttackButton, Direction, Facing, InputFrame } from "./simulation.t
 export const ATTACK_BUTTONS: readonly AttackButton[] = ["LP", "MP", "HP", "LK", "MK", "HK"];
 export type DirectionCode = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 export type MotionName = "quarter-circle-forward" | "quarter-circle-back" |
-  "dragon-punch" | "half-circle-forward" | "double-quarter-circle-forward";
+  "dragon-punch" | "reverse-dragon-punch" |
+  "half-circle-forward" | "half-circle-back" |
+  "double-quarter-circle-forward" | "double-quarter-circle-back" | "full-circle";
 
 export interface DigitalInput {
   readonly left: boolean;
@@ -27,8 +29,12 @@ export const MOTIONS: Readonly<Record<MotionName, readonly DirectionCode[]>> = O
   "quarter-circle-forward": [2, 3, 6],
   "quarter-circle-back": [2, 1, 4],
   "dragon-punch": [6, 2, 3],
+  "reverse-dragon-punch": [4, 2, 1],
   "half-circle-forward": [4, 1, 2, 3, 6],
+  "half-circle-back": [6, 3, 2, 1, 4],
   "double-quarter-circle-forward": [2, 3, 6, 2, 3, 6],
+  "double-quarter-circle-back": [2, 1, 4, 2, 1, 4],
+  "full-circle": [6, 3, 2, 1, 4, 7],
 });
 
 /** Resolve impossible opposing directions to neutral, not whichever key wins. */

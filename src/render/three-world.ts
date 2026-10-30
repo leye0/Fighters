@@ -1,14 +1,15 @@
 import {
-  AgXToneMapping, AmbientLight, AnimationAction, AnimationMixer, Color,
+  AgXToneMapping, AmbientLight, AnimationAction, AnimationMixer, Color, LoopOnce, LoopRepeat,
   DirectionalLight, FogExp2, Group, HemisphereLight, Mesh,
   MeshStandardMaterial, PerspectiveCamera, PlaneGeometry, Scene,
   SRGBColorSpace, WebGLRenderer, PCFSoftShadowMap, Texture,
   type Material, type Object3D, type AnimationClip,
 } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import type { FighterState, MatchState, StageDefinition } from "../engine/simulation.ts";
+import { TICKS_PER_SECOND, type FighterDefinition, type FighterState, type MatchDefinition, type MatchState, type StageDefinition } from "../engine/simulation.ts";
 import type { RuntimeFighterAsset } from "../assets/eligibility.ts";
 import { qualityProfile, renderPixelRatio, type QualityPreset } from "./quality.ts";
+import { animationClipName } from "./animation-map.ts";
 
 interface FighterVisual {
   readonly root: Group;
@@ -151,11 +152,13 @@ export class ThreeWorld {
     });
   }
 
-  private updateAnimation(visual: FighterVisual, fighter: FighterState): void {
+  private updateAnimation(visual: FighterVisual, fighter: FighterState, definition?: FighterDefinition): void {
     const key = fighter.action === "attack" ? fighter.moveId : fighter.action;
     if (key === visual.animationKey) return;
     visual.animationKey = key;
-    const mapped = key ? visual.configuration.visual?.animationMap?.[key] ?? key : null;
+    const move = fighter.action === "attack"
+      ? definition?.moves.find(candidate => candidate.id === fighter.moveId) : undefined;
+    const mapped = animationClipName(fighter, definition, visual.configuration.visual?.animationMap);
     const clip = mapped ? visual.clips.get(mapped) : undefined;
     if (!clip) {
       // No substitute animation: missing moves must remain visible in QA.
@@ -164,12 +167,21 @@ export class ThreeWorld {
       return;
     }
     const next = visual.mixer.clipAction(clip);
+    const looping = fighter.action === "idle" || fighter.action === "walk" || fighter.action === "crouch";
+    next.setLoop(looping ? LoopRepeat : LoopOnce, looping ? Infinity : 1);
+    next.clampWhenFinished = !looping;
+    // An animation may be visually different, but its time must follow the
+    // authoritative startup/active/recovery duration rather than changing it.
+    const duration = move ? (move.startupTicks + move.activeTicks + move.recoveryTicks) / TICKS_PER_SECOND : null;
+    next.setEffectiveTimeScale(duration && duration > 0 && clip.duration > 0
+      ? clip.duration / duration : 1);
+    const previousAction = visual.action;
     next.reset().fadeIn(0.12).play();
-    visual.action?.fadeOut(0.12);
+    if (previousAction && previousAction !== next) previousAction.fadeOut(0.12);
     visual.action = next;
   }
 
-  sync(previous: MatchState, current: MatchState, alpha: number, deltaSeconds: number): void {
+  sync(previous: MatchState, current: MatchState, alpha: number, deltaSeconds: number, definition?: MatchDefinition): void {
     const blend = Math.max(0, Math.min(1, alpha));
     for (let index = 0; index < current.fighters.length; index++) {
       const fighter = current.fighters[index];
@@ -183,7 +195,7 @@ export class ThreeWorld {
       const axis = visual.configuration.visual?.modelForwardAxis ?? "+Z";
       const adjustment = axis === "+Z" ? 0 : axis === "-Z" ? Math.PI : axis === "+X" ? -Math.PI / 2 : Math.PI / 2;
       visual.root.rotation.y = (fighter.facing === 1 ? Math.PI / 2 : -Math.PI / 2) + adjustment;
-      this.updateAnimation(visual, fighter);
+      this.updateAnimation(visual, fighter, definition?.fighters[index]);
       visual.mixer.update(Math.min(0.05, deltaSeconds));
     }
     const [a, b] = current.fighters;

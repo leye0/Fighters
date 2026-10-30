@@ -13,6 +13,7 @@ export type Direction = -1 | 0 | 1;
 export type Facing = -1 | 1;
 export type AttackButton = "LP" | "MP" | "HP" | "LK" | "MK" | "HK";
 export type GuardLevel = "mid" | "low" | "overhead";
+export type MoveStance = "grounded" | "standing" | "crouching" | "airborne";
 export type FighterAction =
   | "idle" | "walk" | "crouch" | "jump" | "attack"
   | "hitstun" | "blockstun" | "ko";
@@ -35,6 +36,21 @@ export interface MoveDefinition {
   readonly motion?: MotionName;
   /** Higher numbers win when multiple special commands complete together. */
   readonly commandPriority?: number;
+  /** Chord of simultaneous just-pressed buttons; must include the primary button. */
+  readonly buttons?: readonly AttackButton[];
+  /** Optional position and facing requirements for command normals. */
+  readonly stance?: MoveStance;
+  readonly direction?: "forward" | "back";
+  /** Semantic clip role, resolved through per-character animation mappings. */
+  readonly animationRole?: string;
+  readonly motionWindowTicks?: number;
+  /** Follow-ups are only allowed after this move makes contact, in the given frame window. */
+  readonly cancelInto?: readonly string[];
+  readonly cancelFromTick?: number;
+  readonly cancelThroughTick?: number;
+  /** Optional vertical collision constraints for anti-air and airborne moves. */
+  readonly minTargetHeightMm?: number;
+  readonly maxVerticalSeparationMm?: number;
 }
 
 export interface FighterDefinition {
@@ -90,6 +106,7 @@ export interface MatchState {
 export type CombatEvent =
   | { readonly type: "jump"; readonly fighter: 0 | 1 }
   | { readonly type: "attack"; readonly fighter: 0 | 1; readonly moveId: string }
+  | { readonly type: "cancel"; readonly fighter: 0 | 1; readonly fromMoveId: string; readonly toMoveId: string }
   | { readonly type: "hit" | "block"; readonly attacker: 0 | 1; readonly defender: 0 | 1; readonly moveId: string; readonly damage: number }
   | { readonly type: "ko"; readonly fighter: 0 | 1 };
 
@@ -140,6 +157,23 @@ export function validateMatchDefinition(definition: MatchDefinition): void {
         throw new Error("Unknown motion: " + move.motion);
       }
       if (move.commandPriority !== undefined) assertInt(move.commandPriority, move.id + ".commandPriority");
+      if (move.motionWindowTicks !== undefined) assertInt(move.motionWindowTicks, move.id + ".motionWindowTicks", 1);
+      if (move.minTargetHeightMm !== undefined) assertInt(move.minTargetHeightMm, move.id + ".minTargetHeightMm");
+      if (move.maxVerticalSeparationMm !== undefined) assertInt(move.maxVerticalSeparationMm, move.id + ".maxVerticalSeparationMm", 1);
+      if (move.cancelFromTick !== undefined) assertInt(move.cancelFromTick, move.id + ".cancelFromTick");
+      if (move.cancelThroughTick !== undefined) assertInt(move.cancelThroughTick, move.id + ".cancelThroughTick");
+      if (move.cancelFromTick !== undefined && move.cancelThroughTick !== undefined && move.cancelFromTick > move.cancelThroughTick) throw new Error("Invalid cancel window");
+      if (move.buttons && (move.buttons.length < 2 || !move.buttons.includes(move.button) || new Set(move.buttons).size !== move.buttons.length)) throw new Error("Invalid button chord");
+      if (move.animationRole !== undefined && !move.animationRole.trim()) throw new Error("Empty animation role");
+      if (move.stance && !["grounded", "standing", "crouching", "airborne"].includes(move.stance)) throw new Error("Invalid move stance");
+      if (move.direction && move.direction !== "forward" && move.direction !== "back") throw new Error("Invalid command direction");
+      if (move.minTargetHeightMm !== undefined && move.minTargetHeightMm > move.maxTargetHeightMm) throw new Error("Impossible target height");
+      const total = move.startupTicks + move.activeTicks + move.recoveryTicks;
+      if (move.cancelFromTick !== undefined && move.cancelFromTick >= total) throw new Error("Unreachable cancel start");
+      if (move.cancelThroughTick !== undefined && move.cancelThroughTick >= total) throw new Error("Unreachable cancel end");
+    }
+    for (const move of f.moves) {
+      if (move.cancelInto?.some(id => !ids.has(id) || id === move.id)) throw new Error("Invalid cancel destination for " + move.id);
     }
   }
   const requiredDistance = fighters[0].pushboxHalfWidthMm + fighters[1].pushboxHalfWidthMm;
@@ -187,25 +221,41 @@ function recordDirection(
   return [...recent, { tick, direction: code }];
 }
 
-/** Longest/specific commands first; authored order breaks exact ties deterministically. */
+/** A normal, command normal, chord or special is always selected from authored data. */
 function resolveAttackMove(
   moves: readonly MoveDefinition[], input: InputFrame,
-  history: readonly MotionSample[], tick: number,
+  history: readonly MotionSample[], tick: number, facing: Facing,
+  airborne: boolean,
 ): MoveDefinition | undefined {
   if (!input.attacks.length) return undefined;
-  const candidates = moves.filter(move => input.attacks.includes(move.button));
-  const specials = candidates.filter(move => move.motion !== undefined &&
-    matchesMotion(history, MOTIONS[move.motion], tick));
-  if (specials.length) {
-    return specials.reduce((best, move) => {
-      const bestPriority = best.commandPriority ?? 0;
-      const movePriority = move.commandPriority ?? 0;
-      return movePriority > bestPriority ||
-        (movePriority === bestPriority && MOTIONS[move.motion!].length > MOTIONS[best.motion!].length)
-        ? move : best;
-    });
+  const stance: MoveStance = airborne ? "airborne" : input.vertical === -1 ? "crouching" : "standing";
+  let chosen: MoveDefinition | undefined;
+  let chosenScore = -1;
+  for (const move of moves) {
+    if (move.stance !== undefined && move.stance !== stance && !(move.stance === "grounded" && !airborne)) continue;
+    if (move.buttons ? !move.buttons.every(button => input.attacks.includes(button)) : !input.attacks.includes(move.button)) continue;
+    if (move.direction && input.horizontal !== (move.direction === "forward" ? facing : -facing)) continue;
+    if (move.motion && !matchesMotion(history, MOTIONS[move.motion], tick, move.motionWindowTicks ?? 16)) continue;
+    const score = (move.commandPriority ?? 0) * 1000 +
+      (move.motion ? 100 + MOTIONS[move.motion].length : 0) +
+      (move.buttons ? move.buttons.length * 10 : 0) +
+      (move.direction ? 5 : 0) + (move.stance ? 1 : 0);
+    if (score > chosenScore) { chosen = move; chosenScore = score; }
   }
-  return candidates.find(move => move.motion === undefined);
+  return chosen;
+}
+
+/** Gravity remains active while an attack or reaction takes place in the air. */
+function integrateAir(
+  fighter: FighterState, input: InputFrame, config: FighterDefinition, stage: StageDefinition,
+): FighterState {
+  if (fighter.yMm <= 0) return fighter;
+  const velocity = fighter.verticalVelocityMmPerTick - config.gravityMmPerTick2;
+  const height = Math.max(0, fighter.yMm + velocity);
+  return {
+    ...fighter, yMm: height, verticalVelocityMmPerTick: height > 0 ? velocity : 0,
+    xMm: clamp(fighter.xMm + input.horizontal * config.walkSpeedMmPerTick, stage.leftMm, stage.rightMm),
+  };
 }
 
 function moveFighter(
@@ -222,7 +272,7 @@ function moveFighter(
   if (f.action === "ko") return f;
 
   if (f.action === "hitstun" || f.action === "blockstun") {
-    f = { ...f, stunRemainingTicks: f.stunRemainingTicks - 1 };
+    f = { ...integrateAir(f, NEUTRAL_INPUT, config, stage), stunRemainingTicks: f.stunRemainingTicks - 1 };
     if (f.stunRemainingTicks <= 0) f = { ...f, action: "idle", stunRemainingTicks: 0 };
     return f;
   }
@@ -231,26 +281,37 @@ function moveFighter(
     const move = moveById(config, f.moveId);
     if (!move) throw new Error("Unknown active move: " + f.moveId);
     const frame = f.moveFrame + 1;
+    const followup = move.cancelInto?.length && f.moveHitOpponent
+      ? resolveAttackMove(config.moves, input, history, tick, f.facing, f.yMm > 0)
+      : undefined;
+    if (followup && move.cancelInto?.includes(followup.id) &&
+        frame >= (move.cancelFromTick ?? move.startupTicks) &&
+        frame <= (move.cancelThroughTick ?? move.startupTicks + move.activeTicks + move.recoveryTicks - 1)) {
+      events.push({ type: "cancel", fighter: index, fromMoveId: move.id, toMoveId: followup.id });
+      events.push({ type: "attack", fighter: index, moveId: followup.id });
+      return { ...integrateAir(f, input, config, stage), action: "attack",
+        moveId: followup.id, moveFrame: 0, moveHitOpponent: false };
+    }
+    f = integrateAir(f, input, config, stage);
     if (frame >= move.startupTicks + move.activeTicks + move.recoveryTicks) {
-      return { ...f, action: "idle", moveId: null, moveFrame: 0, moveHitOpponent: false };
+      return { ...f, action: f.yMm > 0 ? "jump" : "idle", moveId: null,
+        moveFrame: 0, moveHitOpponent: false };
     }
     return { ...f, moveFrame: frame };
   }
 
   if (f.action === "jump") {
-    const nextVelocity = f.verticalVelocityMmPerTick - config.gravityMmPerTick2;
-    const nextHeight = f.yMm + nextVelocity;
-    f = {
-      ...f,
-      xMm: clamp(f.xMm + input.horizontal * config.walkSpeedMmPerTick, stage.leftMm, stage.rightMm),
-      yMm: Math.max(0, nextHeight),
-      verticalVelocityMmPerTick: nextVelocity,
-    };
-    if (nextHeight <= 0) f = { ...f, yMm: 0, verticalVelocityMmPerTick: 0, action: "idle" };
+    const chosen = resolveAttackMove(config.moves, input, history, tick, f.facing, true);
+    f = integrateAir(f, input, config, stage);
+    if (chosen && f.yMm > 0) {
+      events.push({ type: "attack", fighter: index, moveId: chosen.id });
+      return { ...f, action: "attack", moveId: chosen.id, moveFrame: 0, moveHitOpponent: false };
+    }
+    if (f.yMm <= 0) f = { ...f, action: "idle" };
     return f;
   }
 
-  const chosen = resolveAttackMove(config.moves, input, history, tick);
+  const chosen = resolveAttackMove(config.moves, input, history, tick, f.facing, false);
   if (chosen) {
     events.push({ type: "attack", fighter: index, moveId: chosen.id });
     return { ...f, action: "attack", moveId: chosen.id, moveFrame: 0, moveHitOpponent: false };
@@ -348,7 +409,9 @@ export function stepMatch(
     if (attacker.moveFrame < move.startupTicks ||
         attacker.moveFrame >= move.startupTicks + move.activeTicks) continue;
     if (Math.abs(attacker.xMm - defender.xMm) > move.rangeMm ||
-        defender.yMm > move.maxTargetHeightMm) continue;
+        defender.yMm > move.maxTargetHeightMm ||
+        defender.yMm < (move.minTargetHeightMm ?? 0) ||
+        Math.abs(attacker.yMm - defender.yMm) > (move.maxVerticalSeparationMm ?? Number.MAX_SAFE_INTEGER)) continue;
     pending.push({
       attacker: index, defender: defenderIndex, move,
       guarded: isBlocking(inputs[defenderIndex], defender, move.level),

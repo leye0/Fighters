@@ -10,7 +10,7 @@ commerciaux, et annonce un accès gratuit avec Adobe ID. Cela **n'autorise pas
 automatiquement la republication des fichiers sources bruts** dans un dépôt
 GitHub public. Vérifier les conditions applicables lors de l'acquisition.
 
-Le [catalogue structuré des 50 rôles d'animation](../assets/mixamo-catalog.json) précise les besoins, les statuts `search_pending` et les identifiants encore inconnus. Il ne contient aucun clip Mixamo et ne présume pas que chacun de ces 50 mouvements existe déjà sous cette forme.
+Le [catalogue structuré des 70 rôles d'animation](../assets/mixamo-catalog.json) précise les besoins, les statuts `search_pending` et les identifiants encore inconnus. Il ne contient aucun clip Mixamo et ne présume pas que chacun de ces 70 mouvements existe déjà sous cette forme.
 
 ## Catalogue de gestes à acquérir et qualifier
 

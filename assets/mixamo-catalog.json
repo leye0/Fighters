@@ -555,6 +555,226 @@
       "licensingReview": "pending",
       "rigCompatibility": "untested",
       "sourceHash": null
+    },
+    {
+      "id": "MX-REQ-051",
+      "family": "combat",
+      "requiredRole": "crouching_jab",
+      "mixamoClipId": null,
+      "mixamoClipLabel": null,
+      "status": "search_pending",
+      "licensingReview": "pending",
+      "rigCompatibility": "untested",
+      "sourceHash": null
+    },
+    {
+      "id": "MX-REQ-052",
+      "family": "combat",
+      "requiredRole": "crouching_cross",
+      "mixamoClipId": null,
+      "mixamoClipLabel": null,
+      "status": "search_pending",
+      "licensingReview": "pending",
+      "rigCompatibility": "untested",
+      "sourceHash": null
+    },
+    {
+      "id": "MX-REQ-053",
+      "family": "combat",
+      "requiredRole": "crouching_hook",
+      "mixamoClipId": null,
+      "mixamoClipLabel": null,
+      "status": "search_pending",
+      "licensingReview": "pending",
+      "rigCompatibility": "untested",
+      "sourceHash": null
+    },
+    {
+      "id": "MX-REQ-054",
+      "family": "combat",
+      "requiredRole": "crouching_low_kick",
+      "mixamoClipId": null,
+      "mixamoClipLabel": null,
+      "status": "search_pending",
+      "licensingReview": "pending",
+      "rigCompatibility": "untested",
+      "sourceHash": null
+    },
+    {
+      "id": "MX-REQ-055",
+      "family": "combat",
+      "requiredRole": "crouching_sweep",
+      "mixamoClipId": null,
+      "mixamoClipLabel": null,
+      "status": "search_pending",
+      "licensingReview": "pending",
+      "rigCompatibility": "untested",
+      "sourceHash": null
+    },
+    {
+      "id": "MX-REQ-056",
+      "family": "combat",
+      "requiredRole": "air_jab",
+      "mixamoClipId": null,
+      "mixamoClipLabel": null,
+      "status": "search_pending",
+      "licensingReview": "pending",
+      "rigCompatibility": "untested",
+      "sourceHash": null
+    },
+    {
+      "id": "MX-REQ-057",
+      "family": "combat",
+      "requiredRole": "air_cross",
+      "mixamoClipId": null,
+      "mixamoClipLabel": null,
+      "status": "search_pending",
+      "licensingReview": "pending",
+      "rigCompatibility": "untested",
+      "sourceHash": null
+    },
+    {
+      "id": "MX-REQ-058",
+      "family": "combat",
+      "requiredRole": "air_hook",
+      "mixamoClipId": null,
+      "mixamoClipLabel": null,
+      "status": "search_pending",
+      "licensingReview": "pending",
+      "rigCompatibility": "untested",
+      "sourceHash": null
+    },
+    {
+      "id": "MX-REQ-059",
+      "family": "combat",
+      "requiredRole": "jumping_knee",
+      "mixamoClipId": null,
+      "mixamoClipLabel": null,
+      "status": "search_pending",
+      "licensingReview": "pending",
+      "rigCompatibility": "untested",
+      "sourceHash": null
+    },
+    {
+      "id": "MX-REQ-060",
+      "family": "combat",
+      "requiredRole": "air_front_kick",
+      "mixamoClipId": null,
+      "mixamoClipLabel": null,
+      "status": "search_pending",
+      "licensingReview": "pending",
+      "rigCompatibility": "untested",
+      "sourceHash": null
+    },
+    {
+      "id": "MX-REQ-061",
+      "family": "combat",
+      "requiredRole": "flying_kick",
+      "mixamoClipId": null,
+      "mixamoClipLabel": null,
+      "status": "search_pending",
+      "licensingReview": "pending",
+      "rigCompatibility": "untested",
+      "sourceHash": null
+    },
+    {
+      "id": "MX-REQ-062",
+      "family": "combat",
+      "requiredRole": "palm_strike",
+      "mixamoClipId": null,
+      "mixamoClipLabel": null,
+      "status": "search_pending",
+      "licensingReview": "pending",
+      "rigCompatibility": "untested",
+      "sourceHash": null
+    },
+    {
+      "id": "MX-REQ-063",
+      "family": "combat",
+      "requiredRole": "elbow_strike",
+      "mixamoClipId": null,
+      "mixamoClipLabel": null,
+      "status": "search_pending",
+      "licensingReview": "pending",
+      "rigCompatibility": "untested",
+      "sourceHash": null
+    },
+    {
+      "id": "MX-REQ-064",
+      "family": "combat",
+      "requiredRole": "overhand_punch",
+      "mixamoClipId": null,
+      "mixamoClipLabel": null,
+      "status": "search_pending",
+      "licensingReview": "pending",
+      "rigCompatibility": "untested",
+      "sourceHash": null
+    },
+    {
+      "id": "MX-REQ-065",
+      "family": "combat",
+      "requiredRole": "knee_strike",
+      "mixamoClipId": null,
+      "mixamoClipLabel": null,
+      "status": "search_pending",
+      "licensingReview": "pending",
+      "rigCompatibility": "untested",
+      "sourceHash": null
+    },
+    {
+      "id": "MX-REQ-066",
+      "family": "combat",
+      "requiredRole": "axe_kick",
+      "mixamoClipId": null,
+      "mixamoClipLabel": null,
+      "status": "search_pending",
+      "licensingReview": "pending",
+      "rigCompatibility": "untested",
+      "sourceHash": null
+    },
+    {
+      "id": "MX-REQ-067",
+      "family": "combat",
+      "requiredRole": "heel_kick",
+      "mixamoClipId": null,
+      "mixamoClipLabel": null,
+      "status": "search_pending",
+      "licensingReview": "pending",
+      "rigCompatibility": "untested",
+      "sourceHash": null
+    },
+    {
+      "id": "MX-REQ-068",
+      "family": "combat",
+      "requiredRole": "side_kick",
+      "mixamoClipId": null,
+      "mixamoClipLabel": null,
+      "status": "search_pending",
+      "licensingReview": "pending",
+      "rigCompatibility": "untested",
+      "sourceHash": null
+    },
+    {
+      "id": "MX-REQ-069",
+      "family": "combat",
+      "requiredRole": "back_kick",
+      "mixamoClipId": null,
+      "mixamoClipLabel": null,
+      "status": "search_pending",
+      "licensingReview": "pending",
+      "rigCompatibility": "untested",
+      "sourceHash": null
+    },
+    {
+      "id": "MX-REQ-070",
+      "family": "combat",
+      "requiredRole": "guard_break",
+      "mixamoClipId": null,
+      "mixamoClipLabel": null,
+      "status": "search_pending",
+      "licensingReview": "pending",
+      "rigCompatibility": "untested",
+      "sourceHash": null
     }
   ]
 }

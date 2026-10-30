@@ -101,6 +101,30 @@ export function decideAiInput(
     };
   }
 
+  // Hit-confirmed chains use the same authored cancel windows as human combos.
+  if (fighter.action === "attack" && fighter.moveHitOpponent && fighter.moveId) {
+    const active = definition.moves.find(move => move.id === fighter.moveId);
+    const frame = fighter.moveFrame + 1;
+    const eligible = active?.cancelInto ? active.cancelInto.flatMap(id => definition.moves.filter(move =>
+      move.id === id && !move.motion && move.stance !== "airborne" &&
+      frame >= (active.cancelFromTick ?? active.startupTicks) &&
+      frame <= (active.cancelThroughTick ?? active.startupTicks + active.activeTicks + active.recoveryTicks - 1),
+    )) : [];
+    if (eligible.length) {
+      const seed = advanceRandom(next.seed);
+      next = { ...next, seed };
+      if (seed % 100 < 42) {
+        const chosen = eligible[(seed >>> 8) % eligible.length];
+        return { input: {
+          horizontal: chosen.direction === "forward" ? fighter.facing :
+            chosen.direction === "back" ? -fighter.facing : 0,
+          vertical: chosen.stance === "crouching" ? -1 : 0,
+          attacks: chosen.buttons ?? [chosen.button],
+        }, brain: next };
+      }
+    }
+  }
+
   if (!available) {
     return { input: NEUTRAL_INPUT, brain: {
       ...next, pendingDirections: [], pendingButton: null, pendingFacing: null,
@@ -120,14 +144,16 @@ export function decideAiInput(
   }
 
   if (tick >= next.nextAttackTick && distance <= 1550) {
-    const availableMoves = definition.moves.filter(move => distance <= move.rangeMm - 70);
+    const availableMoves = definition.moves.filter(move =>
+      move.stance !== "airborne" && distance <= move.rangeMm - 70);
     if (availableMoves.length) {
       const seed = advanceRandom(next.seed);
       // Fair seeded variety rather than exact-scripted winners.
-      const specials = availableMoves.filter(move => move.motion !== undefined);
+      const specials = availableMoves.filter(move => move.motion !== undefined &&
+        MOTIONS[move.motion].length <= 6);
       const normals = availableMoves.filter(move => move.motion === undefined);
       const useSpecial = specials.length > 0 && seed % 100 <
-        (next.profile === "aggressive" ? 38 : next.profile === "defensive" ? 14 : 28);
+        (next.profile === "aggressive" ? 56 : next.profile === "defensive" ? 27 : 45);
       const moves = useSpecial ? specials : normals.length ? normals : availableMoves;
       const chosen = moves[(seed >>> 8) % moves.length];
       next = {
@@ -143,7 +169,12 @@ export function decideAiInput(
         }, fighter.facing);
       }
       return {
-        input: { horizontal: 0, vertical: 0, attacks: [chosen.button] },
+        input: {
+          horizontal: chosen.direction === "forward" ? fighter.facing :
+            chosen.direction === "back" ? -fighter.facing : 0,
+          vertical: chosen.stance === "crouching" ? -1 : 0,
+          attacks: chosen.buttons ?? [chosen.button],
+        },
         brain: next,
       };
     }
@@ -171,6 +202,7 @@ export interface AiBattleReport {
   readonly hits: readonly [number, number];
   readonly blocks: readonly [number, number];
   readonly specialAttacks: readonly [number, number];
+  readonly cancels: readonly [number, number];
   readonly longestNoContactTicks: number;
   /** Automated signals, not a substitute for human visual/game-feel QA. */
   readonly diagnosticWarnings: readonly string[];
@@ -193,6 +225,7 @@ export function runAiBattle(
   const hits: [number, number] = [0, 0];
   const blocks: [number, number] = [0, 0];
   const specialAttacks: [number, number] = [0, 0];
+  const cancels: [number, number] = [0, 0];
   let lastContactTick = 0;
   let longestNoContactTicks = 0;
 
@@ -208,6 +241,8 @@ export function runAiBattle(
         if (definition.fighters[event.fighter].moves.some(
           move => move.id === event.moveId && move.motion !== undefined,
         )) specialAttacks[event.fighter]++;
+      } else if (event.type === "cancel") {
+        cancels[event.fighter]++;
       } else if (event.type === "hit" || event.type === "block") {
         (event.type === "hit" ? hits : blocks)[event.attacker]++;
         longestNoContactTicks = Math.max(longestNoContactTicks, state.tick - lastContactTick);
@@ -227,7 +262,7 @@ export function runAiBattle(
     elapsedSeconds: Math.round(state.tick / TICKS_PER_SECOND * 100) / 100,
     conclusion: state.phase === "ko" ? "ko" : "time-limit",
     healthRemaining: [state.fighters[0].health, state.fighters[1].health],
-    attacks, hits, blocks, specialAttacks, longestNoContactTicks,
+    attacks, hits, blocks, specialAttacks, cancels, longestNoContactTicks,
     diagnosticWarnings: warnings,
   };
 }

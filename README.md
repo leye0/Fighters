@@ -3,6 +3,8 @@
 Jeu de combat **2,5D photoréaliste pour le Web** : combats rapides vus de côté, personnages et arènes en 3D, contrôles classiques, combos, coups spéciaux, ambiance sonore et effets cinématiques.
 
 > Projet original inspiré des conventions des jeux de combat arcade, sans reprendre les personnages, marques, graphismes, sons ni interfaces protégés d'autres jeux.
+>
+> **Statut : projet non commercial pour le moment**, dépôt GitHub public. Les droits de redistribution des ressources tierces restent à vérifier.
 
 ## Feuille de route
 
@@ -44,6 +46,12 @@ La [reconnaissance des coups spéciaux et les contrôles](docs/combat-commands.m
 - [Freesound](https://freesound.org/) — vérifier **chaque effet sonore** et sa licence (préférence CC0).
 
 Consulter le [registre des ressources, avec les premiers candidats photoréalistes](docs/asset-register.md) et son [manifeste JSON](assets/manifest.json). Les règles de distribution détaillées figurent aussi dans le [plan](docs/production-plan.md).
+
+## Arsenal arcade et animations
+
+Le [catalogue de **71 coups réellement résolus par la simulation**](docs/arsenal.md) comprend normaux debout, accroupis et aériens, attaques directionnelles, six combinaisons de touches, 35 coups spéciaux/supers et des enchaînements `cancelInto` après contact. Les [commandes](docs/combat-commands.md) et une liste consultable et filtrable sont intégrées à l'interface du jeu.
+
+Chaque coup porte un **rôle d'animation** synchronisable au temps de l'attaque ; [70 rôles Mixamo sont recensés](assets/mixamo-catalog.json), mais **aucun clip Mixamo réel n'est intégré pour l'instant**. Les droits du dépôt public restent à vérifier, même pendant cette phase non commerciale.
 
 ## Duels IA contre IA et QA du gameplay
 

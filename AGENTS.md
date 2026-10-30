@@ -35,6 +35,10 @@ Le document directeur est **docs/production-plan.md**. Le consulter avant toute 
 - **Ne jamais déduire qu'un combat est « fun » à partir de simples statistiques.** Après intégration de deux combattants photoréalistes et d'animations, exécuter un véritable match IA contre IA dans WebGL, l'enregistrer avec WebSuite et demander au propriétaire une appréciation à vitesse réelle. Voir `docs/ai-combat-qa.md`.
 - La simple existence d'un emplacement d'animation dans le catalogue ne signifie pas qu'un clip Mixamo a été acquis ni que sa licence a été vérifiée.
 
+## Statut du projet
+
+Fighters est **non commercial pour le moment**, selon le propriétaire. Ce statut ne donne pas le droit de republier des animations ou modèles tiers dans un dépôt public sans respecter leur licence. Préserver la possibilité de réévaluer les droits si la diffusion change.
+
 ## Ressources tierces
 
 - Dépôt **public** : **ne jamais committer** un modèle, une animation, un son ou une texture dont la redistribution publique n'est pas expressément compatible avec sa licence.
