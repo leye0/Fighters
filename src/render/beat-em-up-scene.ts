@@ -1,7 +1,7 @@
 import {
-  AmbientLight, AnimationClip, AnimationMixer, BoxGeometry, Color, DirectionalLight, Fog, Group,
+  AmbientLight, AnimationClip, AnimationMixer, Box3, BoxGeometry, Color, DirectionalLight, Fog, Group,
   HemisphereLight, Material, Mesh, MeshStandardMaterial, PCFSoftShadowMap, Scene,
-  SRGBColorSpace, WebGLRenderer,
+  SRGBColorSpace, Vector3, WebGLRenderer,
 } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { clone as cloneSkeleton } from "three/addons/utils/SkeletonUtils.js";
@@ -206,6 +206,27 @@ export class BeatEmUpScene {
     const frame = placeBeatCamera(this.camera, heroFocus, this.projection, this.bounds);
     this.renderer.render(this.scene, this.camera);
     return frame;
+  }
+
+  /** Expensive real-skinned-mesh bounds: call only in targeted browser QA. */
+  get actorVisualDiagnostics(): ReadonlyArray<{
+    id: string; width: number; height: number; centerNdcX: number;
+    centerNdcY: number; skinnedMeshes: number; visible: boolean;
+  }> {
+    this.scene.updateMatrixWorld(true);
+    return [...this.visuals].map(([id, visual]) => {
+      const bounds = new Box3().setFromObject(visual, true);
+      let skinnedMeshes = 0;
+      visual.traverse(node => {
+        if (node instanceof Mesh && "skeleton" in node) skinnedMeshes++;
+      });
+      const center = bounds.getCenter(new Vector3()).project(this.camera);
+      const size = bounds.getSize(new Vector3());
+      return {
+        id, width: size.x, height: size.y, centerNdcX: center.x,
+        centerNdcY: center.y, skinnedMeshes, visible: visual.visible,
+      };
+    });
   }
 
   get metrics(): Readonly<{ drawCalls: number; triangles: number }> {
