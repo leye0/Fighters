@@ -34,7 +34,7 @@ Ces choix sont des décisions de départ documentées ; tout changement doit êt
 
 ## Animations Mixamo réellement retrouvées
 
-Le miroir public déjà utilisé dans **WarConquer** permet d'accéder aux vrais fichiers Mixamo sans passer par une page de connexion Adobe éphémère : **471 candidats d'animations issus d'une recherche sur 2 317 mouvements, 158 FBX binaires récupérés et vérifiés en privé, et **158 animations converties en GLB avec des canaux réels**. L'intégration au jeu est encore à faire : **0 clip validé dans le runtime**.
+Le miroir public déjà utilisé dans **WarConquer** permet d'accéder aux vrais fichiers Mixamo sans passer par une page de connexion Adobe éphémère : **471 candidats d'animations étudiés parmi 2 317 mouvements, 299 FBX binaires récupérés et vérifiés en privé, et 299 animations converties en GLB avec de véritables canaux**. L'intégration au jeu est encore à faire : **0 clip approuvé dans le runtime**.
 
 - [Sources réelles, droits, commandes de récupération et prochaines vérifications](docs/mixamo-real-sources.md)
 - [Index de 471 mouvements Mixamo réels](assets/mixamo-available-clips.json)
@@ -81,7 +81,7 @@ Consulter le [registre des ressources, avec les premiers candidats photoréalist
 
 Le [banc de combats IA contre IA](docs/ai-combat-qa.md) exécute de vrais affrontements dans la simulation déterministe, avec attaques, gardes, coups spéciaux et bilan de rythme. Lancer `npm run simulate:ai` ou `npm run test:ai` ; l'option **Mode → IA contre IA** est branchée dans le navigateur dès que deux GLB autorisés avec animations seront intégrés. **Cela ne constitue pas encore un test visuel du plaisir de jeu.**
 
-Concernant les animations de combat Mixamo : **aucune n'est encore téléchargée/intégrée**. La [procédure d'acquisition et de retargeting](docs/mixamo-integration.md) liste les mouvements nécessaires et les précautions de licence.
+Concernant les animations de combat Mixamo : **299 sont réellement téléchargées et converties en privé, mais aucune n'est encore intégrée au runtime**. La [procédure d'acquisition et de retargeting](docs/mixamo-integration.md) liste les mouvements nécessaires et les précautions de licence.
 
 ## État
 
