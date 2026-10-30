@@ -177,7 +177,9 @@ export class ThreeWorld {
       this.maskedClip(visual, attack, "upperBody");
     }
     if (definition.moves.some(move => move.animationLayer === "upperBody")) {
-      for (const name of ["idle", "walk", "jump", ...(mapping?.walkBack ? ["walkBack"] : [])]) {
+      const needsBackstep = definition.moves.some(move =>
+        move.animationLayer === "upperBody" && (move.groundMovementPercent ?? 0) > 0);
+      for (const name of ["idle", "walk", "jump", ...(needsBackstep ? ["walkBack"] : [])]) {
         const clipName = mapping?.[name] ?? name;
         const locomotion = visual.clips.get(clipName);
         if (!locomotion) throw new Error("Missing layered locomotion: " + clipName);
@@ -239,8 +241,7 @@ export class ThreeWorld {
       const locomotion = fighter.yMm > 0 ? "jump" : horizontal === 0 ? "idle" :
         horizontal * fighter.facing < 0 ? "walkBack" : "walk";
       const mapping = visual.configuration.visual?.animationMap;
-      const mappedLocomotion = mapping?.[locomotion] ??
-        (locomotion === "walkBack" ? mapping?.walk ?? "walk" : locomotion);
+      const mappedLocomotion = mapping?.[locomotion] ?? locomotion;
       const baseClip = visual.clips.get(mappedLocomotion);
       if (!baseClip) {
         this.playLayer(visual, "base", null, null, false);

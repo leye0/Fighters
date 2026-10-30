@@ -52,6 +52,23 @@ Le tri initial est fondé sur des poses visibles dans les vidéos YBot, **pas su
 
 [Compte rendu de l'examen et principales lacunes repérées](docs/animation-visual-screening.md).
 
+### Vérification de la superposition avec de vrais GLB
+
+Quatre mélanges `Lead_Jab_2` + (garde, pas avant, pas arrière, saut) ont désormais été testés sur **cinq GLB Mixamo/YBot réellement reconvertis en privé** dans un seul `AnimationMixer` Three.js : **65 os communs, zéro piste en conflit, zéro liaison manquante**, et mouvement effectif des membres hauts et bas. La piste de translation des hanches ne déplace plus le personnage deux fois ; c'est la simulation qui contrôle sa position. Les pas source avancent d'environ **0,92 m** et reculent d'environ **0,60 m**, avant suppression de ce déplacement par le masque. Voir [les mesures et identifiants exacts](assets/mixamo-layering-research.json).
+
+Pour refaire cette vérification sur tes fichiers privés GLB (aucun actif Mixamo n'est publié) :
+
+```bash
+npm run mixamo:verify-layers -- --directory /tmp/fighters-research-glb \
+  --attack Lead_Jab_2 \
+  --locomotion Fighting_Idle \
+  --locomotion Medium_Step_Forward \
+  --locomotion Step_Backward_3 \
+  --locomotion Jump
+```
+
+**Cette étape valide le fonctionnement technique des couches, pas encore leur réalisme en rendu.** Le calage de la cadence, la plante des pieds, la synchronisation des sauts et le retargeting sur les combattants restent à vérifier avant d'autoriser ces combinaisons dans l'arsenal.
+
 - [Sources réelles, droits, commandes de récupération et prochaines vérifications](docs/mixamo-real-sources.md)
 - [Index de 471 mouvements Mixamo réels](assets/mixamo-available-clips.json)
 - `python3 scripts/acquire-mixamo.py --list --family kick` pour inspecter le catalogue.

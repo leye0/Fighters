@@ -32,3 +32,19 @@ test("unavailable combat clips remain blockers, never substituted",()=>{
     {"observed-punch":"Real Punch"},
   ),[]);
 });
+
+test("mobile layered punch requires a real backward gait; forward gait is never substituted", () => {
+  const fighter = animationBackedFighter("f1", empty);
+  const move = {
+    id: "mobile-jab", button: "LP" as const, animationRole: "Lead_Jab_2",
+    startupTicks: 5, activeTicks: 3, recoveryTicks: 11,
+    damage: 8, chipDamage: 0, rangeMm: 900, maxTargetHeightMm: 1600,
+    level: "mid" as const, hitstunTicks: 9, blockstunTicks: 6, pushbackMm: 90,
+    animationLayer: "upperBody" as const, groundMovementPercent: 25,
+  };
+  const clips = new Set([...REQUIRED_FIGHTER_STATES, "Lead_Jab_2"]);
+  assert.deepEqual(missingAnimationClipNames({ ...fighter, moves: [move] }, clips), ["walkBack"]);
+  assert.deepEqual(missingAnimationClipNames({ ...fighter, moves: [move] },
+    new Set([...clips, "Step_Backward_3"]), { walkBack: "Step_Backward_3" }), []);
+  assert.deepEqual(missingAnimationClipNames({ ...fighter, moves: [{ ...move, groundMovementPercent: 0 }] }, clips), []);
+});

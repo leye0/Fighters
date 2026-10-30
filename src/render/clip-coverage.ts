@@ -14,8 +14,13 @@ export function missingAnimationClipNames(
   available: ReadonlySet<string>,
   animationMap?: Readonly<Record<string, string>>,
 ): readonly string[] {
+  // Any mobile upper-body strike can retreat as well as advance. Never
+  // substitute a forward gait, which visibly moonwalks during a backstep.
+  const needsBackstep = fighter.moves.some(move =>
+    move.animationLayer === "upperBody" && (move.groundMovementPercent ?? 0) > 0);
   const required = [
-    ...REQUIRED_FIGHTER_STATES.map(key => animationMap?.[key] ?? key),
+    ...[...REQUIRED_FIGHTER_STATES, ...(needsBackstep ? ["walkBack"] : [])]
+      .map(key => animationMap?.[key] ?? key),
     ...fighter.moves.map(move => animationMap?.[move.id] ??
       (move.animationRole ? animationMap?.[move.animationRole] : undefined) ??
       move.animationRole ?? move.id),

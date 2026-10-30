@@ -13,6 +13,14 @@ Le [rapport par animation](../assets/mixamo-screening.json) contient **36 gestes
 5. **Coups spectaculaires à traiter en corps entier.** `Armada`, `Bencao`, `Hurricane_Kick`, les coups de pied tournants, le genou et `Flying_Knee_Punch_Combo` sollicitent fortement les jambes, le bassin et le tronc. Il serait dangereux de les déclarer combinables sans test sur le rig. La superposition « locomotion bas du corps + frappe haut du corps » cible surtout les jabs, directs et certains crochets.
 6. **Réactions et projections.** `Knocked_Down`, `Getting_Up` et `Knocked_Out` semblent remplir des rôles différents, mais leurs poses de raccord doivent coïncider. `Double_Leg_Takedown_-_Attacker` et `Double_Leg_Takedown_-_Victim` forment une paire : jamais deux attaques indépendantes.
 
+## Premier test des vraies animations superposées
+
+Après ce premier tri, cinq sources FBX existantes ont été reconverties de façon indépendante : les SHA-256 des GLB obtenus **correspondent au catalogue**. Un seul mélangeur Three.js a été exécuté sur un même YBot en combinant `Lead_Jab_2` (haut du corps) à `Fighting_Idle`, `Medium_Step_Forward`, `Step_Backward_3` et `Jump` (bas du corps).
+
+Les quatre cas ont **65 os identiques**, **0 conflit de piste**, **0 cible de piste absente**, et des rotations réellement animées dans les deux régions du corps. La translation source des hanches est bien retirée des clips superposés. Les GLB originaux portent environ **+0,917 m** de déplacement pour le pas avant et **−0,598 m** pour le pas arrière, ce qui confirme qu'il ne faut pas ajouter leur root motion au mouvement 60 Hz. Les observations et les empreintes sont conservées dans [le rapport de superposition](../assets/mixamo-layering-research.json).
+
+Ce constat **ne valide pas le rendu esthétique** : le saut source dure environ 2,17 s, le jab brut 1,8 s et les pas seulement 0,8–0,93 s. Les phases devront être recoupées et synchronisées pour éviter la glissade des pieds et les torsions, puis validées sur les vrais combattants.
+
 ## Ordre concret de validation
 
 1. Visionner les quatre vidéos de chacune des 63 animations (252 prévisualisations obtenues ; le tri `v000` ne couvre pas encore la lecture vidéo complète), choisir et exporter la liste préférée.
