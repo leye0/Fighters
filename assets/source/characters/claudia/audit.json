@@ -1,0 +1,34 @@
+{
+  "candidate_id": "CHAR-CAND-006",
+  "model_id": "c659bd0accab47c6bbe390cf822a2b92",
+  "source_url": "https://sketchfab.com/3d-models/claudia-rigged-002-3d-rigged-business-women-c659bd0accab47c6bbe390cf822a2b92",
+  "title": "Claudia Rigged 002 - 3D Rigged Business Women",
+  "author": "Renderpeople",
+  "license": {
+    "uri": "https://api.sketchfab.com/v3/licenses/322a749bcfa841b29dff1e8a1bb74b0b",
+    "label": "CC Attribution",
+    "fullName": "Creative Commons Attribution",
+    "requirements": "Author must be credited. Commercial use is allowed.",
+    "url": "http://creativecommons.org/licenses/by/4.0/",
+    "slug": "by"
+  },
+  "archive_sha256": "fd03cb5e08f299f2a621103bb4f57bb824b3a93cdf3ccbe663656f2ac6972c56",
+  "archive_bytes": 63293838,
+  "audit": {
+    "archive_files": 5,
+    "scene_documents": [
+      {
+        "file": "scene.gltf",
+        "skins": 1,
+        "meshes": 1,
+        "skinned_nodes": 1,
+        "animations": 0,
+        "nodes": 95,
+        "materials": 1,
+        "textures": 2
+      }
+    ],
+    "has_skinned_mesh": true
+  },
+  "status": "raw_source_downloaded_into_git_lfs_pending_visual_review"
+}
