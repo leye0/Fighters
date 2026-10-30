@@ -10,6 +10,8 @@
 >
 > **Direction narrative et casting décidés par Léon :** l'histoire suit **une femme qui affronte des misogynes, proxénètes, machos et « douches »** dans un beat’em up urbain. Le joueur doit idéalement choisir entre **quatre héroïnes jouables** : **(1) femme de bureau noire, (2) femme de bureau blanche, (3) femme trans, (4) hipster engagée à gauche**. Les quatre doivent être de vrais personnages humains 3D riggés, avec identités, tenues et personnalités distinctes, mais des règles de jeu et un pipeline d'animations partagés. Ces profils sont des personnages à développer, **pas** des caractéristiques à déduire automatiquement de l'apparence de modèles téléchargés ; ne pas inventer l'ethnicité ou l'identité trans de Claudia ou Carla sans validation. Les adversaires sont caractérisés par leurs actes et attitudes, pas par une origine démographique.
 >
+> **Physique old school décidée par Léon :** **aucune collision physique solide entre les personnages** ; l'héroïne traverse les ennemis comme dans les anciens beat’em ups. Hitboxes/hurtboxes de coups indépendantes, sans pushboxes, réactions calculées par le combat. Les plateformes et obstacles utilisent uniquement un **moteur cinématique maison** : appui, sauts, seuils de marche, escalade contextuelle et chutes commandés par données. Certaines surfaces peuvent autoriser le passage volontaire vers le bas, sans rendre chaque toit traversable. Pas de solveur de corps rigides.
+>
 > **Archives :** [plan historique du duel/arène](production-plan-arena-archive.md) conservé à titre de trace, mais ses rounds, six boutons imposés et règles compétitives ne dirigent plus ce produit. Voir aussi [l’architecture beat’em up](beat-em-up-architecture.md) et [la politique animation-first](animation-first.md).
 
 ## Situation actuelle — preuves et limites
@@ -68,6 +70,7 @@ Ce guide est **opérationnel** : il décrit ce qui est réellement présent sur 
 
 - [x] Obtenir les **trois archives originales** des candidats prioritaires via l'API officielle : Claudia 63 293 838 octets, Carla 62 412 358 octets, Realistic Man 8 402 927 octets, avec crédits/licence et empreintes SHA-256 enregistrés dans GitHub ; audit glTF structurel des skins réalisé. **Ne pas confondre avec la revue visuelle**.
 - [ ] Inspecter visuellement dans un vrai moteur 3D les poses, la qualité des textures, la morphologie, l'orientation et le rig de ces trois sources réelles ; choisir ensuite quels modèles servent aux héroïnes et à l'ennemi.
+- [x] Écrire le convertisseur de sources ZIP glTF vers **GLB Web 4K** (`.github/workflows/prepare-character-glb.yml`, `scripts/prepare-character-source.py`, `scripts/inspect-runtime-glb.py`), avec extraction protégée, conservation des rigs et crédits, reconstruction de la prévisualisation Pages, et contrôle de taille/skin avant commit. **La conversion réelle doit encore être exécutée et vérifiée** ; les originaux LFS restent intacts.
 - [x] Ajouter l'importateur Sketchfab (`.github/workflows/import-sketchfab-character.yml` + `scripts/import-sketchfab-character.py`) avec secret `SKETCHFAB_KEY`, téléchargement officiel, audit glTF/skin/SHA-256 et **commit direct des originaux dans GitHub via LFS** avec attribution. Les **trois premières exécutions ont réussi** ; leur présence ne valide pas le gameplay.
 - [x] Permettre à l'agent de déclencher l'import sans faire manipuler GitHub Actions à Léon : seul un changement de `assets/import-requests/sketchfab-character.txt` sur `main` déclenche l'Action, avec `claudia`, `carla` ou `realistic-man` ; les autres pushes ne la relancent pas.
 - [ ] Charger au moins un héros **humain riggé réel** et un ennemi humain riggé réel dans la scène, aligner pieds, dimensions, origine et orientation, puis retargeter la locomotion retenue pour examiner les appuis.
@@ -128,8 +131,12 @@ npm run build:review
 - [x] Avancer/reculer, se décaler en profondeur, normaliser la marche diagonale, sauter et retomber de manière reproductible.
 - [x] Bloquer la marche directe contre une surface trop haute ; autoriser une petite marche de type bordure de trottoir.
 - [x] Permettre de sauter sur un bac élevé et de tomber d’un toit sans téléportation (tests de noyau).
+- [x] Préserver explicitement les **superpositions et traversées entre acteurs sans pushboxes** : locomotion indépendante par acteur ; test de croisement face-à-face et apparition au même point.
+- [x] Ajouter au noyau une commande `drop` **facultative** pour les plateformes marquées `dropThrough`, avec chute déterministe et atterrissage sur une surface inférieure ; une plateforme solide ignore la commande. Tests de passage et de non-passage. **Le binding d'input et l'animation de descente restent à faire.**
 - [ ] Intégrer ces déplacements aux vrais contrôles clavier et manette du jeu.
-- [ ] Implémenter capsules/volumes de collisions 3D avec les flancs de bâtiments, bennes et murs, sans traversée latérale ni diagonale.
+- [ ] Implémenter les volumes **du décor uniquement** et les règles cinématiques de blocage des murs, bennes et bâtiments ; ne pas créer de collision rigide entre héroïne et ennemis.
+- [ ] Définir les transitions d'escalade contextuelle et leur validation (rebord, hauteur, espace d'arrivée, vrai clip sélectionné), sans solveur physique ni téléportation arbitraire.
+- [ ] Relier la commande `drop` à une intention utilisateur explicite et aux animations et effets adaptés, sans la confondre avec l'axe de profondeur.
 - [ ] Gérer les surfaces de pentes, escaliers, corniches, passages dessous, toits avec surplomb et atterrissages à cheval sur deux surfaces.
 - [ ] Décider les traversées de grandes hauteurs : sauts, rebords saisissables, escalade, échelles et franchissement contextuel **selon les animations disponibles**.
 - [ ] Éviter les glissements de pieds, les rotations instantanées du corps et la double application du root motion.

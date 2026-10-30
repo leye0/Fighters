@@ -1,6 +1,9 @@
-/** Authoritative, deterministic 3D traversal for Fighters' side-scrolling beat'em up.
+/** Authoritative, deterministic *kinematic* traversal for Fighters' beat'em up.
  * x = route progression, depth = near/far lane, height = actual world elevation.
  * All coordinates and velocities are integer millimeters per 60 Hz tick.
+ * Actors intentionally have no rigid-body collision or mutual pushboxes:
+ * heroes and enemies may overlap/cross. Combat uses separate hit tests.
+ * Platforms are scripted supports, not outputs of a physics solver.
  * This is distinct from the legacy two-fighter arena benchmark.
  */
 export type Axis = -1 | 0 | 1;
@@ -13,6 +16,8 @@ export interface WalkablePlatform {
   readonly nearMm: number;
   readonly farMm: number;
   readonly topMm: number;
+  /** Optional old-school one-way surface; a contextual drop command bypasses it. */
+  readonly dropThrough?: boolean;
 }
 
 export interface BeatStage {
@@ -48,6 +53,8 @@ export interface BeatInput {
   readonly horizontal: Axis;
   readonly depth: Axis;
   readonly jump: boolean;
+  /** Gameplay command, deliberately distinct from depth movement. */
+  readonly drop?: boolean;
 }
 
 export interface BeatWorldState {
@@ -91,6 +98,9 @@ export function validateBeatStage(stage: BeatStage): void {
       integer(p[key], p.id + "." + key, -Number.MAX_SAFE_INTEGER);
     }
     integer(p.topMm, p.id + ".topMm");
+    if (p.dropThrough !== undefined && typeof p.dropThrough !== "boolean") {
+      throw new Error("Invalid platform drop-through flag: " + p.id);
+    }
     if (p.leftMm >= p.rightMm || p.nearMm >= p.farMm ||
         p.leftMm < stage.leftMm || p.rightMm > stage.rightMm ||
         p.nearMm < stage.nearMm || p.farMm > stage.farMm) {
@@ -102,10 +112,11 @@ export function validateBeatStage(stage: BeatStage): void {
 /** The highest support below a foot, with stable ID ties. */
 function support(
   stage: BeatStage, xMm: number, depthMm: number, maximumHeight: number,
+  ignoredPlatformId: string | null = null,
 ): WalkablePlatform | null {
   let winner: WalkablePlatform | null = null;
   for (const p of stage.platforms) {
-    if (p.leftMm <= xMm && xMm <= p.rightMm &&
+    if (p.id !== ignoredPlatformId && p.leftMm <= xMm && xMm <= p.rightMm &&
         p.nearMm <= depthMm && depthMm <= p.farMm &&
         p.topMm <= maximumHeight &&
         (!winner || p.topMm > winner.topMm ||
@@ -146,7 +157,8 @@ export function createBeatWorld(stage: BeatStage, actors: readonly BeatActor[]):
 function advance(actor: BeatActor, input: BeatInput, stage: BeatStage): BeatActor {
   if (!actor.alive) return actor;
   if (![-1, 0, 1].includes(input.horizontal) ||
-      ![-1, 0, 1].includes(input.depth) || typeof input.jump !== "boolean") {
+      ![-1, 0, 1].includes(input.depth) || typeof input.jump !== "boolean" ||
+      (input.drop !== undefined && typeof input.drop !== "boolean")) {
     throw new Error("Invalid beat'em up input for " + actor.id);
   }
   const diagonal = input.horizontal !== 0 && input.depth !== 0;
@@ -160,6 +172,7 @@ function advance(actor: BeatActor, input: BeatInput, stage: BeatStage): BeatActo
   if (platformId && (!oldSupport || oldSupport.topMm !== actor.heightMm)) {
     throw new Error("Invalid grounded actor support: " + actor.id);
   }
+  const dropping = Boolean(platformId && oldSupport?.dropThrough && input.drop);
 
   let destination = support(stage, x, depth, Number.MAX_SAFE_INTEGER);
   // A wall of a higher platform is solid: curb-sized steps are allowed, dumpsters
@@ -169,11 +182,11 @@ function advance(actor: BeatActor, input: BeatInput, stage: BeatStage): BeatActo
     depth = actor.depthMm;
     destination = support(stage, x, depth, Number.MAX_SAFE_INTEGER);
   }
-  const launched = Boolean(platformId && input.jump);
+  const launched = Boolean(platformId && input.jump && !dropping);
   if (launched) {
     velocity = actor.jumpSpeedMmPerTick;
     platformId = null;
-  } else if (platformId && destination &&
+  } else if (!dropping && platformId && destination &&
       destination.topMm <= height + stage.stepUpMm &&
       height - destination.topMm <= stage.stepDownMm) {
     // Small steps and sidewalk curbs are continuous traversable surfaces.
@@ -189,7 +202,8 @@ function advance(actor: BeatActor, input: BeatInput, stage: BeatStage): BeatActo
   velocity -= stage.gravityMmPerTick2;
   height += velocity;
   if (velocity <= 0) {
-    const landing = support(stage, x, depth, previousHeight);
+    const landing = support(stage, x, depth, previousHeight,
+      dropping ? oldSupport?.id : null);
     if (landing && landing.topMm >= height) {
       height = landing.topMm;
       velocity = 0;
@@ -238,6 +252,8 @@ function orient(
 export function stepBeatWorld(
   prior: BeatWorldState, inputs: Readonly<Record<string, BeatInput>>, stage: BeatStage,
 ): BeatWorldState {
+  // Intentional old-school rule: each actor advances independently. There is
+  // no separation impulse, actor-to-actor solid collision, or crowd pushbox.
   const moved = prior.actors.map(actor => advance(actor, inputs[actor.id] ?? NEUTRAL_BEAT_INPUT, stage));
   // All targeting uses the same tick's positions, never iteration-dependent updates.
   const actors = moved.map((actor, index) =>

@@ -1,0 +1,72 @@
+name: Prepare real character GLB for browser
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - assets/runtime-requests/character.txt
+  workflow_dispatch:
+    inputs:
+      character:
+        description: Acquired original to convert
+        required: true
+        type: choice
+        default: claudia
+        options: [claudia, carla, realistic-man]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fighters-prepare-character
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Fetch exactly one original source from Git LFS
+        env:
+          CHARACTER: ${{ inputs.character }}
+        run: |
+          if [ -z "$CHARACTER" ]; then
+            CHARACTER="$(head -n 1 assets/runtime-requests/character.txt)"
+          fi
+          case "$CHARACTER" in
+            claudia|carla|realistic-man) ;;
+            *) echo "Unknown candidate" >&2; exit 1 ;;
+          esac
+          echo "CHARACTER=$CHARACTER" >> "$GITHUB_ENV"
+          git lfs install --local
+          git lfs pull --include="assets/source/characters/$CHARACTER/original-sketchfab-gltf.zip" --exclude=""
+
+      - name: Convert real rig with glTF Transform (Web quality profile)
+        run: |
+          ARCHIVE="assets/source/characters/$CHARACTER/original-sketchfab-gltf.zip"
+          SRC="$(python3 scripts/prepare-character-source.py --archive "$ARCHIVE" --destination "stage/$CHARACTER")"
+          npm ci
+          npm install --no-save --package-lock=false @gltf-transform/cli@4.5.0
+          mkdir -p public/models
+          ./node_modules/.bin/gltf-transform optimize "$SRC" "public/models/$CHARACTER.glb" \
+            --compress none --texture-compress webp --texture-size 4096
+          python3 scripts/inspect-runtime-glb.py "public/models/$CHARACTER.glb"
+          cp "assets/source/characters/$CHARACTER/ATTRIBUTION.md" "public/models/$CHARACTER.ATTRIBUTION.md"
+
+      - name: Rebuild browser preview and commit GLB directly to main
+        run: |
+          npm run build:review
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/models docs/site
+          if git diff --cached --quiet; then
+            echo "No character conversion changes."
+          else
+            git commit -m "Prepare actual $CHARACTER rigged GLB for Web preview"
+            git push origin HEAD:main
+          fi

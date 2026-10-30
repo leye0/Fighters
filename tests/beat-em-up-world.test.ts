@@ -122,6 +122,44 @@ test("fighters on different elevations do not auto-lock across impassable height
   assert.equal(world.actors[0].targetId, null);
 });
 
+test("old-school ghosts: actors can overlap and cross without pushback", () => {
+  let world = createBeatWorld(stage, [actor("hero", 0), actor("enemy", 150)]);
+  world = step(world, {
+    hero: { horizontal: 1, depth: 0, jump: false },
+    enemy: { horizontal: -1, depth: 0, jump: false },
+  });
+  assert.equal(world.actors[0].xMm, 150, "hero crosses enemy's previous position");
+  assert.equal(world.actors[1].xMm, 0, "enemy crosses hero's previous position");
+  assert.equal(world.actors[0].targetId, "enemy", "targeting stays separate from solidity");
+  const stacked = createBeatWorld(stage, [actor("hero", 0), actor("enemy", 0)]);
+  assert.equal(stacked.actors[0].xMm, stacked.actors[1].xMm, "overlapping spawns are legal");
+});
+
+test("scripted drop passes through a one-way platform then lands on the street", () => {
+  const withDrop: BeatStage = {
+    ...stage,
+    platforms: stage.platforms.map(p => p.id === "dumpster" ? { ...p, dropThrough: true } : p),
+  };
+  let world = createBeatWorld(withDrop, [actor("hero", 1500, {
+    heightMm: 900, supportingPlatformId: "dumpster",
+  })]);
+  world = stepBeatWorld(world, { hero: { horizontal: 0, depth: 0, jump: false, drop: true } }, withDrop);
+  assert.equal(world.actors[0].supportingPlatformId, null);
+  assert.ok(world.actors[0].heightMm < 900);
+  for (let i = 0; i < 20; i++) world = stepBeatWorld(world, {}, withDrop);
+  assert.equal(world.actors[0].heightMm, 0);
+  assert.equal(world.actors[0].supportingPlatformId, "street");
+});
+
+test("drop command cannot pass through ordinary solid platforms", () => {
+  let world = createBeatWorld(stage, [actor("hero", 1500, {
+    heightMm: 900, supportingPlatformId: "dumpster",
+  })]);
+  world = step(world, { hero: { horizontal: 0, depth: 0, jump: false, drop: true } });
+  assert.equal(world.actors[0].heightMm, 900);
+  assert.equal(world.actors[0].supportingPlatformId, "dumpster");
+});
+
 test("input does not mutate previous world state", () => {
   const world = createBeatWorld(stage, [actor("hero"), actor("enemy", 1300, { depthMm: 1000 })]);
   const before = structuredClone(world);

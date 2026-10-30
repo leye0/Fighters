@@ -33,6 +33,7 @@ Le document directeur est **docs/production-plan.md**. Le consulter avant toute 
 - Décrire les plateformes et obstacles par des données génériques. **Décor de test volontairement minimaliste** (blocs/plans) jusqu’à l’achèvement des mécanismes, puis design photoréaliste des lieux. Voir [docs/beat-em-up-architecture.md](docs/beat-em-up-architecture.md).
 - **Caméra solo : héros centré sur l’image** tant que le scrolling reste possible ; seuls les bords gauche, droit, haut ou bas du niveau autorisent son décentrage.
 - Les hitboxes, hurtboxes, timings, états et dégâts proviennent des données de simulation ; le squelette visuel ne décide jamais du résultat d'un coup.
+- **Physique à l'ancienne, décision de Léon :** pas de moteur physique général pour les interactions entre personnages, **pas de pushbox solide acteur–acteur**. Héroïne et ennemis peuvent se superposer et se traverser. Les collisions d'attaque restent des tests de hitboxes/hurtboxes séparés. Les obstacles et plateformes suivent un moteur cinématique maison à règles explicites (appui, saut, escalade contextuelle, chute, surface traversable sur commande), sans rigid bodies ni solveur de foule. Ne jamais « réparer » le chevauchement des personnages en rajoutant une séparation physique.
 - Replays reproductibles, tests de règles, données de frame, tests navigateur et mesure de performance.
 - Priorité simultanée au **rendu photoréaliste maximal** et à la **fluidité/puissance mesurée**. Les profils dégradés restent explicites ; la référence de qualité Ultra ne doit pas être abaissée tacitement.
 
