@@ -8,7 +8,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { retargetEmbeddedMotion } from "../src/render/character-motion.ts";
+import { retargetBindPoseClip } from "./retarget-mixamo-bind.mjs";
 
 export const GAME_MOTIONS = Object.freeze([
   { source: "Fighting_Idle.glb", name: "Fighters_Mixamo_Fighting_Idle" },
@@ -129,14 +129,9 @@ async function main() {
   if (!privateDir || pairs.length < 2 || pairs.length % 2 !== 0) {
     throw Error("Usage: embed-mixamo-gameplay.mjs <private-glb-directory> <input.glb> <output.glb> [...]");
   }
-  const motions = await Promise.all(GAME_MOTIONS.map(async spec => {
-    const scene = await loadRigWithoutImages(await readFile(join(privateDir, spec.source)));
-    const clip = scene.animations[0];
-    if (!clip || clip.duration <= 0.1 || clip.duration > 12) {
-      throw Error("Unexpected Mixamo clip duration: " + spec.source);
-    }
-    return { ...spec, scene: scene.scene, clip };
-  }));
+  const motions = await Promise.all(GAME_MOTIONS.map(async spec => ({
+    ...spec, binary: await readFile(join(privateDir, spec.source)),
+  })));
   const audits = [];
   for (let i = 0; i < pairs.length; i += 2) {
     const [sourcePath, outputPath] = pairs.slice(i, i + 2);
@@ -144,23 +139,14 @@ async function main() {
     const original = await readFile(sourcePath);
     const existing = new Set((readGLB(original).json.animations ?? []).map(clip => clip.name));
     const integrated = GAME_MOTIONS.filter(motion => existing.has(motion.name));
-    if (integrated.length === GAME_MOTIONS.length) {
-      await writeFile(outputPath, original);
-      audits.push({ source: sourcePath, output: outputPath, reused: true,
-        clips: [...existing].filter(name => name.startsWith("Fighters_Mixamo_")),
-        inputBytes: original.length, outputBytes: original.length });
-      continue;
-    }
-    if (integrated.length) throw Error("Partial Mixamo animation pack; refusing a mixed-version bake");
-    const rig = await loadRigWithoutImages(original);
+    if (integrated.length) throw Error("Refusing to build on baked animations; supply a clean GLB from the pinned pre-Mixamo commit");
     let output = original;
     const baked = [];
     for (const motion of motions) {
-      const converted = retargetEmbeddedMotion(rig.scene, motion.scene, motion.clip);
-      const embedded = embedClip(output, converted.clip, motion.name);
-      output = embedded.buffer;
-      baked.push({ name: motion.name, mappedJoints: converted.mappedJoints,
-        tracks: embedded.tracks, duration: motion.clip.duration });
+      const converted = retargetBindPoseClip(original, motion.binary, motion.name);
+      const result = embedClip(output, converted.clip, motion.name);
+      output = result.buffer;
+      baked.push({ name: motion.name, ...converted.audit, tracks: result.tracks });
     }
     await writeFile(outputPath, output);
     audits.push({ source: sourcePath, output: outputPath,
