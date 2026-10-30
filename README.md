@@ -10,6 +10,8 @@
 
 ➡️ **[Plan de production détaillé et cases à cocher](docs/production-plan.md)**
 
+**Pour un agent de coding qui reprend le dépôt :** lire en priorité le [guide de reprise intégré au plan](docs/production-plan.md#guide-de-reprise-pour-agent-externe) : source de vérité `main`, modules existants, prochaine scène 3D, pièges du build Pages et critères de validation.
+
 Le plan couvre l'intégralité du produit : moteur de combat déterministe, rendu WebGL 2, personnages, rigging, animations Mixamo, arènes, HUD, audio, contrôles, modes, IA, multijoueur, performances, tests, accessibilité, déploiement et provenance des ressources.
 
 ## Principes

@@ -23,6 +23,76 @@
 
 **Convention d’état :** « source sélectionnée » ≠ « clip GLB testé » ≠ « clip retargeté pour un héros » ≠ « coup jouable et validé ». Chaque étape conserve des preuves séparées.
 
+## Guide de reprise pour agent externe
+
+Ce guide est **opérationnel** : il décrit ce qui est réellement présent sur `main`, les choix de Léon qui ne doivent plus être remis en question et les premières tâches à exécuter. Les sections numérotées plus bas constituent la couverture fonctionnelle à long terme.
+
+### Source de vérité et décisions déjà prises
+
+1. **Dépôt :** `https://github.com/leye0/Fighters`, branche **`main`**, commits directs, pas de branche de fonctionnalité ni de PR ; lire `AGENTS.md` puis ce plan avant de coder. Vérifier le HEAD distant et l’état de la copie locale. **Une copie locale utilisée lors des premières interventions était en retard sur `main` et comportait des changements non suivis par l’historique distant** : ne jamais pousser, rebaser, écraser ou supprimer ses fichiers à l’aveugle. Partir d’un checkout frais ou réconcilier précisément les écarts.
+2. **Jeu cible :** beat’em up solo 3D à scrolling, dans l’esprit de *Double Dragon*. Ce n’est plus un match 1v1 à six boutons et rounds. Une caméra 3D à prédominance latérale montre un trajet X, une profondeur Z réellement jouable et des hauteurs Y de rue, bennes, bâtiments et toits. Le héros fait face à un ennemi proche **même quand le joueur recule**. En absence de cible, il peut se tourner vers sa marche.
+3. **Caméra solo :** héros **exactement centré dans l’image sur les deux axes projetés** tant que le niveau continue. Le centre caméra se bloque à la limite **gauche/droite/haut/bas** ; alors seulement le héros se déplace vers le bord de l’écran. Une limite sur X n’empêche pas le scrolling vertical, et vice-versa. **Ne pas** reprendre le cadrage historique sur le milieu de deux adversaires, ajouter une dead zone qui décale le héros ou employer un easing qui invalide constamment le centrage. Les zooms cinématiques sont des exceptions futures explicites.
+4. **Géométrie temporaire :** Léon accepte **sols, boîtes et plateformes sans design détaillé** pour tester les collisions, les sauts, la caméra, les ennemis et les combats. Ces formes doivent être de vrais objets 3D cohérents avec la simulation, pas un simple décor peint. **Le design artistique des lieux est la dernière grosse phase**, après les mécanismes ; ne pas passer du temps maintenant sur des textures de rue, façades et poubelles photoréalistes.
+5. **63 animations :** Léon a regardé les prévisualisations et dit **« je les ai toutes gardées, les noms sont bons »**. Les 63 sont retenues sans renommage ni élimination ; ne pas reprendre l’ancienne présélection automatique (36/25/2) pour en rejeter. `assets/mixamo-selected.json` contient exactement 63 `filename`, `motionId`, `sourceSha256`, `researchGlbSha256` et `choice: keep`. C’est la **sélection des mouvements source**, pas 63 attaques jouables ni un retargeting approuvé.
+6. **Données et droits :** projet non commercial pour l’instant. Les sources Mixamo / GLB isolés ont été acquis et convertis dans des répertoires **privés temporaires hors Git** ; les **302 fichiers binaires précédemment convertis ne sont pas physiquement dans ce dépôt et ne doivent pas être supposés disponibles dans une nouvelle session**. L’utilisateur gère ses choix de distribution ; l’agent ne doit pas lui refaire un débat de licence à chaque étape. Respecter néanmoins la consigne de dépôt public d’`AGENTS.md` et ne pas committer des fichiers tiers bruts sans base autorisée.
+7. **Validation humaine :** jamais déclarer « animation belle », « compositing réussi » ou « jeu plaisant » sur un test de données seul. Faire une version réellement visible/jouable, puis demander à Léon de juger. `Character Lab` ou `Perception Lab` ne sont pas des passages obligatoires autonomes ; les captures outillées servent au diagnostic, pas à imposer une appréciation esthétique.
+
+### Ce que les fichiers font vraiment aujourd’hui
+
+| Emplacement | État réel / piège |
+| --- | --- |
+| `src/engine/beat-em-up-world.ts` | **Déjà codé** : `BeatStage`, `WalkablePlatform`, `BeatActor`, `BeatInput`, `createBeatWorld`, `stepBeatWorld`. Déplacements X/profondeur, saut, gravité, appuis sur surfaces à hauteurs diverses et choix de cible avec hystérésis. **Pas branché à l’interface ni au moteur de combat.** |
+| `src/render/beat-scroll-camera.ts` | **Déjà codé** : `projectBeatFocus`, `followBeatCamera`. Renvoie centre, décentrage du héros et indicateurs de quatre frontières en **coordonnées 2D projetées**. Ne déplace encore **aucune vraie caméra Three.js** ; ses largeurs/hauteurs sont en millimètres logiques, pas en CSS pixels. |
+| `src/main.ts`, `index.html` | Application de **duel 1v1 héritée** : `createMatch/stepMatch`, deux combattants et HUD d’arène. Affiche un statut d’attente si aucun modèle approuvé. **Ne pas utiliser cette page comme preuve que le beat’em up fonctionne**, ni casser ses tests sans nécessité. |
+| `src/render/three-world.ts` | Renderer 1v1 existant ; `ThreeWorld.sync` suit la **moyenne X de deux combattants** et change la distance caméra. **Ce comportement est incompatible avec le scrolling solo centré.** Réutiliser ses utilitaires WebGL/matériaux si utile, mais isoler un contrôleur/renderer pour le nouveau mode. |
+| `src/input/keyboard.ts` | Contrôles de duel : `vertical` est exploité pour saut/accroupissement. Le nouveau `BeatInput` sépare `horizontal`, `depth`, `jump` : il faut un adaptateur clavier/manette distinct, avec capture à chaque tick. |
+| `src/game/animation-first.ts`, `assets/animation-inventory.json` | Inventaire d’attaques **vide à dessein**. Seuls des clips intégrés/retargetés, avec contacts mesurés et revue par rig, autoriseront les vrais coups. Les **71 moves** de `src/game/move-catalog.ts` sont un stress-test historique, jamais l’arsenal final. |
+| `assets/manifest.json`, `src/assets/eligibility.ts` | Plusieurs personnages candidats dans le registre mais **zéro héros photoréaliste prêt au runtime** ; `runtimeRoster` les filtre. Une silhouette/capsule de **diagnostic clairement étiquetée** est acceptable dans une scène technique pour mesurer navigation/caméra, jamais comme prétendu personnage final. |
+| `src/render/animation-layers.ts`, `src/animation-composite.ts` | Masques `upperBody/lowerBody` et lecteur YBot de recherche. Cinq vrais GLB ont montré des pistes techniquement composables (65 os communs, aucun conflit), **pas** une validation esthétique des pieds ou de la frappe sur un héros final. Ne pas additionner naïvement root motion et déplacement autoritatif. |
+| `scripts/acquire-mixamo.py`, `scripts/convert-mixamo-fbx.py`, `scripts/prepare-selected-mixamo.py`, `scripts/pack-selected-mixamo.py` | Pipeline pour les **63 fichiers exacts**. L’assembleur ne copie qu’un rig et les données d’animations des autres GLB ; ses tests sont **synthétiques**, pas une preuve d’assemblage des 63 vrais GLB. Le convertisseur requis est `fbx2gltf@0.9.7-p1`. |
+| `vite.config.ts`, `vite.review.config.ts` | Vite principal connaît `index.html`, `animation-review.html`, `animation-composite.html`, **pas encore une page beat’em up**. Le build Pages actuel utilise `docs/site/`, `base: "./"` et `emptyOutDir: true` : ajouter la nouvelle page aux entrées de build avant de régénérer, sinon le build peut **effacer sa sortie statique**. |
+| `.github/workflows/deploy-animation-review.yml` | GitHub Actions publie **`docs/` déjà compilé**, sans exécuter Vite, et se déclenche seulement sur `docs/index.html`, `docs/site/**` ou le workflow. Les changements de TypeScript seuls **ne republient pas le site**. Préserver la prévisualisation actuelle et limiter les minutes Actions payantes. |
+| `scripts/websuite.mjs`, `docs/visual-qa.md` | Automatisation WebGL/captures déjà adaptée de WarConquer. À réutiliser pour inspecter la nouvelle page, avec assertions et captures réelles. La présence d’un canvas ne démontre ni la physique ni la qualité du gameplay. |
+
+### Prochaine intervention **immédiate** : une scène 3D jouable en blocs
+
+**But :** obtenir **un lien Web de test simple à ouvrir**, avec un personnage de diagnostic visible dans un petit parcours composé de quelques volumes 3D. La scène doit déjà utiliser **les vraies règles** de navigation/caméra, même si l’art final attendra.
+
+- [ ] Créer une page dédiée `beat-em-up.html` et son entrée TypeScript (par exemple `src/beat-em-up.ts`) pour ne pas réutiliser les états de duel d’`index.html`.
+- [ ] Construire un composant de rendu Three.js (par exemple `src/render/beat-em-up-scene.ts`) et une définition de niveau **pilotée par données** : sol de rue à Y=0, gros bloc/benne dont le sommet est surélevé, seconde plateforme haute/terrasse/toit, véritables limites X et profondeur Z. **Noms d’objets génériques** ; pas de conditions dans le moteur pour `dumpster` ou `building`.
+- [ ] Créer un joueur et au moins un ennemi de **diagnostic** (géométrie simple explicitement provisoire) via `createBeatWorld` ; faire avancer `stepBeatWorld` à **60 ticks/s fixes** et interpoler le rendu sans décaler la simulation. Rendu : `xMm / 1000 → x`, `heightMm / 1000 → y`, `depthMm / 1000 → z`. Le `heightMm` du nouveau moteur est **l’altitude absolue de l’appui/corps** ; ne pas le confondre avec l’ancien `FighterState.yMm` de saut au-dessus d’une arène au sol unique.
+- [ ] Créer une saisie `horizontal/depth/jump` séparée pour le beat’em up ; déplacement gauche/droite, profondeur, saut et marche arrière. Ne pas convertir implicitement `vertical` de l’ancien duel en profondeur **et** saut.
+- [ ] Relier `projectBeatFocus` puis `followBeatCamera` à la vraie caméra Three.js : déterminer des étendues visibles **dans le plan de projection réel** depuis focale/zoom/aspect ratio et les limites du niveau. Le héros est centré **en pixels dans l’image**, pas seulement dans un calcul abstrait. Si `PerspectiveCamera` ajoute une erreur dépendante de Z, adapter correctement la projection, pas cacher le défaut par une marge ou par un recentrage artificiel.
+- [ ] Vérifier **quatre frontières et quatre coins** : centre exact lorsqu’on peut scroller ; à une frontière, le décor s’arrête et le héros se rapproche du bord. Tester aussi changement de profondeur, saut, hauteur de toit, fenêtre étroite et téléphone portrait. **Ne pas recentrer sur un groupe d’ennemis** au détriment du héros en solo.
+- [ ] Montrer la cible/l’orientation calculée près de l’ennemi ; un héros qui recule doit continuer à lui faire face. La première représentation peut rester un indicateur de debug, **la rotation 3D du vrai rig sera validée ensuite**.
+- [ ] Ajouter diagnostics commutables : tick, X/Z/Y, vitesse verticale, `supportingPlatformId`, `targetId`, bord(s) caméra actifs, FPS. Signaler clairement « décor et acteur de diagnostic », sans prétendre que le personnage final ou les combats complets sont livrés.
+- [ ] Tester l’absence de traversée d’une plateforme trop haute, le saut sur le bloc, la chute depuis la plateforme haute et la liberté de marche en profondeur. **Attention :** le noyau actuel utilise des surfaces rectangulaires et le point d’appui central ; les collisions latérales complexes, sous-face, capsule du corps, pentes, rebords, interactions et IA de navigation restent des tâches distinctes. Ne pas annoncer ces capacités comme faites.
+- [ ] Ajouter l’entrée de la nouvelle page au Vite principal, à la sortie Pages légère **sans supprimer le lecteur de 63 vidéos**, et déployer après vérification. Aujourd’hui, le seul lien Pages vérifié est [le lecteur d’animations](https://www.streamlev.com/Fighters/site/animation-review.html) ; **l’URL de la future scène n’existe pas encore**.
+- [ ] Faire tester **la vraie page**, caméra et plateforme à la main par Léon, puis inscrire ses observations dans ce plan. Ne pas attendre le design final des bâtiments pour poursuivre.
+
+**Définition de ce jalon :** un agent externe peut fournir un URL et montrer dans le navigateur le héros diagnostic **centré quand le décor défile**, se rapprochant des **quatre bords** uniquement à la frontière, sautant sur un bloc, chutant correctement, se décalant en profondeur et faisant face à un ennemi proche en reculant. Cela **ne** valide ni 63 GLB intégrés, ni les combats et animations finaux, ni les décors photoréalistes.
+
+### Commandes de développement et vérifications à conserver
+
+```bash
+# Repartir d’un checkout synchronisé de main ; Node.js >= 24
+npm ci
+npm run typecheck
+npm test
+python3 -m unittest discover -s tests -p 'test_*.py'
+npm run build
+npm run dev
+
+# Après ajout de la scène aux entrées statiques Pages :
+npm run build:review
+```
+
+- Les tests de référence comprennent les anciens scénarios 1v1 (**93 tests Node avant le pivot**), **8 tests du noyau beat’em up**, **9 tests de caméra**, plus les tests Python du pack de 63 clips. Exécuter et rapporter le **total réel après checkout** ; ne pas inventer un succès CI non observé.
+- Pour les 63 GLB : `python3 scripts/prepare-selected-mixamo.py --workspace /tmp/fighters-selected-mixamo` après installation du convertisseur épinglé. L’acquisition est cadencée (~5 s entre requêtes), peut prendre plusieurs minutes et doit **s’arrêter et reprendre** à la suite d’un HTTP 429 et de son `Retry-After`. **Ne pas déclencher cela à chaque build ni dans GitHub Actions**.
+- Les 63 noms viennent du manifeste, **pas** d’une nouvelle sélection du modèle. Le pack `Fighters-selected-63.glb` est un YBot **de recherche** ; seul un personnage définitif avec retargeting, contacts mesurés et validation humaine alimentera `assets/animation-inventory.json`.
+- GitHub Pages n’est **pas** le build principal du jeu actuellement : il sert la sélection vidéo via `docs/site` et le domaine `www.streamlev.com/Fighters`. Les modifications de docs/code sans build statique actualisé ne rendent rien de nouveau visible sur le téléphone.
+- Toute case `[x]` ajoutée doit correspondre à un code exécutable, des tests et une preuve adaptée ; mettre le plan à jour **dans le même commit direct sur `main`**. Ne pas utiliser les résultats de rendu des GLB synthétiques comme validation visuelle de vrais personnages.
+
 ## 0. Gouvernance et architecture globale
 
 - [x] Travailler directement sur `main` et conserver l’historique Git.
@@ -270,7 +340,7 @@ Pendant les essais de parcours, utiliser **un éclairage simple et lisible**. La
 
 ## 19. Ordre de travail par dépendances (sans réduire la vision)
 
-1. **Parcours gris/boîtes + caméra :** raccorder le nouveau noyau X/Z/Y et la caméra centrée/bornée à Three.js ; traversée continue du sol, d’un bloc/benne et d’une hauteur de bâtiment **sans travail de décor artistique**.
+1. **Parcours gris/boîtes + caméra :** raccorder le nouveau noyau X/Z/Y et la caméra centrée/bornée à Three.js ; traversée continue du sol, d’un bloc/benne et d’une hauteur de bâtiment **sans travail de décor artistique**. **Voir le [guide de reprise ci-dessus](#guide-de-reprise-pour-agent-externe) pour les fichiers exacts, les pièges et les critères de test.**
 2. **Source d’animations :** réacquérir/valider les 63 sources exactes ; tester l’assembleur sur les GLB réels et constater les 63 noms/canaux.
 3. **Héros réaliste :** choisir/rigguer les modèles, retargeter locomotion/saut/idle, contrôler pieds, bassin et transitions.
 4. **Ennemis en groupe :** déplacer plusieurs acteurs dans la scène, cibler avec hystérésis, navigation simple entre surfaces, puis collisions multi-ennemis.

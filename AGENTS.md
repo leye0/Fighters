@@ -8,6 +8,8 @@ Construire un **beat’em up d’action 3D à défilement latéral** pour naviga
 
 Le document directeur est **docs/production-plan.md**. Le consulter avant toute modification, mettre à jour les cases réalisées dans le même commit que le travail associé et ne jamais marquer une case terminée sans preuve concrète.
 
+**Agent externe ou reprise sans historique de conversation :** commencer par le chapitre [Guide de reprise pour un agent de développement externe](docs/production-plan.md#guide-de-reprise-pour-agent-externe). Il précise le véritable état du code, les 63 clips retenus, les incompatibilités du moteur 1v1, le prochain écran 3D minimaliste, les tests et le déploiement Pages.
+
 ## Méthode demandée par le propriétaire
 
 1. **Toujours travailler directement dans main.** Ne pas créer de branche de fonctionnalité ou de pull request. Ne pas forcer les pushes et ne pas réécrire l'historique.
