@@ -1,7 +1,12 @@
 name: Import Sketchfab character into GitHub
 
-# Deliberately manual: avoids paid CI minutes on routine pushes.
+# Manual dispatch, or a narrowly scoped request file for coding agents that
+# cannot call the Actions workflow-dispatch API. Never runs on ordinary pushes.
 on:
+  push:
+    branches: [main]
+    paths:
+      - assets/import-requests/sketchfab-character.txt
   workflow_dispatch:
     inputs:
       character:
@@ -33,10 +38,19 @@ jobs:
         env:
           SKETCHFAB_KEY: ${{ secrets.SKETCHFAB_KEY }}
           CHARACTER: ${{ inputs.character }}
-        run: python3 scripts/import-sketchfab-character.py --character "$CHARACTER" --output assets/source/characters
+        run: |
+          if [ -z "$CHARACTER" ]; then
+            CHARACTER="$(head -n 1 assets/import-requests/sketchfab-character.txt)"
+          fi
+          python3 scripts/import-sketchfab-character.py --character "$CHARACTER" --output assets/source/characters
 
       - name: Commit original model, attribution and audit directly on main
+        env:
+          CHARACTER: ${{ inputs.character }}
         run: |
+          if [ -z "$CHARACTER" ]; then
+            CHARACTER="$(head -n 1 assets/import-requests/sketchfab-character.txt)"
+          fi
           git lfs install --local
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -44,6 +58,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "Selected model is already up to date in GitHub."
           else
-            git commit -m "Import Sketchfab character source: ${{ inputs.character }}"
+            git commit -m "Import Sketchfab character source: $CHARACTER"
             git push origin HEAD:main
           fi

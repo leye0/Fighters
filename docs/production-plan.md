@@ -65,6 +65,7 @@ Ce guide est **opérationnel** : il décrit ce qui est réellement présent sur 
 
 - [ ] Obtenir les archives des modèles déjà sélectionnés, établir licence/provenance/crédits et inspecter les fichiers réels (rig, textures, poses et dimensions).
 - [x] Ajouter l'importateur Sketchfab **manuel** (`.github/workflows/import-sketchfab-character.yml` + `scripts/import-sketchfab-character.py`) pour Claudia, Carla et Realistic Man avec secret `SKETCHFAB_KEY`, téléchargement officiel, audit glTF/skin/SHA-256 et **commit direct des originaux dans GitHub via LFS** avec attribution. **Le téléchargement réel avec le secret n'est pas encore exécuté** ; aucune intégration visuelle n'est validée par cette seule case.
+- [x] Permettre à l'agent de déclencher l'import sans demander à Léon de manipuler GitHub Actions : seul un changement de `assets/import-requests/sketchfab-character.txt` sur `main` déclenche l'Action, avec `claudia`, `carla` ou `realistic-man` comme valeurs ; les autres pushes ne la relancent pas. Première demande : Claudia. **Résultat de l'exécution à confirmer dans GitHub Actions.**
 - [ ] Charger au moins un héros **humain riggé réel** et un ennemi humain riggé réel dans la scène, aligner pieds, dimensions, origine et orientation, puis retargeter la locomotion retenue pour examiner les appuis.
 
 - [x] Créer une page dédiée `beat-em-up.html` et son entrée TypeScript `src/beat-em-up.ts`, isolées du duel d’`index.html`.
