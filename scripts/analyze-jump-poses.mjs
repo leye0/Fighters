@@ -17,13 +17,20 @@ animated.traverse(object => { if (!skinned && object instanceof SkinnedMesh) ski
 if (!skinned) throw Error("No skinned mesh");
 const norm = n => n.toLowerCase().replace(/^mixamorig:?/,"").replace(/_[0-9]+$/,"").replace(/[^a-z]/g,"");
 const bones = skinned.skeleton.bones;
-const find = name => bones.find(b => norm(b.name) === name);
+const find = (...names) => bones.find(b => names.includes(norm(b.name)));
 const limbs = ["left","right"].map(side => {
- const hip = find(side+"upleg"), knee = find(side+"leg"), foot = find(side+"foot");
- if (!hip || !knee || !foot) throw Error("Missing anatomical joint for " + side);
+ const short=side==="left"?"l":"r";
+ // Renderpeople Claudia/Carla: upperleg_l, lowerleg_l, foot_l;
+ // Mixamo/Realistic Man: LeftUpLeg, LeftLeg, LeftFoot.
+ const hip = find(side+"upleg","upperleg"+short);
+ const knee = find(side+"leg","lowerleg"+short);
+ const foot = find(side+"foot","foot"+short);
+ if (!hip || !knee || !foot) throw Error("Missing anatomical joint for " + side + " among: " +
+   bones.map(b => b.name).join(", "));
  return {side, hip,knee,foot};
 });
-const head = find("head"), pelvis = find("hips") ?? find("hip");
+const head = find("head"), pelvis = find("hips", "hip");
+if (!head || !pelvis) throw Error("Missing head or hips");
 const mixer = new AnimationMixer(animated);
 function pose(clip, frac) {
  mixer.stopAllAction(); mixer.time = 0;
