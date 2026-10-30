@@ -45,6 +45,10 @@ for (const path of paths) {
       const f = (pos(footL).y + pos(footR).y) / 2;
       return { torso: h - p, legs: p - f };
     };
+    const torsoDirection = () => {
+      cloned.updateMatrixWorld(true);
+      return pos(head).sub(pos(hips));
+    };
     const bind = elevations();
     if (bind.torso <= 0 || bind.legs <= 0) {
       throw Error("Original character rig lacks upright anatomy: " + path);
@@ -61,8 +65,18 @@ for (const path of paths) {
         const pose = elevations();
         const torsoRatio = pose.torso / bind.torso;
         const legRatio = pose.legs / bind.legs;
+        const torsoVector = torsoDirection();
+        const leanRatio = Math.hypot(torsoVector.x, torsoVector.z) /
+          Math.max(1e-9, torsoVector.y);
         anatomy.push({ fraction, torsoRatio: Number(torsoRatio.toFixed(2)),
-          legRatio: Number(legRatio.toFixed(2)) });
+          legRatio: Number(legRatio.toFixed(2)),
+          torsoLean: Number(leanRatio.toFixed(2)) });
+        // A moving avatar whose head is almost level with its hips is not
+        // an acceptable upright gait, regardless of how many bones animate.
+        if (/Idle|Walk/.test(spec.name) && (leanRatio > 1 || !Number.isFinite(leanRatio))) {
+          throw Error("EXCESSIVE BACK/FRONT LEAN: " + spec.name + " on " + path +
+            " at " + fraction + " lean=" + leanRatio.toFixed(2));
+        }
         if (torsoRatio < 0.5 || legRatio < 0.5) {
           throw Error("BROKEN ANATOMY: " + spec.name + " on " + path +
             " at " + fraction + " torso/legs ratios " +
@@ -74,6 +88,24 @@ for (const path of paths) {
       bone.quaternion.angleTo(original[i]) > 0.001).length;
     if (changedBones < 5) {
       throw Error(`${spec.name} has no real skeleton playback (${changedBones} bones): ${path}`);
+    }
+    // A looped walk sampled after 30 full cycles must have exactly the same
+    // posture as its first cycle; any cumulative bone drift is a bug.
+    if (spec.name === "Fighters_Mixamo_Walk_Standard") {
+      const posture = () => {
+        const torso = torsoDirection();
+        return [torso.x, torso.y, torso.z];
+      };
+      mixer.setTime(clip.duration * 0.35);
+      const early = posture();
+      mixer.setTime(clip.duration * 30.35);
+      const late = posture();
+      const error = Math.hypot(...early.map((v,i) => v-late[i]));
+      const length = Math.hypot(...early);
+      if (error / Math.max(length, 1e-6) > 0.02) {
+        throw Error("WALK RIG POSE DRIFT after 30 loops: " + path +
+          " relative torso error=" + (error/length).toFixed(3));
+      }
     }
     audited.push({ animation: spec.name, seconds: Number(clip.duration.toFixed(3)), changedBones, anatomy });
   }
