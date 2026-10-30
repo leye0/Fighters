@@ -8,6 +8,8 @@
 >
 > **Correction de Léon : la simplification ne concerne PAS les personnages.** À partir de maintenant, travailler avec de **vrais modèles humains 3D riggés** issus du [registre déjà établi](asset-register.md) et de [`assets/manifest.json`](../assets/manifest.json). Les capsules actuelles n'étaient que des témoins de position de simulation : elles ne valident pas le rendu, le rigging, les appuis, la locomotion ou la jouabilité. Ne plus investir dans leurs apparences ni chercher de nouveaux candidats avant d'avoir exploité les propositions déjà recensées.
 >
+> **Direction narrative et casting décidés par Léon :** l'histoire suit **une femme qui affronte des misogynes, proxénètes, machos et « douches »** dans un beat’em up urbain. Le joueur doit idéalement choisir entre **quatre héroïnes jouables** : **(1) femme de bureau noire, (2) femme de bureau blanche, (3) femme trans, (4) hipster engagée à gauche**. Les quatre doivent être de vrais personnages humains 3D riggés, avec identités, tenues et personnalités distinctes, mais des règles de jeu et un pipeline d'animations partagés. Ces profils sont des personnages à développer, **pas** des caractéristiques à déduire automatiquement de l'apparence de modèles téléchargés ; ne pas inventer l'ethnicité ou l'identité trans de Claudia ou Carla sans validation. Les adversaires sont caractérisés par leurs actes et attitudes, pas par une origine démographique.
+>
 > **Archives :** [plan historique du duel/arène](production-plan-arena-archive.md) conservé à titre de trace, mais ses rounds, six boutons imposés et règles compétitives ne dirigent plus ce produit. Voir aussi [l’architecture beat’em up](beat-em-up-architecture.md) et [la politique animation-first](animation-first.md).
 
 ## Situation actuelle — preuves et limites
@@ -16,6 +18,7 @@
 | --- | --- | --- |
 | Source animations | **63/63 retenues par Léon**, noms, motion IDs et empreintes FBX/GLB conservés dans [la sélection](../assets/mixamo-selected.json) | Retargeting sur héros définitifs, clips en jeu, frames de contact, combos validés |
 | Acquisition | 471 candidats indexés parmi 2 317 entrées ; **302 FBX acquis et 302 GLB convertis en privé** dans les travaux précédents | Les fichiers binaires ne sont pas présents dans le dépôt public ni dans l’environnement actuel |
+| Modèles humains réels | **3 archives Sketchfab originales importées sur GitHub via LFS** : Claudia (63,3 Mo, 1 mesh skinné), Carla (62,4 Mo, 1 mesh skinné), Realistic Man (8,4 Mo, 3 meshes skinnés). SHA-256, attribution et licence source CC BY enregistrés. | Inspection visuelle, variantes de casting des quatre héroïnes, conversion GLB de production, retargeting et gameplay non réalisés |
 | Regroupement GLB | Scripts d’acquisition ciblée + construction d’un **pack à 63 clips**, tests binaires synthétiques et identités contrôlées | Exécuter le pipeline sur les 63 vrais GLB et inspecter le résultat en 3D |
 | Navigation beat’em up | Noyau déterministe `beat-em-up-world.ts` avec surfaces X/Z/Y, saut/chute, petites marches, obstacles surélevés et sélection stable des menaces ; **8 tests**. Scène de diagnostic Three.js branchée à 60 Hz, contrôles clavier/manette/tactiles | Collisions complètes, IA de navigation et combats à plusieurs |
 | Caméra | `beat-scroll-camera.ts` : centrage exact hors frontières et limites sur quatre côtés ; **9 tests**. Adaptateur `beat-camera-three.ts` à PerspectiveCamera : **3 tests supplémentaires de projection NDC réelle** | Inspection sur navigateur/device du cadrage, occlusions et coins, profiling |
@@ -61,11 +64,12 @@ Ce guide est **opérationnel** : il décrit ce qui est réellement présent sur 
 
 **État :** le lien Web affiche la scène technique en blocs et le moteur réel de navigation/caméra. Le travail de câblage est vérifié par tests, mais **Léon refuse explicitement de considérer les capsules de diagnostic comme une avancée sur les personnages**. Le prochain effort doit viser l'acquisition/intégration de véritables humains 3D riggés, avant de qualifier la scène de gameplay jouable.
 
-**Sources de personnages à exploiter en premier, sans relancer une recherche :** `CHAR-CAND-006` **Claudia** et `CHAR-CAND-007` **Carla** (Renderpeople, femmes), `CHAR-CAND-003` **Realistic man basic rig** (J.azali, homme), puis les autres candidats de `assets/manifest.json` selon leurs rigs et la qualité. Les trois fiches Sketchfab ont été vérifiées dans l'API publique : `isDownloadable=true`, licence affichée **CC BY 4.0**, mesh et rig déclarés ; **aucun fichier GLB réellement acquis** et aucun retargeting validé. L'API officielle de téléchargement nécessite une autorisation (`401` sans session) : respecter cet accès, obtenir les archives par la voie légitime puis auditer les fichiers. Ne pas remplacer ces modèles par des silhouettes, et ne pas cocher une intégration avant le rendu réel.
+**Sources de personnages à exploiter en premier, sans relancer une recherche :** `CHAR-CAND-006` **Claudia** et `CHAR-CAND-007` **Carla** (Renderpeople, candidates aux héroïnes), `CHAR-CAND-003` **Realistic man basic rig** (J.azali, candidat ennemi), puis les autres candidats de `assets/manifest.json` selon leurs rigs et la qualité. **Les trois originaux sont maintenant dans GitHub** sous `assets/source/characters/` (Git LFS), téléchargés officiellement avec `SKETCHFAB_KEY`. Les audits `audit.json` confirment 1 skin/mesh skinné pour Claudia et Carla, et 1 skin/3 meshes skinnés pour l'homme, avec licence source CC BY et SHA-256. **Ce n'est toujours pas une validation visuelle, une conversion en GLB de production, ni un retargeting.** Claudia/Carla ne sont pas encore assignées à une héroïne précise.
 
-- [ ] Obtenir les archives des modèles déjà sélectionnés, établir licence/provenance/crédits et inspecter les fichiers réels (rig, textures, poses et dimensions).
-- [x] Ajouter l'importateur Sketchfab **manuel** (`.github/workflows/import-sketchfab-character.yml` + `scripts/import-sketchfab-character.py`) pour Claudia, Carla et Realistic Man avec secret `SKETCHFAB_KEY`, téléchargement officiel, audit glTF/skin/SHA-256 et **commit direct des originaux dans GitHub via LFS** avec attribution. **Le téléchargement réel avec le secret n'est pas encore exécuté** ; aucune intégration visuelle n'est validée par cette seule case.
-- [x] Permettre à l'agent de déclencher l'import sans demander à Léon de manipuler GitHub Actions : seul un changement de `assets/import-requests/sketchfab-character.txt` sur `main` déclenche l'Action, avec `claudia`, `carla` ou `realistic-man` comme valeurs ; les autres pushes ne la relancent pas. Première demande : Claudia. **Résultat de l'exécution à confirmer dans GitHub Actions.**
+- [x] Obtenir les **trois archives originales** des candidats prioritaires via l'API officielle : Claudia 63 293 838 octets, Carla 62 412 358 octets, Realistic Man 8 402 927 octets, avec crédits/licence et empreintes SHA-256 enregistrés dans GitHub ; audit glTF structurel des skins réalisé. **Ne pas confondre avec la revue visuelle**.
+- [ ] Inspecter visuellement dans un vrai moteur 3D les poses, la qualité des textures, la morphologie, l'orientation et le rig de ces trois sources réelles ; choisir ensuite quels modèles servent aux héroïnes et à l'ennemi.
+- [x] Ajouter l'importateur Sketchfab (`.github/workflows/import-sketchfab-character.yml` + `scripts/import-sketchfab-character.py`) avec secret `SKETCHFAB_KEY`, téléchargement officiel, audit glTF/skin/SHA-256 et **commit direct des originaux dans GitHub via LFS** avec attribution. Les **trois premières exécutions ont réussi** ; leur présence ne valide pas le gameplay.
+- [x] Permettre à l'agent de déclencher l'import sans faire manipuler GitHub Actions à Léon : seul un changement de `assets/import-requests/sketchfab-character.txt` sur `main` déclenche l'Action, avec `claudia`, `carla` ou `realistic-man` ; les autres pushes ne la relancent pas.
 - [ ] Charger au moins un héros **humain riggé réel** et un ennemi humain riggé réel dans la scène, aligner pieds, dimensions, origine et orientation, puis retargeter la locomotion retenue pour examiner les appuis.
 
 - [x] Créer une page dédiée `beat-em-up.html` et son entrée TypeScript `src/beat-em-up.ts`, isolées du duel d’`index.html`.
@@ -251,6 +255,11 @@ npm run build:review
 
 ## 10. Personnages, rigging et photoréalisme
 
+- [x] Fixer la direction du casting : **quatre héroïnes adultes sélectionnables** (bureau noire, bureau blanche, femme trans, hipster de gauche), contre des adversaires masculins misogynes/proxénètes/machos/douches. Ne pas confondre ce choix artistique avec l'attribution effective d'un asset.
+- [ ] Définir noms, biographies, silhouettes, tenues, voix, motivations et personnalité de chacune des quatre héroïnes ; leur identité de femme trans doit être établie par l'écriture et le casting, pas présumée à partir d'un mesh.
+- [ ] Trouver ou constituer **quatre modèles humains féminins distincts**, photoréalistes et riggés. Examiner d'abord le catalogue existant et les deux Renderpeople acquis, puis seulement compléter les rôles réellement manquants.
+- [ ] Configurer chacune des quatre sur une base de locomotion/combat commune, avec retargeting, proportion, contacts et réglages visuels individuels (aucune pénalité mécanique liée à l'identité).
+- [ ] Décliner plusieurs archétypes ennemis par comportements, vêtements, dialogues et animations (macho, proxénète, harceleur, douche), sans identité démographique comme marqueur de méchanceté.
 - [ ] Définir le style original des héros/ennemis : anatomie, identité, vêtements, cheveux, peaux, yeux et visages réalistes.
 - [ ] Sélectionner des humains riggés avec preuve d’autorisation d’utilisation et de distribution selon la destination du jeu.
 - [ ] Normaliser rig et poses de référence entre personnages, sans déformer les proportions.
@@ -284,6 +293,7 @@ Pendant les essais de parcours, utiliser **un éclairage simple et lisible**. La
 
 ## 13. Interface et progression de campagne
 
+- [ ] Créer une sélection **réelle** entre les quatre héroïnes, qui charge leur modèle/rig/portrait, conserve le choix dans la partie et ne présente aucun personnage temporaire comme définitif.
 - [ ] Concevoir HUD lisible : santé, ressources, ennemis, progression, arme/objet, objectifs et indicateurs contextuels.
 - [ ] Créer écran titre, choix du héros, début de niveau, pause, reprises, fin de section et victoire/défaite.
 - [ ] Définir progression, sauvegarde locale versionnée, checkpoints et difficulté.
