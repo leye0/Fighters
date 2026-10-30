@@ -48,7 +48,7 @@ Les choix sont conservés localement dans le navigateur et **exportables/importa
 
 Une version statique de ce **seul lecteur** se trouve sous [`docs/site/`](docs/site/animation-review.html). Elle ne pèse qu'environ **53 Ko hors ressources MP4 distantes**, sans WebGL, backend ni conversion locale. Sa source est la même que celle de l'application (pas une copie manuelle) : `npm run review:catalog` régénère les métadonnées des 63 clips, puis `npm run build:review` produit la page statique.
 
-Pour obtenir un lien Web utilisable directement depuis un téléphone, activer **Settings → Pages → Deploy from a branch → `main` / `/docs` → Save** dans GitHub (une seule fois). L'URL effective dépend du domaine Pages choisi par le propriétaire. **La configuration Pages n'est pas encore activée** ; ne pas présenter le lien comme fonctionnel avant de l'avoir vérifié.
+Pour obtenir un lien Web utilisable directement depuis un téléphone, GitHub Pages est désormais configuré par le propriétaire pour utiliser **GitHub Actions**. Le workflow ciblé [Publier le lecteur des animations](.github/workflows/deploy-animation-review.yml) déploie directement `docs/`, sans compiler ou télécharger d'animations durant la CI. Il démarre seulement lorsque la page statique ou le workflow change sur `main`, et peut être relancé manuellement. **Vérifier le résultat effectif du déploiement et son URL avant de présenter la page comme accessible.**
 
 Pour inspecter les prévisualisations en privé sans dépendre du navigateur :
 

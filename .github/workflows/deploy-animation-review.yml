@@ -1,0 +1,36 @@
+name: Publish Fighters animation review
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - docs/index.html
+      - docs/site/**
+      - .github/workflows/deploy-animation-review.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: fighters-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: github-pages
+      url: ${{ steps.publish.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs
+      - name: Publish static animation selector
+        id: publish
+        uses: actions/deploy-pages@v4
