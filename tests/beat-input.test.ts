@@ -4,9 +4,11 @@ import { digitalBeatInput } from "../src/input/beat-input.ts";
 
 test("beat'em up input separates 3D depth from jump and supports two keyboard layouts", () => {
   assert.deepEqual(digitalBeatInput(new Set(["KeyA", "KeyW"])),
-    { horizontal: -1, depth: -1, jump: false });
+    { horizontal: -1, depth: -1, jump: false, drop: false });
   assert.deepEqual(digitalBeatInput(new Set(["ArrowRight", "ArrowDown", "Space"])),
-    { horizontal: 1, depth: 1, jump: true });
+    { horizontal: 1, depth: 1, jump: true, drop: false });
   assert.deepEqual(digitalBeatInput(new Set(["KeyD", "KeyA", "KeyJ"])),
-    { horizontal: 0, depth: 0, jump: true });
+    { horizontal: 0, depth: 0, jump: true, drop: false });
+  assert.deepEqual(digitalBeatInput(new Set(["KeyK", "ArrowUp"])),
+    { horizontal: 0, depth: -1, jump: false, drop: true });
 });

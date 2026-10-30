@@ -23,5 +23,7 @@ button { font: inherit; cursor: pointer; }
 .beat-direction-pad .down { grid-column: 2; grid-row: 3; }
 .beat-direction-pad .right { grid-column: 3; grid-row: 2; }
 .beat-jump { width: 85px; height: 85px; margin: 0 10px 5px 0; font-size: .94rem !important; border-radius: 50% !important; }
+.beat-action-pad { display: flex; align-items: flex-end; gap: 10px; }
+.beat-drop { min-width: 75px; height: 48px; margin-bottom: 20px; padding: 0 8px; font-size: .63rem !important; }
 @media (min-width: 900px) and (pointer: fine) { .beat-mobile-controls { opacity: .4; } }
 @media (max-width: 480px) { .beat-header { padding: 8px 10px; } .beat-header span { font-size: .62rem; } .beat-footer { font-size: .67rem; padding: 7px 10px; } .beat-watermark { font-size: .54rem; } .beat-diagnostics { font-size: .65rem; } }

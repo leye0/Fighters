@@ -1,6 +1,7 @@
 import "./beat-em-up.css";
 import { createBeatWorld, stepBeatWorld, type BeatWorldState } from "./engine/beat-em-up-world.ts";
 import { BeatControls } from "./input/beat-input.ts";
+import { demoEnemyInputs } from "./game/beat-enemy-ai.ts";
 import { BEAT_PROJECTION, DIAGNOSTIC_ACTORS, DIAGNOSTIC_STAGE,
   diagnosticScrollBounds } from "./game/beat-stage.ts";
 import { BeatEmUpScene } from "./render/beat-em-up-scene.ts";
@@ -54,13 +55,18 @@ async function startBeatScene(): Promise<void> {
 
   function frame(now: number): void {
     if (!active) return;
-    accumulator += Math.min(250, Math.max(0, now - lastTime));
+    const elapsedMs = Math.min(250, Math.max(0, now - lastTime));
+    accumulator += elapsedMs;
     lastTime = now;
     while (accumulator >= tickDuration) {
       previous = current;
-      current = stepBeatWorld(current, { hero: controls.snapshot() }, DIAGNOSTIC_STAGE);
+      current = stepBeatWorld(current, {
+        ...demoEnemyInputs(current, DIAGNOSTIC_STAGE),
+        hero: controls.snapshot(),
+      }, DIAGNOSTIC_STAGE);
       accumulator -= tickDuration;
     }
+    scene.updateAnimations(elapsedMs / 1000);
     const camera = scene.render(previous, current, accumulator / tickDuration);
     window.__fightersBeatReady = true;
     window.__fightersBeatTick = current.tick;
@@ -81,7 +87,7 @@ async function startBeatScene(): Promise<void> {
         `Vitesse Y ${hero.verticalVelocityMmPerTick} mm/tick · Appui ${hero.supportingPlatformId ?? "air"}\n` +
         `Cible ${hero.targetId ?? "aucune"} · Regard ${hero.facing > 0 ? "droite" : "gauche"}\n` +
         `Caméra : bords ${pinned} · ${scene.metrics.drawCalls} draws · ${scene.metrics.triangles} triangles`;
-      status.textContent = `Vrais rigs (pose source, sans animations de combat) · ${framesPerSecond} FPS · ` +
+      status.textContent = `Vrais rigs animés par un clip source (retarget en essai, pas de combat certifié) · ${framesPerSecond} FPS · ` +
         (hero.targetId ? `menace : ${hero.targetId}` : "aucune menace proche");
     }
     requestAnimationFrame(frame);

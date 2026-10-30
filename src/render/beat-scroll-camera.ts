@@ -21,6 +21,8 @@ export interface ScrollBounds {
   readonly rightMm: number;
   readonly bottomMm: number;
   readonly topMm: number;
+  /** Optional tighter bottom camera clamp to retain the complete actor silhouette. */
+  readonly bottomCameraInsetMm?: number;
 }
 
 export interface CameraViewport {
@@ -76,13 +78,14 @@ function clamp(value: number, lower: number, upper: number): number {
 
 function followAxis(
   hero: number, min: number, max: number, visible: number,
+  lowerInset: number = Math.trunc(visible / 2),
 ): { center: number; lower: boolean; upper: boolean } {
   const half = Math.trunc(visible / 2);
   if (max - min <= visible) {
     // A small room cannot scroll: centre the entire room in the viewport.
     return { center: Math.trunc((min + max) / 2), lower: true, upper: true };
   }
-  const lowerCenter = min + half;
+  const lowerCenter = min + lowerInset;
   const upperCenter = max - (visible - half);
   const center = clamp(hero, lowerCenter, upperCenter);
   return {
@@ -107,7 +110,12 @@ export function followBeatCamera(
   check(viewport.widthMm, "viewport.widthMm", true);
   check(viewport.heightMm, "viewport.heightMm", true);
   const horizontal = followAxis(hero.xMm, bounds.leftMm, bounds.rightMm, viewport.widthMm);
-  const vertical = followAxis(hero.verticalMm, bounds.bottomMm, bounds.topMm, viewport.heightMm);
+  if (bounds.bottomCameraInsetMm !== undefined &&
+      (bounds.bottomCameraInsetMm < 0 || bounds.bottomCameraInsetMm > Math.trunc(viewport.heightMm / 2))) {
+    throw new Error("Invalid bottom camera inset");
+  }
+  const vertical = followAxis(hero.verticalMm, bounds.bottomMm, bounds.topMm,
+    viewport.heightMm, bounds.bottomCameraInsetMm);
   return {
     center: { xMm: horizontal.center, verticalMm: vertical.center },
     heroOffset: {

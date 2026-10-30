@@ -24,12 +24,15 @@
             <button data-beat-key="ArrowDown" class="down" aria-label="Revenir vers l’avant">↓</button>
             <button data-beat-key="ArrowRight" class="right" aria-label="Aller à droite">→</button>
           </div>
-          <button data-beat-key="Space" class="beat-jump" aria-label="Sauter">SAUT</button>
+          <div class="beat-action-pad">
+            <button data-beat-key="KeyK" class="beat-drop" aria-label="Se laisser tomber à travers une plateforme adaptée">DESCENDRE</button>
+            <button data-beat-key="Space" class="beat-jump" aria-label="Sauter">SAUT</button>
+          </div>
         </div>
       </section>
       <div class="beat-footer">
         <span id="beat-status" role="status">Initialisation WebGL…</span>
-        <span>Clavier : WASD / flèches · Espace / J : saut · Manette : stick + A</span>
+        <span>WASD / flèches · Espace / J : saut · K : descendre · Manette : stick + A / B</span>
         <a href="./animation-review.html">Les 63 animations</a>
       </div>
     </main>

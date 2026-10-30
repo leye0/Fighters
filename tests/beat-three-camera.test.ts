@@ -53,3 +53,15 @@ test("real focal length and aspect ratio change logical visible extents", () => 
   assert.equal(wide.heightMm, portrait.heightMm);
   assert.ok(wide.heightMm > 0 && wide.widthMm > 0);
 });
+
+test("bottom camera boundary keeps both feet inside the screen, including portrait", () => {
+  const bounds = diagnosticScrollBounds(DIAGNOSTIC_STAGE, BEAT_PROJECTION);
+  for (const aspect of [16 / 9, 9 / 16]) {
+    const camera = makeBeatCamera(aspect);
+    const frame = placeBeatCamera(camera, { xMm: -10000, heightMm: 0, depthMm: DIAGNOSTIC_STAGE.farMm },
+      BEAT_PROJECTION, bounds);
+    assert.ok(frame.pinned.bottom);
+    const feet = new Vector3(-10, 0, DIAGNOSTIC_STAGE.farMm / 1000).project(camera);
+    assert.ok(feet.y > -0.96, `feet clipped below screen at aspect ${aspect}: ${feet.y}`);
+  }
+});

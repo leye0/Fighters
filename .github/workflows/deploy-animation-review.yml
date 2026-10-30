@@ -9,6 +9,13 @@ on:
     paths:
       - docs/index.html
       - docs/site/**
+      - src/**
+      - public/**
+      - beat-em-up.html
+      - animation-review.html
+      - vite.review.config.ts
+      - package.json
+      - package-lock.json
       - .github/workflows/deploy-animation-review.yml
   workflow_dispatch:
 
@@ -31,6 +38,15 @@ jobs:
       url: ${{ steps.publish.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Build the actual latest game source for Pages
+        run: |
+          npm ci
+          npm test
+          npm run build:review
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

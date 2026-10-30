@@ -1,5 +1,5 @@
 import {
-  AmbientLight, BoxGeometry, Color, DirectionalLight, Fog, Group,
+  AmbientLight, AnimationClip, AnimationMixer, BoxGeometry, Color, DirectionalLight, Fog, Group,
   HemisphereLight, Material, Mesh, MeshStandardMaterial, PCFSoftShadowMap, Scene,
   SRGBColorSpace, WebGLRenderer,
 } from "three";
@@ -10,6 +10,7 @@ import type { ScrollBounds, ScrollCameraFrame, WorldToScreenProjection } from ".
 import { makeBeatCamera, placeBeatCamera } from "./beat-camera-three.ts";
 import { CHARACTER_MODEL_FILES, fitRigToActor, requireSkinnedRig,
   type AcquiredCharacterKey } from "./rigged-character.ts";
+import { playEmbeddedMotion, retargetEmbeddedMotion } from "./character-motion.ts";
 
 const meters = (mm: number): number => mm / 1000;
 
@@ -19,6 +20,7 @@ export class BeatEmUpScene {
   readonly camera = makeBeatCamera();
   readonly renderer: WebGLRenderer;
   private readonly visuals = new Map<string, Group>();
+  private readonly mixers = new Map<string, AnimationMixer>();
   private readonly stage: BeatStage;
   private readonly projection: WorldToScreenProjection;
   private readonly bounds: ScrollBounds;
@@ -73,12 +75,19 @@ export class BeatEmUpScene {
     const loader = new GLTFLoader();
     const keys = new Set<AcquiredCharacterKey>([roleModels.hero, roleModels.enemy]);
     const sources = new Map<AcquiredCharacterKey, Group>();
+    const animations = new Map<AcquiredCharacterKey, AnimationClip[]>();
     await Promise.all([...keys].map(async key => {
       const url = new URL(CHARACTER_MODEL_FILES[key], document.baseURI).href;
       const gltf = await loader.loadAsync(url);
       requireSkinnedRig(gltf.scene);
       sources.set(key, gltf.scene);
+      animations.set(key, gltf.animations);
     }));
+    const enemySource = sources.get(roleModels.enemy);
+    const sourceAnimation = animations.get(roleModels.enemy)?.[0];
+    if (!enemySource || !sourceAnimation) {
+      throw new Error("The acquired enemy model has no real animation to test");
+    }
     for (const actorId of this.actorIds) {
       const isHero = actorId === this.heroId;
       const key = isHero ? roleModels.hero : roleModels.enemy;
@@ -96,14 +105,24 @@ export class BeatEmUpScene {
         }
       });
       visual.add(holder);
+      const mixer = isHero
+        ? retargetEmbeddedMotion(clone, enemySource, sourceAnimation).mixer
+        : playEmbeddedMotion(clone, sourceAnimation);
+      this.mixers.set(actorId, mixer);
     }
+  }
+
+  updateAnimations(elapsedSeconds: number): void {
+    for (const mixer of this.mixers.values()) mixer.update(Math.max(0, Math.min(0.05, elapsedSeconds)));
   }
 
   private addStageVolumes(): void {
     for (const [index, p] of this.stage.platforms.entries()) {
       const width = meters(p.rightMm - p.leftMm);
       const depth = meters(p.farMm - p.nearMm);
-      const height = Math.max(0.16, meters(p.topMm) + 0.16);
+      // A one-way walkway is a visible thin ledge; ordinary roofs and bins
+      // are solid volumes and cannot be dropped through.
+      const height = p.dropThrough ? 0.20 : Math.max(0.16, meters(p.topMm) + 0.16);
       const mesh = new Mesh(new BoxGeometry(width, height, depth),
         new MeshStandardMaterial({
           color: [0x343e50, 0x9e7a56, 0x566e76][index % 3],
@@ -174,6 +193,8 @@ export class BeatEmUpScene {
     geometries.forEach(geometry => geometry.dispose());
     materials.forEach(material => material.dispose());
     this.visuals.clear();
+    for (const mixer of this.mixers.values()) mixer.stopAllAction();
+    this.mixers.clear();
     this.renderer.dispose();
     this.renderer.forceContextLoss();
     this.viewportCanvas.width = 0;

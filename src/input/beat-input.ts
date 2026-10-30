@@ -10,11 +10,12 @@ export function digitalBeatInput(held: ReadonlySet<string>): BeatInput {
     horizontal: axis(["ArrowRight", "KeyD"], ["ArrowLeft", "KeyA"]),
     depth: axis(["ArrowDown", "KeyS"], ["ArrowUp", "KeyW"]),
     jump: held.has("Space") || held.has("KeyJ"),
+    drop: held.has("KeyK"),
   };
 }
 
 const keys = new Set(["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp",
-  "KeyA", "KeyD", "KeyW", "KeyS", "Space", "KeyJ"]);
+  "KeyA", "KeyD", "KeyW", "KeyS", "Space", "KeyJ", "KeyK"]);
 
 /** Separate from the legacy duel's up/down = crouch/jump binding. */
 export class BeatControls {
@@ -22,6 +23,7 @@ export class BeatControls {
   private readonly touch = new Map<number, string>();
   private readonly buttons: HTMLElement[];
   private wasJumping = false;
+  private wasDropping = false;
 
   constructor(root: HTMLElement) {
     this.buttons = [...root.querySelectorAll<HTMLElement>("[data-beat-key]")];
@@ -67,6 +69,7 @@ export class BeatControls {
     this.held.clear();
     this.touch.clear();
     this.wasJumping = false;
+    this.wasDropping = false;
   };
 
   snapshot(): BeatInput {
@@ -78,9 +81,12 @@ export class BeatControls {
     const horizontal = keyInput.horizontal || gamepadAxis(pad?.axes[0] ?? 0);
     const depth = keyInput.depth || gamepadAxis(pad?.axes[1] ?? 0);
     const jumpHeld = keyInput.jump || Boolean(pad?.buttons[0]?.pressed);
+    const dropHeld = keyInput.drop || Boolean(pad?.buttons[1]?.pressed);
     const jump = jumpHeld && !this.wasJumping;
+    const drop = dropHeld && !this.wasDropping;
     this.wasJumping = jumpHeld;
-    return { horizontal, depth, jump };
+    this.wasDropping = dropHeld;
+    return { horizontal, depth, jump, drop };
   }
 
   dispose(): void {
