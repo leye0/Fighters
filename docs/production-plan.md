@@ -16,6 +16,16 @@
 >
 > **Archives :** [plan historique du duel/arène](production-plan-arena-archive.md) conservé à titre de trace, mais ses rounds, six boutons imposés et règles compétitives ne dirigent plus ce produit. Voir aussi [l’architecture beat’em up](beat-em-up-architecture.md) et [la politique animation-first](animation-first.md).
 
+## Correction du saut Mixamo et de l'affichage des stats — 30 octobre 2026
+
+**Symptômes remontés sur iPhone :** Claudia replie brusquement les jambes une fois en l'air ; le cadre de télémétrie cache le jeu.
+
+**Cause vérifiée sur le GLB réel :** le clip `Jump.fbx` est un « Jumping In Place » de 2,167 s qui inclut une posture de saut groupé. Le script `scripts/analyze-jump-poses.mjs` a mesuré sur le modèle Claudia **138,3° de flexion du genou gauche** vers 46 % du clip, et **127,6° à droite** vers 54 % ; jusque-là, le moteur comprimait le clip complet pour le faire tenir dans un vol physique d'environ 1,1 s. Le pliage provient **des images originales Mixamo**, pas d'une deuxième impulsion physique.
+
+**Correctif sur `main` :** `makeArcadeJumpClip()` resynchronise les vrais quaternions Mixamo par fenêtres de temps : courte poussée (0–10 % du clip), transition slerp entre poses Mixamo authentiques (10 % → 76 %), phase aérienne jambes plutôt allongées (76–89 %), puis pose de réception (89–100 %). La transition n'est pas un clip inventé, mais un raccord continu entre les deux images véritables. Le demi-tour debout est interdit durant le vol. **Les validations des 3 rigs et le rendu iPhone restent à constater**, sans cocher la qualité perceptuelle comme acquise.
+
+**UI :** `#beat-diagnostics` commence désormais `hidden`. Le petit bouton `Stats` affiche/masque la télémétrie avec `aria-expanded` ; quand elle est ouverte, elle est défilante et plafonnée en paysage à ~30 % de la hauteur de l'écran, max 125 px. Le scénario WebGL contrôle les deux états du bouton. L'ancienne télémétrie toujours visible ne doit pas revenir.
+
 ## Incident de retargeting Mixamo — rendu iPhone du 30 octobre 2026
 
 **Régression observée par Léon :** la démo publiée avec le premier pack `21582972` déforme gravement Claudia (tronc couché, bras et jambes hors orientation), malgré des tests qui confirmaient seulement des os en mouvement. **Ne pas présenter cette version comme jouable ni visuellement validée.**
