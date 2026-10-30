@@ -22,8 +22,8 @@ test('catalog contains 705 indexed Mixamo motion candidates, with valid source m
   assert.equal(catalog.clips.length, 705);
   assert.equal(catalog.selection.totalIndexedHere, catalog.clips.length);
   assert.equal(new Set(catalog.clips.map(c => c.family)).size >= 10, true);
-  assert.equal(new Set(catalog.clips.map(c => c.filename)).size, 103);
-  assert.equal(new Set(catalog.clips.map(c => c.id)).size, 103);
+  assert.equal(new Set(catalog.clips.map(c => c.filename)).size, catalog.clips.length);
+  assert.equal(new Set(catalog.clips.map(c => c.id)).size, catalog.clips.length);
   for (const clip of catalog.clips) {
     assert.match(clip.filename, /^[A-Za-z0-9_.-]+\.fbx$/);
     assert.equal(clip.sourcePath, catalog.source.folder + clip.filename);
