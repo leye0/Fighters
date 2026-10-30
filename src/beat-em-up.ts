@@ -1,0 +1,89 @@
+import "./beat-em-up.css";
+import { createBeatWorld, stepBeatWorld, type BeatWorldState } from "./engine/beat-em-up-world.ts";
+import { BeatControls } from "./input/beat-input.ts";
+import { BEAT_PROJECTION, DIAGNOSTIC_ACTORS, DIAGNOSTIC_STAGE,
+  diagnosticScrollBounds } from "./game/beat-stage.ts";
+import { BeatEmUpScene } from "./render/beat-em-up-scene.ts";
+
+declare global {
+  interface Window {
+    __fightersBeatReady?: boolean;
+    __fightersBeatTick?: number;
+    __fightersBeatCamera?: { x: number; vertical: number; pinned: string[] };
+  }
+}
+
+const get = <T extends HTMLElement>(id: string): T => {
+  const element = document.getElementById(id);
+  if (!element) throw new Error("Missing beat'em up element: " + id);
+  return element as T;
+};
+
+const canvas = get<HTMLCanvasElement>("beat-canvas");
+const viewport = get<HTMLElement>("beat-viewport");
+const diagnostics = get<HTMLElement>("beat-diagnostics");
+const status = get<HTMLElement>("beat-status");
+const toggle = get<HTMLButtonElement>("beat-debug-toggle");
+const controls = new BeatControls(document.body);
+const scene = new BeatEmUpScene(canvas, DIAGNOSTIC_STAGE, BEAT_PROJECTION,
+  diagnosticScrollBounds(DIAGNOSTIC_STAGE, BEAT_PROJECTION), DIAGNOSTIC_ACTORS, "hero");
+const resize = new ResizeObserver(() => scene.resize(viewport.clientWidth, viewport.clientHeight));
+resize.observe(viewport);
+let previous: BeatWorldState = createBeatWorld(DIAGNOSTIC_STAGE, DIAGNOSTIC_ACTORS);
+let current = previous;
+let accumulator = 0;
+let lastTime = performance.now();
+let frameCount = 0;
+let frameWindow = lastTime;
+let framesPerSecond = 0;
+let active = true;
+const tickDuration = 1000 / 60;
+toggle.addEventListener("click", () => {
+  diagnostics.hidden = !diagnostics.hidden;
+  toggle.setAttribute("aria-pressed", String(!diagnostics.hidden));
+});
+
+function frame(now: number): void {
+  if (!active) return;
+  accumulator += Math.min(250, Math.max(0, now - lastTime));
+  lastTime = now;
+  while (accumulator >= tickDuration) {
+    previous = current;
+    current = stepBeatWorld(current, { hero: controls.snapshot() }, DIAGNOSTIC_STAGE);
+    accumulator -= tickDuration;
+  }
+  const camera = scene.render(previous, current, accumulator / tickDuration);
+  window.__fightersBeatReady = true;
+  window.__fightersBeatTick = current.tick;
+  window.__fightersBeatCamera = {
+    x: camera.center.xMm, vertical: camera.center.verticalMm,
+    pinned: Object.entries(camera.pinned).filter(([, pinned]) => pinned).map(([side]) => side),
+  };
+  frameCount++;
+  if (now - frameWindow >= 400) {
+    framesPerSecond = Math.round(frameCount * 1000 / (now - frameWindow));
+    frameWindow = now;
+    frameCount = 0;
+    const hero = current.actors.find(actor => actor.id === "hero")!;
+    const pinned = Object.entries(camera.pinned).filter(([, value]) => value)
+      .map(([key]) => key).join(", ") || "aucun";
+    diagnostics.textContent = `Tick ${current.tick} · ${framesPerSecond} FPS · ` +
+      `X ${hero.xMm} · Z ${hero.depthMm} · Y ${hero.heightMm} mm\n` +
+      `Vitesse Y ${hero.verticalVelocityMmPerTick} mm/tick · Appui ${hero.supportingPlatformId ?? "air"}\n` +
+      `Cible ${hero.targetId ?? "aucune"} · Regard ${hero.facing > 0 ? "droite" : "gauche"}\n` +
+      `Caméra : bords ${pinned} · ${scene.metrics.drawCalls} draws · ${scene.metrics.triangles} triangles`;
+    status.textContent = `Scène de diagnostic active · ${framesPerSecond} FPS · ` +
+      (hero.targetId ? `menace : ${hero.targetId}` : "aucune menace proche");
+  }
+  requestAnimationFrame(frame);
+}
+
+window.addEventListener("pagehide", () => {
+  active = false;
+  resize.disconnect();
+  controls.dispose();
+  scene.dispose();
+}, { once: true });
+
+window.__fightersBeatReady = false;
+requestAnimationFrame(frame);

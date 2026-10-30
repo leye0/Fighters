@@ -1,0 +1,98 @@
+import type { Axis, BeatInput } from "../engine/beat-em-up-world.ts";
+
+export function digitalBeatInput(held: ReadonlySet<string>): BeatInput {
+  const axis = (positive: readonly string[], negative: readonly string[]): Axis => {
+    const yes = positive.some(key => held.has(key));
+    const no = negative.some(key => held.has(key));
+    return Number(yes) - Number(no) as Axis;
+  };
+  return {
+    horizontal: axis(["ArrowRight", "KeyD"], ["ArrowLeft", "KeyA"]),
+    depth: axis(["ArrowDown", "KeyS"], ["ArrowUp", "KeyW"]),
+    jump: held.has("Space") || held.has("KeyJ"),
+  };
+}
+
+const keys = new Set(["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp",
+  "KeyA", "KeyD", "KeyW", "KeyS", "Space", "KeyJ"]);
+
+/** Separate from the legacy duel's up/down = crouch/jump binding. */
+export class BeatControls {
+  private readonly held = new Set<string>();
+  private readonly touch = new Map<number, string>();
+  private readonly buttons: HTMLElement[];
+  private wasJumping = false;
+
+  constructor(root: HTMLElement) {
+    this.buttons = [...root.querySelectorAll<HTMLElement>("[data-beat-key]")];
+    window.addEventListener("keydown", this.onDown);
+    window.addEventListener("keyup", this.onUp);
+    window.addEventListener("blur", this.clear);
+    for (const button of this.buttons) {
+      button.addEventListener("pointerdown", this.pointerDown);
+      button.addEventListener("pointerup", this.pointerEnd);
+      button.addEventListener("pointercancel", this.pointerEnd);
+      button.addEventListener("lostpointercapture", this.pointerEnd);
+    }
+  }
+
+  private onDown = (event: KeyboardEvent): void => {
+    if (!keys.has(event.code) || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (["INPUT", "TEXTAREA", "SELECT"].includes((event.target as Element | null)?.tagName ?? "")) return;
+    event.preventDefault();
+    this.held.add(event.code);
+  };
+
+  private onUp = (event: KeyboardEvent): void => {
+    if (keys.has(event.code)) {
+      event.preventDefault();
+      this.held.delete(event.code);
+    }
+  };
+
+  private pointerDown = (event: PointerEvent): void => {
+    event.preventDefault();
+    const button = event.currentTarget as HTMLElement;
+    const key = button.dataset.beatKey;
+    if (!key) return;
+    this.touch.set(event.pointerId, key);
+    button.setPointerCapture(event.pointerId);
+  };
+
+  private pointerEnd = (event: PointerEvent): void => {
+    this.touch.delete(event.pointerId);
+  };
+
+  private clear = (): void => {
+    this.held.clear();
+    this.touch.clear();
+    this.wasJumping = false;
+  };
+
+  snapshot(): BeatInput {
+    const combined = new Set(this.held);
+    for (const key of this.touch.values()) combined.add(key);
+    const keyInput = digitalBeatInput(combined);
+    const pad = Array.from(navigator.getGamepads?.() ?? []).find(p => p?.connected) ?? null;
+    const gamepadAxis = (value: number): Axis => value > 0.35 ? 1 : value < -0.35 ? -1 : 0;
+    const horizontal = keyInput.horizontal || gamepadAxis(pad?.axes[0] ?? 0);
+    const depth = keyInput.depth || gamepadAxis(pad?.axes[1] ?? 0);
+    const jumpHeld = keyInput.jump || Boolean(pad?.buttons[0]?.pressed);
+    const jump = jumpHeld && !this.wasJumping;
+    this.wasJumping = jumpHeld;
+    return { horizontal, depth, jump };
+  }
+
+  dispose(): void {
+    window.removeEventListener("keydown", this.onDown);
+    window.removeEventListener("keyup", this.onUp);
+    window.removeEventListener("blur", this.clear);
+    for (const button of this.buttons) {
+      button.removeEventListener("pointerdown", this.pointerDown);
+      button.removeEventListener("pointerup", this.pointerEnd);
+      button.removeEventListener("pointercancel", this.pointerEnd);
+      button.removeEventListener("lostpointercapture", this.pointerEnd);
+    }
+    this.clear();
+  }
+}
