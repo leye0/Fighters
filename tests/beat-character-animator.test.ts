@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { AnimationClip } from "three";
-import { DIAGNOSTIC_ACTORS } from "../src/game/beat-stage.ts";
-import { GAME_MOTION_NAMES, canAnimateRealGameMotions, movingRole } from
+import { AnimationClip, Group } from "three";
+import { DIAGNOSTIC_ACTORS, DIAGNOSTIC_STAGE } from "../src/game/beat-stage.ts";
+import { GAME_MOTION_NAMES, BeatCharacterAnimator, canAnimateRealGameMotions, movingRole } from
   "../src/render/beat-character-animator.ts";
 
 test("real animation gate requires all seven actual baked Mixamo motions", () => {
@@ -21,4 +21,31 @@ test("movement-driven Mixamo choices distinguish forward and backward without pu
     supportingPlatformId: null }), "jump");
   assert.equal(movingRole(actor, { ...actor, heightMm: 300, verticalVelocityMmPerTick: -150,
     supportingPlatformId: null }), "fall");
+});
+
+test("Mixamo turn is quick, interruptible, and cannot override player-selected direction", () => {
+  const actor = DIAGNOSTIC_ACTORS[0];
+  const root = new Group(), rig = new Group();
+  root.add(rig);
+  const clips = Object.values(GAME_MOTION_NAMES).map(name => new AnimationClip(name, name === GAME_MOTION_NAMES.turn ? 1.633 : 1, []));
+  const animator = new BeatCharacterAnimator(root, rig, clips, 1, true);
+  const left = { ...actor, xMm: actor.xMm - 15, facing: -1 as const };
+  animator.update(actor, left, 0.05);
+  // Cancellation must work even while the authored clip is still playing.
+  const right = { ...actor, xMm: actor.xMm + 15, facing: 1 as const };
+  animator.update(left, right, 0.05);
+  assert.ok(Math.abs(root.rotation.y - Math.PI / 2) < 1e-5,
+    "reversing input during turn must immediately cancel obsolete direction");
+  for (let i = 0; i < 8; i++) animator.update(right, left, 0.05);
+  assert.ok(Math.abs(root.rotation.y + Math.PI / 2) < 1e-5,
+    "a genuine Mixamo turn must complete in less than 0.4 second");
+  animator.dispose();
+});
+
+test("diagnostic jump is a smooth arcade arc rather than the old 0.54s impulse", () => {
+  const speed = DIAGNOSTIC_ACTORS[0].jumpSpeedMmPerTick;
+  const gravity = DIAGNOSTIC_STAGE.gravityMmPerTick2;
+  const flightSeconds = 2 * speed / gravity / 60;
+  assert.ok(flightSeconds > 0.8 && flightSeconds < 1.1,
+    "arcade jump must last long enough for a readable authored animation");
 });
