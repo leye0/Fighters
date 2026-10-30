@@ -11,7 +11,7 @@ button { font: inherit; cursor: pointer; }
 .beat-viewport { position: relative; flex: 1; min-height: 0; overflow: hidden; background: #141c2b; touch-action: none; }
 #beat-canvas { width: 100%; height: 100%; display: block; touch-action: none; }
 .beat-watermark { position: absolute; top: 12px; left: 12px; max-width: calc(100% - 24px); font-size: .63rem; letter-spacing: .08em; color: #f1dcb4; background: #182335dd; padding: 7px 9px; pointer-events: none; }
-.beat-diagnostics { position: absolute; top: 44px; left: 12px; margin: 0; padding: 10px; border-radius: 5px; font: .76rem/1.65 ui-monospace, monospace; white-space: pre-wrap; background: #101927d9; color: #c6e4eb; pointer-events: none; max-width: calc(100% - 24px); }
+.beat-diagnostics { position: absolute; z-index: 3; top: 44px; left: 12px; margin: 0; padding: 10px; border-radius: 5px; font: .76rem/1.5 ui-monospace, monospace; white-space: pre-wrap; overflow: auto; overflow-wrap: anywhere; background: #101927ed; color: #c6e4eb; max-width: min(540px, calc(100% - 24px)); max-height: min(42dvh, 180px); pointer-events: auto; }
 [hidden] { display: none !important; }
 .beat-footer { display: flex; flex-wrap: wrap; gap: 10px 20px; justify-content: space-between; font-size: .75rem; padding: 9px 18px; background: #101b2d; color: #b1c3d5; }
 .beat-footer a { color: #91d9f6; }
