@@ -99,7 +99,7 @@
 - [x] Permettre les attaques aériennes sans figer la gravité et limiter la collision par séparation verticale.
 - [ ] Compléter le buffering des accords quasi simultanés, les charges, les dash et les projections.
 - [x] Mettre en place le registre **animation-first** par combattant, où seuls les clips approuvés créent un coup ; FPS/contact mesurés déterminent les frames, cancels vers clips absents filtrés et noms GLB contrôlés avant un combat. (Tests unitaires ; 7 FBX acquis temporairement hors Git, aucun clip intégré ni approuvé.)
-- [x] Établir un inventaire sourcé de 103 mouvements Mixamo réels et un téléchargement privé reproductible, sans déposer de FBX brut dans le dépôt public.
+- [x] Établir un inventaire sourcé de 705 mouvements Mixamo réels et un téléchargement privé reproductible, sans déposer de FBX brut dans le dépôt public.
 - [ ] Intégrer les vrais clips de combat et valider leur qualité avec les combattants photoréalistes.
 - [ ] Choisir les commandes, les catégories de coups et les combos **après** l'inspection visuelle de chaque clip acquis, et non à partir d'un catalogue hypothétique.
 - [ ] Valider les transitions esthétiques entre clips retenus et ne créer des spéciaux que lorsqu'une animation convaincante existe.
@@ -152,13 +152,13 @@
 
 ## 8. Bibliothèque Mixamo — catalogue de mouvements à acquérir
 
-**État présent :** [70 rôles de recherche](../assets/mixamo-catalog.json) (mots-clés, sans preuve), **103 animations Mixamo réellement indexées** dans [le catalogue de clips disponibles](../assets/mixamo-available-clips.json), dont **7 FBX binaires réellement téléchargés et vérifiés dans un dossier privé hors Git**. **0 animation retargetée/intégrée et 0 coup réel jouable**. Le catalogue test du moteur reprend 34 rôles hypothétiques ; il ne prescrit pas les animations à trouver. **L'inventaire des animations réelles décide de l'arsenal**, et non l'inverse.
+**État présent :** [70 rôles de recherche](../assets/mixamo-catalog.json) (mots-clés, sans preuve), **705 candidats Mixamo réellement indexés (sélection sémantique sur 2 317 entrées)** dans [le catalogue de clips disponibles](../assets/mixamo-available-clips.json), dont **7 FBX binaires réellement téléchargés et vérifiés dans un dossier privé hors Git**. **0 animation retargetée/intégrée et 0 coup réel jouable**. Le catalogue test du moteur reprend 34 rôles hypothétiques ; il ne prescrit pas les animations à trouver. **L'inventaire des animations réelles décide de l'arsenal**, et non l'inverse.
 
 Le but n'est pas de télécharger aveuglément toute la bibliothèque Adobe, mais de **recenser, comparer, intégrer et retoucher toutes les animations utiles à un jeu de combat**, avec variantes quand elles existent. Chaque entrée devra avoir son identifiant Mixamo, son fichier source autorisé, son personnage/rig de référence, sa durée, ses tags et son statut de retargeting.
 
-**État au 29 octobre 2026 : 103 animations Mixamo identifiées dans un index réel, 7 FBX téléchargés et vérifiés en privé, mais 0 clip intégré ou approuvé dans Fighters.** Le lecteur GLB/animation existe ; le retargeting et la validation visuelle restent à faire. Voir [docs/mixamo-real-sources.md](mixamo-real-sources.md) et [docs/mixamo-integration.md](mixamo-integration.md).
+**État au 29 octobre 2026 : 705 animations Mixamo identifiées dans un index réel, 7 FBX téléchargés et vérifiés en privé, mais 0 clip intégré ou approuvé dans Fighters.** Le lecteur GLB/animation existe ; le retargeting et la validation visuelle restent à faire. Voir [docs/mixamo-real-sources.md](mixamo-real-sources.md) et [docs/mixamo-integration.md](mixamo-integration.md).
 
-- [x] Recenser 103 vrais clips Mixamo à partir des index de WarConquer et vérifier en téléchargement privé 7 FBX binaires (identifiant, catégorie, frames, source, SHA-256). Voir [sources réelles](mixamo-real-sources.md).
+- [x] Recenser 705 vrais clips Mixamo à partir des index de WarConquer et vérifier en téléchargement privé 7 FBX binaires (identifiant, catégorie, frames, source, SHA-256). Voir [sources réelles](mixamo-real-sources.md).
 - [ ] Regarder, retargeter, sélectionner et **valider visuellement** ces clips sur des modèles photoréalistes (hommes et femmes) avec frames d'impact mesurées. Les noms de l'index ne suffisent pas.
 - [ ] Exporter légalement depuis un Adobe ID ; distinguer droit d'utilisation en jeu et droit de republier les fichiers sources dans le dépôt public.
 - [ ] Retargeter sur différentes morphologies, dont au moins deux personnages féminins, et vérifier pieds, bassin, mains, transitions et timings.

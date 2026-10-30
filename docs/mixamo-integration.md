@@ -1,6 +1,6 @@
 # Fighters — découverte Mixamo et arsenal dicté par les animations
 
-**Statut actuel : 103 clips Mixamo réels identifiés, 7 fichiers FBX binaires téléchargés et vérifiés en privé, aucun clip intégré ou approuvé pour le jeu.**
+**Statut actuel : 705 clips Mixamo réels identifiés, 7 fichiers FBX binaires téléchargés et vérifiés en privé, aucun clip intégré ou approuvé pour le jeu.**
 Le moteur sait charger une scène GLB et des clips d'animation, mais il n'a
 pas encore les animations de combat ni un retargeting fonctionnel par personnage.
 
@@ -10,7 +10,7 @@ commerciaux, et annonce un accès gratuit avec Adobe ID. Cela **n'autorise pas
 automatiquement la republication des fichiers sources bruts** dans un dépôt
 GitHub public. Vérifier les conditions applicables lors de l'acquisition.
 
-Le [catalogue des 70 pistes de recherche](../assets/mixamo-catalog.json) ne donne que des mots-clés `search_pending`, mais le [nouvel index de 103 animations réelles](../assets/mixamo-available-clips.json) apporte les vrais noms, IDs et nombres de frames, avec [sources et acquisition reproductible](mixamo-real-sources.md). **Les coups seront choisis en regardant les vrais gestes retargetés, jamais à partir des seuls titres.** Une fois chaque animation trouvée, nous déterminons ce qu'elle montre réellement, ses points de contact, ses variantes et ses possibles enchaînements, selon [le protocole animation-first](animation-first.md). Les clips approuvés vont dans [l'inventaire de production](../assets/animation-inventory.json).
+Le [catalogue des 70 pistes de recherche](../assets/mixamo-catalog.json) ne donne que des mots-clés `search_pending`, mais le [nouvel index de 705 animations réelles](../assets/mixamo-available-clips.json) apporte les vrais noms, IDs et nombres de frames, avec [sources et acquisition reproductible](mixamo-real-sources.md). **Les coups seront choisis en regardant les vrais gestes retargetés, jamais à partir des seuls titres.** Une fois chaque animation trouvée, nous déterminons ce qu'elle montre réellement, ses points de contact, ses variantes et ses possibles enchaînements, selon [le protocole animation-first](animation-first.md). Les clips approuvés vont dans [l'inventaire de production](../assets/animation-inventory.json).
 
 ## Catalogue de gestes à acquérir et qualifier
 
@@ -32,7 +32,7 @@ pas une affirmation que Mixamo propose un fichier portant exactement ce nom.
 
 ## Pipeline à développer et vérifier
 
-- [x] Retrouver les fichiers réels de Mixamo par le miroir documenté dans WarConquer et les indexer (103 clips, dont 7 FBX binaires vérifiés).
+- [x] Retrouver les fichiers réels de Mixamo par le miroir documenté dans WarConquer et les indexer (705 clips, dont 7 FBX binaires vérifiés).
 - [x] Fournir un téléchargeur privé et reproductible sans dépendance ni pop-up Adobe.
 - [ ] Confirmer auprès d'Adobe les droits applicables au mode de distribution visé, et vérifier le contenu des fichiers avant leur inclusion.
 - [ ] Explorer Mixamo officiel si nécessaire pour variantes de rig, vitesses et validation complémentaire.

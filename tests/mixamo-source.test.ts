@@ -17,10 +17,11 @@ const catalog = JSON.parse(readFileSync(new URL('../assets/mixamo-available-clip
   clips: Clip[];
 };
 
-test('catalog contains 103 indexed Mixamo motions, with valid source metadata', () => {
+test('catalog contains 705 indexed Mixamo motion candidates, with valid source metadata', () => {
   assert.equal(catalog.schemaVersion, 1);
-  assert.equal(catalog.clips.length, 103);
+  assert.equal(catalog.clips.length, 705);
   assert.equal(catalog.selection.totalIndexedHere, catalog.clips.length);
+  assert.equal(new Set(catalog.clips.map(c => c.family)).size >= 10, true);
   assert.equal(new Set(catalog.clips.map(c => c.filename)).size, 103);
   assert.equal(new Set(catalog.clips.map(c => c.id)).size, 103);
   for (const clip of catalog.clips) {
