@@ -19,7 +19,7 @@
     "totalIndexedHere": 471,
     "archivedTotalMotionClips": 2317,
     "initialHandCuratedNamesPreserved": 103,
-    "binaryFbxVerifiedInPrivateResearch": 299,
+    "binaryFbxVerifiedInPrivateResearch": 302,
     "checkedFilenames": [
       "Action_Idle_To_Fight_Idle.fbx",
       "Aerial_Evade.fbx",
@@ -319,7 +319,10 @@
       "Pontera.fbx",
       "Punch_Combo.fbx",
       "Punch_To_Elbow_Combo.fbx",
-      "Punching_2.fbx"
+      "Punching_2.fbx",
+      "Step_Backward.fbx",
+      "Step_Backward_2.fbx",
+      "Step_Backward_3.fbx"
     ],
     "convertedIntoRuntime": 0,
     "visualScreened": 0,
@@ -339,11 +342,11 @@
     "originalArchiveClips": 2317,
     "broaderNameOnlyCandidatesDiscarded": 234,
     "descriptionScreened": 471,
-    "researchGlbConverted": 299,
+    "researchGlbConverted": 302,
     "researchGlbFailed": 0,
-    "researchGlbTotalBytes": 736332768,
-    "sourceFbxMissingForFullResearchSet": 172,
-    "lastAcquisitionOutcome": "Resumed successfully after previous HTTP 429 cooldown: sequential request pacing at >=5s; 299 selected FBX and validated private GLBs by checkpoint. Continuing acquisition."
+    "researchGlbTotalBytes": 743514348,
+    "sourceFbxMissingForFullResearchSet": 169,
+    "lastAcquisitionOutcome": "299 initial clips plus three targeted boxing backstep alternatives acquired and converted in private research, all verified."
   },
   "clips": [
     {
@@ -12349,12 +12352,22 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
+      "sha256": "c075eb070c5e79ff85f99fcb6d57b355d90a1caef28e516451ab592c61077b0f",
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "binaryChecked": false,
-      "researchConversionStatus": "not_converted"
+      "binaryChecked": true,
+      "binarySize": 3020140,
+      "binaryCheckNote": "Validated real binary FBX in private research cache, not publicly redistributed.",
+      "researchConversionStatus": "validated_private_glb",
+      "researchGlb": {
+        "sha256": "fab66f368ae4aa05c72263d4355aed1303d5cc80ddaebeaf0e11fb98b15537cc",
+        "bytes": 2396132,
+        "animations": 1,
+        "channels": 74,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-010",
@@ -12371,12 +12384,22 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
+      "sha256": "a89816e768fca5e7cc30a448b0d980af3d8217a71c883ca789efec8bc2089a01",
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "binaryChecked": false,
-      "researchConversionStatus": "not_converted"
+      "binaryChecked": true,
+      "binarySize": 3018252,
+      "binaryCheckNote": "Validated real binary FBX in private research cache, not publicly redistributed.",
+      "researchConversionStatus": "validated_private_glb",
+      "researchGlb": {
+        "sha256": "4c19944fcea19bc508f9f258847d5f5c3ef6f5aaed05270d2fca5fa063c6845c",
+        "bytes": 2394424,
+        "animations": 1,
+        "channels": 76,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-008",
@@ -12393,12 +12416,22 @@
       "animationReview": "pending",
       "retargetStatus": "not_started",
       "runtimeStatus": "not_integrated",
-      "sha256": null,
+      "sha256": "fd962f1485775f88768b422db29467105814d10478e5a9a018ef65b969a18fc0",
       "descriptionScreened": true,
       "descriptionScreeningResult": "potentially_relevant_to_unarmed_2_5d_fighting",
       "visualScreened": false,
-      "binaryChecked": false,
-      "researchConversionStatus": "not_converted"
+      "binaryChecked": true,
+      "binarySize": 3018364,
+      "binaryCheckNote": "Validated real binary FBX in private research cache, not publicly redistributed.",
+      "researchConversionStatus": "validated_private_glb",
+      "researchGlb": {
+        "sha256": "2cf127eec8681fb460d54246f47eb3e77fbe7e19a8bee33c903e46f9e94c58c8",
+        "bytes": 2391024,
+        "animations": 1,
+        "channels": 69,
+        "nodes": 69,
+        "skins": 2
+      }
     },
     {
       "id": "MX-FOUND-604",

@@ -34,9 +34,23 @@ Ces choix sont des décisions de départ documentées ; tout changement doit êt
 
 ## Animations Mixamo réellement retrouvées
 
-Le miroir public déjà utilisé dans **WarConquer** permet d'accéder aux vrais fichiers Mixamo sans passer par une page de connexion Adobe éphémère : **471 candidats d'animations étudiés parmi 2 317 mouvements, 299 FBX binaires récupérés et vérifiés en privé, et 299 animations converties en GLB avec de véritables canaux**. L'intégration au jeu est encore à faire : **0 clip approuvé dans le runtime**.
+Le miroir public déjà utilisé dans **WarConquer** permet d'accéder aux vrais fichiers Mixamo sans passer par une page de connexion Adobe éphémère : **471 candidats d'animations étudiés parmi 2 317 mouvements, 302 FBX binaires récupérés et vérifiés en privé, et 302 animations converties en GLB avec de véritables canaux**. L'intégration au jeu est encore à faire : **0 clip approuvé dans le runtime**.
 
-**Présélection du 30 octobre 2026 : [60 animations complémentaires, sélectionnées d'après les descriptions](assets/mixamo-shortlist.json).** Les coups peuvent disposer d'une mobilité au sol et en l'air configurable ; le moteur a un découpage haut/bas du corps pour superposer la frappe à la locomotion. Ce sont des capacités de code et une liste de **candidats**, pas des composites visuellement validés. Voir [le protocole d'animation](docs/animation-first.md).
+**Présélection du 30 octobre 2026 : [60 animations complémentaires puis 3 pas arrière de boxe supplémentaires, soit 63 candidates](assets/mixamo-shortlist.json).** Les coups peuvent disposer d'une mobilité au sol et en l'air configurable ; le moteur a un découpage haut/bas du corps pour superposer la frappe à la locomotion. Ce sont des capacités de code et une liste de **candidats**, pas des composites visuellement validés. Voir [le protocole d'animation](docs/animation-first.md).
+
+### Choisir soi-même les animations
+
+Le [lecteur de sélection](animation-review.html) est une seconde page Vite, accessible à `http://127.0.0.1:5173/animation-review.html` après `npm run dev` (ou `/animation-review.html` sur un hébergement du build). Il propose **les 63 clips avec quatre prévisualisations MP4 distantes chacun**, la description Mixamo, un [tri initial provisoire](assets/mixamo-screening.json), les décisions « garder / écarter / à revoir » et un champ de commentaire. Les choix sont conservés localement dans le navigateur et **exportables/importables en JSON**, avec identifiants de mouvement et SHA-256, pour que Léon transmette une sélection sans perdre l'identité exacte des clips. Aucun vidéo ni FBX/GLB tiers n'est embarqué dans le dépôt.
+
+Pour inspecter les prévisualisations en privé sans dépendre du navigateur :
+
+```bash
+python3 scripts/review-mixamo-previews.py --destination /tmp/fighters-visual-qa --views 4 --request-interval 1
+```
+
+Le tri initial est fondé sur des poses visibles dans les vidéos YBot, **pas sur le rendu des GLB retargetés**. Les animations définitives, leurs superpositions (saut/frappe, avance/frappe, recul/frappe) et les contacts nécessitent toujours une validation humaine sur le personnage final.
+
+[Compte rendu de l'examen et principales lacunes repérées](docs/animation-visual-screening.md).
 
 - [Sources réelles, droits, commandes de récupération et prochaines vérifications](docs/mixamo-real-sources.md)
 - [Index de 471 mouvements Mixamo réels](assets/mixamo-available-clips.json)
@@ -83,7 +97,7 @@ Consulter le [registre des ressources, avec les premiers candidats photoréalist
 
 Le [banc de combats IA contre IA](docs/ai-combat-qa.md) exécute de vrais affrontements dans la simulation déterministe, avec attaques, gardes, coups spéciaux et bilan de rythme. Lancer `npm run simulate:ai` ou `npm run test:ai` ; l'option **Mode → IA contre IA** est branchée dans le navigateur dès que deux GLB autorisés avec animations seront intégrés. **Cela ne constitue pas encore un test visuel du plaisir de jeu.**
 
-Concernant les animations de combat Mixamo : **299 sont réellement téléchargées et converties en privé, mais aucune n'est encore intégrée au runtime**. La [procédure d'acquisition et de retargeting](docs/mixamo-integration.md) liste les mouvements nécessaires et les précautions de licence.
+Concernant les animations de combat Mixamo : **302 sont réellement téléchargées et converties en privé, mais aucune n'est encore intégrée au runtime**. La [procédure d'acquisition et de retargeting](docs/mixamo-integration.md) liste les mouvements nécessaires et les précautions de licence.
 
 ## État
 

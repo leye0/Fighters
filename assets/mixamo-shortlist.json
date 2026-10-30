@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "status": "metadata_shortlist_only_not_visually_approved",
-  "goal": "About 60 complementary source clips. Attacks and locomotion can be combined only after per-rig visual approval.",
+  "goal": "About 60 complementary source clips plus three targeted boxing backstep alternatives. Attacks and locomotion can be combined only after per-rig visual approval.",
   "sourceCatalog": "assets/mixamo-available-clips.json",
   "groups": [
     {
@@ -53,6 +53,11 @@
       "purpose": "special",
       "reason": "One distinctive airborne special to inspect before promising any special move",
       "filenames": ["Hurricane_Kick.fbx"]
+    },
+    {
+      "purpose": "backstep_alternatives",
+      "reason": "Three real short/medium/long boxing backsteps acquired and converted after screening found Ginga Backward inappropriate as generic retreat",
+      "filenames": ["Step_Backward_2.fbx", "Step_Backward_3.fbx", "Step_Backward.fbx"]
     }
   ]
 }

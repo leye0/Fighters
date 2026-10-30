@@ -38,7 +38,7 @@ Le document directeur est **docs/production-plan.md**. Le consulter avant toute 
 
 ## Sources Mixamo WarConquer (réel, pas théorique)
 
-- Consulter [docs/mixamo-real-sources.md](docs/mixamo-real-sources.md) et [assets/mixamo-available-clips.json](assets/mixamo-available-clips.json) : 471 candidats triés sur noms et descriptions dans les index réels, 299 FBX binaires téléchargés/hachés en privé et 299 GLB réellement convertis/vérifiés hors Git.
+- Consulter [docs/mixamo-real-sources.md](docs/mixamo-real-sources.md) et [assets/mixamo-available-clips.json](assets/mixamo-available-clips.json) : 471 candidats triés sur noms et descriptions dans les index réels, 302 FBX binaires téléchargés/hachés en privé et 302 GLB réellement convertis/vérifiés hors Git (299 initiaux + 3 pas arrière de boxe ciblés).
 - En cas de HTTP 429, ne pas multiplier les requêtes : respecter `Retry-After`, stopper et reprendre ensuite. La commande `--workers 1 --request-interval 5` limite volontairement le débit.
 - Le script `scripts/acquire-mixamo.py` acquiert les sources dans une destination **hors repo Git public**. Le script `scripts/convert-mixamo-fbx.py` les transforme en GLB animés dans une autre destination **privée** après validation FBX/SHA et vérification des canaux GLB. Ne pas committer les FBX bruts ni les GLB de clips isolés à droits incertains.
 - Ces clips **ne sont pas validés pour le jeu** : `assets/animation-inventory.json` reste vide. Seuls des clips légalement vérifiés, retargetés, visionnés et avec frames de contact mesurées autorisent un coup jouable.

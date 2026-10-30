@@ -9,6 +9,7 @@ Le projet **WarConquer** documente une source alternative utile : [bibliothèque
 - **471 candidats de mouvements réels (triés par nom ET description, non encore visionnés)**, noms et identifiants connus, ont été retenus pour Fighters dans [le catalogue vérifiable](../assets/mixamo-available-clips.json) : garde, déplacements, poings, enchaînements, coups de pied, spéciaux, défenses et réactions.
 - **299 FBX binaires ont été réellement téléchargés à titre de vérification technique**, dans un dossier privé temporaire hors dépôt, inspectés comme FBX et hachés en SHA-256 : `Fighting_Idle.fbx`, `Boxing_3.fbx`, `Boxing_7.fbx`, `Jab_Cross.fbx`, `Kicking_6.fbx`, `Mma_Kick_5.fbx`, `Punch_Combo.fbx`. Les **299 empreintes** sont dans le catalogue.
 - **299 GLB animés réellement convertis en privé** (299/299, 0 erreur, environ 736 Mo), avec nombre de canaux et empreintes dans l'inventaire ; **0 clip dans le produit jouable**. Acquisition, conversion, retargeting, validation visuelle et licence sont des étapes différentes.
+- **Complément du 30 octobre 2026 : trois pas arrière de boxe** (`Step_Backward`, `_2`, `_3`) supplémentaires récupérés (3/3 FBX vérifiés) et convertis en **3/3 GLB privés** avec canaux et SHA-256. Le total courant est donc **302/471 acquis et convertis** (743 514 348 octets GLB, zéro échec) ; **169 autres sources indexées** à acquérir.
 
 Ce miroir ne demande pas d'ouvrir Mixamo dans un navigateur. On peut donc récupérer les clips via script, sans page de connexion éphémère. Il n'est pas un site officiel Adobe ni une nouvelle licence indépendante.
 
@@ -75,7 +76,7 @@ Pour passer des mouvements réels à un jeu photoréaliste :
 - [x] Ajouter un outil d'acquisition reproductible, sans dépendance ni action GitHub.
 - [ ] Confirmer les droits exacts du mode de distribution final et l'authenticité des fichiers sources retenus.
 - [x] Convertir en privé les 299 FBX acquis en GLB contenant de vrais canaux d'animation (299/299 valides).
-- [ ] Récupérer les 172 FBX sources restant dans la sélection et les convertir. La reprise séquentielle du CDN fonctionne après refroidissement ; les fichiers restants continuent d'être acquis progressivement avec une cadence prudente.
+- [ ] Récupérer les 169 FBX sources restant dans la sélection et les convertir. La reprise séquentielle du CDN fonctionne après refroidissement ; les fichiers restants continuent d'être acquis progressivement avec une cadence prudente.
 - [ ] Sélectionner des combattants photoréalistes, notamment des femmes, avec rigs appropriés.
 - [ ] Retargeter, inspecter de profil et corriger les glissements et déformations sur ces corps réels.
 - [ ] Mesurer les frames de contact et choisir les commandes de combat sur la base des gestes rendus.
