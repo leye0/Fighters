@@ -1,1 +1,1 @@
-one-shot-qa-2026-10-30-pose-normalized-3-real-actors-visible-v3
+one-shot-qa-2026-10-30-pose-frozen-screenshots-input-reversal-v4
