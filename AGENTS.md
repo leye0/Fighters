@@ -4,7 +4,7 @@ Ce document s'applique à toute intervention dans le dépôt **Fighters**.
 
 ## Mandat
 
-Construire un **beat’em up d’action 3D à défilement latéral** pour navigateur, inspiré de la structure de *Double Dragon* : exploration de rues, bâtiments et plateformes surélevées, plusieurs ennemis, déplacements X/profondeur/saut, orientation automatique vers les menaces proches et combats animation-first. Le duel d’arène 1v1 existant est un **banc de simulation hérité**, pas l’expérience principale.
+Construire un **beat’em up d’action 3D à défilement latéral** pour navigateur, inspiré de la structure de *Double Dragon* : exploration de rues, bâtiments et plateformes surélevées, plusieurs ennemis, déplacements X/profondeur/saut, **orientation exclusivement commandée par gauche/droite, jamais imposée par une cible**, et combats animation-first. Le duel d’arène 1v1 existant est un **banc de simulation hérité**, pas l’expérience principale.
 
 Le document directeur est **docs/production-plan.md**. Le consulter avant toute modification, mettre à jour les cases réalisées dans le même commit que le travail associé et ne jamais marquer une case terminée sans preuve concrète.
 
@@ -29,7 +29,7 @@ Le document directeur est **docs/production-plan.md**. Le consulter avant toute 
 - TypeScript/Vite, Three.js avec WebGL 2 ; WebGPU seulement derrière un adaptateur et après évaluation.
 - Simulation autoritative à **60 ticks/s** séparée du rendu et de l'animation.
 - Affichage 3D avec caméra latérale qui défile : X = progression, Z = profondeur de la rue, Y = vraie élévation des plateformes (toits, bacs de poubelles, escaliers). Les trois axes sont simulés à 60 Hz en millimètres entiers.
-- Ennemis multiples, orientation du héros vers une cible proche avec hystérésis, indépendamment du déplacement. Reculer en gardant l’ennemi en face est un comportement requis.
+- Ennemis multiples et ciblage technique optionnel, **sans orientation automatique vers eux**. Les seules commandes gauche/droite déterminent le facing ; à l'arrêt il reste inchangé même lorsqu'un adversaire passe derrière. Le demi-tour Mixamo peut être visuel, court et interruptible, mais ne doit jamais bloquer le déplacement choisi.
 - Décrire les plateformes et obstacles par des données génériques. **Décor de test volontairement minimaliste** (blocs/plans) jusqu’à l’achèvement des mécanismes, puis design photoréaliste des lieux. Voir [docs/beat-em-up-architecture.md](docs/beat-em-up-architecture.md).
 - **Caméra solo : héros centré sur l’image** tant que le scrolling reste possible ; seuls les bords gauche, droit, haut ou bas du niveau autorisent son décentrage.
 - Les hitboxes, hurtboxes, timings, états et dégâts proviennent des données de simulation ; le squelette visuel ne décide jamais du résultat d'un coup.
