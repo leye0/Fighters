@@ -39,10 +39,9 @@ export function movingRole(previous: BeatActor, actor: BeatActor): MovingRole {
   return "walk";
 }
 
-/** Real Mixamo clips baked onto the actual skeleton. No fake joint oscillation.
- * Turning holds the old world yaw while a 176° authored Mixamo hip/body turn
- * plays; then the visual root takes the new yaw and the next loop resumes.
- * The old/true facing in the engine never waits for the animation.
+/** Real Mixamo clips baked onto the actual skeleton.
+ * The author-supplied 180-degree turn must never lock player steering. A
+ * short, interruptible visual turn completes while movement obeys input.
  */
 export class BeatCharacterAnimator {
   private readonly mixer: AnimationMixer;
@@ -70,7 +69,9 @@ export class BeatCharacterAnimator {
       }
     }
     this.visualFacing = facing;
-    this.turnDuration = this.actions.get(GAME_MOTION_NAMES.turn)!.getClip().duration;
+    // 1.63s is much too long for directional controls on a mobile arcade pad.
+    // Keep the actual Mixamo performance, but play its turn in at most 0.26s.
+    this.turnDuration = Math.min(0.26, this.actions.get(GAME_MOTION_NAMES.turn)!.getClip().duration);
     this.outer.rotation.y = this.yaw;
     this.playBase(GAME_MOTION_NAMES.idle, true);
   }
@@ -100,12 +101,20 @@ export class BeatCharacterAnimator {
 
   update(before: BeatActor, actor: BeatActor, seconds: number): void {
     const dt = Math.max(0, Math.min(0.05, seconds));
+    // If the player changes their mind mid-turn, stop the old visual turn
+    // immediately. Never finish an obsolete 180° animation against input.
+    if (this.turningTo !== null && actor.facing === this.visualFacing) {
+      this.mixer.stopAllAction();
+      this.turningTo = null;
+      this.activeName = null;
+    }
     if (this.turningTo === null && actor.facing !== this.visualFacing) {
       this.turningTo = actor.facing;
       this.turnElapsed = 0;
       this.mixer.stopAllAction();
       const action = this.actions.get(GAME_MOTION_NAMES.turn)!;
       action.reset().setLoop(LoopOnce, 1).play();
+      action.setEffectiveTimeScale(action.getClip().duration / this.turnDuration);
       action.clampWhenFinished = true;
       this.activeName = GAME_MOTION_NAMES.turn;
     }
@@ -126,8 +135,7 @@ export class BeatCharacterAnimator {
     const name = role === "idle" ? GAME_MOTION_NAMES.idle
       : role === "walkBackward" ? GAME_MOTION_NAMES.walkBackward
         : role === "jump" ? GAME_MOTION_NAMES.jump
-          : role === "fall" ? (this.activeName === GAME_MOTION_NAMES.jump
-            ? GAME_MOTION_NAMES.jump : GAME_MOTION_NAMES.fall)
+          : role === "fall" ? GAME_MOTION_NAMES.fall
             : this.isHero ? GAME_MOTION_NAMES.walkFeminine : GAME_MOTION_NAMES.walk;
     this.playBase(name);
     const sourceMetersPerSecond = SOURCE_WALK_METERS_PER_SECOND[name];
@@ -139,8 +147,8 @@ export class BeatCharacterAnimator {
       this.actions.get(name)!.setEffectiveTimeScale(gameMetersPerSecond / sourceMetersPerSecond);
     }
     if (name === GAME_MOTION_NAMES.jump) {
-      // Play the full authored ascent+descent in the old-school scripted arc.
-      // Root height comes only from the deterministic 60 Hz world.
+      // The authored jump begins on takeoff; a separate real Mixamo fall
+      // takes over after the apex. Root height is entirely deterministic.
       const flightSeconds = 2 * actor.jumpSpeedMmPerTick / this.gravityMmPerTick2 / 60;
       this.actions.get(name)!.setEffectiveTimeScale(
         this.actions.get(name)!.getClip().duration / flightSeconds);
