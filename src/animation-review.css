@@ -37,4 +37,36 @@ a { color: #a7c6ff; }
 .review-card-body a { font-size: .82rem; }
 .review-empty { text-align: center; padding: 3rem 1rem; border: 1px dashed #77819b; border-radius: 12px; }
 .review-alert { color: #ff9f9f; font-weight: 600; }
-@media (max-width: 560px) { .review-shell { padding: 14px; } .review-toolbar { gap: 9px; } .review-toolbar label, .review-toolbar input, .review-toolbar select { width: 100%; } }
+.review-guided { margin: 24px 0 12px; border: 1px solid #455a72; border-radius: 18px; padding: clamp(12px, 2.5vw, 24px); background: #172233; }
+.review-guided-heading { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 14px; }
+.review-guided-heading h2 { margin: 0; font-size: 1.2rem; }
+#review-guided-progress { color: #94dbc6; font-weight: 700; }
+#review-guided-card { margin: 0 auto; width: min(100%, 650px); }
+#review-guided-card .review-card video { aspect-ratio: 4 / 3; max-height: min(56vh, 510px); }
+#review-guided-card .review-card-header h2 { font-size: 1.3rem; }
+#review-guided-card .review-card-body .review-meta,
+#review-guided-card .review-card-body .review-prelim,
+#review-guided-card .review-card-body .review-note { display: none; }
+#review-guided-card .review-card-body label:has(.review-decision) { display: none; }
+.review-quick-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin: 14px auto; max-width: 650px; }
+.review-quick-choices button { min-height: 56px; font-size: 1.1rem; font-weight: 730; }
+.review-quick-choices button[data-quick-choice="keep"] { background: #14533d; border-color: #50b990; }
+.review-quick-choices button[data-quick-choice="uncertain"] { background: #5c4b28; border-color: #d7b36c; }
+.review-quick-choices button[data-quick-choice="reject"] { background: #642e38; border-color: #dc8890; }
+.review-guide-navigation { display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; }
+.review-guide-navigation button { min-height: 44px; }
+.review-catalogue { margin: 20px 0; }
+.review-catalogue summary { cursor: pointer; padding: 14px 17px; border: 1px solid #4c627e; border-radius: 10px; background: #202a3b; }
+.review-catalogue[open] summary { margin-bottom: 16px; }
+.review-shell button:focus-visible { outline: 3px solid #8adcfa; outline-offset: 2px; }
+@media (max-width: 560px) {
+  .review-shell { padding: 14px; }
+  .review-toolbar { gap: 9px; }
+  .review-toolbar label, .review-toolbar input, .review-toolbar select { width: 100%; }
+  .review-guided { margin: 15px -5px; }
+  #review-guided-card .review-card video { aspect-ratio: 1; max-height: 46vh; }
+  .review-quick-choices { gap: 5px; }
+  .review-quick-choices { position: sticky; bottom: 8px; z-index: 5; border-radius: 12px; padding: 6px; background: rgba(18, 26, 38, .95); box-shadow: 0 5px 26px #05070b; }
+  .review-quick-choices button { font-size: .88rem; padding: 8px 4px; }
+  .review-guide-navigation button { flex: 1; }
+}

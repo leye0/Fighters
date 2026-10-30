@@ -2,7 +2,7 @@
 
 **Statut : présélection visuelle, pas validation finale de gameplay.** Les 63 animations proviennent de fichiers FBX réellement acquis et convertis en GLB en recherche privée. L'examen consigné ici est fondé sur **quatre instants de la vue YBot `v000`**, plus **un instant dans chacun des quatre angles** des 63 prévisualisations MP4 hébergées par le dataset source. Ce n'est pas encore une lecture intégrale des animations. Aucun GLB retargeté sur un personnage de Fighters n'a encore été observé dans le moteur.
 
-Le [rapport par animation](../assets/mixamo-screening.json) contient **36 gestes prometteurs, 25 à comparer et 2 à déprioriser**, sans aucune suppression définitive. Ce classement ne vaut **pas approbation de Léon**. Le [lecteur interactif](../animation-review.html) lui permet de vérifier lui-même les **quatre angles**, choisir « garder », « écarter » ou « à revoir », annoter et exporter la décision avec identifiants et empreintes de source.
+Le [rapport par animation](../assets/mixamo-screening.json) contient **36 gestes prometteurs, 25 à comparer et 2 à déprioriser**, sans aucune suppression définitive. Ce classement ne vaut **pas approbation de Léon**. Le [lecteur interactif](../animation-review.html) lui permet de vérifier lui-même les **quatre angles**, et maintenant de **parcourir les 63 candidates une à une** : grands boutons « garder », « écarter », « à revoir », passage automatique à la suivante non évaluée, sauvegarde locale et export complet (identifiants/empreintes sources). Aucune opération manuelle sur les GLB n'est nécessaire pour la présélection.
 
 ## Observations concrètes
 

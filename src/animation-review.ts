@@ -1,6 +1,7 @@
 import shortlist from "../assets/mixamo-shortlist.json" with { type: "json" };
-import catalog from "../assets/mixamo-available-clips.json" with { type: "json" };
+import catalog from "../assets/mixamo-review-sources.json" with { type: "json" };
 import screening from "../assets/mixamo-screening.json" with { type: "json" };
+import { nextUnreviewed } from "./animation-review-flow.ts";
 import "./animation-review.css";
 
 type Choice = "unreviewed" | "keep" | "reject" | "uncertain";
@@ -29,6 +30,7 @@ function normalizeSelection(candidate: unknown): SelectionMap {
 }
 
 let selections: SelectionMap = {};
+let guidedFilename: string | null = null;
 try { selections = normalizeSelection(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}")); }
 catch { /* A fresh review should still work if local storage contains invalid JSON. */ }
 function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(selections)); }
@@ -41,11 +43,24 @@ const root = document.getElementById("animation-review");
 if (!root) throw new Error("Missing animation review element");
 root.className = "review-shell";
 root.innerHTML = `
-  <a href="/">← Fighters</a>
-  <a href="/animation-composite.html" style="margin-left: 20px">Tester la superposition des GLB en 3D →</a>
+  <a href="https://github.com/leye0/Fighters" target="_blank" rel="noopener noreferrer">← Projet Fighters</a>
   <h1>Choisir les animations de Fighters</h1>
   <p>63 mouvements Mixamo candidats (60 premiers choix et 3 pas arrière de boxe), avec <strong>4 angles vidéo chacun</strong>. Visionne-les, choisis « Garder » ou « Écarter » et exporte ton résultat en JSON. Le navigateur conserve également tes choix sur cet appareil.</p>
-  <p class="review-warning">Les notes de présélection sont seulement indicatives. Ce lecteur montre les prévisualisations YBot du dataset, pas les GLB retargetés sur les vrais combattants. Les droits des fichiers sources et la superposition des mouvements restent à vérifier.</p>
+  <p class="review-warning">Ce lecteur montre les vidéos originales sur YBot. Tu choisis seulement les mouvements qui te plaisent : nous testerons ensuite leur rendu sur nos personnages et leurs combinaisons pendant le combat.</p>
+  <section class="review-guided" aria-label="Sélection rapide, une animation à la fois">
+    <div class="review-guided-heading"><h2>Examen rapide des 63 animations</h2><span id="review-guided-progress" aria-live="polite"></span></div>
+    <div id="review-guided-card"></div>
+    <div class="review-quick-choices" aria-label="Ma décision rapide">
+      <button type="button" data-quick-choice="keep">✓ Garder</button>
+      <button type="button" data-quick-choice="uncertain">? À revoir</button>
+      <button type="button" data-quick-choice="reject">✕ Écarter</button>
+    </div>
+    <nav class="review-guide-navigation" aria-label="Parcours des animations">
+      <button id="review-previous" type="button">← Précédente</button>
+      <button id="review-next" type="button">Suivante →</button>
+      <button id="review-next-unreviewed" type="button">Prochaine non évaluée</button>
+    </nav>
+  </section>
   <section class="review-toolbar" aria-label="Recherche et actions">
     <label>Recherche<input id="review-search" type="search" placeholder="jab, kick, garde…" /></label>
     <label>Famille<select id="review-family"></select></label>
@@ -56,7 +71,10 @@ root.innerHTML = `
   </section>
   <p class="review-stats" id="review-stats" aria-live="polite"></p>
   <p class="review-alert" id="review-error" role="alert"></p>
-  <section class="review-grid" id="review-grid" aria-label="Vidéos des animations"></section>
+  <details id="review-catalogue" class="review-catalogue">
+    <summary>Afficher toutes les animations sous forme de grille (facultatif)</summary>
+    <section class="review-grid" id="review-grid" aria-label="Vidéos des animations"></section>
+  </details>
 `;
 
 const family = root.querySelector<HTMLSelectElement>("#review-family")!;
@@ -66,10 +84,13 @@ for (const group of shortlist.groups) family.add(new Option(groupNames[group.pur
 const search = root.querySelector<HTMLInputElement>("#review-search")!;
 const choiceFilter = root.querySelector<HTMLSelectElement>("#review-choice-filter")!;
 const grid = root.querySelector<HTMLElement>("#review-grid")!;
+const guidedCard = root.querySelector<HTMLElement>("#review-guided-card")!;
+const guidedProgress = root.querySelector<HTMLElement>("#review-guided-progress")!;
+const catalogue = root.querySelector<HTMLDetailsElement>("#review-catalogue")!;
 const stats = root.querySelector<HTMLElement>("#review-stats")!;
 const error = root.querySelector<HTMLElement>("#review-error")!;
 
-function card(filename: string, group: string): HTMLElement {
+function card(filename: string, group: string, guided = false): HTMLElement {
   const choice = selections[filename] ?? { choice: "unreviewed", note: "" };
   const candidate = preliminary.get(filename);
   const article = document.createElement("article");
@@ -90,6 +111,12 @@ function card(filename: string, group: string): HTMLElement {
   article.querySelector(".review-prelim")!.textContent = `Première impression : ${triageLabel[candidate?.triage ?? ""] ?? "non établie"} (non définitif)`;
   article.querySelector(".review-note")!.textContent = candidate ? `Examen initial : ${candidate.observation}` : "Examen initial non disponible";
   const video = article.querySelector("video")!;
+  if (guided) {
+    video.autoplay = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = "metadata";
+  }
   const angles = article.querySelector<HTMLElement>(".review-angles")!;
   function setAngle(view: number, initial = false) {
     const wasPlaying = !video.paused;
@@ -116,17 +143,21 @@ function card(filename: string, group: string): HTMLElement {
   select.value = choice.choice;
   const note = article.querySelector<HTMLTextAreaElement>("textarea")!;
   note.value = choice.note;
-  function record() {
+  function record(advance = false) {
     selections[filename] = { choice: select.value as Choice, note: note.value };
     article.dataset.choice = select.value;
     save();
     updateStats();
+    if (advance && guided) {
+      advanceGuided();
+      return;
+    }
   }
   select.addEventListener("change", () => {
-    record();
-    if (choiceFilter.value !== "all") render();
+    record(guided);
+    if (!guided && choiceFilter.value !== "all") render();
   });
-  note.addEventListener("input", record);
+  note.addEventListener("input", () => record(false));
   article.querySelector("a")!.setAttribute("href", `${FOLDER}/${encodeURIComponent(filename.replace(/\.fbx$/, ""))}`);
   return article;
 }
@@ -137,19 +168,69 @@ function updateStats() {
   stats.textContent = `${clips.length} animations · ${counts.keep} à garder · ${counts.reject} à écarter · ${counts.uncertain} à revoir · ${counts.unreviewed} non évaluées`;
 }
 
-function render() {
+function filteredClips() {
   const term = search.value.toLowerCase().trim();
   const group = family.value;
   const ownChoice = choiceFilter.value;
-  const shown = clips.filter(clip =>
+  return clips.filter(clip =>
     (group === "all" || clip.group === group) &&
     (ownChoice === "all" || (selections[clip.filename]?.choice ?? "unreviewed") === ownChoice) &&
     `${clip.filename} ${clipMetadata.get(clip.filename)?.sourceDescription ?? ""} ${preliminary.get(clip.filename)?.observation ?? ""}`.toLowerCase().includes(term)
   );
-  grid.replaceChildren(...shown.map(clip => card(clip.filename, clip.group)));
-  if (!shown.length) { const empty = document.createElement("p"); empty.className = "review-empty"; empty.textContent = "Aucune animation ne correspond aux filtres."; grid.append(empty); }
+}
+
+function render() {
+  const shown = filteredClips();
+  const selected = shown.find(clip => clip.filename === guidedFilename) ??
+    shown.find(clip => (selections[clip.filename]?.choice ?? "unreviewed") === "unreviewed") ?? shown[0];
+  guidedFilename = selected?.filename ?? null;
+  guidedCard.replaceChildren();
+  if (selected) {
+    guidedCard.append(card(selected.filename, selected.group, true));
+    const index = shown.findIndex(clip => clip.filename === selected.filename);
+    guidedProgress.textContent = `${index + 1}/${shown.length} · ${clips.filter(clip => !selections[clip.filename] || selections[clip.filename].choice === "unreviewed").length} encore à trier`;
+  } else {
+    guidedProgress.textContent = "Aucun résultat avec ces filtres";
+    const empty = document.createElement("p");
+    empty.textContent = "Change les filtres pour retrouver des animations.";
+    guidedCard.append(empty);
+  }
+  root!.querySelectorAll<HTMLButtonElement>("[data-quick-choice], #review-next, #review-previous, #review-next-unreviewed")
+    .forEach(button => { button.disabled = !selected; });
+  if (catalogue.open) {
+    grid.replaceChildren(...shown.map(clip => card(clip.filename, clip.group)));
+    if (!shown.length) { const empty = document.createElement("p"); empty.className = "review-empty"; empty.textContent = "Aucune animation ne correspond aux filtres."; grid.append(empty); }
+  } else grid.replaceChildren();
   updateStats();
 }
+
+function advanceGuided() {
+  const shown = filteredClips();
+  guidedFilename = nextUnreviewed(shown.map(clip => clip.filename), guidedFilename ?? "", selections) ?? guidedFilename;
+  render();
+}
+
+function stepGuided(direction: number) {
+  const shown = filteredClips();
+  if (!shown.length) return;
+  const index = shown.findIndex(clip => clip.filename === guidedFilename);
+  guidedFilename = shown[(index + direction + shown.length) % shown.length].filename;
+  render();
+}
+
+for (const button of root.querySelectorAll<HTMLButtonElement>("[data-quick-choice]")) {
+  button.addEventListener("click", () => {
+    if (!guidedFilename) return;
+    const original = selections[guidedFilename] ?? { choice: "unreviewed", note: "" };
+    selections[guidedFilename] = { ...original, choice: button.dataset.quickChoice as Choice };
+    save();
+    advanceGuided();
+  });
+}
+root.querySelector("#review-previous")!.addEventListener("click", () => stepGuided(-1));
+root.querySelector("#review-next")!.addEventListener("click", () => stepGuided(1));
+root.querySelector("#review-next-unreviewed")!.addEventListener("click", advanceGuided);
+catalogue.addEventListener("toggle", render);
 
 for (const element of [search, family, choiceFilter]) element.addEventListener("input", render);
 root.querySelector("#review-export")!.addEventListener("click", () => {

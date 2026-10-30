@@ -40,7 +40,15 @@ Le miroir public déjà utilisé dans **WarConquer** permet d'accéder aux vrais
 
 ### Choisir soi-même les animations
 
-Le [lecteur de sélection](animation-review.html) est une seconde page Vite, accessible à `http://127.0.0.1:5173/animation-review.html` après `npm run dev` (ou `/animation-review.html` sur un hébergement du build). Il propose **les 63 clips avec quatre prévisualisations MP4 distantes chacun**, la description Mixamo, un [tri initial provisoire](assets/mixamo-screening.json), les décisions « garder / écarter / à revoir » et un champ de commentaire. Les choix sont conservés localement dans le navigateur et **exportables/importables en JSON**, avec identifiants de mouvement et SHA-256, pour que Léon transmette une sélection sans perdre l'identité exacte des clips. Aucun vidéo ni FBX/GLB tiers n'est embarqué dans le dépôt.
+Le [lecteur de sélection](animation-review.html) est une seconde page Vite, accessible à `http://127.0.0.1:5173/animation-review.html` après `npm run dev` (ou `/animation-review.html` sur un hébergement du build). Il propose **les 63 clips avec quatre prévisualisations MP4 distantes chacun** et leur description Mixamo. **Par défaut, il présente une seule animation à la fois**, avec lecture directe et trois gros boutons « garder / écarter / à revoir ». Le choix passe automatiquement à la prochaine animation non évaluée ; progression, filtres, retour en arrière et grille complète optionnelle sont disponibles. Aucune manipulation ni téléchargement de GLB n'est nécessaire pour ce premier tri.
+
+Les choix sont conservés localement dans le navigateur et **exportables/importables en JSON**, avec identifiants de mouvement et SHA-256, pour que Léon transmette une sélection sans perdre l'identité exacte des clips. Aucun vidéo ni FBX/GLB tiers n'est embarqué dans le dépôt. Les prévisualisations sont lues directement depuis le service source.
+
+### Version légère, prête pour le téléphone
+
+Une version statique de ce **seul lecteur** se trouve sous [`docs/site/`](docs/site/animation-review.html). Elle ne pèse qu'environ **53 Ko hors ressources MP4 distantes**, sans WebGL, backend ni conversion locale. Sa source est la même que celle de l'application (pas une copie manuelle) : `npm run review:catalog` régénère les métadonnées des 63 clips, puis `npm run build:review` produit la page statique.
+
+Pour obtenir un lien Web utilisable directement depuis un téléphone, activer **Settings → Pages → Deploy from a branch → `main` / `/docs` → Save** dans GitHub (une seule fois). L'URL effective dépend du domaine Pages choisi par le propriétaire. **La configuration Pages n'est pas encore activée** ; ne pas présenter le lien comme fonctionnel avant de l'avoir vérifié.
 
 Pour inspecter les prévisualisations en privé sans dépendre du navigateur :
 

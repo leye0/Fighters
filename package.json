@@ -10,6 +10,8 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "npm run typecheck && vite build",
+    "build:review": "npm run typecheck && vite build --config vite.review.config.ts",
+    "review:catalog": "node scripts/generate-review-catalog.ts",
     "preview": "vite preview --host 127.0.0.1",
     "test": "node --test tests/*.test.ts",
     "test:engine": "node --test tests/*.test.ts",
