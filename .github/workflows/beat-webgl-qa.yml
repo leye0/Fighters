@@ -29,11 +29,12 @@ jobs:
           npm run build:review
           node scripts/check-baked-gameplay-motion.mjs \
             public/models/claudia.glb public/models/carla.glb public/models/realistic-man.glb
-      - name: Inspect genuine Mixamo jump knee trajectory (Claudia)
-        run: node scripts/analyze-jump-poses.mjs public/models/claudia.glb > /tmp/real-jump-poses.json
-      - name: Print authored knee pose samples
+      - name: Verify airborne knee flex with the actual runtime Jump clip on all 3 rigs
         run: |
-          node -e 'const d=require("/tmp/real-jump-poses.json");for(const [name,clip] of Object.entries(d)){if(!clip.poses)continue;console.log(name,clip.duration);console.log(clip.poses.map(p=>[p.fraction,p.knees,p.torsoLean]));}'
+          for character in claudia carla realistic-man; do
+            node scripts/analyze-jump-poses.mjs "public/models/$character.glb" > "/tmp/$character-jump.json"
+            node -e 'const r=require(process.argv[1]);console.log("JUMP_KNEE_QA",r.character,"source",r.rawMaxKneeBend,"arcade",r.arcadeMaxKneeBend)' "/tmp/$character-jump.json"
+          done
       - name: Serve the same review page as GitHub Pages
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 --directory docs >/tmp/fighters-http.log 2>&1 &
