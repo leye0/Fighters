@@ -65,7 +65,11 @@ test("verified Jump.fbx knee-tuck frames are NOT played during an arcade flight"
   assert.equal(transition.a, 0.10);
   assert.equal(transition.b, 0.76);
   assert.ok(transition.blend > 0 && transition.blend < 1);
-  for (const phase of [0.26, 0.40, 0.50, 0.75, 0.84, 0.90, 1]) {
+  const transitionEnd = jumpSourcePoseWindow(0.26);
+  assert.equal(transitionEnd.a, 0.10);
+  assert.equal(transitionEnd.b, 0.76);
+  assert.ok(Math.abs(transitionEnd.blend - 1) < 1e-9);
+  for (const phase of [0.27, 0.40, 0.50, 0.75, 0.84, 0.90, 1]) {
     const frame = jumpSourcePoseWindow(phase);
     assert.ok(frame.a >= 0.75 && frame.a <= 1,
       "middle of flight must avoid the 0.4–0.55 tucked-knee interval");
