@@ -6,7 +6,7 @@ import { readFile } from "node:fs/promises";
 import { AnimationMixer, SkinnedMesh, Vector3 } from "three";
 import { clone as cloneSkeleton } from "three/addons/utils/SkeletonUtils.js";
 import { loadRigWithoutImages } from "./embed-mixamo-gameplay.mjs";
-import { GAME_MOTION_NAMES } from "../src/render/beat-character-animator.ts";
+import { GAME_MOTION_NAMES, makeArcadeJumpClip } from "../src/render/beat-character-animator.ts";
 
 const file = process.argv[2];
 if (!file) throw Error("Usage: node scripts/analyze-jump-poses.mjs public/models/claudia.glb");
@@ -54,4 +54,17 @@ for(const name of names){
  const clip=gltf.animations.find(x=>x.name===name);if(!clip)throw Error("Missing "+name);
  result[name]={duration:clip.duration,poses:Array.from({length:25},(_,i)=>pose(clip,i/24))};
 }
+const raw = result[GAME_MOTION_NAMES.jump].poses;
+const sourceJump = gltf.animations.find(x=>x.name===GAME_MOTION_NAMES.jump);
+const retimed = makeArcadeJumpClip(sourceJump);
+result.arcadeJump={duration:retimed.duration,poses:Array.from({length:49},
+  (_,i)=>pose(retimed,i/48))};
+const maximumBend = poses=>Math.max(...poses.flatMap(p=>p.knees));
+result.rawMaxKneeBend=maximumBend(raw);
+result.arcadeMaxKneeBend=maximumBend(result.arcadeJump.poses);
 console.log(JSON.stringify(result));
+if(result.rawMaxKneeBend < 100)throw Error("Expected documented severe source tuck in Jump.fbx");
+if(result.arcadeMaxKneeBend > 80)throw Error(
+  "Arcade jump still contains excessive airborne knee bend: "+result.arcadeMaxKneeBend);
+if(result.rawMaxKneeBend-result.arcadeMaxKneeBend < 40)
+  throw Error("Retimed real jump did not adequately reduce knee tuck");
