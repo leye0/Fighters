@@ -112,7 +112,10 @@ export class BeatEmUpScene {
       const clone = cloneSkeleton(source) as Group;
       const holder = new Group();
       holder.add(clone);
-      fitRigToActor(holder, isHero ? 1.73 : 1.80);
+      // Normalize AFTER playing the actual Mixamo idle frame. Some acquired
+      // rigs have a small unanimated mesh extent but their skinned meshes
+      // expand hundreds of metres when the first keyed pose is applied.
+      // Scaling the rest pose hid both enemy models below the camera.
       clone.traverse(object => {
         if (object instanceof Mesh) {
           object.castShadow = true;
@@ -134,6 +137,13 @@ export class BeatEmUpScene {
           : playEmbeddedMotion(clone, sourceAnimation);
         this.mixers.set(actorId, mixer);
       }
+      // Reset parent yaw while measuring and centering the model in its
+      // local frame; fitRigToActor expects an unrotated parent.
+      const facingYaw = visual.rotation.y;
+      visual.rotation.y = 0;
+      visual.updateMatrixWorld(true);
+      fitRigToActor(holder, isHero ? 1.73 : 1.80);
+      visual.rotation.y = facingYaw;
     }
   }
 
