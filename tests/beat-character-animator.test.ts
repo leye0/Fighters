@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { AnimationClip, Group } from "three";
+import { AnimationClip, Group, Quaternion, QuaternionKeyframeTrack, Vector3 } from "three";
 import { DIAGNOSTIC_ACTORS, DIAGNOSTIC_STAGE } from "../src/game/beat-stage.ts";
-import { GAME_MOTION_NAMES, BeatCharacterAnimator, canAnimateRealGameMotions, movingRole } from
+import { GAME_MOTION_NAMES, BeatCharacterAnimator, canAnimateRealGameMotions, jumpSourcePoseWindow,
+  makeArcadeJumpClip, movingRole } from
   "../src/render/beat-character-animator.ts";
 
 test("real animation gate requires all seven actual baked Mixamo motions", () => {
@@ -55,4 +56,53 @@ test("movement reversal keeps authored walk even with residual opposite inertia"
   const actor = DIAGNOSTIC_ACTORS[0];
   assert.equal(movingRole(actor, { ...actor, xMm: actor.xMm + 15, facing: -1 }), "walk");
   assert.equal(movingRole(actor, { ...actor, xMm: actor.xMm - 15, facing: 1 }), "walk");
+});
+
+test("verified Jump.fbx knee-tuck frames are NOT played during an arcade flight", () => {
+  assert.deepEqual(jumpSourcePoseWindow(0), { a: 0, b: 0, blend: 0 });
+  assert.deepEqual(jumpSourcePoseWindow(0.11), { a: 0.10, b: 0, blend: 0 });
+  const transition = jumpSourcePoseWindow(0.20);
+  assert.equal(transition.a, 0.10);
+  assert.equal(transition.b, 0.76);
+  assert.ok(transition.blend > 0 && transition.blend < 1);
+  for (const phase of [0.26, 0.40, 0.50, 0.75, 0.84, 0.90, 1]) {
+    const frame = jumpSourcePoseWindow(phase);
+    assert.ok(frame.a >= 0.75 && frame.a <= 1,
+      "middle of flight must avoid the 0.4–0.55 tucked-knee interval");
+    assert.equal(frame.blend, 0);
+  }
+  assert.throws(() => jumpSourcePoseWindow(-0.01));
+  assert.throws(() => jumpSourcePoseWindow(1.01));
+});
+
+test("arcade airborne jump samples ONLY authored Mixamo quaternions and blends continuously", () => {
+  const duration = 2.1666667;
+  const sourceTimes = [0, 0.10, 0.25, 0.5, 0.76, 0.89, 1];
+  const sourceAngles = [15, 20, 85, 138, 40, 20, 15];
+  const axis = new Vector3(0, 0, 1);
+  const frames = sourceAngles.map(deg =>
+    new Quaternion().setFromAxisAngle(axis, deg * Math.PI / 180).toArray());
+  const source = new AnimationClip(GAME_MOTION_NAMES.jump, duration, [
+    new QuaternionKeyframeTrack(".bones[LeftLeg].quaternion",
+      sourceTimes.map(t => t * duration), frames.flat()),
+  ]);
+  const output = makeArcadeJumpClip(source);
+  assert.equal(output.name, GAME_MOTION_NAMES.jump);
+  assert.equal(output.duration, source.duration);
+  assert.ok(output.tracks[0] instanceof QuaternionKeyframeTrack);
+  const track = output.tracks[0];
+  const interpolant = track.createInterpolant();
+  const angles = Array.from({length:51},(_,i)=>{
+    const q = new Quaternion().fromArray(interpolant.evaluate(duration * i / 50));
+    assert.ok(Math.abs(q.length() - 1) < 0.001);
+    return q.angleTo(new Quaternion()) * 180 / Math.PI;
+  });
+  assert.ok(Math.max(...angles) < 55,
+    "the retimed source must not recreate the 138° tucked-knee airborne pose");
+  for(let i=1;i<angles.length;i++){
+    assert.ok(Math.abs(angles[i]-angles[i-1]) < 12,
+      "blend between authentic takeoff and flight poses must be continuous");
+  }
+  assert.ok(source.tracks[0].times.length === sourceTimes.length,
+    "source GLB animation remains intact");
 });
