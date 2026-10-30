@@ -1,6 +1,6 @@
 # Fighters — plan de développement du beat’em up 3D
 
-> **Direction approuvée par Léon le 30 octobre 2026 :** un **side-scrolling beat’em up d’action en vraie 3D**, dans l’esprit structurel de *Double Dragon*. On traverse rues, bâtiments, bacs de poubelles et toits sur plusieurs niveaux de hauteur ; on affronte plusieurs ennemis ; on avance/recul tout en se tournant vers une menace proche. Ce projet **n’est pas** un duel d’arène 1v1.
+> **Direction approuvée par Léon le 30 octobre 2026 :** un **side-scrolling beat’em up d’action en vraie 3D**, dans l’esprit structurel de *Double Dragon*. On traverse rues, bâtiments, bacs de poubelles et toits sur plusieurs niveaux de hauteur ; on affronte plusieurs ennemis ; on avance et recule avec une orientation **contrôlée uniquement par gauche/droite**, jamais par la position des ennemis. Ce projet **n’est pas** un duel d’arène 1v1.
 >
 > **Caméra :** en zone libre, le héros est **exactement au centre de l’image** : le monde défile sur les axes écran horizontal et vertical. Lorsqu’une limite de niveau est visible (gauche, droite, haut ou bas), la caméra s’arrête sur cette frontière et le héros peut se rapprocher du bord de l’écran. Même règle aux quatre coins. **Démo jouable en paysage uniquement** : en portrait, simulation et commandes sont suspendues derrière un panneau de rotation ; les tests de caméra peuvent néanmoins vérifier les deux ratios.
 > 
@@ -47,7 +47,7 @@ Ce guide est **opérationnel** : il décrit ce qui est réellement présent sur 
 ### Source de vérité et décisions déjà prises
 
 1. **Dépôt :** `https://github.com/leye0/Fighters`, branche **`main`**, commits directs, pas de branche de fonctionnalité ni de PR ; lire `AGENTS.md` puis ce plan avant de coder. Vérifier le HEAD distant et l’état de la copie locale. **Une copie locale utilisée lors des premières interventions était en retard sur `main` et comportait des changements non suivis par l’historique distant** : ne jamais pousser, rebaser, écraser ou supprimer ses fichiers à l’aveugle. Partir d’un checkout frais ou réconcilier précisément les écarts.
-2. **Jeu cible :** beat’em up solo 3D à scrolling, dans l’esprit de *Double Dragon*. Ce n’est plus un match 1v1 à six boutons et rounds. Une caméra 3D à prédominance latérale montre un trajet X, une profondeur Z réellement jouable et des hauteurs Y de rue, bennes, bâtiments et toits. Le héros fait face à un ennemi proche **même quand le joueur recule**. En absence de cible, il peut se tourner vers sa marche.
+2. **Jeu cible :** beat’em up solo 3D à scrolling, dans l’esprit de *Double Dragon*. Ce n’est plus un match 1v1 à six boutons et rounds. Une caméra 3D à prédominance latérale montre un trajet X, une profondeur Z réellement jouable et des hauteurs Y de rue, bennes, bâtiments et toits. Le héros **ne se tourne jamais automatiquement vers un ennemi**, même proche : gauche/droite pilote exclusivement la direction du personnage, qui reste stable sans commande.
 3. **Caméra solo :** héros **exactement centré dans l’image sur les deux axes projetés** tant que le niveau continue. Le centre caméra se bloque à la limite **gauche/droite/haut/bas** ; alors seulement le héros se déplace vers le bord de l’écran. Une limite sur X n’empêche pas le scrolling vertical, et vice-versa. **Ne pas** reprendre le cadrage historique sur le milieu de deux adversaires, ajouter une dead zone qui décale le héros ou employer un easing qui invalide constamment le centrage. Les zooms cinématiques sont des exceptions futures explicites.
 4. **Géométrie temporaire :** Léon accepte **sols, boîtes et plateformes sans design détaillé** pour tester les collisions, les sauts, la caméra, les ennemis et les combats. Ces formes doivent être de vrais objets 3D cohérents avec la simulation, pas un simple décor peint. **Le design artistique des lieux est la dernière grosse phase**, après les mécanismes ; ne pas passer du temps maintenant sur des textures de rue, façades et poubelles photoréalistes.
 5. **63 animations :** Léon a regardé les prévisualisations et dit **« je les ai toutes gardées, les noms sont bons »**. Les 63 sont retenues sans renommage ni élimination ; ne pas reprendre l’ancienne présélection automatique (36/25/2) pour en rejeter. `assets/mixamo-selected.json` contient exactement 63 `filename`, `motionId`, `sourceSha256`, `researchGlbSha256` et `choice: keep`. C’est la **sélection des mouvements source**, pas 63 attaques jouables ni un retargeting approuvé.
@@ -101,7 +101,7 @@ Ce guide est **opérationnel** : il décrit ce qui est réellement présent sur 
 - [x] Créer une saisie `horizontal/depth/jump` séparée pour clavier, manette et contrôles tactiles, avec saut sur front d'appui.
 - [x] Relier `projectBeatFocus` / `followBeatCamera` à une vraie `PerspectiveCamera`, avec dimensions de viewport issues du FOV et de l'aspect. Tests numériques de **l'alignement réel à l'écran** à plusieurs profondeurs/hauteurs/ratios ; perception visuelle à valider.
 - [ ] Vérifier **quatre frontières et quatre coins** : centre exact lorsqu’on peut scroller ; à une frontière, le décor s’arrête et le héros se rapproche du bord. Tester aussi changement de profondeur, saut, hauteur de toit, fenêtre paysage étroite, et le **blocage de jeu en portrait**. **Ne pas recentrer sur un groupe d’ennemis** au détriment du héros en solo.
-- [x] Montrer la cible et l’orientation calculées : marqueur frontal 3D, recul qui conserve la cible. La rotation du vrai rig reste à valider.
+- [x] Dissocier la cible technique de la direction du personnage : aucune acquisition ou perte de cible ne modifie le regard ; vérifier le visuel du demi-tour sur les vrais rigs.
 - [x] Ajouter diagnostics commutables : tick, X/Z/Y, vitesse verticale, `supportingPlatformId`, `targetId`, bord(s) caméra actifs, FPS et draw calls. La page affiche son statut de diagnostic.
 - [ ] Tester l’absence de traversée d’une plateforme trop haute, le saut sur le bloc, la chute depuis la plateforme haute et la liberté de marche en profondeur. **Attention :** le noyau actuel utilise des surfaces rectangulaires et le point d’appui central ; les collisions latérales complexes, sous-face, capsule du corps, pentes, rebords, interactions et IA de navigation restent des tâches distinctes. Ne pas annoncer ces capacités comme faites.
 - [x] Ajouter et déployer l’entrée Pages du beat’em up **sans supprimer le lecteur des 63 vidéos**. [URL de la scène](https://www.streamlev.com/Fighters/site/beat-em-up.html) et [lecteur d'animations](https://www.streamlev.com/Fighters/site/animation-review.html) disponibles. Le navigateur de contrôle distant ne dispose pas de contexte WebGL ; **la scène n'y a pas été validée visuellement** et signale maintenant cette indisponibilité.
@@ -133,6 +133,12 @@ npm run build:review
 - Les 63 noms viennent du manifeste, **pas** d’une nouvelle sélection du modèle. Le pack `Fighters-selected-63.glb` est un YBot **de recherche** ; seul un personnage définitif avec retargeting, contacts mesurés et validation humaine alimentera `assets/animation-inventory.json`.
 - GitHub Pages n’est **pas** le build principal du jeu actuellement : il sert le lecteur vidéo et la démo 3D via `docs/site` et le domaine `www.streamlev.com/Fighters`. Désormais la workflow Pages compile `src/` lors d'un push pertinent, puis déploie les assets copiés de `public/` ; vérifier le succès de ce workflow avant d'affirmer qu'un changement est visible sur téléphone.
 - Toute case `[x]` ajoutée doit correspondre à un code exécutable, des tests et une preuve adaptée ; mettre le plan à jour **dans le même commit direct sur `main`**. Ne pas utiliser les résultats de rendu des GLB synthétiques comme validation visuelle de vrais personnages.
+
+## Réglage manuel du facing et de la physique — retour iPhone du 30 octobre 2026
+
+**Nouvelle décision explicite du propriétaire : retirer entièrement la fonction qui tourne l'héroïne vers l'ennemi.** `beat-em-up-world.ts` conserve éventuellement `targetId` pour le combat futur mais n'en déduit **jamais** le facing. Seule la commande gauche/droite le met à jour ; sans commande, le regard demeure stable. Des tests couvrent les ennemis qui croisent le personnage, l'absence de rotation au repos, les changements gauche/droite et les ennemis de chaque côté.
+
+Le vrai clip Mixamo `Left_Turn_3` reste disponible pour le demi-tour demandé auparavant, mais il est joué en **0,26 s maximum** et peut être interrompu à la première inversion de direction. La marche n'attend pas qu'un adversaire soit regardé. Le réglage de la scène passe de `gravity=19 / jump=310` (envol brusque d'environ 0,54 s) à `gravity=8 / jump=210` (arc d'environ 0,88 s), avec `Fighters_Mixamo_Fall` dès la descente ; l'accélération et le freinage sont un peu plus réactifs. **Ces ajustements sont des modifications de code, pas une validation perceptuelle.** Le dos qui penche vers l'arrière en avançant, le jeu sur iPhone et les appuis au sol restent à vérifier avec de vraies captures en mouvement. L'ancienne version contrôlée par ciblage ne doit pas être réintroduite.
 
 ## 0. Gouvernance et architecture globale
 
@@ -186,14 +192,14 @@ npm run build:review
 
 ## 3. Orientation, ciblage et lecture des ennemis
 
-- [x] Séparer la direction du déplacement de celle du regard/combat dans l’état autoritatif.
+- [x] Séparer le ciblage technique du regard : **l'axe horizontal commandé détermine seul le facing** et une commande neutre conserve celui-ci.
 - [x] Détecter un ennemi vivant proche dans le plan X/Z et à une hauteur compatible.
 - [x] Conserver une cible tant qu’elle reste dans un rayon de sortie plus large que le rayon d’acquisition ; pas de basculement à chaque frame.
 - [x] Choisir une cible de façon stable avec plusieurs ennemis équidistants et cesser de cibler un ennemi vaincu.
-- [x] Reculer sans tourner le dos à l’adversaire proche (test déterministe).
-- [ ] Rendre en **3D** l’orientation du torse et des pieds vers la cible, avec rotations continues et raccords d’animation naturels.
-- [x] Préparer une **vraie animation Mixamo de demi-tour** quand le personnage inverse son orientation : `Left_Turn_3.fbx` (*Standing 180 Left Turn*, hors des 63 source retenues), converti et retargeté sur les trois rigs de jeu, avec rotation de hanches source ≈ 176° ; un contrôleur attend la fin du clip avant le basculement de l'orientation visuelle du rig. **L'intégration et la publication sont réussies ; la validation visuelle par Léon reste à faire.**
-- [ ] Adapter ciblage et orientation aux adversaires situés devant/derrière mais décalés en profondeur.
+- [x] **Retirer l'orientation automatique vers les ennemis**, conformément à la demande du 30 octobre 2026 ; ajouter des tests où deux adversaires se croisent sans pouvoir faire tourner l'héroïne.
+- [ ] Valider les changements gauche/droite sur les rigs réels, avec posture stable et raccords d'animation naturels ; ne jamais piloter torse ou pieds vers une cible automatiquement.
+- [x] Préparer une **vraie animation Mixamo de demi-tour** quand le personnage inverse son orientation : `Left_Turn_3.fbx` (*Standing 180 Left Turn*, hors des 63 source retenues), converti et retargeté sur les trois rigs de jeu, avec rotation de hanches source ≈ 176° ; le contrôleur garde un demi-tour Mixamo raccourci à 0,26 s maximum et **interruptible** si le joueur inverse immédiatement sa direction. **L'intégration et la publication sont réussies ; la validation visuelle par Léon reste à faire.**
+- [ ] Pour les attaques, conserver le ciblage optionnel des adversaires décalés en profondeur sans le relier à la direction visuelle.
 - [ ] Ne pas cibler à travers un mur, une plateforme opaque ou une séparation de hauteur infranchissable.
 - [ ] Relier attaques, projections, garde et hitboxes à l’orientation autoritative, sans auto-frappe ni coup garanti.
 - [ ] Prévoir priorités de menace, cible explicitement choisie et changements de cible volontaires si nécessaires au gameplay.
@@ -329,7 +335,7 @@ Pendant les essais de parcours, utiliser **un éclairage simple et lisible**. La
 - [ ] Concevoir HUD lisible : santé, ressources, ennemis, progression, arme/objet, objectifs et indicateurs contextuels.
 - [ ] Créer écran titre, choix du héros, début de niveau, pause, reprises, fin de section et victoire/défaite.
 - [ ] Définir progression, sauvegarde locale versionnée, checkpoints et difficulté.
-- [ ] Créer mini-tutoriel jouable pour profondeur, franchissement d’obstacles, orientation vers ennemi et combos.
+- [ ] Créer mini-tutoriel jouable pour profondeur, franchissement d’obstacles, direction gauche/droite, demi-tour et combos.
 - [ ] Gérer informations d’interaction sans encombrer le centre d’un écran mobile.
 - [ ] Assurer localisation français/anglais et interface accessible.
 - [ ] Tester HUD et textes sur ratios extrêmes avec caméra centrée et frontières.
