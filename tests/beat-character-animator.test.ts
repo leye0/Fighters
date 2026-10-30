@@ -3,7 +3,7 @@ import test from "node:test";
 import { AnimationClip, Group, Quaternion, QuaternionKeyframeTrack, Vector3 } from "three";
 import { DIAGNOSTIC_ACTORS, DIAGNOSTIC_STAGE } from "../src/game/beat-stage.ts";
 import { GAME_MOTION_NAMES, BeatCharacterAnimator, canAnimateRealGameMotions, jumpSourcePoseWindow,
-  makeArcadeJumpClip, movingRole } from
+  makeArcadeJumpClip, movingRole, sampleMixamoQuaternion } from
   "../src/render/beat-character-animator.ts";
 
 test("real animation gate requires all seven actual baked Mixamo motions", () => {
@@ -95,9 +95,8 @@ test("arcade airborne jump samples ONLY authored Mixamo quaternions and blends c
   assert.equal(output.duration, source.duration);
   assert.ok(output.tracks[0] instanceof QuaternionKeyframeTrack);
   const track = output.tracks[0];
-  const interpolant = track.createInterpolant();
   const angles = Array.from({length:51},(_,i)=>{
-    const q = new Quaternion().fromArray(interpolant.evaluate(duration * i / 50));
+    const q = sampleMixamoQuaternion(track as QuaternionKeyframeTrack, duration * i / 50);
     assert.ok(Math.abs(q.length() - 1) < 0.001);
     return q.angleTo(new Quaternion()) * 180 / Math.PI;
   });
