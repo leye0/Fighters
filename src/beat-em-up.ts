@@ -83,8 +83,10 @@ async function startBeatScene(): Promise<void> {
   let active = true;
   const tickDuration = 1000 / 60;
   toggle.addEventListener("click", () => {
-    diagnostics.hidden = !diagnostics.hidden;
-    toggle.setAttribute("aria-pressed", String(!diagnostics.hidden));
+    const expanded = diagnostics.hidden;
+    diagnostics.hidden = !expanded;
+    toggle.setAttribute("aria-expanded", String(expanded));
+    toggle.textContent = expanded ? "Masquer les stats" : "Stats";
   });
 
   function frame(now: number): void {
@@ -176,5 +178,6 @@ void startBeatScene().catch(error => {
   status.textContent = "Impossible de charger les vrais rigs 3D ou d'initialiser WebGL.";
   diagnostics.textContent = String(error);
   diagnostics.hidden = false;
-  toggle.setAttribute("aria-pressed", "true");
+  toggle.setAttribute("aria-expanded", "true");
+  toggle.textContent = "Masquer les stats";
 });
