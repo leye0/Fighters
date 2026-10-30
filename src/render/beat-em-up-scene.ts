@@ -84,6 +84,17 @@ export class BeatEmUpScene {
       const url = new URL(CHARACTER_MODEL_FILES[key], document.baseURI).href;
       const gltf = await loader.loadAsync(url);
       requireSkinnedRig(gltf.scene);
+      // Do not render the known-broken SkeletonUtils-baked assets from
+      // 2026-10-30. Only the WarConquer inverse-bind rebuild is displayable.
+      const json = gltf.parser.json as {
+        animations?: { name?: string; extras?: { retargeting?: string } }[];
+      };
+      const gameplayClips = (json.animations ?? []).filter(a =>
+        a.name?.startsWith("Fighters_Mixamo_"));
+      if (gameplayClips.length !== 7 ||
+          gameplayClips.some(a => a.extras?.retargeting !== "warconquer-inverse-bind-world-v1")) {
+        throw new Error("Character animations quarantined: awaiting corrected bind-pose retargeting");
+      }
       sources.set(key, gltf.scene);
       animations.set(key, gltf.animations);
     }));
