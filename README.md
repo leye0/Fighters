@@ -34,7 +34,7 @@ Ces choix sont des décisions de départ documentées ; tout changement doit êt
 
 ## Direction beat’em up : rues, toits et ennemis multiples
 
-**[Architecture actualisée — esprit Double Dragon](docs/beat-em-up-architecture.md).** Le moteur possède maintenant un noyau de navigation à 60 Hz avec marche en profondeur, plateformes à hauteurs différentes, vrais sauts/chutes et ciblage stable d’ennemis proches ; ce noyau est testé mais n’est pas encore branché à une scène jouable. Le duel 1v1 existant demeure un banc de tests du combat, non le format final du jeu.
+**[Architecture actualisée — esprit Double Dragon](docs/beat-em-up-architecture.md).** Le moteur possède maintenant un noyau de navigation à 60 Hz avec marche en profondeur, plateformes à hauteurs différentes, vrais sauts/chutes et ciblage stable d’ennemis proches ; ce noyau est testé mais n’est pas encore branché à une scène jouable. La caméra doit conserver le héros au **centre exact de l’image**, sauf près des limites haut/bas/gauche/droite de scrolling ; son contrôleur logique est testé, pas encore branché au rendu. **Les plateformes et le parcours seront volontairement dessinés en blocs simples pendant le développement** ; leur design détaillé viendra après les autres systèmes. Le duel 1v1 existant demeure un banc de tests du combat, non le format final du jeu.
 
 ## Animations Mixamo réellement retrouvées
 

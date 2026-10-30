@@ -8,6 +8,16 @@ Une **vraie scène 3D**, présentée par une caméra principalement latérale, d
 
 Le joueur avance et recule librement. Lorsqu’un ennemi pertinent est proche, le corps et les coups **s’orientent vers cet ennemi indépendamment de la direction du déplacement**. Reculer en regardant l’ennemi n’est donc pas la même chose que tourner le dos et marcher. À distance, le regard/la posture reviennent vers le déplacement ou la dernière direction mémorisée.
 
+## Géométrie temporaire : simplicité volontaire
+
+**Décision du 30 octobre 2026 :** les parcours et plateformes **ne reçoivent pas encore leur design visuel final**. Au cours de la mise au point, la rue peut être un plan neutre, le bâtiment une succession de volumes simples et le bac de poubelles un bloc de couleur. Le joueur doit cependant pouvoir y marcher, sauter, tomber, combattre et être suivi par la caméra avec les vraies règles. L’habillage architectural et les textures photoréalistes viennent **après les autres systèmes du jeu**. Ce choix ne retire aucune fonctionnalité ni aucun objectif de qualité de la version finie.
+
+## Caméra de scrolling et limites de l’écran
+
+Le héros se trouve au **centre exact de l’image** tant que la caméra peut se déplacer. La caméra suit la projection du héros sur les deux axes écran : X (progression) et axe vertical projeté (hauteur Y + éventuelle profondeur Z). Les limites de chaque section forment un rectangle de scrolling ; on **borne le centre caméra** avec la demi-largeur et la demi-hauteur visibles. Quand la caméra atteint le bord gauche, droit, haut ou bas, le héros continue vers ce bord de l’image tandis que le décor cesse de défiler sur cet axe. Une autre dimension peut continuer à défiler indépendamment ; aux coins, les deux s’arrêtent. Si le niveau est plus petit que l’écran, on cadre le niveau entier sans mouvement inutile.
+
+Le calcul pur est dans `src/render/beat-scroll-camera.ts`, testé pour les quatre frontières, les coins, les petits espaces et le portrait. **Son branchement sur la vraie caméra Three.js et ses bornes de perspective reste à faire** : ce n’est pas encore une vérification visuelle.
+
 ## Repère déterministe, 60 ticks/s
 
 | Axe | Usage | Exemple |
@@ -44,14 +54,15 @@ Les trois valeurs sont en **millimètres entiers** dans la simulation. La camér
 - Hitboxes et pushboxes réellement tridimensionnelles ou en volumes X/Z/Y, y compris décalage de profondeur, hauteur du sol et attaques au-dessus/dessous.
 - Ennemis avec navigation multi-surfaces : descente, montée, contournement, détection des zones accessibles, distance d’attaque et alignement de profondeur.
 - Architecture compatible avec plusieurs héros / coopération ultérieure, sans imposer une limite de deux acteurs au monde.
-- Caméra latérale 3D suivant la progression X avec anticipation, bornes de section, maintien des acteurs importants dans le cadre et gestion des occlusions ; pas une arène fixe.
+- Caméra latérale 3D suivant le héros **au centre exact de l’écran** sur les deux axes projetés, jusqu’aux frontières de scrolling gauche/droite/haut/bas ; pas de recentrage permanent sur plusieurs ennemis qui décentrerait le héros solo.
 - Chaque niveau décrit ses plateformes, obstacles, entrées/sorties, apparitions d’ennemis, interactions et changements d’ambiance par **données**, pas par des conditions codées pour une benne particulière.
 
 ## Ce qui existe réellement dans le code
 
 - **Acquis :** `src/engine/beat-em-up-world.ts` : déplacement entier X/profondeur, diagonales normalisées, appui sur des surfaces de hauteurs différentes, saut/chute, blocage des hautes marches, acquisition d’une cible proche avec hystérésis, orientation gauche/droite indépendante du déplacement, ennemis multiples ; tests de simulation.
+- **Acquis :** `src/render/beat-scroll-camera.ts` : centrage logique exact et quatre frontières indépendantes, neuf tests ; rendu Three.js pas encore connecté.
 - **Acquis :** [63 animations source retenues par Léon](../assets/mixamo-selected.json), avec identité et empreintes. Le script `scripts/pack-selected-mixamo.py` sait construire depuis 63 GLB privés **un seul GLB YBot de recherche** à 63 noms distincts en ne recopiant que les canaux d’animation et une seule géométrie source.
-- **Pas encore fait :** connexion de ce monde aux contrôles/rendu/états de combat de production, volumes d’ennemis, collisions latérales complètes entre acteurs, ledges complexes, escalade, navigation des IA, caméra de scrolling, level design et modèles photoréalistes.
+- **Pas encore fait :** connexion de ce monde aux contrôles/rendu/états de combat de production, volumes d’ennemis, collisions latérales complètes entre acteurs, ledges complexes, escalade, navigation des IA, branchement de la caméra de scrolling et modèles photoréalistes. Les surfaces minimalistes sont explicitement acceptées pendant le développement.
 - **Pas encore certifié :** rendu sur les personnages définitifs, retargeting, appuis de pieds, transitions, contacts et compatibilité des mélanges marche/frappe/saut. Les tests d’assemblage de GLB utilisent des fichiers synthétiques ; les 63 vrais fichiers doivent encore être réacquis pour un test réel de pack.
 - **Historique maintenu :** `src/engine/simulation.ts` et les tests 1v1 prouvent certains comportements de combat à 60 Hz, mais ne définissent plus la géométrie ou la limite d’acteurs du jeu final.
 

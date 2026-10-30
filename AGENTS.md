@@ -26,7 +26,8 @@ Le document directeur est **docs/production-plan.md**. Le consulter avant toute 
 - Simulation autoritative à **60 ticks/s** séparée du rendu et de l'animation.
 - Affichage 3D avec caméra latérale qui défile : X = progression, Z = profondeur de la rue, Y = vraie élévation des plateformes (toits, bacs de poubelles, escaliers). Les trois axes sont simulés à 60 Hz en millimètres entiers.
 - Ennemis multiples, orientation du héros vers une cible proche avec hystérésis, indépendamment du déplacement. Reculer en gardant l’ennemi en face est un comportement requis.
-- Décrire les plateformes et obstacles par des données génériques. Voir [docs/beat-em-up-architecture.md](docs/beat-em-up-architecture.md).
+- Décrire les plateformes et obstacles par des données génériques. **Décor de test volontairement minimaliste** (blocs/plans) jusqu’à l’achèvement des mécanismes, puis design photoréaliste des lieux. Voir [docs/beat-em-up-architecture.md](docs/beat-em-up-architecture.md).
+- **Caméra solo : héros centré sur l’image** tant que le scrolling reste possible ; seuls les bords gauche, droit, haut ou bas du niveau autorisent son décentrage.
 - Les hitboxes, hurtboxes, timings, états et dégâts proviennent des données de simulation ; le squelette visuel ne décide jamais du résultat d'un coup.
 - Replays reproductibles, tests de règles, données de frame, tests navigateur et mesure de performance.
 - Priorité simultanée au **rendu photoréaliste maximal** et à la **fluidité/puissance mesurée**. Les profils dégradés restent explicites ; la référence de qualité Ultra ne doit pas être abaissée tacitement.
