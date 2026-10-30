@@ -35,7 +35,9 @@ export function movingRole(previous: BeatActor, actor: BeatActor): MovingRole {
   const horizontal = actor.xMm - previous.xMm;
   const depth = actor.depthMm - previous.depthMm;
   if (!horizontal && !depth) return "idle";
-  if (horizontal && Math.sign(horizontal) !== actor.facing) return "walkBackward";
+  // Facing follows the explicit left/right command, not auto-targeting.
+  // The small inertial velocity from a direction reversal must not trigger
+  // the old face-the-enemy backpedal gait.
   return "walk";
 }
 
@@ -50,6 +52,7 @@ export class BeatCharacterAnimator {
   private readonly isHero: boolean;
   private readonly gravityMmPerTick2: number;
   private activeName: string | null = null;
+  private authoredJumpInFlight = false;
   private visualFacing: Facing;
   private turningTo: Facing | null = null;
   private turnElapsed = 0;
@@ -131,12 +134,16 @@ export class BeatCharacterAnimator {
       }
       return;
     }
+    // A jump is one authored motion across the ENTIRE ballistic flight,
+    // including descending frames; the separate genuine Fall clip is used
+    // only when walking off a ledge or dropping through a platform.
+    if (actor.supportingPlatformId !== null) this.authoredJumpInFlight = false;
+    else if (before.supportingPlatformId !== null &&
+             actor.verticalVelocityMmPerTick > 0) this.authoredJumpInFlight = true;
     const role = movingRole(before, actor);
-    const name = role === "idle" ? GAME_MOTION_NAMES.idle
-      : role === "walkBackward" ? GAME_MOTION_NAMES.walkBackward
-        : role === "jump" ? GAME_MOTION_NAMES.jump
-          : role === "fall" ? GAME_MOTION_NAMES.fall
-            : this.isHero ? GAME_MOTION_NAMES.walkFeminine : GAME_MOTION_NAMES.walk;
+    const name = actor.supportingPlatformId === null
+      ? (this.authoredJumpInFlight ? GAME_MOTION_NAMES.jump : GAME_MOTION_NAMES.fall)
+      : role === "idle" ? GAME_MOTION_NAMES.idle : GAME_MOTION_NAMES.walk;
     this.playBase(name);
     const sourceMetersPerSecond = SOURCE_WALK_METERS_PER_SECOND[name];
     if (sourceMetersPerSecond) {
@@ -147,8 +154,9 @@ export class BeatCharacterAnimator {
       this.actions.get(name)!.setEffectiveTimeScale(gameMetersPerSecond / sourceMetersPerSecond);
     }
     if (name === GAME_MOTION_NAMES.jump) {
-      // The authored jump begins on takeoff; a separate real Mixamo fall
-      // takes over after the apex. Root height is entirely deterministic.
+      // Let the authored Mixamo jump cover ascent, apex and descent.
+      // Ledge falls use the separate Mixamo fall clip; only the deterministic
+      // world controls root elevation.
       const flightSeconds = 2 * actor.jumpSpeedMmPerTick / this.gravityMmPerTick2 / 60;
       this.actions.get(name)!.setEffectiveTimeScale(
         this.actions.get(name)!.getClip().duration / flightSeconds);
