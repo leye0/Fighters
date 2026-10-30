@@ -8,6 +8,8 @@ type Clip = {
   originalFrames: number; sourceFps: number; family: string; sourceDescription: string;
   sha256: string | null; binaryChecked?: boolean; runtimeStatus: string;
   licenseReview: string; animationReview: string;
+  researchConversionStatus?: string;
+  researchGlb?: { sha256: string; bytes: number; animations: number; channels: number; nodes: number; skins: number };
 };
 const root = new URL('../', import.meta.url);
 const catalog = JSON.parse(readFileSync(new URL('../assets/mixamo-available-clips.json', import.meta.url), 'utf8')) as {
@@ -43,6 +45,9 @@ test('research downloads are checked separately from playable animations', () =>
   assert.equal(catalog.source.license, 'adobe-mixamo-terms');
   assert.equal(catalog.source.rawRedistributionInPublicRepoAllowed, false);
   assert.equal(catalog.selection.convertedIntoRuntime, 0);
+  assert.equal(catalog.selection.researchGlbConverted, 117);
+  assert.equal(catalog.selection.researchGlbFailed, 0);
+  assert.equal(catalog.selection.sourceFbxMissingForFullResearchSet, 354);
   assert.equal(catalog.clips.filter(c => c.binaryChecked).length, 117);
   assert.equal(catalog.selection.binaryFbxVerifiedInPrivateResearch, 117);
   for (const clip of catalog.clips) {
@@ -50,6 +55,12 @@ test('research downloads are checked separately from playable animations', () =>
     assert.equal(clip.licenseReview, 'pending_for_integration');
     assert.equal(clip.animationReview, 'pending');
     if (clip.binaryChecked) assert.match(clip.sha256 ?? '', /^[a-f0-9]{64}$/);
+    if (clip.researchConversionStatus === 'validated_private_glb') {
+      assert.equal(clip.binaryChecked, true);
+      assert.match(clip.researchGlb?.sha256 ?? '', /^[a-f0-9]{64}$/);
+      assert.ok((clip.researchGlb?.channels ?? 0) > 0);
+      assert.ok((clip.researchGlb?.animations ?? 0) > 0);
+    }
   }
   const approved = JSON.parse(readFileSync(new URL('../assets/animation-inventory.json', import.meta.url), 'utf8')) as { clips: unknown[] };
   assert.equal(approved.clips.length, 0, 'metadata is not proof of playable combat');

@@ -8,7 +8,7 @@ Le projet **WarConquer** documente une source alternative utile : [bibliothèque
 - Index d'origine utilisés : [animation_motion_prompts.json](https://huggingface.co/datasets/Linzhan/Mixamo-Animations-Characters/blob/main/animation_motion_prompts.json) et [animation_motion_frames.json](https://huggingface.co/datasets/Linzhan/Mixamo-Animations-Characters/blob/main/animation_motion_frames.json).
 - **471 candidats de mouvements réels (triés par nom ET description, non encore visionnés)**, noms et identifiants connus, ont été retenus pour Fighters dans [le catalogue vérifiable](../assets/mixamo-available-clips.json) : garde, déplacements, poings, enchaînements, coups de pied, spéciaux, défenses et réactions.
 - **117 FBX binaires ont été réellement téléchargés à titre de vérification technique**, dans un dossier privé temporaire hors dépôt, inspectés comme FBX et hachés en SHA-256 : `Fighting_Idle.fbx`, `Boxing_3.fbx`, `Boxing_7.fbx`, `Jab_Cross.fbx`, `Kicking_6.fbx`, `Mma_Kick_5.fbx`, `Punch_Combo.fbx`. Les **117 empreintes** sont dans le catalogue.
-- **0 clip dans le produit jouable** ; acquisition technique et exploitation artistique/légale sont des étapes différentes.
+- **117 GLB animés réellement convertis en privé** (117/117, 0 erreur, environ 290 Mo), avec nombre de canaux et empreintes dans l'inventaire ; **0 clip dans le produit jouable**. Acquisition, conversion, retargeting, validation visuelle et licence sont des étapes différentes.
 
 Ce miroir ne demande pas d'ouvrir Mixamo dans un navigateur. On peut donc récupérer les clips via script, sans page de connexion éphémère. Il n'est pas un site officiel Adobe ni une nouvelle licence indépendante.
 
@@ -42,7 +42,7 @@ Exemples de gestes présents dans l'index : `Boxing_3.fbx` (cross), `Boxing_7.fb
 
 ## Conversion réelle FBX vers GLB animé
 
-Le même convertisseur que WarConquer (binaire `FBX2glTF` du paquet `fbx2gltf@0.9.7-p1`) a été testé avec succès sur le vrai `Jab_Cross.fbx` : GLB valide de 2,4 Mo avec **1 animation, 67 canaux, 69 nœuds et 2 skins**. Ce fichier a été généré hors du dépôt public.
+Le même convertisseur que WarConquer (binaire `FBX2glTF` du paquet `fbx2gltf@0.9.7-p1`) a été testé avec succès sur le vrai `Jab_Cross.fbx` : GLB valide de 2,4 Mo avec **1 animation, 67 canaux, 69 nœuds et 2 skins**. Ce fichier a été généré hors du dépôt public. **L'acquisition privée de 117 sources correspondantes a ensuite été convertie en lot : 117 GLB valides, 0 erreur et 289 971 112 octets au total.** Toutes les sorties contiennent au moins une animation et un canal actif ; aucune n'est encore approuvée pour des coups dans le jeu.
 
 ```bash
 # Installer le convertisseur dans un environnement local (ne pas stocker ses sorties dans Git).
@@ -72,7 +72,8 @@ Pour passer des mouvements réels à un jeu photoréaliste :
 - [x] Vérifier 117 téléchargements privés de FBX binaires avec SHA-256.
 - [x] Ajouter un outil d'acquisition reproductible, sans dépendance ni action GitHub.
 - [ ] Confirmer les droits exacts du mode de distribution final et l'authenticité des fichiers sources retenus.
-- [ ] Convertir les FBX retenus en animations glTF, avec conservation des courbes et vitesse réelle.
+- [x] Convertir en privé les 117 FBX acquis en GLB contenant de vrais canaux d'animation (117/117 valides).
+- [ ] Récupérer les 354 FBX sources restant dans la sélection et les convertir. Le téléchargement depuis le CDN du miroir est bloqué dans cet environnement ; le script est repris de façon incrémentale ailleurs.
 - [ ] Sélectionner des combattants photoréalistes, notamment des femmes, avec rigs appropriés.
 - [ ] Retargeter, inspecter de profil et corriger les glissements et déformations sur ces corps réels.
 - [ ] Mesurer les frames de contact et choisir les commandes de combat sur la base des gestes rendus.

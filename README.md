@@ -34,7 +34,7 @@ Ces choix sont des décisions de départ documentées ; tout changement doit êt
 
 ## Animations Mixamo réellement retrouvées
 
-Le miroir public déjà utilisé dans **WarConquer** permet d'accéder aux vrais fichiers Mixamo sans passer par une page de connexion Adobe éphémère : **471 candidats d'animations issus d'une recherche sur 2 317 mouvements, 117 FBX binaires récupérés et vérifiés en privé**. L'intégration au jeu est encore à faire : **0 clip validé dans le runtime**.
+Le miroir public déjà utilisé dans **WarConquer** permet d'accéder aux vrais fichiers Mixamo sans passer par une page de connexion Adobe éphémère : **471 candidats d'animations issus d'une recherche sur 2 317 mouvements, 117 FBX binaires récupérés et vérifiés en privé, et **117 animations converties en GLB avec des canaux réels**. L'intégration au jeu est encore à faire : **0 clip validé dans le runtime**.
 
 - [Sources réelles, droits, commandes de récupération et prochaines vérifications](docs/mixamo-real-sources.md)
 - [Index de 471 mouvements Mixamo réels](assets/mixamo-available-clips.json)
