@@ -15,7 +15,8 @@
     "test:engine": "node --test tests/*.test.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test:ai": "node --test tests/ai-battle.test.ts",
-    "simulate:ai": "node scripts/ai-battle.ts"
+    "simulate:ai": "node scripts/ai-battle.ts",
+    "mixamo:list": "python3 scripts/acquire-mixamo.py --list"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
