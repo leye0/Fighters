@@ -1,0 +1,85 @@
+{
+  "url": "http://127.0.0.1:4173/site/beat-em-up.html",
+  "steps": [
+    {
+      "action": "assert",
+      "expression": "window.__fightersBeatReady === true && window.__fightersBeatHero?.facing === 1"
+    },
+    {
+      "action": "screenshot",
+      "name": "01-idle"
+    },
+    {
+      "action": "keyDown",
+      "key": "ArrowRight"
+    },
+    {
+      "action": "wait",
+      "ms": 1300
+    },
+    {
+      "action": "assert",
+      "expression": "window.__fightersBeatHero?.facing === 1 && (window.__qaRightX=window.__fightersBeatHero.xMm) > -10700"
+    },
+    {
+      "action": "screenshot",
+      "name": "02-walk-right"
+    },
+    {
+      "action": "keyUp",
+      "key": "ArrowRight"
+    },
+    {
+      "action": "keyDown",
+      "key": "ArrowLeft"
+    },
+    {
+      "action": "wait",
+      "ms": 1300
+    },
+    {
+      "action": "assert",
+      "expression": "window.__fightersBeatHero?.facing === -1 && window.__fightersBeatHero.xMm < window.__qaRightX - 100"
+    },
+    {
+      "action": "screenshot",
+      "name": "03-reversed-left"
+    },
+    {
+      "action": "keyUp",
+      "key": "ArrowLeft"
+    },
+    {
+      "action": "keyDown",
+      "key": "Space"
+    },
+    {
+      "action": "wait",
+      "ms": 250
+    },
+    {
+      "action": "keyUp",
+      "key": "Space"
+    },
+    {
+      "action": "assert",
+      "expression": "window.__fightersBeatHero?.heightMm > 100 && window.__fightersBeatHero.supportingPlatformId === null"
+    },
+    {
+      "action": "screenshot",
+      "name": "04-airborne-jump"
+    },
+    {
+      "action": "wait",
+      "ms": 1450
+    },
+    {
+      "action": "assert",
+      "expression": "window.__fightersBeatHero?.supportingPlatformId === 'ground' && window.__fightersBeatHero.heightMm === 0"
+    },
+    {
+      "action": "screenshot",
+      "name": "05-landed"
+    }
+  ]
+}
