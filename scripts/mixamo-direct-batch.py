@@ -279,6 +279,17 @@ def run(args):
         try:
             wait_for_auth(page, interactive=not args.headless)
             if args.login_only:
+                if args.save_ci_state:
+                    target = private_folder(args.save_ci_state)
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    state_json = json.dumps(context.storage_state(indexed_db=True), separators=(",",":"))
+                    encoded = base64.b64encode(state_json.encode("utf8")).decode("ascii")
+                    # Base64 is NOT encryption: store this only in a GitHub
+                    # Actions secret, never in git, artifacts or chat.
+                    fd = os.open(str(target), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+                    with os.fdopen(fd, "w", encoding="ascii") as handle:
+                        handle.write(encoded)
+                    print("ADOBE_CI_SESSION_EXPORTED_PRIVATE_PATH", str(target), flush=True)
                 print("ADOBE_SESSION_READY: local browser profile saved outside Git", flush=True)
                 return
             inputs = private_folder(args.input_dir)
@@ -315,6 +326,8 @@ def run(args):
 def cli():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--login-only", action="store_true")
+    p.add_argument("--save-ci-state", metavar="PRIVATE_PATH",
+                   help="With --login-only, write sensitive base64 session state at mode 0600 OUTSIDE git")
     p.add_argument("--catalog-only", action="store_true",
                    help="Print the exact seven sourced motion identities; no Adobe access")
     p.add_argument("--character", choices=("claudia", "carla", "realistic-man"))
@@ -323,6 +336,8 @@ def cli():
     p.add_argument("--profile", default=str(Path.home() / ".config/fighters/mixamo-profile"))
     p.add_argument("--headless", action="store_true")
     options = p.parse_args()
+    must(not options.save_ci_state or options.login_only,
+         "--save-ci-state requires --login-only")
     must(options.login_only or options.catalog_only or all((options.character,options.input_dir,options.output_dir)),
          "Provide --character, --input-dir and --output-dir, or --login-only")
     try:
