@@ -1,0 +1,33 @@
+name: Fighters · Mixamo REST anonymous access probe
+on:
+  push:
+    branches: [main]
+    paths:
+      - assets/runtime-requests/mixamo-rest-probe.txt
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Check documented internal endpoint without any account
+        run: |
+          python3 - <<'PY'
+          import urllib.request
+          import urllib.error
+          url = "https://www.mixamo.com/api/v1/products?type=Motion%2CMotionPack&query=Walking"
+          request = urllib.request.Request(url, headers={"Accept":"application/json","X-Api-Key":"mixamo2","User-Agent":"Fighters-research-access-probe"})
+          try:
+              with urllib.request.urlopen(request, timeout=12) as reply:
+                  print("MIXAMO_API_ANONYMOUS_HTTP_STATUS",reply.status)
+                  print("MIXAMO_API_CONTENT_TYPE",reply.headers.get("Content-Type"))
+                  print("MIXAMO_API_CONTENT_BYTES",len(reply.read(250000)))
+          except urllib.error.HTTPError as e:
+              print("MIXAMO_API_ANONYMOUS_HTTP_STATUS",e.code)
+              print("MIXAMO_API_CONTENT_TYPE",e.headers.get("Content-Type"))
+              print("MIXAMO_API_CREDENTIALS_NOT_SENT")
+          except Exception as e:
+              print("MIXAMO_API_CONNECTION_FAILED",type(e).__name__)
+              raise
+          PY
