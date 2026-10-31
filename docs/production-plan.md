@@ -32,6 +32,20 @@ Ces valeurs décrivent le profil de mouvement corrigé, et non une garantie sur 
 
 **Publication :** [GitHub Pages action 41142001693](https://github.com/leye0/Fighters/actions/runs/41142001693) réussie pour le vrai bundle Vite le plus récent. L'ancienne version pouvait plier les genoux violemment en l'air ; ne pas restaurer l'ancienne lecture intégrale du clip Jump.
 
+## Livraison intégrée du pipeline natif — octobre 2026
+
+**Implémentation intégrée sur main, testée dans [GitHub Actions 41156465578](https://github.com/leye0/Fighters/actions/runs/41156465578) : SUCCÈS.** Cette itération regroupe davantage de travail plutôt que de s'arrêter à un export FBX.
+
+- **Entrée Adobe préparée** : les trois modèles Sketchfab originaux sont exportés en FBX riggé/avec textures via Blender, puis réimportés à froid. [Archive des FBX originaux de cette exécution](https://github.com/leye0/Fighters/actions/runs/41156465578/artifacts/13025870340). Aucun modèle public n'a été remplacé.
+- **Sortie Adobe prête** : scripts/assemble-native-mixamo.py réimporte SEPT FBX With Skin provenant du même personnage, compare les noms/parents et matrices de repos de tous les os et réassemble les actions du rig lui-même en un GLB de sept animations. scripts/check-native-mixamo-glb.py retire uniquement les pistes de scène et de translation/scaling réintroduites par l'exporteur GLB, vérifie les 7 clips, les quaternions et les os réellement animés, et inscrit same-rig-mixamo-fbx-v1 dans le GLB. scripts/build-native-mixamo.sh exécute les étapes d'un seul coup avec refus d'écraser un fichier préexistant.
+- **Tests de bout en bout sans Adobe** : les FBX originaux de Claudia (89 os) et Realistic Man (34 os) ont été animés temporairement avec 7 fixtures SYNTHÉTIQUES chacun, importés et assemblés par le vrai pipeline. Les sept clips de Claudia possèdent chacun 89 pistes articulaires et 40 os mobiles; ceux de Realistic Man, chacun 34 pistes et 34 os mobiles. Les deux sorties GLB ont passé le validateur. **Ce test valide le pipeline d'import/export, pas Mixamo ni la pertinence esthétique des mouvements.**
+- **Rejets vérifiés** : un fichier de Realistic Man parmi les clips de Claudia est refusé comme squelette incompatible; l'absence du fichier Jump est refusée. Ces refus provoquent des erreurs réelles de Blender et GitHub Actions, contrairement au premier export non strict.
+- **Jeu et UI** : suppression du repli silencieux vers le retarget YBot en cas de clips manquants; validation stricte de l'origine homogène et des sept noms. Le visualiseur publié [native-mixamo-review.html](https://www.streamlev.com/Fighters/site/native-mixamo-review.html) permet de charger localement un GLB, inspecter 5 angles, os, animations et poses en lecture/pause. **141 tests Node réussis, typecheck et bundle Vite réussis** dans la même exécution; [QA WebGL du jeu avec ses modèles actuels](https://github.com/leye0/Fighters/actions/runs/41156123841) également réussie après le retrait du fallback.
+
+**Bloqueur réel, non technique :** il faut encore une session Mixamo Adobe authentifiée pour importer Claudia et récupérer ses sept FBX réellement animés par Adobe. Aucune exécution CI ne prétend avoir franchi cette frontière. **Interdiction de promouvoir les clips synthétiques ou le vieux pack YBot à la place.** Après l'importation Adobe, demander une inspection humaine des bras de face/profil/dos avant toute intégration finale dans la démo.
+
+[Instructions exactes du pipeline](mixamo-native-pipeline.md).
+
 ## Pipeline standard Adobe Mixamo — FBX export du rig d'origine
 
 **Objectif demandé :** remplacer le retargeting maison qui effondre les bras par le flux documenté par Adobe pour les **personnages déjà riggés** : FBX original complet → Mixamo (`Upload Character`, reconnaissance du squelette et prévisualisation des animations sur le véritable personnage) → FBX animé téléchargé → consolidation GLB → intégration au jeu. La documentation d'Adobe exige **FBX** pour un personnage riggé, avec textures intégrées ; ce n'est pas un téléchargement GLB direct.
