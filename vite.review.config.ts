@@ -10,6 +10,7 @@ export default defineConfig({
     rollupOptions: { input: {
       review: resolve(import.meta.dirname, "animation-review.html"),
       beatEmUp: resolve(import.meta.dirname, "beat-em-up.html"),
+      nativeMixamoReview: resolve(import.meta.dirname, "native-mixamo-review.html"),
     } },
   },
 });
