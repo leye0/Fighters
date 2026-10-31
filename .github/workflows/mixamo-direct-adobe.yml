@@ -46,7 +46,7 @@ jobs:
       - name: Validate exact motion catalog and browser operator
         run: |
           python -m py_compile scripts/mixamo-direct-batch.py
-          python -m unittest discover -s tests -p 'mixamo-direct-batch.test.py' -v
+          python -m unittest discover -s tests -p 'test_mixamo_direct_batch.py' -v
       - name: Prepare original same-rig FBX
         run: |
           mkdir -p "$RUNNER_TEMP/clean" "$RUNNER_TEMP/upload" "$RUNNER_TEMP/download" "$RUNNER_TEMP/final"
