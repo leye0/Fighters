@@ -1,5 +1,8 @@
 name: Fighters · real WebGL gameplay regression
 on:
+  workflow_run:
+    workflows: ["Fighters - CC0 animations on original character rigs"]
+    types: [completed]
   push:
     branches: [main]
     paths:
@@ -16,6 +19,7 @@ concurrency:
 
 jobs:
   verify:
+    if: ${{ github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 9
     steps:
@@ -39,11 +43,13 @@ jobs:
           done
           cat /tmp/fighters-http.log
           exit 1
-      - name: Exercise real GLB rig, walking, reversal and jump in software WebGL
+      - name: Exercise real rigs, walking, jump and two combat clips in software WebGL
         env:
           WEBSUITE_RENDER_BACKEND: software
           WEBSUITE_REQUIRE_FIGHTERS: "1"
-        run: node scripts/websuite.mjs --scenario tests/browser/beat-em-up-control.json captures
+        run: |
+          node scripts/websuite.mjs --scenario tests/browser/beat-em-up-control.json captures/claudia
+          node scripts/websuite.mjs --scenario tests/browser/beat-em-up-carla.json captures/carla
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -211,10 +211,10 @@ try {
     await client.send('Input.dispatchKeyEvent', { type: 'keyUp', ...params });
   }
   async function heldKey(key, down) {
-    const map = { ArrowLeft: 37, ArrowRight: 39, Space: 32 };
+    const map = { ArrowLeft: 37, ArrowRight: 39, Space: 32, KeyF: 70, KeyG: 71, KeyH: 72 };
     if (!Object.hasOwn(map, key)) throw new Error('Unsupported held QA key: ' + key);
     await client.send('Input.dispatchKeyEvent', {
-      type: down ? 'rawKeyDown' : 'keyUp', key, code: key,
+      type: down ? 'rawKeyDown' : 'keyUp', key: key.startsWith('Key') ? key.slice(3).toLowerCase() : key, code: key,
       windowsVirtualKeyCode: map[key]
     });
   }

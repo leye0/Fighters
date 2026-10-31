@@ -20,6 +20,7 @@ declare global {
       facing: -1 | 1; verticalVelocityMmPerTick: number;
       supportingPlatformId: string | null };
     __fightersBeatCamera?: { x: number; vertical: number; pinned: string[] };
+    __fightersBeatHeroMotion?: string;
   }
 }
 
@@ -150,6 +151,7 @@ async function startBeatScene(): Promise<void> {
     }
     window.__fightersBeatReady = true;
     window.__fightersBeatTick = current.tick;
+    if (new URLSearchParams(location.search).has("qa")) window.__fightersBeatHeroMotion = scene.heroMotion;
     const liveHero = current.actors.find(actor => actor.id === "hero")!;
     window.__fightersBeatHero = {
       xMm: liveHero.xMm, depthMm: liveHero.depthMm, heightMm: liveHero.heightMm,

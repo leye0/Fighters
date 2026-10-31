@@ -35,6 +35,7 @@ button { font: inherit; cursor: pointer; }
 .beat-direction-pad .right { grid-column: 3; grid-row: 2; }
 .beat-jump { width: 85px; height: 85px; margin: 0 10px 5px 0; font-size: .94rem !important; border-radius: 50% !important; }
 .beat-action-pad { display: flex; align-items: flex-end; gap: 10px; }
+.beat-punch { min-width: 54px; height: 50px; margin-bottom: 12px; padding: 0 7px; font-size: .68rem !important; }
 .beat-drop { min-width: 75px; height: 48px; margin-bottom: 20px; padding: 0 8px; font-size: .63rem !important; }
 @media (min-width: 900px) and (pointer: fine) { .beat-mobile-controls { opacity: .4; } }
 @media (max-width: 480px) { .beat-header { padding: 8px 10px; } .beat-header span { font-size: .62rem; } .beat-footer { font-size: .67rem; padding: 7px 10px; } .beat-watermark { font-size: .54rem; } .beat-diagnostics { font-size: .65rem; } }
@@ -49,4 +50,6 @@ button { font: inherit; cursor: pointer; }
   .beat-mobile-controls button { font-size: 1.05rem; border-radius: 8px; }
   .beat-jump { width: 65px; height: 65px; margin: 0 2px 0 0; }
   .beat-drop { min-width: 60px; height: 36px; margin-bottom: 6px; }
+  .beat-action-pad { gap: 4px; }
+  .beat-punch { min-width: 40px; height: 36px; margin-bottom: 5px; padding: 0 3px; font-size: .51rem !important; }
 }

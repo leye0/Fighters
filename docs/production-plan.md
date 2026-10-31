@@ -8,7 +8,7 @@
 2. Entrée jouable actuelle : `beat-em-up.html` et `src/beat-em-up.ts`. `index.html` est une redirection vers celle-ci.
 3. **Casting actuel :** Claudia (`?hero=claudia`), Carla (`?hero=carla`) ; adversaires Realistic Man. Ce sont des modèles Sketchfab CC BY avec attributions dans `assets/source/characters/`.
 4. **Animations actuelles :** Quaternius Universal Animation Library 1 + 2, 86 clips CC0 par modèle sur ses propres joints, `UAL1_*` / `UAL2_*`, générés par `scripts/build-quaternius-animations.mjs`, contrôlés par `scripts/check-quaternius-models.mjs`. Le workflow `quaternius-animations.yml` télécharge les deux archives à SHA fixes, produit les trois GLB et les pousse sur main avec le site. Aucun pipeline d’animation antérieur n’est autorisé.
-5. Tests : `npm test`, `npm run typecheck`, `npm run build`, `npm run animation:verify` **après génération**. QA WebGL via `tests/browser/beat-em-up-control.json` et `beat-webgl-qa.yml`.
+5. Tests : `npm test`, `npm run typecheck`, `npm run build`, `npm run animation:verify` **après génération**. QA WebGL des **deux héroïnes** via `tests/browser/beat-em-up-control.json`, `tests/browser/beat-em-up-carla.json` et `beat-webgl-qa.yml`.
 6. Les trois gestes de combat accessibles par F/G/H sont des **animations sans dégâts**. Ne pas déclarer les attaques de production validées : `assets/animation-inventory.json` n’en a aucune tant que contacts, timing et résultat visuel ne sont pas examinés. Ne jamais auto-approuver les clips.
 7. Préserver le contrôle explicite gauche/droite de l’orientation, les trois axes X/Z/Y, la simulation à 60 Hz, l’absence de collision entre personnages, le rendu riggé réel et les crédits. Les modèles n’ont **pas** de certificat esthétique humain.
 8. Ne pas déclencher des actions CI inutiles : les workflows ciblés construisent les animations et le site lorsque leur entrée change, avec une seule publication des modèles.
@@ -28,7 +28,7 @@
 
 ## En attente de vérification ou de réalisation
 
-- [ ] Vérifier l’exécution **réelle et réussie** du nouveau workflow CI : trois GLB régénérés sur `main`, `docs/site` rebâti, puis Pages servi.
+- [x] Exécution réelle réussie du nouveau workflow CI **41237813884** : trois GLB régénérés sur `main` dans le commit automatique `cb68b44`, `docs/site` rebâti et workflow Pages **41237863118** réussi. Un correctif des URLs relatives et une seconde QA WebGL restent à confirmer avant d’annoncer la démo validée.
 - [ ] Capturer et analyser des rendus WebGL de Claudia, Carla et Realistic Man : bras, mains, bassin, sauts, pieds en appui, marche à gauche/droite, attaques et réceptions. Les tests de matrice et de bounding box ne remplacent pas un examen visuel.
 - [ ] Vérifier sur mobile le cadrage aux quatre frontières, les contrôles tactiles, les sauts et les FPS réels sans sacrifier la qualité de rendu.
 - [ ] Examiner et mesurer les **contacts effectifs** des coups (début, fenêtre active, reprise), par clip et par personnage, avant inscription dans l’inventaire d’attaques approuvées.

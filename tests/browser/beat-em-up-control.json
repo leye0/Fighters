@@ -156,6 +156,46 @@
     {
       "action": "assert",
       "expression": "(window.__fightersBeatFreeze=false,true)"
+    },
+    {
+      "action": "keyDown",
+      "key": "KeyF"
+    },
+    {
+      "action": "wait",
+      "ms": 160
+    },
+    {
+      "action": "assert",
+      "expression": "window.__fightersBeatHeroMotion==='UAL1_Punch_Jab'"
+    },
+    {
+      "action": "screenshot",
+      "name": "06-quaternius-jab"
+    },
+    {
+      "action": "keyUp",
+      "key": "KeyF"
+    },
+    {
+      "action": "wait",
+      "ms": 1800
+    },
+    {
+      "action": "keyDown",
+      "key": "KeyG"
+    },
+    {
+      "action": "wait",
+      "ms": 160
+    },
+    {
+      "action": "assert",
+      "expression": "window.__fightersBeatHeroMotion==='UAL1_Punch_Cross'"
+    },
+    {
+      "action": "screenshot",
+      "name": "07-quaternius-cross"
     }
   ]
 }

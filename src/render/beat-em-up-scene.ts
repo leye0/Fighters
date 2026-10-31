@@ -139,6 +139,8 @@ export class BeatEmUpScene {
     return this.gameAnimators.get(this.heroId)?.previewCombatGesture(index) ?? false;
   }
 
+  get heroMotion(): string { return this.gameAnimators.get(this.heroId)?.currentMotion ?? "unloaded"; }
+
   private addStageVolumes(): void {
     for (const [index, p] of this.stage.platforms.entries()) {
       const width = meters(p.rightMm - p.leftMm);

@@ -7,6 +7,10 @@ on:
       - .github/workflows/quaternius-animations.yml
       - scripts/build-quaternius-animations.mjs
       - scripts/check-quaternius-models.mjs
+      - vite.config.ts
+      - beat-em-up.html
+      - src/**
+      - package.json
   workflow_dispatch:
 
 permissions:

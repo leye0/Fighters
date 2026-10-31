@@ -1,0 +1,26 @@
+{
+  "url": "http://127.0.0.1:4173/beat-em-up.html?qa=1&hero=carla",
+  "steps": [
+    {"action":"assert","expression":"document.querySelector('#beat-hero-select').value==='carla' && window.__fightersBeatReady===true"},
+    {"action":"wait","ms":450},
+    {"action":"assert","expression":"Array.isArray(window.__fightersBeatActorBounds) && window.__fightersBeatActorBounds.length===3 && window.__fightersBeatActorBounds.every(a=>a.visible && a.skinnedMeshes>0 && a.height>1 && a.height<2.2)"},
+    {"action":"assert","expression":"window.__fightersBeatHeroMotion==='UAL1_Idle_Loop'"},
+    {"action":"screenshot","name":"carla-idle"},
+    {"action":"keyDown","key":"ArrowRight"},
+    {"action":"wait","ms":750},
+    {"action":"assert","expression":"window.__fightersBeatHero.facing===1 && window.__fightersBeatHero.xMm>-10700"},
+    {"action":"screenshot","name":"carla-walk"},
+    {"action":"keyUp","key":"ArrowRight"},
+    {"action":"keyDown","key":"KeyH"},
+    {"action":"wait","ms":160},
+    {"action":"assert","expression":"window.__fightersBeatHeroMotion==='UAL2_Melee_Hook'"},
+    {"action":"screenshot","name":"carla-hook"},
+    {"action":"keyUp","key":"KeyH"},
+    {"action":"wait","ms":1800},
+    {"action":"keyDown","key":"Space"},
+    {"action":"wait","ms":250},
+    {"action":"assert","expression":"window.__fightersBeatHero.heightMm>100 && window.__fightersBeatHero.supportingPlatformId===null"},
+    {"action":"screenshot","name":"carla-jump"},
+    {"action":"keyUp","key":"Space"}
+  ]
+}

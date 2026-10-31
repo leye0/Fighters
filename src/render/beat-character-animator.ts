@@ -125,6 +125,8 @@ export class BeatCharacterAnimator {
     return [GAME_MOTION_NAMES.punchJab, GAME_MOTION_NAMES.punchCross, GAME_MOTION_NAMES.hook];
   }
 
+  get currentMotion(): string { return this.active ?? GAME_MOTION_NAMES.idle; }
+
   /** Plays a genuine authored combat gesture; no unreviewed hitboxes/damage are inferred. */
   previewCombatGesture(index: number): boolean {
     const name = this.availableCombatClips()[index];
