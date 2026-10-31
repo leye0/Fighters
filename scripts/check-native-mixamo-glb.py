@@ -110,9 +110,29 @@ def main(argv):
     path=Path(argv[0])
     require(path.exists() and path.stat().st_size>1024,"GLB missing or empty")
     doc,blob=load(path.read_bytes())
-    report=inspect(doc,blob)
     if len(argv)==2:
         require(argv[1]=="--stamp","Only --stamp is allowed")
+        # Blender 4.0 emits separate auto-generated Armature|Scene animation
+        # tracks in addition to the explicitly named seven NLA strips. Only
+        # known Blender-generated scene tracks can be dropped; any unknown
+        # clip is a hard error, never an implicit acceptance.
+        import re
+        extras=[]
+        chosen=[]
+        for animation in doc.get("animations",[]):
+            name=animation.get("name","")
+            if name in EXPECTED:
+                chosen.append(animation)
+            elif re.fullmatch(r"Armature(?:\\.\d+)?\\|Scene(?:\\.\d+)?",name):
+                extras.append(name)
+            else:
+                raise RuntimeError("Unexpected animation in GLB: "+name)
+        require(len(chosen)==7 and len(set(x["name"] for x in chosen))==7,
+                "Seven uniquely named authored clips must be present")
+        doc["animations"]=chosen
+        print("DROPPED_BLENDER_SCENE_TRACKS",json.dumps(extras))
+    report=inspect(doc,blob)
+    if len(argv)==2:
         for anim in doc["animations"]:
             anim.setdefault("extras",{})["retargeting"]=MARKER
         path.write_bytes(glb_bytes(doc,blob))
