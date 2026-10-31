@@ -1,10 +1,6 @@
 name: Fighters · Adobe direct Mixamo (private)
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - assets/runtime-requests/mixamo-direct-adobe.txt
   workflow_dispatch:
     inputs:
       character:
