@@ -1,1 +1,1 @@
-full-native-7-clip-assembly-and-blender-nla-pruning-2-rig-negative-tests-2026-10-30-v4
+complete-native-glb-7-mixamo-clips-normalized-quaternion-rotation-only-two-real-rigs-2026-10-30-v5
