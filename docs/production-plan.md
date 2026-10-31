@@ -28,7 +28,8 @@
 
 ## En attente de vérification ou de réalisation
 
-- [x] Exécution réelle réussie du nouveau workflow CI **41237813884** : trois GLB régénérés sur `main` dans le commit automatique `cb68b44`, `docs/site` rebâti et workflow Pages **41237863118** réussi. Un correctif des URLs relatives et une seconde QA WebGL restent à confirmer avant d’annoncer la démo validée.
+- [x] Génération automatique réussie sur `main` : workflow **41238756248**, trois GLB régénérés de manière idempotente et site rebâti. Publication Pages **41238807438** réussie, URLs JavaScript/CSS relatives vérifiées ; page et trois modèles accessibles en HTTP 200 avec MIME GLB.
+- [x] QA navigateur WebGL logiciel réussie pour **Claudia et Carla** : [workflow 41238807306](https://github.com/leye0/Fighters/actions/runs/41238807306), 114 tests de règles, présence réelle des trois skins, dimensions projetées plausibles, déplacement, inversion de direction, saut et gestes CC0 de combat ; [captures PNG](https://github.com/leye0/Fighters/actions/runs/41238807306/artifacts/13056404677) conservées. Réussite technique, **pas** approbation esthétique ni preuve des FPS iPhone.
 - [ ] Capturer et analyser des rendus WebGL de Claudia, Carla et Realistic Man : bras, mains, bassin, sauts, pieds en appui, marche à gauche/droite, attaques et réceptions. Les tests de matrice et de bounding box ne remplacent pas un examen visuel.
 - [ ] Vérifier sur mobile le cadrage aux quatre frontières, les contrôles tactiles, les sauts et les FPS réels sans sacrifier la qualité de rendu.
 - [ ] Examiner et mesurer les **contacts effectifs** des coups (début, fenêtre active, reprise), par clip et par personnage, avant inscription dans l’inventaire d’attaques approuvées.
