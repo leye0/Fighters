@@ -143,7 +143,7 @@ export class BeatCharacterAnimator {
 
   constructor(outer: Group, animatedRig: Group,
     clips: readonly AnimationClip[], facing: Facing, isHero: boolean,
-    gravityMmPerTick2 = 19) {
+    gravityMmPerTick2 = 19, nativeSameRigSource = false) {
     this.outer = outer;
     this.isHero = isHero;
     this.gravityMmPerTick2 = gravityMmPerTick2;
@@ -151,7 +151,11 @@ export class BeatCharacterAnimator {
     this.mixer = new AnimationMixer(animatedRig);
     for (const clip of clips) {
       if (Object.values(GAME_MOTION_NAMES).includes(clip.name as typeof GAME_MOTION_NAMES[keyof typeof GAME_MOTION_NAMES])) {
-        const playable = clip.name === GAME_MOTION_NAMES.jump
+        // The old YBot-baked source needs the documented tuck-removal
+        // workaround. Real character-specific Mixamo FBXs must instead be
+        // played as authored, without pretending their timing is identical
+        // to the previously measured YBot clip.
+        const playable = clip.name === GAME_MOTION_NAMES.jump && !nativeSameRigSource
           ? makeArcadeJumpClip(clip) : clip;
         this.actions.set(clip.name, this.mixer.clipAction(playable));
       }
