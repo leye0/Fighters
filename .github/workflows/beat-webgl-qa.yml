@@ -8,6 +8,7 @@ on:
     paths:
       - assets/runtime-requests/beat-webgl-qa.txt
       - public/models/**
+      - tests/browser/**
   workflow_dispatch:
 
 permissions:
