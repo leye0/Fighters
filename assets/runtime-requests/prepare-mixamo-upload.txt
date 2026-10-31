@@ -1,1 +1,1 @@
-2026-10-30-rigged-fbx-numpy-and-python-fail-fast-v2
+native-blender-7-motions-2-character-real-skeleton-smoke-2026-10-30-v3
