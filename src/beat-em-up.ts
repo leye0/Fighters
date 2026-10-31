@@ -21,6 +21,8 @@ declare global {
       supportingPlatformId: string | null };
     __fightersBeatCamera?: { x: number; vertical: number; pinned: string[] };
     __fightersBeatHeroMotion?: string;
+    /** Last accepted authored combat gesture; survives very short clip playback. */
+    __fightersBeatLastCombatGesture?: string;
   }
 }
 
@@ -135,8 +137,11 @@ async function startBeatScene(): Promise<void> {
         hero: controls.snapshot(),
       }, DIAGNOSTIC_STAGE);
       const combatGesture = controls.consumeCombatGesture();
-      if (combatGesture !== null && current.actors.find(actor => actor.id === "hero")?.supportingPlatformId !== null)
-        scene.previewHeroCombatGesture(combatGesture);
+      if (combatGesture !== null && current.actors.find(actor => actor.id === "hero")?.supportingPlatformId !== null) {
+        const accepted = scene.previewHeroCombatGesture(combatGesture);
+        if (accepted && new URLSearchParams(location.search).has("qa"))
+          window.__fightersBeatLastCombatGesture = scene.heroMotion;
+      }
       // Animation and authored movement are advanced on EACH simulation tick.
       // A 30 FPS display must not halve authored gait speed by applying only the
       // last of two physics ticks to a full render-frame elapsed time.

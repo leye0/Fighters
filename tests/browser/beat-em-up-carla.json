@@ -13,7 +13,7 @@
     {"action":"keyUp","key":"ArrowRight"},
     {"action":"keyDown","key":"KeyF"},
     {"action":"wait","ms":160},
-    {"action":"assert","expression":"window.__fightersBeatHeroMotion==='UAL1_Punch_Jab'"},
+    {"action":"assert","expression":"window.__fightersBeatLastCombatGesture==='UAL1_Punch_Jab'"},
     {"action":"screenshot","name":"carla-jab"},
     {"action":"keyUp","key":"KeyF"},
     {"action":"wait","ms":1800},
