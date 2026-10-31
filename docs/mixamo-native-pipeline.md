@@ -54,3 +54,52 @@ Regarder précisément bras, épaules, coudes, poignets, appuis, saut et demi-to
 Le workflow de préparation exporte à nouveau les trois FBX originaux, réimporte ceux-ci à froid et crée des fixtures temporaires de sept mouvements SYNTHÉTIQUES pour tester toute la mécanique sans session Adobe. Les fixtures sont utilisées sur Claudia et le modèle masculin pour couvrir deux types de rigs. Les tests négatifs doivent rejeter un fichier manquant et un autre squelette.
 
 Ces animations synthétiques ne prouvent PAS le fonctionnement de Mixamo sur Claudia, ne sont pas des clips Mixamo et ne sont pas intégrées au jeu publié. Elles ne doivent jamais être partagées comme des animations de production. Le verdict visuel du service Adobe est encore indispensable.
+
+## F. Automatisation directe Adobe Mixamo (sans clic sur 21 animations)
+
+Le contrôleur [`scripts/mixamo-direct-batch.py`](../scripts/mixamo-direct-batch.py) suit le parcours **officiel Web Mixamo** avec Chromium/Playwright : il téléverse le FBX original déjà skinné, attend le mapping automatique, recherche les **sept mouvements identifiés par notre catalogue** (titres, descriptions et UUID Adobe), télécharge chaque FBX `With Skin` à 30 FPS, vérifie sa signature binaire et son empreinte, puis laisse les fichiers dans un dossier privé par personnage. La distinction entre `Walking_21.fbx` (« Standard Walk ») et `Walking_6.fbx` (« Feminine Walk Forward ») est **obligatoire** : si le DOM d'Adobe ne permet pas de les identifier de façon unique, le script **échoue** plutôt que choisir une marche arbitraire.
+
+Il refuse les mises en correspondance de rig impossibles, les marqueurs anatomiques demandés par Adobe, les clips ambigus et la réutilisation de fichiers sans provenance valide. Il ne contient **aucun code de retargeting YBot**, ni correction manuelle des épaules. Aucune session Adobe n'a encore été mise à disposition de ce chat : **aucun FBX natif réel n'a été téléchargé dans cette étape**.
+
+Les 5 tests de logique hors connexion ont réussi dans [GitHub Actions 41159852518](https://github.com/leye0/Fighters/actions/runs/41159852518). Ces tests **ne prouvent pas** que Mixamo accepte le FBX.
+
+### Usage local, session conservée hors de Git
+
+```bash
+python3 -m pip install playwright==1.56.0
+python3 -m playwright install chromium
+
+# La fenêtre Chromium demande la connexion Adobe seulement si nécessaire.
+python3 scripts/mixamo-direct-batch.py --login-only
+
+# Chaque personnage nécessite son FBX original issu du workflow d'export.
+python3 scripts/mixamo-direct-batch.py --character claudia \
+  --input-dir /dossier-prive/mes-fbx-originaux \
+  --output-dir /dossier-prive/exports-adobe
+
+bash scripts/build-native-mixamo.sh \
+  /dossier-prive/exports-adobe/claudia \
+  /dossier-prive/claudia-native.glb
+```
+
+### Exécution GitHub Actions avec session autorisée (un seul login Adobe initial)
+
+Un workflow manuel [`mixamo-direct-adobe.yml`](../.github/workflows/mixamo-direct-adobe.yml) gère **un personnage par exécution**. Il reconstruit le FBX original propre, lance les téléchargements via Adobe puis appelle `build-native-mixamo.sh`. Il ne produit **qu'un artifact GLB intégré non publié**, destiné à la revue visuelle; aucun FBX brut Mixamo n'est committé.
+
+Pour autoriser le navigateur hébergé, une session Adobe interactive doit avoir été ouverte une première fois. Le contrôleur peut exporter son état de façon privée, puis cet état peut être installé comme **secret** GitHub Actions :
+
+```bash
+python3 scripts/mixamo-direct-batch.py --login-only \
+  --save-ci-state ~/.config/fighters/mixamo-state.b64
+
+# GitHub CLI déjà authentifié : transmet le secret via stdin, pas via Git.
+gh secret set MIXAMO_STORAGE_STATE_B64 -R leye0/Fighters \
+  < ~/.config/fighters/mixamo-state.b64
+
+gh workflow run mixamo-direct-adobe.yml -R leye0/Fighters \
+  -f character=claudia
+```
+
+**Sécurité :** le fichier `.b64` représente des cookies de connexion et **n'est pas chiffré**. Ne jamais le committer, partager, coller dans un chat ni ajouter comme artifact. Le script exige une destination hors du dépôt et des droits 0600. Le retirer lorsqu'il n'est plus nécessaire; la session peut expirer ou être révoquée par Adobe. Ne jamais utiliser les identifiants Adobe en dur dans une Action.
+
+**Statut actuel :** infrastructure automatique et tests hors ligne prêts. **Authentification Adobe du navigateur non vérifiée**, import des trois personnages non exécuté sur Adobe, aucune image de marche native approuvée. Dès que le serveur retourne les FBX natifs, la suite Blender se déroule sans étape manuelle de conversion, mais la revue visuelle 3D reste obligatoire avant de publier les GLB dans Fighters.
