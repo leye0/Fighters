@@ -151,13 +151,13 @@ def main(argv):
             dropped=[]
             for channel in anim.get("channels",[]):
                 target=channel["target"]
-                path=target["path"]
-                require(path in ("rotation","translation","scale"),
-                        "Unknown glTF animation property: "+path)
-                if path=="rotation" and target["node"] in joints:
+                channel_path=target["path"]
+                require(channel_path in ("rotation","translation","scale"),
+                        "Unknown glTF animation property: "+channel_path)
+                if channel_path=="rotation" and target["node"] in joints:
                     retained.append(channel)
                 else:
-                    dropped.append(path)
+                    dropped.append(channel_path)
             anim["channels"]=retained
             skipped[anim["name"]]={
                 "retained_skeletal_rotation_channels":len(retained),
