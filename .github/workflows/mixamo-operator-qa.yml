@@ -19,5 +19,5 @@ jobs:
         run: |
           python3 -m py_compile scripts/mixamo-direct-batch.py
           python3 scripts/mixamo-direct-batch.py --catalog-only
-          python3 -m unittest discover -s tests -p 'mixamo-direct-batch.test.py' -v
+          python3 -m unittest discover -s tests -p 'test_mixamo_direct_batch.py' -v
           python3 -m py_compile scripts/export-character-for-mixamo.py scripts/assemble-native-mixamo.py
