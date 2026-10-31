@@ -2,6 +2,8 @@
 
 ## Objectif
 
+**Décision ferme :** le workflow historique `.github/workflows/prepare-mixamo-gameplay.yml` qui réassemblait des animations YBot et les poussait sur `main` est maintenant **désactivé**. Aucun nouveau contenu de production ne peut être créé avec ce workflow. Le pipeline natif doit prendre des animations réellement obtenues sur le FBX du personnage dans une session Adobe, et non des copies des animations YBot. Les anciens GLB de la démo restent visibles uniquement à titre de compatibilité temporaire, sans approbation esthétique.
+
 Adobe Mixamo doit animer DIRECTEMENT le personnage FBX riggé. Blender regroupe ensuite sept animations propres à ce même personnage sur un seul squelette. Aucune correction angulaire des bras, aucun transfert depuis YBot. Cette étape logiciel est en préparation et testée sur des données synthétiques, mais le service Adobe n'a pas encore validé Claudia.
 
 ## A. Export originaux terminé
