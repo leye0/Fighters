@@ -80,6 +80,7 @@ export class BeatEmUpScene {
     const keys = new Set<AcquiredCharacterKey>([roleModels.hero, roleModels.enemy]);
     const sources = new Map<AcquiredCharacterKey, Group>();
     const animations = new Map<AcquiredCharacterKey, AnimationClip[]>();
+    const nativeSourceRigs = new Set<AcquiredCharacterKey>();
     await Promise.all([...keys].map(async key => {
       const url = new URL(CHARACTER_MODEL_FILES[key], document.baseURI).href;
       const gltf = await loader.loadAsync(url);
@@ -91,10 +92,16 @@ export class BeatEmUpScene {
       };
       const gameplayClips = (json.animations ?? []).filter(a =>
         a.name?.startsWith("Fighters_Mixamo_"));
-      if (gameplayClips.length !== 7 ||
-          gameplayClips.some(a => a.extras?.retargeting !== "warconquer-inverse-bind-world-v1")) {
-        throw new Error("Character animations quarantined: awaiting corrected bind-pose retargeting");
+      const marker = gameplayClips[0]?.extras?.retargeting;
+      const approvedFormats = new Set([
+        "warconquer-inverse-bind-world-v1",
+        "same-rig-mixamo-fbx-v1",
+      ]);
+      if (gameplayClips.length !== 7 || !marker || !approvedFormats.has(marker) ||
+          gameplayClips.some(a => a.extras?.retargeting !== marker)) {
+        throw new Error("Character animations quarantined: incomplete or inconsistent skeletal source");
       }
+      if (marker === "same-rig-mixamo-fbx-v1") nativeSourceRigs.add(key);
       sources.set(key, gltf.scene);
       animations.set(key, gltf.animations);
     }));
@@ -129,7 +136,7 @@ export class BeatEmUpScene {
         const initial = this.initialActors[actor];
         this.gameAnimators.set(actorId,
           new BeatCharacterAnimator(visual, clone, ownClips, initial.facing, isHero,
-            this.stage.gravityMmPerTick2));
+            this.stage.gravityMmPerTick2, nativeSourceRigs.has(key)));
       } else {
         // Compatibility while the agent-driven Mixamo packaging action runs.
         const mixer = isHero
