@@ -1,161 +1,46 @@
 # Fighters 🥊
 
-**Beat’em up d’action 3D à défilement latéral** pour le Web : traverser des rues, bâtiments et plateformes surélevées, affronter plusieurs ennemis, sauter sur les obstacles, avancer ou reculer en faisant face aux adversaires proches. Rendu photoréaliste, animations de combat réelles, gameplay déterministe à 60 Hz.
+Un **beat’em up 3D à défilement latéral** pour navigateur, construit avec TypeScript, Three.js et Vite. Le parcours accepte les déplacements gauche/droite, en profondeur, les sauts, les plateformes à plusieurs hauteurs et plusieurs ennemis. La caméra suit l’héroïne sans la réorienter automatiquement vers l’ennemi.
 
-> Projet original inspiré des conventions des jeux de combat arcade, sans reprendre les personnages, marques, graphismes, sons ni interfaces protégés d'autres jeux.
->
-> **Statut : projet non commercial pour le moment**, dépôt GitHub public. Les droits de redistribution des ressources tierces restent à vérifier.
+## Jouer à la scène 3D
 
-## Feuille de route
+**[Fighters — Claudia ou Carla](https://www.streamlev.com/Fighters/site/beat-em-up.html)** (navigateur avec WebGL 2, paysage sur téléphone).
 
-➡️ **[Plan de production détaillé et cases à cocher](docs/production-plan.md)**
+- **Héroïnes :** Claudia et Carla, deux vrais modèles 3D riggés sous CC BY, sélectionnables dans l’en-tête.
+- **Ennemis :** deux instances du modèle masculin Realistic Man, avec leurs propres squelettes clonés.
+- **Animations :** **86 clips CC0 différents par personnage**, dérivés de Quaternius Universal Animation Library 1 et 2, intégrés directement aux trois GLB sur leurs vrais squelettes.
+- **Commandes :** WASD/flèches pour marcher ; Espace ou J pour sauter ; K pour descendre d’une plateforme traversable ; F, G et H pour voir trois véritables gestes de combat. Les boutons tactiles et une manette sont également pris en charge.
 
-**Pour un agent de coding qui reprend le dépôt :** lire en priorité le [guide de reprise intégré au plan](docs/production-plan.md#guide-de-reprise-pour-agent-externe) : source de vérité `main`, modules existants, prochaine scène 3D, pièges du build Pages et critères de validation.
+Les coups F/G/H sont **des démonstrations de gestes animés** : dégâts et contacts ne sont pas encore synchronisés et approuvés. Le jeu complet, les combats validés et les décors finaux restent à construire ; ne pas confondre la scène jouable de navigation avec le jeu final.
 
-Le plan couvre l'intégralité du produit : moteur de combat déterministe, rendu WebGL 2, personnages, rigging, animations Mixamo, arènes, HUD, audio, contrôles, modes, IA, multijoueur, performances, tests, accessibilité, déploiement et provenance des ressources.
+## Démarrage local
 
-## Principes
-
-- **Production dès le départ**, pas de prototype jetable ni de « MVP ».
-- **Tous les changements directement sur `main`** ; pas de branche de fonctionnalité ni de pull request.
-- Qualité vérifiée avant chaque commit ; tests automatisés ciblés et reproductibles.
-- Séparation stricte entre simulation de combat, animations visuelles, rendu 3D et interface.
-- Système extensible et piloté par des données : combattants, coups, animations, arènes et effets.
-- 60 Hz pour la simulation ; objectif 60 FPS à l'affichage sur les configurations prises en charge.
-- Ressources réalistes sous licences compatibles : traçabilité obligatoire et aucune redistribution illégitime de fichiers tiers.
-
-## Orientation technique initiale
-
-- **TypeScript + Vite + Three.js (WebGL 2)** ; architecture permettant d'évaluer WebGPU ensuite.
-- **Caméra latérale 3D à scrolling** : progression X, déplacement en profondeur Z, hauteur Y avec plateformes et chutes ; héros tourné vers un ennemi proche indépendamment de son déplacement.
-- **glTF/GLB**, matériaux PBR, environnements HDRI, animations squelettiques, textures compressées et LOD.
-- Moteur de règles fixe et déterministe à **60 ticks/s**, sans collision physique non déterministe pour la validation des coups.
-- Tests : unitaires, intégration, performance visuelle, Playwright en navigateur.
-
-Ces choix sont des décisions de départ documentées ; tout changement doit être argumenté dans le plan.
-
-## Direction beat’em up : rues, toits et ennemis multiples
-
-**[Architecture actualisée — esprit Double Dragon](docs/beat-em-up-architecture.md).** Le moteur possède maintenant un noyau de navigation à 60 Hz avec marche en profondeur, plateformes à hauteurs différentes, vrais sauts/chutes et ciblage stable d’ennemis proches ; ce noyau est testé mais n’est pas encore branché à une scène jouable. La caméra doit conserver le héros au **centre exact de l’image**, sauf près des limites haut/bas/gauche/droite de scrolling ; son contrôleur logique est testé, pas encore branché au rendu. **Les plateformes et le parcours seront volontairement dessinés en blocs simples pendant le développement** ; leur design détaillé viendra après les autres systèmes. Le duel 1v1 existant demeure un banc de tests du combat, non le format final du jeu.
-
-## Animations Mixamo réellement retrouvées
-
-Le miroir public déjà utilisé dans **WarConquer** permet d'accéder aux vrais fichiers Mixamo sans passer par une page de connexion Adobe éphémère : **471 candidats d'animations étudiés parmi 2 317 mouvements, 302 FBX binaires récupérés et vérifiés en privé, et 302 animations converties en GLB avec de véritables canaux**. L'intégration au jeu est encore à faire : **0 clip approuvé dans le runtime**.
-
-**Sélection confirmée par Léon le 30 octobre 2026 : [les 63 animations conservées, sans changement de nom](assets/mixamo-selected.json)** (60 de la présélection initiale + 3 pas arrière). Les coups peuvent disposer d'une mobilité au sol et en l'air configurable ; le moteur a un découpage haut/bas du corps pour superposer la frappe à la locomotion. Les 63 clips sont retenus sur la base des vidéos source ; ces capacités de code ne constituent pas encore des composites visuellement validés sur les combattants. Voir [le protocole d'animation](docs/animation-first.md).
-
-### Choisir soi-même les animations
-
-Le [lecteur de sélection](animation-review.html) est une seconde page Vite, accessible à `http://127.0.0.1:5173/animation-review.html` après `npm run dev` (ou `/animation-review.html` sur un hébergement du build). Il propose **les 63 clips avec quatre prévisualisations MP4 distantes chacun** et leur description Mixamo. **Par défaut, il présente une seule animation à la fois**, avec lecture directe et trois gros boutons « garder / écarter / à revoir ». Le choix passe automatiquement à la prochaine animation non évaluée ; progression, filtres, retour en arrière et grille complète optionnelle sont disponibles. Aucune manipulation ni téléchargement de GLB n'est nécessaire pour ce premier tri.
-
-Les choix sont conservés localement dans le navigateur et **exportables/importables en JSON**, avec identifiants de mouvement et SHA-256, pour que Léon transmette une sélection sans perdre l'identité exacte des clips. Aucun vidéo ni FBX/GLB tiers n'est embarqué dans le dépôt. Les prévisualisations sont lues directement depuis le service source.
-
-### Version légère, prête pour le téléphone
-
-Une version statique de ce **seul lecteur** se trouve sous [`docs/site/`](docs/site/animation-review.html). Elle ne pèse qu'environ **53 Ko hors ressources MP4 distantes**, sans WebGL, backend ni conversion locale. Sa source est la même que celle de l'application (pas une copie manuelle) : `npm run review:catalog` régénère les métadonnées des 63 clips, puis `npm run build:review` produit la page statique.
-
-**[Ouvrir le lecteur des 63 animations sur téléphone](https://www.streamlev.com/Fighters/site/animation-review.html).** GitHub Pages utilise **GitHub Actions**. Le workflow ciblé [Publier le lecteur des animations](.github/workflows/deploy-animation-review.yml) déploie directement `docs/`, sans compiler ou télécharger d'animations durant la CI. Il démarre seulement lorsque la page statique ou le workflow change sur `main`, et peut être relancé manuellement. Premier [déploiement réussi](https://github.com/leye0/Fighters/actions/runs/41078943727) le 30 octobre 2026 ; page, fichiers JS/CSS et lecture d'un véritable MP4 vérifiés dans un navigateur. Cette validation confirme le lecteur Web, pas la qualité esthétique des 63 gestes.
-
-Pour inspecter les prévisualisations en privé sans dépendre du navigateur :
+Node.js 24 ou supérieur :
 
 ```bash
-python3 scripts/review-mixamo-previews.py --destination /tmp/fighters-visual-qa --views 4 --request-interval 1
+npm ci
+npm run dev
 ```
 
-Le tri initial automatisé est fondé sur des poses visibles dans les vidéos YBot ; **Léon a ensuite explicitement conservé les 63 clips et accepté leurs noms originaux**. Cette décision figure dans [le manifeste sélectionné](assets/mixamo-selected.json), distinct de l'inventaire des clips prêts à jouer. Elle **ne valide pas les GLB retargetés**. Les animations définitives, leurs superpositions (saut/frappe, avance/frappe, recul/frappe) et les contacts nécessitent toujours une validation humaine sur le personnage final.
-
-[Compte rendu de l'examen et principales lacunes repérées](docs/animation-visual-screening.md).
-
-### Vérification de la superposition avec de vrais GLB
-
-Le [lecteur 3D de superposition](animation-composite.html) est disponible après `npm run dev` à **`http://127.0.0.1:5173/animation-composite.html`**. Il charge **les cinq GLB privés depuis le disque local** et vérifie leur SHA-256 contre l'inventaire de recherche. Une fois chargés, il affiche un YBot animé en WebGL avec orbite de caméra et quatre combinaisons `Lead_Jab_2` + garde, marche avant, marche arrière ou saut. Le temps est manipulable à la main ; la durée du jab est réglable, et les appréciations du propriétaire sont exportées avec identités, SHA et commentaires. **Les GLB ne sont jamais envoyés à un serveur ni ajoutés au dépôt public.**
-
-Pour recréer exactement ces cinq fichiers dans un dossier privé, à partir du dépôt :
+Ouvrir `http://127.0.0.1:5173/beat-em-up.html`. Pour vérifier la compilation et les tests :
 
 ```bash
-python3 scripts/acquire-mixamo.py --destination /tmp/fighters-composite-fbx --name Fighting_Idle.fbx --name Medium_Step_Forward.fbx --name Step_Backward_3.fbx --name Jump.fbx --name Lead_Jab_2.fbx --workers 1 --request-interval 5
-npm install --no-save --package-lock=false fbx2gltf@0.9.7-p1
-python3 scripts/convert-mixamo-fbx.py --input /tmp/fighters-composite-fbx --output /tmp/fighters-composite-glb --name Fighting_Idle.fbx --name Medium_Step_Forward.fbx --name Step_Backward_3.fbx --name Jump.fbx --name Lead_Jab_2.fbx --require-all
+npm test
+npm run build
+npm run animation:verify
 ```
 
-Les translations horizontales et la trajectoire verticale du lecteur ne sont que des **références illustratives** séparées des os : ce n'est ni le moteur autoritatif du match ni une vérification de vitesse/IK. Même une combinaison convaincante sur YBot doit encore passer la validation sur chaque combattant final.
+`animation:verify` nécessite les trois GLB générés par le workflow de publication. La construction automatisée est détaillée dans [docs/quaternius-pipeline.md](docs/quaternius-pipeline.md). Le premier téléchargement des sources CC0 est requis **sur la machine de compilation uniquement** ; jouer ensuite aux animations ne requiert **aucun compte, aucune connexion à un service d’animation et aucune action manuelle**. Le site Web a évidemment besoin d’un chargement initial de ses fichiers.
 
-Quatre mélanges `Lead_Jab_2` + (garde, pas avant, pas arrière, saut) ont désormais été testés sur **cinq GLB Mixamo/YBot réellement reconvertis en privé** dans un seul `AnimationMixer` Three.js : **65 os communs, zéro piste en conflit, zéro liaison manquante**, et mouvement effectif des membres hauts et bas. La piste de translation des hanches ne déplace plus le personnage deux fois ; c'est la simulation qui contrôle sa position. Les pas source avancent d'environ **0,92 m** et reculent d'environ **0,60 m**, avant suppression de ce déplacement par le masque. Voir [les mesures et identifiants exacts](assets/mixamo-layering-research.json).
+## Projet
 
-Pour refaire cette vérification sur tes fichiers privés GLB (aucun actif Mixamo n'est publié) :
+- [Plan de production vivant](docs/production-plan.md)
+- [Architecture du beat’em up](docs/beat-em-up-architecture.md)
+- [Animations CC0 et provenance](docs/quaternius-pipeline.md)
+- [Politique des attaques animation-first](docs/animation-first.md)
+- [Registre et attribution des personnages](docs/asset-register.md)
+- [QA visuelle](docs/visual-qa.md)
 
-```bash
-npm run mixamo:verify-layers -- --directory /tmp/fighters-research-glb \
-  --attack Lead_Jab_2 \
-  --locomotion Fighting_Idle \
-  --locomotion Medium_Step_Forward \
-  --locomotion Step_Backward_3 \
-  --locomotion Jump
-```
+La simulation de déplacements tourne à **60 Hz** et gouverne les collisions, la gravité et l’orientation. Les mouvements squelettiques sont purement visuels. Les modèles des trois personnages restent soumis à leurs obligations d’attribution CC BY ; les animations Quaternius citées sont CC0.
 
-**Cette étape valide le fonctionnement technique des couches, pas encore leur réalisme en rendu.** Le calage de la cadence, la plante des pieds, la synchronisation des sauts et le retargeting sur les combattants restent à vérifier avant d'autoriser ces combinaisons dans l'arsenal.
-
-- [Sources réelles, droits, commandes de récupération et prochaines vérifications](docs/mixamo-real-sources.md)
-- [Index de 471 mouvements Mixamo réels](assets/mixamo-available-clips.json)
-- `python3 scripts/acquire-mixamo.py --list --family kick` pour inspecter le catalogue.
-- `python3 scripts/acquire-mixamo.py --destination /tmp/fighters-research-fbx --name Jab_Cross.fbx` pour récupérer un clip hors dépôt public.
-
-Pour convertir les clips téléchargés en **GLB réellement animés** (recherche privée uniquement) :
-
-```bash
-npm install --no-save --package-lock=false fbx2gltf@0.9.7-p1
-python3 scripts/convert-mixamo-fbx.py --input /tmp/fighters-research-fbx --output /tmp/fighters-research-glb --workers 4
-```
-
-Le chargement/retargeting sur nos combattants photoréalistes nécessite encore la validation des rigs, des droits et des frames de contact.
-
-Le serveur du miroir peut retourner **HTTP 429** pendant une acquisition massive. Le téléchargeur cadence les requêtes et s'arrête lorsqu'il détecte ce code. Pour une reprise prudente :
-
-```bash
-python3 scripts/acquire-mixamo.py --destination /tmp/fighters-research-fbx --workers 1 --request-interval 5
-```
-
-### Préparer un seul GLB avec les 63 animations retenues
-
-Depuis un environnement disposant du convertisseur `fbx2gltf@0.9.7-p1`, la commande suivante télécharge les **63 sources exactes**, reprend les fichiers déjà présents, convertit en GLB et assemble un pack YBot de recherche :
-
-```bash
-python3 scripts/prepare-selected-mixamo.py --workspace /tmp/fighters-selected-mixamo
-```
-
-Les étapes respectent les empreintes enregistrées, cadencent les téléchargements et s’arrêtent en cas de HTTP 429. Si les GLB convertis existent déjà, utiliser `--pack-only`. La sortie est `/tmp/fighters-selected-mixamo/Fighters-selected-63.glb` et son manifeste de contrôle, **hors du dépôt**. Le pack permet de charger et comparer les clips sur un rig YBot commun ; il **ne suffit pas** à valider le retargeting ni les coups sur les personnages définitifs.
-
-## Commandes de combat
-
-La [reconnaissance des coups spéciaux et les contrôles](docs/combat-commands.md) sont décrits avec leurs limites actuelles et les tests.
-
-## Ressources et licences
-
-- [Mixamo (Adobe)](https://www.mixamo.com/) — personnages et animations utilisables dans des jeux ; ne pas présumer que les fichiers bruts peuvent être redistribués publiquement.
-- [Poly Haven](https://polyhaven.com/) — environnements HDRI, modèles et textures CC0.
-- [ambientCG](https://ambientcg.com/) — matériaux PBR CC0, à vérifier lors de l'intégration.
-- [MakeHuman](https://www.makehumancommunity.org/) — modèles exportés CC0 sous les conditions publiées.
-- [Sketchfab](https://sketchfab.com/) — vérifier **chaque modèle** et sa licence (CC0 / CC BY ou autre).
-- [Freesound](https://freesound.org/) — vérifier **chaque effet sonore** et sa licence (préférence CC0).
-
-Consulter le [registre des ressources, avec les premiers candidats photoréalistes](docs/asset-register.md) et son [manifeste JSON](assets/manifest.json). Les règles de distribution détaillées figurent aussi dans le [plan](docs/production-plan.md).
-
-## Arsenal arcade et animations
-
-**Principe directeur : [animation-first](docs/animation-first.md).** Nous choisissons les coups **uniquement après** avoir identifié, acquis et inspecté de **belles animations réelles**, puis nous attribuons boutons, spéciaux et combos selon leurs gestes et leurs temps de contact. Le [catalogue de 71 attaques](docs/arsenal.md) et ses [commandes](docs/combat-commands.md) constituent un **banc de stress-test du moteur**, pas 71 coups promis au joueur. L'interface de production n'affiche que les mouvements réellement approuvés par combattant ; aujourd'hui, **0**.
-
-[70 rôles Mixamo sont recensés pour la recherche](assets/mixamo-catalog.json), mais aucun ne prouve qu'un clip existe ou qu'il est intégré. Le nouvel [inventaire de clips approuvés](assets/animation-inventory.json) démarre vide et pilote la **création des vrais coups** ; les frames de simulation sont déduites des contacts observés dans chaque animation.
-
-## IA, ennemis multiples et QA du gameplay
-
-Le [banc hérité de duels IA contre IA](docs/ai-combat-qa.md) vérifie des affrontements déterministes de simulation, avec attaques, gardes, coups spéciaux et bilan de rythme. Le **jeu final** demandera aussi des groupes d’ennemis, navigation entre plateformes, suivi caméra et IA de beat’em up ; ces systèmes restent à relier au noyau de déplacement. Lancer `npm run simulate:ai` ou `npm run test:ai` ; l'option **Mode → IA contre IA** est branchée dans le navigateur dès que deux GLB autorisés avec animations seront intégrés. **Cela ne constitue pas encore un test visuel du plaisir de jeu.**
-
-Concernant les animations de combat Mixamo : **63 ont été retenues par Léon**, parmi 302 déjà converties en privé, mais aucune n'est encore intégrée au runtime. Le nouveau [regroupeur GLB](scripts/pack-selected-mixamo.py) assemble la sélection sur un rig commun, sans recopier 63 fois la géométrie ; ses tests binaires synthétiques passent, les 63 vrais GLB restent à lui soumettre. La [procédure d'acquisition et de retargeting](docs/mixamo-integration.md) liste les mouvements nécessaires et les précautions de licence.
-
-## État
-
-Le noyau TypeScript reste séparé du rendu. **L'application Vite/Three.js et sa caméra WebGL 2 sont maintenant codées** : éclairage physique de référence, sol de collision visuel, chargement GLB licencié, animations squelettiques, HUD conditionnel et métriques FPS/draw calls. **Les modèles encore candidats ne sont pas chargés** ; aucun personnage de remplacement n'est présenté comme photoréaliste ou jouable. La compilation Vite et le rendu navigateur doivent encore être vérifiés sur la version publiée. Les cases à cocher du plan font foi.
-
-Pour le projet (Node.js 24) : **npm install**, **npm run dev**, **npm test**, **npm run typecheck**, **npm run build**. Les modèles de combattants juridiquement autorisés doivent être déposés dans public/models/ et décrits comme intégrés dans le manifeste avant d'apparaître en jeu.
-
-Les captures navigateur utilisent l'[adaptation de WebSuite](docs/visual-qa.md) de WarConquer ; le workflow GitHub Actions est **manuel uniquement** pour préserver les minutes.
+Tout changement est effectué **directement sur `main`**, sans branche intermédiaire.

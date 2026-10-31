@@ -2,7 +2,9 @@ name: Fighters · real WebGL gameplay regression
 on:
   push:
     branches: [main]
-    paths: [assets/runtime-requests/beat-webgl-qa.txt]
+    paths:
+      - assets/runtime-requests/beat-webgl-qa.txt
+      - public/models/**
   workflow_dispatch:
 
 permissions:
@@ -26,20 +28,13 @@ jobs:
         run: |
           npm ci
           npm test
-          npm run build:review
-          node scripts/check-baked-gameplay-motion.mjs \
-            public/models/claudia.glb public/models/carla.glb public/models/realistic-man.glb
-      - name: Verify airborne knee flex with the actual runtime Jump clip on all 3 rigs
+          npm run animation:verify
+          npm run build
+      - name: Serve the generated game build
         run: |
-          for character in claudia carla realistic-man; do
-            node scripts/analyze-jump-poses.mjs "public/models/$character.glb" > "/tmp/$character-jump.json"
-            node -e 'const r=require(process.argv[1]);console.log("JUMP_KNEE_QA",r.character,"source",r.rawMaxKneeBend,"arcade",r.arcadeMaxKneeBend)' "/tmp/$character-jump.json"
-          done
-      - name: Serve the same review page as GitHub Pages
-        run: |
-          python3 -m http.server 4173 --bind 127.0.0.1 --directory docs >/tmp/fighters-http.log 2>&1 &
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory dist >/tmp/fighters-http.log 2>&1 &
           for i in {1..50}; do
-            if curl -fsS http://127.0.0.1:4173/site/beat-em-up.html >/dev/null; then exit 0; fi
+            if curl -fsS http://127.0.0.1:4173/beat-em-up.html >/dev/null; then exit 0; fi
             sleep 0.2
           done
           cat /tmp/fighters-http.log

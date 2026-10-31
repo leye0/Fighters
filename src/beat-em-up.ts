@@ -36,6 +36,14 @@ const status = get<HTMLElement>("beat-status");
 const toggle = get<HTMLButtonElement>("beat-debug-toggle");
 const landscapeButton = get<HTMLButtonElement>("beat-landscape-lock");
 const orientationGate = get<HTMLElement>("beat-orientation-gate");
+const heroSelect = get<HTMLSelectElement>("beat-hero-select");
+const heroName = new URLSearchParams(location.search).get("hero") === "carla" ? "carla" : "claudia";
+heroSelect.value = heroName;
+heroSelect.addEventListener("change", () => {
+  const next = new URL(location.href);
+  next.searchParams.set("hero", heroSelect.value === "carla" ? "carla" : "claudia");
+  location.assign(next.href);
+});
 
 // Diagnostics must never obscure the game on first load, including when
 // Safari restores a prior page session or the application is hot-reloaded.
@@ -71,7 +79,7 @@ async function startBeatScene(): Promise<void> {
     diagnosticScrollBounds(DIAGNOSTIC_STAGE, BEAT_PROJECTION), DIAGNOSTIC_ACTORS, "hero");
   status.textContent = "Chargement des vrais personnages 3D riggés…";
   try {
-    await scene.loadActorModels({ hero: "claudia", enemy: "realistic-man" });
+    await scene.loadActorModels({ hero: heroName, enemy: "realistic-man" });
   } catch (error) {
     scene.dispose();
     throw error;
@@ -125,8 +133,11 @@ async function startBeatScene(): Promise<void> {
         ...demoEnemyInputs(current, DIAGNOSTIC_STAGE),
         hero: controls.snapshot(),
       }, DIAGNOSTIC_STAGE);
+      const combatGesture = controls.consumeCombatGesture();
+      if (combatGesture !== null && current.actors.find(actor => actor.id === "hero")?.supportingPlatformId !== null)
+        scene.previewHeroCombatGesture(combatGesture);
       // Animation and authored movement are advanced on EACH simulation tick.
-      // A 30 FPS display must not halve Mixamo gait speed by applying only the
+      // A 30 FPS display must not halve authored gait speed by applying only the
       // last of two physics ticks to a full render-frame elapsed time.
       scene.updateAnimations(1 / 60, previous, current);
       accumulator -= tickDuration;

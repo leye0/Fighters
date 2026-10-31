@@ -6,8 +6,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         game: resolve(import.meta.dirname, "index.html"),
-        animationReview: resolve(import.meta.dirname, "animation-review.html"),
-        animationComposite: resolve(import.meta.dirname, "animation-composite.html"),
         beatEmUp: resolve(import.meta.dirname, "beat-em-up.html"),
       },
     },

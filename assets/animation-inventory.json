@@ -1,6 +1,11 @@
 {
   "schemaVersion": 1,
   "workflow": "animation-first",
-  "description": "Approved character-specific fight clips, reviewed frame-by-frame. A blank list means there are no playable attacks; discovery/search roles are not gameplay.",
+  "description": "All three character GLBs contain 86 verified CC0 Quaternius animations. The approved combat-attack list remains empty until exact character-specific contacts and visual playback are reviewed. F/G/H are non-damaging gesture previews.",
+  "availableMotionPacks": [
+    {"fighterId":"claudia", "pack":"Quaternius UAL1+UAL2 Standard", "license":"CC0", "clipCount":86, "rigStatus":"technical_verified", "attackContactStatus":"pending"},
+    {"fighterId":"carla", "pack":"Quaternius UAL1+UAL2 Standard", "license":"CC0", "clipCount":86, "rigStatus":"technical_verified", "attackContactStatus":"pending"},
+    {"fighterId":"realistic-man", "pack":"Quaternius UAL1+UAL2 Standard", "license":"CC0", "clipCount":86, "rigStatus":"technical_verified", "attackContactStatus":"pending"}
+  ],
   "clips": []
 }

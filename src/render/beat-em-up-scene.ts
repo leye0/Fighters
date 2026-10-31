@@ -11,7 +11,7 @@ import { makeBeatCamera, placeBeatCamera } from "./beat-camera-three.ts";
 import { CHARACTER_MODEL_FILES, fitRigToActor, requireSkinnedRig,
   type AcquiredCharacterKey } from "./rigged-character.ts";
 import { BeatCharacterAnimator, canAnimateRealGameMotions } from "./beat-character-animator.ts";
-import { validateMotionSource } from "./beat-motion-source.ts";
+import { CC0_ANIMATION_PROVENANCE, validateMotionSource } from "./beat-motion-source.ts";
 
 const meters = (mm: number): number => mm / 1000;
 
@@ -79,13 +79,15 @@ export class BeatEmUpScene {
     const keys = new Set<AcquiredCharacterKey>([roleModels.hero, roleModels.enemy]);
     const sources = new Map<AcquiredCharacterKey, Group>();
     const animations = new Map<AcquiredCharacterKey, AnimationClip[]>();
-    const nativeSourceRigs = new Set<AcquiredCharacterKey>();
     await Promise.all([...keys].map(async key => {
       const url = new URL(CHARACTER_MODEL_FILES[key], document.baseURI).href;
       const gltf = await loader.loadAsync(url);
       requireSkinnedRig(gltf.scene);
-      const kind = validateMotionSource(gltf.parser.json.animations ?? []);
-      if (kind === "native-same-rig") nativeSourceRigs.add(key);
+      validateMotionSource(gltf.parser.json.animations ?? []);
+      const provenance = gltf.parser.json.asset?.extras?.fightersMotionSource;
+      if (provenance?.strategy !== CC0_ANIMATION_PROVENANCE || provenance.character !== key) {
+        throw new Error("Character GLB has no verified Quaternius CC0 provenance: " + key);
+      }
       sources.set(key, gltf.scene);
       animations.set(key, gltf.animations);
     }));
@@ -98,10 +100,8 @@ export class BeatEmUpScene {
       const clone = cloneSkeleton(source) as Group;
       const holder = new Group();
       holder.add(clone);
-      // Normalize AFTER playing the actual Mixamo idle frame. Some acquired
-      // rigs have a small unanimated mesh extent but their skinned meshes
-      // expand hundreds of metres when the first keyed pose is applied.
-      // Scaling the rest pose hid both enemy models below the camera.
+      // The original character's skin is preserved; 86 named actions target
+      // only its own bones and never move the authoritative game-world root.
       clone.traverse(object => {
         if (object instanceof Mesh) {
           object.castShadow = true;
@@ -111,12 +111,12 @@ export class BeatEmUpScene {
       visual.add(holder);
       const ownClips = animations.get(key) ?? [];
       if (!canAnimateRealGameMotions(ownClips)) {
-        throw new Error("A required real Mixamo clip failed GLBLoader parsing");
+        throw new Error("The character is missing baked Quaternius motions");
       }
       const initial = this.initialActors[this.actorIds.indexOf(actorId)];
       this.gameAnimators.set(actorId,
         new BeatCharacterAnimator(visual, clone, ownClips, initial.facing, isHero,
-          this.stage.gravityMmPerTick2, nativeSourceRigs.has(key)));
+          this.stage.gravityMmPerTick2));
       // Reset parent yaw while measuring and centering the model in its
       // local frame; fitRigToActor expects an unrotated parent.
       const facingYaw = visual.rotation.y;
@@ -133,6 +133,10 @@ export class BeatEmUpScene {
       const animator = this.gameAnimators.get(actor.id);
       if (animator) animator.update(preceding.get(actor.id) ?? actor, actor, elapsedSeconds);
     }
+  }
+
+  previewHeroCombatGesture(index: number): boolean {
+    return this.gameAnimators.get(this.heroId)?.previewCombatGesture(index) ?? false;
   }
 
   private addStageVolumes(): void {
@@ -221,8 +225,8 @@ export class BeatEmUpScene {
 
   get animationMode(): string {
     return this.gameAnimators.size === this.actorIds.length
-      ? "Mixamo : garde + vraie marche + recul + demi-tour + saut/chute"
-      : "clip source de diagnostic (pack Mixamo non déployé)";
+      ? "Quaternius CC0 : 86 animations natives par personnage"
+      : "animations Quaternius non chargées";
   }
 
   dispose(): void {

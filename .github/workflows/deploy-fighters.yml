@@ -1,22 +1,15 @@
-name: Publish Fighters animation review
+name: Publish Fighters 3D beat-em-up
 
 on:
   workflow_run:
-    workflows: ["Prepare real character GLB for browser", "Prepare Mixamo gameplay animations for real fighters"]
+    workflows: ["Fighters - CC0 animations on original character rigs"]
     types: [completed]
   push:
     branches: [main]
     paths:
       - docs/index.html
       - docs/site/**
-      - src/**
-      - public/**
-      - beat-em-up.html
-      - animation-review.html
-      - vite.review.config.ts
-      - package.json
-      - package-lock.json
-      - .github/workflows/deploy-animation-review.yml
+      - .github/workflows/deploy-fighters.yml
   workflow_dispatch:
 
 permissions:
@@ -31,26 +24,19 @@ concurrency:
 jobs:
   deploy:
     if: ${{ github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
     environment:
       name: github-pages
       url: ${{ steps.publish.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
         with:
-          node-version: "24"
-          cache: npm
-      - name: Build the actual latest game source for Pages
-        run: |
-          npm ci
-          npm test
-          npm run build:review
+          lfs: false
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
           path: docs
-      - name: Publish static animation selector
+      - name: Publish the built game with its three CC0-rigged characters
         id: publish
         uses: actions/deploy-pages@v4

@@ -1,73 +1,17 @@
-# Registre des ressources — Fighters
+# Fighters — registre des assets réellement utilisés
 
-**Dernière recherche :** 29 octobre 2026. Ce fichier inventorie des **sources et candidats**, pas des assets déjà inclus dans le jeu.
+Le dépôt est public. Les ressources intégrées sont identifiées par nom, auteur, URL source, licence et attribution. Les modèles humains sont des candidats photoréalistes dont les **droits de redistribution et d’attribution** sont séparés des droits d’animation.
 
-## États
+| Asset | Auteur | Source | Licence | Emplacement |
+| --- | --- | --- | --- | --- |
+| Claudia Rigged 002 | **Renderpeople** | [Sketchfab](https://sketchfab.com/3d-models/claudia-rigged-002-3d-rigged-business-women-c659bd0accab47c6bbe390cf822a2b92) | CC BY, tag NoAI ; attribution requise | `assets/source/characters/claudia/`, `public/models/claudia.glb` |
+| Carla Rigged 001 | **Renderpeople** | [Sketchfab](https://sketchfab.com/3d-models/carla-rigged-001-rigged-3d-business-women-acf520f450d14dd799f98a6fede3edf5) | CC BY, tag NoAI ; attribution requise | `assets/source/characters/carla/`, `public/models/carla.glb` |
+| Realistic Man basic rig | **J.azali** | [Sketchfab](https://sketchfab.com/3d-models/realistic-man-basic-rig-eaea58da1b3c4d4d9a75a68830959122) | CC BY ; attribution requise | `assets/source/characters/realistic-man/`, `public/models/realistic-man.glb` |
+| Universal Animation Library Standard | **Quaternius** | [itch.io](https://quaternius.itch.io/universal-animation-library) | CC0 1.0 | 43 clips dans chacun des GLB |
+| Universal Animation Library 2 Standard | **Quaternius** | [itch.io](https://quaternius.itch.io/universal-animation-library-2) | CC0 1.0 | 43 clips dans chacun des GLB |
 
-- **Candidat** : page repérée, description/licence annoncée relevée ; pas encore téléchargé, audité ou approuvé.
-- **Licence vérifiée** : conditions de l'asset précis, attribution, droits et diffusion examinés.
-- **Intégré** : fichier autorisé, optimisé, retargeté/testé, ajouté à la chaîne de build et crédité.
+Les trois archives Sketchfab brutes sont conservées dans le dépôt via Git LFS. Chaque dossier contient `ATTRIBUTION.md` et `audit.json` avec les empreintes de la source. Les GLB Web finaux conservent **les géométries, matériaux et squelettes authentiques**, adaptés par ajout des clips Quaternius. Les empreintes exactes des archives d’animation et les instructions reproductibles figurent dans [quaternius-pipeline.md](quaternius-pipeline.md).
 
-**Règle stricte :** aucun fichier brut tiers n'est publié ici tant que son droit de redistribution dans un dépôt GitHub public n'a pas été validé. Une licence CC BY oblige notamment à attribuer l'auteur et à signaler les adaptations. Les vidéos/jeux autorisés par Adobe ne rendent pas automatiquement les fichiers Mixamo redistribuables séparément.
+**Statut :** 86 clips techniques vérifiés par modèle ; morphologie, rendu et timing des contacts **non approuvés visuellement**. L’intégration d’un modèle ou d’une animation ne constitue pas une autorisation d’utiliser son identité/scannage en dehors des droits accordés.
 
-## Personnages réalistes — candidats identifiés
-
-**Priorité : intégrer un roster équilibré avec autant de femmes réalistes que possible.** Les cinq candidates ci-dessous complètent les modèles déjà identifiés. Le set générique homme/femme a été écarté car son rendu n'atteignait pas l'ambition photoréaliste.
-
-| ID | Modèle / auteur | Source | Licence annoncée | Rig / qualité annoncés | Statut |
-| --- | --- | --- | --- | --- | --- |
-| CHAR-CAND-006 | Claudia Rigged 002 — **Renderpeople** | [Sketchfab](https://sketchfab.com/3d-models/claudia-rigged-002-3d-rigged-business-women-c659bd0accab47c6bbe390cf822a2b92) | CC BY vérifiée par l'API, marque NoAI | Source ZIP 63,3 Mo en LFS ; 1 mesh skinné ; GLB Web 5,16 Mo ; rendu non validé | Source + GLB Web acquis ; candidate héroïne |
-| CHAR-CAND-007 | Carla Rigged 001 — **Renderpeople** | [Sketchfab](https://sketchfab.com/3d-models/carla-rigged-001-rigged-3d-business-women-acf520f450d14dd799f98a6fede3edf5) | CC BY vérifiée par l'API, marque NoAI | Source ZIP 62,4 Mo en LFS ; 1 mesh skinné ; GLB Web 5,24 Mo ; rendu non validé | Source + GLB Web acquis ; candidate héroïne |
-| CHAR-CAND-008 | Alina Ip, realistic Asian woman — **Jungle Jim** | [Sketchfab](https://sketchfab.com/3d-models/alina-ip-realistic-asian-woman-animated-600d4d4aa71c4181b2567a3605ce8c57) | CC BY affichée | Femme réaliste riggée/animée ; **vérifier impérativement les licences sous-jacentes FaceGen/DAZ/CC4** | Candidat à risque |
-| CHAR-CAND-009 | Realistic woman walking (animated) — **Jungle Jim** | [Sketchfab](https://sketchfab.com/3d-models/realistic-woman-walking-animated-d1ce2b8009b8401481408aeecea903d0) | CC BY affichée | Femme réaliste, animée, rig/facial annoncés ; provenance des sous-assets à vérifier | Candidat à risque |
-| CHAR-CAND-010 | Rigged Woman in Green Mini Dress — **kindman-boy** | [Sketchfab](https://sketchfab.com/3d-models/rigged-woman-in-green-mini-dress-full-body-3d-53c48f928f4b456b8f885333a5f0e669) | CC BY affichée | Femme réaliste riggée et matériaux PBR ; **~821k triangles**, optimisation majeure indispensable | Candidat |
-| CHAR-CAND-001 | Human 3D model scanned with iPhone X — **in3D** | [Sketchfab](https://sketchfab.com/3d-models/human-3d-model-scanned-with-iphone-x-73e467dfc8a04914bb314a9410077858) | CC BY | Humain scanné, textures réalistes, riggé et animé | Candidat |
-| CHAR-CAND-002 | Rigged T-Pose Human Male w 50 Face Blendshapes — **Mike Alger** | [Sketchfab](https://sketchfab.com/3d-models/rigged-t-pose-human-male-w-50-face-blendshapes-cc7e4596bcd145208a6992c757854c07) | CC BY | Scan riggé, 50 blendshapes ; textures PBR à enrichir | Candidat |
-| CHAR-CAND-003 | Realistic man basic rig — **J.azali** | [Sketchfab](https://sketchfab.com/3d-models/realistic-man-basic-rig-eaea58da1b3c4d4d9a75a68830959122) | CC BY vérifiée par l'API | Source ZIP 8,4 Mo en LFS ; 3 meshes skinnés ; GLB Web 11,07 Mo ; 1 animation source | Source + GLB Web acquis ; candidat ennemi |
-| CHAR-CAND-005 | Rigged Clothed Body — **Abduleleah Alshreef** | [Sketchfab](https://sketchfab.com/3d-models/rigged-clothed-body-9998b92d12554d67a2788aaf05e66729) | CC BY | Corps vêtu riggé ; qualité à inspecter | Candidat |
-
-Les informations de licence ci-dessus sont **affichées sur les pages sources au moment de la recherche**, et ne constituent **pas** un audit des fichiers et des droits à l'image. Les personnages scannés exigent une vigilance supplémentaire sur le consentement de la personne représentée. Le cas échéant, privilégier les modèles générés.
-
-## Génération de personnages CC0
-
-| Source | Usage | Statut |
-| --- | --- | --- |
-| [MakeHuman Community / MPFB](https://www.makehumancommunity.org/about/license.html) | Générer des humains, variations morphologiques, rigs et textures ; assets de base/export CC0 selon leurs conditions | Source documentée ; workflow à tester |
-| [MPFB — présentation](https://static.makehumancommunity.org/mpfb/about.html) | Génération dans Blender, rigging IK/FK et matériaux peau/yeux | Source documentée ; rendu à comparer |
-| [Adobe Mixamo](https://www.mixamo.com/) | Personnages et rigging bipède, animations réutilisables dans un jeu | Source documentée ; catalogue et limites de distribution à étudier |
-
-Important : les **assets de base** MakeHuman/MPFB sont CC0 selon le fournisseur ; les téléchargements communautaires et vêtements tiers doivent être inspectés individuellement. Le **code** des outils possède une licence différente.
-
-## Décors et matériaux
-
-| Source | Type | Licence indiquée | Statut |
-| --- | --- | --- | --- |
-| [Poly Haven](https://polyhaven.com/license) | HDRI, modèles, surfaces PBR | CC0 | Source vérifiée ; modèles spécifiques à sélectionner |
-| [ambientCG](https://ambientcg.com/) | Matériaux PBR et environnements | Vérifier la fiche de chaque ressource | À auditer |
-
-## Effets sonores
-
-| Source | Type | Statut |
-| --- | --- | --- |
-| [Freesound](https://freesound.org/help/faq/) | Impacts, corps, souffle, pas, ambiance, combat | Catalogue à sélectionner ; privilégier CC0 et documenter toute CC BY |
-
-## Catalogue Mixamo à constituer
-
-Le catalogue détaillé des **mouvements recherchés** se trouve dans [production-plan.md](production-plan.md), section 8.
-
-Pour chaque clip retenu, relever : ID source, nom original, famille (locomotion / poing / pied / garde / réaction / projection / KO / victoire), référence du rig, durée, bouclage, in-place/root motion, frame de contact, retargeting, qualité, droits et emplacement de stockage autorisé.
-
-Ne pas archiver en masse les FBX bruts Mixamo dans le dépôt public sans fondement de redistribution.
-
-## Champs obligatoires pour une ressource intégrée
-
-- Identifiant stable (ex. CHAR-001 / ANIM-001 / STAGE-001 / SFX-001).
-- Auteur, plateforme, titre et URL précise de l'asset.
-- Date de collecte, licence/version, lien du texte de licence et preuve archivée si possible.
-- Usage commercial, droit de modification, droit de redistribution de la source brute et du dérivé dans le jeu.
-- Attribution requise, texte de crédit et statut de droit à l'image.
-- Hash SHA-256, taille, formats source/export, nombre de triangles/bones/animations/textures.
-- Procédé de conversion/retargeting et test visuel effectué.
-- État : candidat / licence vérifiée / intégré / rejeté.
-
-Le manifeste machine-readable complémentaire est **assets/manifest.json**. Aucun modèle ni son n'est encore intégré dans le dépôt.
+Les autres candidats éventuels sont enregistrés dans `assets/manifest.json` mais ne constituent pas des assets de jeu. Les futurs décors, effets et sons devront faire l’objet d’un audit de droits par fichier. Favoriser CC0 et respecter chaque attribution CC BY.

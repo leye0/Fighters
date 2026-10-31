@@ -8,14 +8,14 @@ Construire un **beat’em up d’action 3D à défilement latéral** pour naviga
 
 Le document directeur est **docs/production-plan.md**. Le consulter avant toute modification, mettre à jour les cases réalisées dans le même commit que le travail associé et ne jamais marquer une case terminée sans preuve concrète.
 
-**Agent externe ou reprise sans historique de conversation :** commencer par le chapitre [Guide de reprise pour un agent de développement externe](docs/production-plan.md#guide-de-reprise-pour-agent-externe). Il précise le véritable état du code, les 63 clips retenus, les incompatibilités du moteur 1v1, le prochain écran 3D minimaliste, les tests et le déploiement Pages.
+**Agent externe ou reprise sans historique de conversation :** commencer par le [Guide de reprise](docs/production-plan.md#guide-de-reprise-pour-agent-externe). Il décrit la scène 3D actuelle, les trois modèles, les 86 clips CC0 par rig, les tests et les tâches non approuvées.
 
 ## Méthode demandée par le propriétaire
 
 1. **Toujours travailler directement dans main.** Ne pas créer de branche de fonctionnalité ou de pull request. Ne pas forcer les pushes et ne pas réécrire l'historique.
 2. **Production dès le départ.** Aucun MVP, prototype jetable ou faux mécanisme présenté comme complet. Les étapes de réalisation peuvent être ordonnées par dépendances mais n'annulent aucune exigence du plan.
 3. **Qualité mesurable.** Définir le comportement attendu, implémenter, tester, vérifier les régressions pertinentes, puis committer sur main.
-4. **Architecture extensible et animation-first.** Combattants, coups, animations, arènes, sons et effets sont pilotés par des données. **Les coups du vrai jeu doivent provenir de clips réellement disponibles, inspectés et retargetés**, puis leurs commandes et combos sont choisis. Le `MOVE_CATALOG` de 71 idées n'est qu'une fixture du moteur et ne doit jamais servir d'arsenal de production. Voir `docs/animation-first.md`.
+4. **Architecture extensible et animation-first.** Combattants, coups, animations, arènes, sons et effets sont pilotés par des données. **Les coups du vrai jeu doivent provenir de clips réellement disponibles, inspectés et retargetés**, puis leurs commandes et combos sont choisis. Les gestes de combat affichés actuellement ne font aucun dégât avant validation des contacts. Voir `docs/animation-first.md`.
 5. **Personnages 3D réels dès maintenant.** Léon a précisé que les volumes provisoires valent pour le décor et les plateformes, **pas pour les personnages** : une capsule/silhouette ne prouve aucun progrès sur les rigs, proportions, textures, contacts ou animations. Les marqueurs peuvent subsister dans des tests techniques isolés, mais aucun jalon personnages ou gameplay visuel ne peut être validé sans de vrais humains 3D riggés. Utiliser d'abord **les candidats déjà inscrits dans `assets/manifest.json` et `docs/asset-register.md`** ; ne pas repartir en recherche générale de modèles.
    **Casting narratif approuvé :** quatre héroïnes adultes sélectionnables — femme de bureau noire, femme de bureau blanche, femme trans, hipster engagée à gauche — qui affrontent des misogynes, proxénètes, machos et « douches ». Le catalogue acquis propose Claudia et Carla comme candidates héroïnes, Realistic Man comme candidat ennemi, **sans attribution visuelle définitive**. Voir les tâches précises de casting dans `docs/production-plan.md`.
 6. **Ne pas inventer de validation visuelle.** Lorsque la perception humaine du rendu ou du gameplay est nécessaire, fournir une version testable et demander au propriétaire de juger ; ne pas créer un processus « Lab » autonome qui s'arrogerait cette validation.
@@ -29,7 +29,7 @@ Le document directeur est **docs/production-plan.md**. Le consulter avant toute 
 - TypeScript/Vite, Three.js avec WebGL 2 ; WebGPU seulement derrière un adaptateur et après évaluation.
 - Simulation autoritative à **60 ticks/s** séparée du rendu et de l'animation.
 - Affichage 3D avec caméra latérale qui défile : X = progression, Z = profondeur de la rue, Y = vraie élévation des plateformes (toits, bacs de poubelles, escaliers). Les trois axes sont simulés à 60 Hz en millimètres entiers.
-- Ennemis multiples et ciblage technique optionnel, **sans orientation automatique vers eux**. Les seules commandes gauche/droite déterminent le facing ; à l'arrêt il reste inchangé même lorsqu'un adversaire passe derrière. Le demi-tour Mixamo peut être visuel, court et interruptible, mais ne doit jamais bloquer le déplacement choisi.
+- Ennemis multiples et ciblage technique optionnel, **sans orientation automatique vers eux**. Les seules commandes gauche/droite déterminent le facing ; à l'arrêt il reste inchangé même lorsqu'un adversaire passe derrière.
 - Décrire les plateformes et obstacles par des données génériques. **Décor de test volontairement minimaliste** (blocs/plans) jusqu’à l’achèvement des mécanismes, puis design photoréaliste des lieux. Voir [docs/beat-em-up-architecture.md](docs/beat-em-up-architecture.md).
 - **Caméra solo : héros centré sur l’image** tant que le scrolling reste possible ; seuls les bords gauche, droit, haut ou bas du niveau autorisent son décentrage.
 - Les hitboxes, hurtboxes, timings, états et dégâts proviennent des données de simulation ; le squelette visuel ne décide jamais du résultat d'un coup.
@@ -41,25 +41,15 @@ Le document directeur est **docs/production-plan.md**. Le consulter avant toute 
 
 - Le banc historique `npm run simulate:ai` évalue des **duels 1v1 de simulation** à 60 ticks/s avec les mêmes `InputFrame` que les joueurs ; il n’est pas le scénario principal de production. Les tests doivent vérifier la reproductibilité, la présence d'échanges, les attaques spéciales et les avertissements d'inactivité.
 - **Ne jamais déduire qu'un combat est « fun » à partir de simples statistiques.** Après intégration de deux combattants photoréalistes et d'animations, exécuter un véritable match IA contre IA dans WebGL, l'enregistrer avec WebSuite et demander au propriétaire une appréciation à vitesse réelle. Voir `docs/ai-combat-qa.md`.
-- La simple existence d'un emplacement d'animation dans le catalogue ne signifie pas qu'un clip Mixamo a été acquis ni que sa licence a été vérifiée.
+- La simple présence des 86 animations CC0 sur chaque personnage ne signifie pas que les coups et leurs contacts ont été approuvés.
 - **Aucun coup visuellement exécutable sans son vrai clip approuvé pour le personnage** : l'inventaire `assets/animation-inventory.json` doit être exploité pour créer ses moves, et la présence des clips exacts dans le GLB est obligatoire avant de lancer le match.
 
-## Exigence nouvelle — pipeline standard Adobe Mixamo, sans retargeting arbitraire
+## Pipeline unique — Quaternius CC0, automatique et vérifiable
 
-- Priorité à l'animation directement exportée sur le propre squelette du personnage : FBX riggé original → import Mixamo → sept FBX With Skin → Blender assembleur (scripts/assemble-native-mixamo.py) → validations GLB → inspection humaine des bras → jeu.
-- **Interdire les correctifs anatomiques par personnage ou angle codé à la main** (par ex. une rotation de clavicule pour Claudia). Une différence entre poses de référence, hiérarchies ou squelettes est un problème d'import incompatible qui doit être rejeté plutôt que dissimulé.
-- **Le workflow YBot historique est définitivement désactivé :** ne pas le redéclencher pour générer des GLB, ne pas restaurer ses permissions d'écriture et ne pas réintroduire sa sortie sous l'étiquette « native ». Les anciennes animations du site restent seulement des témoins non approuvés en attendant les vrais exports Adobe.
-- **Ne jamais annoncer Mixamo comme validé** quand seul un export Blender ou un test synthétique a été exécuté. La compatibilité Adobe demande une véritable importation et visualisation des vrais riggs dans le service. Les fichiers tiers doivent respecter leurs licences et rester hors du Git public si nécessaire.
-- **Batch de validation complet à chaque itération :** les sept clips du même rig, tests négatifs clips manquants / squelette différent, validation des données et une inspection 3D sur plusieurs angles avant toute substitution d'asset.
-- Le visualiseur local (native-mixamo-review.html) ne téléverse pas le fichier. La démo publique ne doit pas être remplacée par un fichier dont les bras sont incorrects, même si tous les tests structurels sont verts. Voir docs/mixamo-native-pipeline.md.
-
-## Sources Mixamo WarConquer (réel, pas théorique)
-
-- Consulter [docs/mixamo-real-sources.md](docs/mixamo-real-sources.md), [assets/mixamo-available-clips.json](assets/mixamo-available-clips.json) et [assets/mixamo-selected.json](assets/mixamo-selected.json) : 471 candidats indexés, 302 FBX/GLB privés convertis, **63 clips sources conservés par Léon** (noms exacts et SHA). Sélection humaine des vidéos ≠ retargeting ni approbation pour un personnage.
-- En cas de HTTP 429, ne pas multiplier les requêtes : respecter `Retry-After`, stopper et reprendre ensuite. La commande `--workers 1 --request-interval 5` limite volontairement le débit.
-- Le script `scripts/acquire-mixamo.py` acquiert les sources dans une destination **hors repo Git public**. Le script `scripts/convert-mixamo-fbx.py` les transforme en GLB animés dans une autre destination **privée** après validation FBX/SHA et vérification des canaux GLB. Ne pas committer les FBX bruts ni les GLB de clips isolés à droits incertains.
-- Ces clips **ne sont pas validés pour le jeu** : `assets/animation-inventory.json` reste vide. Seuls des clips légalement vérifiés, retargetés, visionnés et avec frames de contact mesurées autorisent un coup jouable.
-- Ne pas dépendre d'un transfert de navigateur Adobe fragile pour les essais techniques. Préserver la provenance Adobe; le miroir tiers ne crée aucune autorisation nouvelle.
+- **Seules sources d’animation :** Quaternius Universal Animation Library Standard 1 + 2 sous CC0, 43 clips de chaque pack intégrés directement aux **trois vrais squelettes** Claudia, Carla, Realistic Man, soit 86 clips par personnage. Voir `docs/quaternius-pipeline.md`.
+- Génération et tests dans `scripts/build-quaternius-animations.mjs` et `scripts/check-quaternius-models.mjs` ; les deux archives ZIP sont figées par SHA-256. Workflow GitHub Actions autorisé sur `main` pour construire et publier les GLB et le site. Aucun compte ni intervention d'export manuel nécessaire.
+- **Interdire les correctifs anatomiques par personnage ou rotation codée à la main.** En cas de rig incompatible, la génération doit échouer et ne jamais publier un avatar factice. La qualité visuelle doit être vérifiée honnêtement sur les vraies morphologies.
+- Les 86 clips fournissent une bibliothèque de mouvements, **pas une liste de frappes aux contacts validés**. Les gestes de combat prévisualisés n’infligent aucun dégât avant mesure et approbation.
 
 ## Statut du projet
 
@@ -69,7 +59,7 @@ Fighters est **non commercial pour le moment**, selon le propriétaire. Ce statu
 
 - Dépôt **public** : **ne jamais committer** un modèle, une animation, un son ou une texture dont la redistribution publique n'est pas expressément compatible avec sa licence.
 - **Décision de Léon pour Sketchfab :** télécharger et conserver directement dans GitHub les **modèles humains bruts** dont la licence permet la redistribution (notamment CC BY avec attribution), même si les archives sont volumineuses (Git LFS). **Aucune interdiction générale des modèles bruts ou obligation de les garder seulement hors Git.** Le contrôle de provenance, la licence et les crédits s'appliquent au fichier exact ; leur acquisition ne signifie pas que le modèle est validé visuellement ou retargeté.
-- Mixamo autorise son utilisation dans des jeux ; cela ne suffit pas à établir le droit de republier ses sources brutes dans Git.
+- Les packs Quaternius utilisés sont les éditions Standard identifiées CC0 par l’auteur ; conserver leurs URLs et SHA fixes. Les licences des modèles Sketchfab CC BY sont distinctes.
 - Privilégier CC0. CC BY est envisageable avec crédits corrects et conditions vérifiées. Les licences NC et les droits incertains ne doivent pas entrer dans le produit commercialisable.
 - Pour tout asset : URL source, auteur, licence, obligations, date, formats, hash et statut de validation dans le registre.
 - Respecter droits à l'image, marques et personnages protégés. Fighters doit posséder une identité visuelle originale.

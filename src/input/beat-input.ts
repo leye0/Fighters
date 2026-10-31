@@ -15,7 +15,8 @@ export function digitalBeatInput(held: ReadonlySet<string>): BeatInput {
 }
 
 const keys = new Set(["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp",
-  "KeyA", "KeyD", "KeyW", "KeyS", "Space", "KeyJ", "KeyK"]);
+  "KeyA", "KeyD", "KeyW", "KeyS", "Space", "KeyJ", "KeyK", "KeyF", "KeyG", "KeyH"]);
+const combatKeys = ["KeyF", "KeyG", "KeyH"] as const;
 
 /** Separate from the legacy duel's up/down = crouch/jump binding. */
 export class BeatControls {
@@ -24,6 +25,8 @@ export class BeatControls {
   private readonly buttons: HTMLElement[];
   private wasJumping = false;
   private wasDropping = false;
+  private queuedCombatGesture: number | null = null;
+  private wasGamepadAttacking = false;
 
   constructor(root: HTMLElement) {
     this.buttons = [...root.querySelectorAll<HTMLElement>("[data-beat-key]")];
@@ -42,6 +45,8 @@ export class BeatControls {
     if (!keys.has(event.code) || event.altKey || event.ctrlKey || event.metaKey) return;
     if (["INPUT", "TEXTAREA", "SELECT"].includes((event.target as Element | null)?.tagName ?? "")) return;
     event.preventDefault();
+    if (!event.repeat && combatKeys.includes(event.code as typeof combatKeys[number]))
+      this.queuedCombatGesture = combatKeys.indexOf(event.code as typeof combatKeys[number]);
     this.held.add(event.code);
   };
 
@@ -58,6 +63,8 @@ export class BeatControls {
     const key = button.dataset.beatKey;
     if (!key) return;
     this.touch.set(event.pointerId, key);
+    if (combatKeys.includes(key as typeof combatKeys[number]))
+      this.queuedCombatGesture = combatKeys.indexOf(key as typeof combatKeys[number]);
     button.setPointerCapture(event.pointerId);
   };
 
@@ -70,9 +77,22 @@ export class BeatControls {
     this.touch.clear();
     this.wasJumping = false;
     this.wasDropping = false;
+    this.wasGamepadAttacking = false;
+    this.queuedCombatGesture = null;
   };
 
   reset(): void { this.clear(); }
+
+  consumeCombatGesture(): number | null {
+    const queued = this.queuedCombatGesture;
+    this.queuedCombatGesture = null;
+    const pad = Array.from(navigator.getGamepads?.() ?? []).find(p => p?.connected) ?? null;
+    const held = [pad?.buttons[2]?.pressed, pad?.buttons[3]?.pressed, pad?.buttons[4]?.pressed];
+    const heldNow = held.some(Boolean);
+    const triggered = heldNow && !this.wasGamepadAttacking ? held.findIndex(Boolean) : null;
+    this.wasGamepadAttacking = heldNow;
+    return queued ?? triggered;
+  }
 
   snapshot(): BeatInput {
     const combined = new Set(this.held);

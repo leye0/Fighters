@@ -10,16 +10,14 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "npm run typecheck && vite build",
-    "build:review": "npm run typecheck && vite build --config vite.review.config.ts",
-    "review:catalog": "node scripts/generate-review-catalog.ts",
     "preview": "vite preview --host 127.0.0.1",
     "test": "node --test tests/*.test.ts",
     "test:engine": "node --test tests/*.test.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test:ai": "node --test tests/ai-battle.test.ts",
     "simulate:ai": "node scripts/ai-battle.ts",
-    "mixamo:list": "python3 scripts/acquire-mixamo.py --list",
-    "mixamo:verify-layers": "node scripts/verify-mixamo-layers.ts"
+    "animation:build": "node scripts/build-quaternius-animations.mjs",
+    "animation:verify": "node scripts/check-quaternius-models.mjs public/models"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

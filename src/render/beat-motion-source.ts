@@ -1,29 +1,18 @@
 import { GAME_MOTION_NAMES } from "./beat-character-animator.ts";
 
-export type MotionSourceKind = "legacy-ybot-rebind" | "native-same-rig";
+export const CC0_ANIMATION_PROVENANCE = "quaternius-cc0-own-skin-v1";
 export type MotionSourceDescription = Readonly<{
   name?: string;
-  extras?: { retargeting?: string };
+  extras?: { rigTransfer?: string; license?: string; source?: string };
 }>;
 
-/**
- * Reject mixed/synthetic/partial clip packs before attaching any real rig.
- * Each of the seven clips must come from a SINGLE verified pipeline.
- */
-export function validateMotionSource(animations: readonly MotionSourceDescription[]): MotionSourceKind {
-  const relevant = animations.filter(a => a.name?.startsWith("Fighters_Mixamo_"));
-  const expected = new Set(Object.values(GAME_MOTION_NAMES));
-  const names = new Set(relevant.map(a => a.name));
-  if (relevant.length !== expected.size || names.size !== expected.size ||
-      [...expected].some(name => !names.has(name))) {
-    throw new Error("Character is missing one or more of the seven exact Mixamo gameplay motions");
+/** Fail closed: no Adobe/YBot fallback, partial pack or mixed source rigs. */
+export function validateMotionSource(animations: readonly MotionSourceDescription[]): void {
+  if (animations.length !== 86 || new Set(animations.map(a => a.name)).size !== 86 ||
+      Object.values(GAME_MOTION_NAMES).some(name => !animations.some(a => a.name === name)) ||
+      animations.some(a => !/^UAL[12]_/.test(a.name ?? "") ||
+        a.extras?.rigTransfer !== CC0_ANIMATION_PROVENANCE ||
+        a.extras?.license !== "CC0-1.0")) {
+    throw new Error("Expected all 86 same-skin Quaternius CC0 animations");
   }
-  const markers = new Set(relevant.map(a => a.extras?.retargeting));
-  if (markers.size !== 1) {
-    throw new Error("Character combines animations from incompatible rig sources");
-  }
-  const marker = [...markers][0];
-  if (marker === "same-rig-mixamo-fbx-v1") return "native-same-rig";
-  if (marker === "warconquer-inverse-bind-world-v1") return "legacy-ybot-rebind";
-  throw new Error("Character has an unverified or untagged animation source");
 }

@@ -1,27 +1,27 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { GAME_MOTION_NAMES } from "../src/render/beat-character-animator.ts";
-import { validateMotionSource } from "../src/render/beat-motion-source.ts";
+import { CC0_ANIMATION_PROVENANCE, validateMotionSource } from
+  "../src/render/beat-motion-source.ts";
 
-const names = Object.values(GAME_MOTION_NAMES);
-const pack = (marker: string) =>
-  names.map(name => ({ name, extras: { retargeting: marker } }));
-
-test("existing WarConquer-baked gameplay packs remain accepted", () => {
-  assert.equal(validateMotionSource(pack("warconquer-inverse-bind-world-v1")),
-    "legacy-ybot-rebind");
+function validPack() {
+  const names = new Set<string>(Object.values(GAME_MOTION_NAMES));
+  let i = 0;
+  while (names.size < 86) names.add("UAL2_extra_" + i++);
+  return [...names].map(name => ({ name,
+    extras: { rigTransfer: CC0_ANIMATION_PROVENANCE, license: "CC0-1.0" } }));
+}
+test("all 86 CC0 native-skin animation records are accepted", () => {
+  assert.doesNotThrow(() => validateMotionSource(validPack()));
 });
-test("native same-rig Mixamo FBX bundle is accepted as separate safe source", () => {
-  assert.equal(validateMotionSource(pack("same-rig-mixamo-fbx-v1")), "native-same-rig");
-});
-test("never silently retarget missing, mixed or duplicate movements", () => {
-  const native = pack("same-rig-mixamo-fbx-v1");
-  assert.throws(() => validateMotionSource(native.slice(1)));
-  assert.throws(() => validateMotionSource([...native,native[0]]));
-  assert.throws(() => validateMotionSource(native.map((c,i)=>i===2?
-    { ...c, name:"Fighters_Mixamo_Made_Up" }:c)));
-  assert.throws(() => validateMotionSource(native.map((c,i)=>i===0?
-    { ...c, extras:{retargeting:"warconquer-inverse-bind-world-v1"} }:c)));
-  assert.throws(() => validateMotionSource(pack("unrecognized-source")));
-  assert.throws(() => validateMotionSource(names.map(name=>({name}))));
+test("legacy, mixed, missing, unknown or duplicate animation sources are rejected", () => {
+  const good = validPack();
+  assert.throws(() => validateMotionSource(good.slice(1)));
+  assert.throws(() => validateMotionSource([...good.slice(1), good[1]]));
+  assert.throws(() => validateMotionSource(good.map((entry, i) => i === 0 ?
+    { ...entry, name: "Fighters_Mixamo_Fighting_Idle" } : entry)));
+  assert.throws(() => validateMotionSource(good.map((entry, i) => i === 5 ?
+    { ...entry, extras: { rigTransfer: "warconquer-inverse-bind-world-v1", license: "CC0-1.0" } } : entry)));
+  assert.throws(() => validateMotionSource(good.map((entry, i) => i === 6 ?
+    { ...entry, extras: { rigTransfer: CC0_ANIMATION_PROVENANCE, license: "adobe-mixamo" } } : entry)));
 });

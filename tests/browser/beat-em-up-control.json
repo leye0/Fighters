@@ -1,5 +1,5 @@
 {
-  "url": "http://127.0.0.1:4173/site/beat-em-up.html?qa=1",
+  "url": "http://127.0.0.1:4173/beat-em-up.html?qa=1",
   "steps": [
     {
       "action": "assert",
