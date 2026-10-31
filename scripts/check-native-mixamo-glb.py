@@ -123,7 +123,7 @@ def main(argv):
             name=animation.get("name","")
             if name in EXPECTED:
                 chosen.append(animation)
-            elif re.fullmatch(r"Armature(?:\\.\d+)?\\|Scene(?:\\.\d+)?",name):
+            elif re.fullmatch(r"Armature(?:\.\d+)?\|Scene(?:\.\d+)?",name):
                 extras.append(name)
             else:
                 raise RuntimeError("Unexpected animation in GLB: "+name)
