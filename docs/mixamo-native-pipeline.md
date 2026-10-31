@@ -103,3 +103,9 @@ gh workflow run mixamo-direct-adobe.yml -R leye0/Fighters \
 **Sécurité :** le fichier `.b64` représente des cookies de connexion et **n'est pas chiffré**. Ne jamais le committer, partager, coller dans un chat ni ajouter comme artifact. Le script exige une destination hors du dépôt et des droits 0600. Le retirer lorsqu'il n'est plus nécessaire; la session peut expirer ou être révoquée par Adobe. Ne jamais utiliser les identifiants Adobe en dur dans une Action.
 
 **Statut actuel :** infrastructure automatique et tests hors ligne prêts. **Authentification Adobe du navigateur non vérifiée**, import des trois personnages non exécuté sur Adobe, aucune image de marche native approuvée. Dès que le serveur retourne les FBX natifs, la suite Blender se déroule sans étape manuelle de conversion, mais la revue visuelle 3D reste obligatoire avant de publier les GLB dans Fighters.
+
+### Test réel de présence de session Adobe
+
+L'Action [41160023307](https://github.com/leye0/Fighters/actions/runs/41160023307) a été déclenchée une seule fois sur le dépôt. Verdict vérifié : **aucun secret `MIXAMO_STORAGE_STATE_B64` configuré**, donc arrêt immédiat à `Check for previously authorized Adobe session` ; Blender, Playwright et Mixamo n'ont **pas** été exécutés pendant ce run. Le déclencheur `push` de test a ensuite été retiré afin d'éviter des minutes CI inutiles; le workflow direct Adobe est dorénavant **uniquement manuel**.
+
+La dépendance précise n'est pas de choisir ou de télécharger 21 fichiers manuellement : c'est **une seule authentification Adobe initiale**, ou la mise à disposition d'une session déjà autorisée. Une fois la session fournie au navigateur, l'automatisation peut prendre le relais, sous réserve des contrôles de validité et d'éventuels défis interactifs Adobe. Les 5 tests hors ligne [41159852518](https://github.com/leye0/Fighters/actions/runs/41159852518) n'utilisent pas de connexion Adobe et ne démontrent pas sa compatibilité avec les modèles.
