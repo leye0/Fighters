@@ -27,6 +27,8 @@ import sys
 import tempfile
 import time
 from urllib.parse import quote
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_CATALOG = ROOT / "assets/mixamo-available-clips.json"
@@ -65,6 +67,32 @@ def selected_catalog():
     clips = {c["filename"]: c for c in data["clips"]}
     must(all(name in clips for name in MOTION_FILES), "Source catalog is incomplete")
     return [(name, clips[name]) for name in MOTION_FILES]
+
+
+
+def live_motion_metadata(metadata):
+    """Read exact UUID from Adobe's publicly available catalog, not stale text."""
+    uid = metadata["motionId"]
+    must(re.fullmatch(r"[0-9a-fA-F-]{36}", uid),
+         "Invalid exact Adobe motion UUID")
+    request = Request("https://www.mixamo.com/api/v1/products/" + uid + "?similar=0",
+                      headers={"Accept":"application/json", "X-Api-Key":"mixamo2"})
+    try:
+        with urlopen(request, timeout=15) as reply:
+            must(reply.status == 200, "Adobe motion detail request failed")
+            doc = json.loads(reply.read(200000))
+    except HTTPError as error:
+        if error.code == 429:
+            raise MixamoBlocked("Adobe HTTP 429; stop and respect rate limits") from None
+        raise MixamoBlocked("Adobe motion UUID lookup returned HTTP " + str(error.code)) from None
+    except (URLError, TimeoutError, ValueError):
+        raise MixamoBlocked("Adobe exact motion UUID lookup failed") from None
+    must(doc.get("id") == uid and norm(doc.get("name")) == norm(metadata["originalTitle"]),
+         "Adobe motion UUID/title differs from the verified Fighters catalog")
+    desc = doc.get("description")
+    must(isinstance(desc, str) and bool(desc.strip()),
+         "Adobe returned no live description for exact UUID")
+    return {**metadata, "sourceDescription":desc}
 
 
 def logged_in(page):
@@ -151,7 +179,8 @@ def cards_on_page(page):
 
 def find_motion(page, filename, metadata):
     title = metadata["originalTitle"]
-    desc = metadata["sourceDescription"]
+    live = live_motion_metadata(metadata)
+    desc = live["sourceDescription"]
     uuid = metadata["motionId"].lower()
     candidates = []
     # Browser list pages are finite (48/page). Inspect metadata on every page,
