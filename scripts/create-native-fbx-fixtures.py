@@ -42,7 +42,7 @@ def main(source,folder):
         for i,bone in enumerate(active[:40]):
             bone.rotation_mode="QUATERNION"
             for frame,sign in ((1,0),(10,1),(20,-0.4),(30,0)):
-                angle=(index+1)*0.012*(1+(i%7)/7)*sign
+                angle=(index+1)*0.09*(1+(i%7)/7)*sign
                 bone.rotation_quaternion=Quaternion(Vector((0,0,1)),angle)
                 bone.keyframe_insert(data_path="rotation_quaternion",frame=frame)
         bpy.context.scene.frame_set(1)
