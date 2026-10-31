@@ -1,0 +1,75 @@
+name: Fighters · prepare standard Adobe Mixamo FBX uploads
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - assets/runtime-requests/prepare-mixamo-upload.txt
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fighters-mixamo-standard-export
+  cancel-in-progress: true
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install Blender's standard glTF and FBX import/export tools
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y blender
+          blender --version | head -3
+      - name: Restore immutable original model GLBs
+        run: |
+          mkdir -p "$RUNNER_TEMP/mixamo-input" work/mixamo-upload
+          for character in claudia carla realistic-man; do
+            git show 8979a7f8550ab78f5906eea9eca9ddbbd0ce2c88:public/models/"$character".glb > "$RUNNER_TEMP/mixamo-input/$character.glb"
+            test -s "$RUNNER_TEMP/mixamo-input/$character.glb"
+          done
+      - name: Generate one embedded-media rigged FBX per original human
+        run: |
+          for character in claudia carla realistic-man; do
+            blender -b -t 2 --python scripts/export-character-for-mixamo.py -- \
+              "$RUNNER_TEMP/mixamo-input/$character.glb" "$GITHUB_WORKSPACE/work/mixamo-upload/$character.fbx"
+          done
+      - name: Cold re-import and validate all FBX rigs
+        run: |
+          for character in claudia carla realistic-man; do
+            blender -b -t 2 --python scripts/check-mixamo-export.py -- \
+              "$GITHUB_WORKSPACE/work/mixamo-upload/$character.fbx"
+          done
+      - name: Attach original credits and user guide
+        run: |
+          cat > work/mixamo-upload/READ-ME.txt <<'EOF'
+          Standard Adobe Mixamo FBX uploads for Fighters (rigged and embedded textures).
+          All three come from the clean original GLBs, not the defective baked clips.
+
+          Claudia: Renderpeople / Sketchfab, CC BY 4.0:
+          https://sketchfab.com/3d-models/claudia-rigged-002-3d-rigged-business-women-c659bd0accab47c6bbe390cf822a2b92
+          Carla: Renderpeople / Sketchfab, CC BY 4.0:
+          https://sketchfab.com/3d-models/carla-rigged-001-rigged-3d-business-women-acf520f450d14dd799f98a6fede3edf5
+          Realistic Man: J.azali / Sketchfab, CC BY 4.0:
+          https://sketchfab.com/3d-models/realistic-man-basic-rig-eaea58da1b3c4d4d9a75a68830959122
+
+          Upload a FBX through https://www.mixamo.com/ (Adobe ID required).
+          Adobe automatically maps compatible pre-rigged FBX skeletons.
+          Only the FBX files' local armature/skin re-import has been tested;
+          Mixamo mapping has NOT been verified. Test Claudia first and inspect
+          the shoulder, elbow and wrist positions during real WALK playback.
+          Download 30 FPS FBX With Skin and In Place when available.
+          Do not commit raw third-party Mixamo animation sources to GitHub.
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fighters-standard-mixamo-rigged-uploads
+          path: work/mixamo-upload/
+          if-no-files-found: error
+          retention-days: 14
