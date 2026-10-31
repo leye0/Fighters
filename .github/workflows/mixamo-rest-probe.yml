@@ -58,3 +58,29 @@ jobs:
           PY
       - name: Verify seven exact Mixamo UUID, names, descriptions and motion settings
         run: python3 scripts/verify-mixamo-public-catalog.py
+      - name: Observe anonymous write-route responses with empty invalid inputs
+        run: |
+          python3 - <<'PY'
+          import urllib.request, urllib.error
+          base = "https://www.mixamo.com/api/v1"
+          cases = [
+              ("/characters", b"{}", "application/json"),
+              ("/animations/export", b"{}", "application/json"),
+          ]
+          for path,body,ctype in cases:
+              req=urllib.request.Request(base+path, data=body,
+                  headers={"Accept":"application/json",
+                           "Content-Type":ctype,"X-Api-Key":"mixamo2"},
+                  method="POST")
+              try:
+                  with urllib.request.urlopen(req, timeout=12) as response:
+                      status=response.status
+                      result_type=response.headers.get("Content-Type","")
+              except urllib.error.HTTPError as err:
+                  status=err.code
+                  result_type=err.headers.get("Content-Type","")
+              except Exception as err:
+                  status="NETWORK_"+type(err).__name__
+                  result_type="unknown"
+              print("MIXAMO_ANONYMOUS_EMPTY_POST",path,status,result_type,flush=True)
+          PY
