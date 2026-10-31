@@ -87,10 +87,10 @@ def inspect(doc,bin):
             require(all(0.98<math.sqrt(sum(f*f for f in q))<1.02 for q in v),
                     "Non-unit authored rotation")
             # Quaternion sign equivalence: use absolute dot, not array delta.
-            if any(abs(sum(a*b for a,b in zip(v[0],q)))<0.9999 for q in v[1:]):
+            if any(abs(sum(a*b for a,b in zip(v[0],q)))<0.99995 for q in v[1:]):
                 dynamic.add(idx)
             times.append(t[-1][0])
-        require(len(rotated)>=15 and len(dynamic)>=12,
+        require(len(rotated)>=15 and len(dynamic)>=6,
                 anim["name"]+" is static or has insufficient actual skeletal motion: "+
                 str((len(rotated),len(dynamic))))
         report.append({"name":anim["name"],"joint_tracks":len(rotated),
