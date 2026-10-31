@@ -54,7 +54,7 @@ class DirectRigCatalogTest(unittest.TestCase):
             {"name":"Walking","description":"Standard Walk","numericId":"101",
              "outerHTML":"<p>Walking</p>"},
         ]
-        with patch.object(batch,"cards_on_page",return_value=candidates):
+        with patch.object(batch,"cards_on_page",return_value=candidates), patch.object(batch,"live_motion_metadata",side_effect=lambda m: m):
             self.assertEqual(batch.find_motion(FakePage(),*walking[0])[1]["numericId"],"101")
             self.assertEqual(batch.find_motion(FakePage(),*walking[1])[1]["numericId"],"102")
 
@@ -64,9 +64,39 @@ class DirectRigCatalogTest(unittest.TestCase):
             {"name":"Walking","description":"Ordinary Walk","numericId":"1","outerHTML":"no-uuid"},
             {"name":"Walking","description":"Ordinary Walk","numericId":"2","outerHTML":"no-uuid"},
         ]
-        with patch.object(batch,"cards_on_page",return_value=cards):
+        with patch.object(batch,"cards_on_page",return_value=cards), patch.object(batch,"live_motion_metadata",return_value=meta):
             with self.assertRaisesRegex(batch.MixamoBlocked,"No UNIQUE Adobe match"):
                 batch.find_motion(FakePage(),name,meta)
+
+
+    def test_adobe_description_drift_uses_live_api_for_exact_uuid(self):
+        name, meta = batch.selected_catalog()[1]
+        cards = [
+            {"name":"Walking", "description":"Male Standard Walk", "numericId":"923", "outerHTML":"no-uuid"},
+            {"name":"Walking", "description":"Feminine Walk Forward", "numericId":"674", "outerHTML":"no-uuid"},
+        ]
+        live={**meta,"sourceDescription":"Male Standard Walk"}
+        with patch.object(batch,"cards_on_page",return_value=cards), patch.object(batch,"live_motion_metadata",return_value=live):
+            self.assertEqual(batch.find_motion(FakePage(),name,meta)[1]["numericId"],"923")
+
+    def test_public_api_uuid_response_identity_is_required(self):
+        name, meta = batch.selected_catalog()[1]
+        class Response:
+            status=200
+            def __enter__(self): return self
+            def __exit__(self,*args): pass
+            def read(self,n):
+                return ('{"id":"'+meta["motionId"]+'","name":"Walking","description":"Male Standard Walk"}').encode()
+        with patch.object(batch,"urlopen",return_value=Response()):
+            result=batch.live_motion_metadata(meta)
+        self.assertEqual(result["sourceDescription"],"Male Standard Walk")
+        self.assertEqual(result["motionId"],meta["motionId"])
+        class WrongResponse(Response):
+            def read(self,n):
+                return b'{"id":"wrong","name":"Walking","description":"Male Standard Walk"}'
+        with patch.object(batch,"urlopen",return_value=WrongResponse()):
+            with self.assertRaisesRegex(batch.MixamoBlocked,"UUID/title differs"):
+                batch.live_motion_metadata(meta)
 
     def test_catalog_does_not_depend_on_rig_names(self):
         first=[x["motionId"] for _,x in batch.selected_catalog()]
