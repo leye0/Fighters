@@ -1,1 +1,1 @@
-2026-10-30-blender-clean-source-rigged-fbx-upload-experiment-v1
+2026-10-30-rigged-fbx-numpy-and-python-fail-fast-v2
