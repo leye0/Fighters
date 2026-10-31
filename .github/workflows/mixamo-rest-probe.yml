@@ -36,6 +36,17 @@ jobs:
                            "description":x.get("description"),"keys":sorted(x)}
                           for x in items[:6]
                       ]))
+                  # Probe one exact public motion UUID without a character.
+                  motion_id="c9c634c5-b96c-11e4-a802-0aaa78deedf9"
+                  detail_url="https://www.mixamo.com/api/v1/products/"+motion_id+"?similar=0"
+                  try:
+                      with urllib.request.urlopen(urllib.request.Request(detail_url,headers={"Accept":"application/json","X-Api-Key":"mixamo2"}),timeout=12) as detail:
+                          payload=json.loads(detail.read(200000))
+                          print("MIXAMO_ANONYMOUS_PRODUCT_DETAIL_STATUS",detail.status)
+                          print("MIXAMO_ANONYMOUS_PRODUCT_DETAIL_KEYS",sorted(payload))
+                          print("MIXAMO_ANONYMOUS_HAS_GMS_HASH",bool((payload.get("details") or {}).get("gms_hash")))
+                  except urllib.error.HTTPError as error:
+                      print("MIXAMO_ANONYMOUS_PRODUCT_DETAIL_STATUS",error.code)
           except urllib.error.HTTPError as e:
               print("MIXAMO_API_ANONYMOUS_HTTP_STATUS",e.code)
               print("MIXAMO_API_CONTENT_TYPE",e.headers.get("Content-Type"))
