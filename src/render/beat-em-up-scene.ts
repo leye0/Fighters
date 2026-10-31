@@ -1,5 +1,5 @@
 import {
-  AmbientLight, AnimationClip, AnimationMixer, Box3, BoxGeometry, Color, DirectionalLight, Fog, Group,
+  AmbientLight, AnimationClip, Box3, BoxGeometry, Color, DirectionalLight, Fog, Group,
   HemisphereLight, Material, Mesh, MeshStandardMaterial, PCFSoftShadowMap, Scene,
   SRGBColorSpace, Vector3, WebGLRenderer,
 } from "three";
@@ -10,8 +10,8 @@ import type { ScrollBounds, ScrollCameraFrame, WorldToScreenProjection } from ".
 import { makeBeatCamera, placeBeatCamera } from "./beat-camera-three.ts";
 import { CHARACTER_MODEL_FILES, fitRigToActor, requireSkinnedRig,
   type AcquiredCharacterKey } from "./rigged-character.ts";
-import { playEmbeddedMotion, retargetEmbeddedMotion } from "./character-motion.ts";
 import { BeatCharacterAnimator, canAnimateRealGameMotions } from "./beat-character-animator.ts";
+import { validateMotionSource } from "./beat-motion-source.ts";
 
 const meters = (mm: number): number => mm / 1000;
 
@@ -21,7 +21,6 @@ export class BeatEmUpScene {
   readonly camera = makeBeatCamera();
   readonly renderer: WebGLRenderer;
   private readonly visuals = new Map<string, Group>();
-  private readonly mixers = new Map<string, AnimationMixer>();
   private readonly gameAnimators = new Map<string, BeatCharacterAnimator>();
   private readonly stage: BeatStage;
   private readonly projection: WorldToScreenProjection;
@@ -85,31 +84,11 @@ export class BeatEmUpScene {
       const url = new URL(CHARACTER_MODEL_FILES[key], document.baseURI).href;
       const gltf = await loader.loadAsync(url);
       requireSkinnedRig(gltf.scene);
-      // Do not render the known-broken SkeletonUtils-baked assets from
-      // 2026-10-30. Only the WarConquer inverse-bind rebuild is displayable.
-      const json = gltf.parser.json as {
-        animations?: { name?: string; extras?: { retargeting?: string } }[];
-      };
-      const gameplayClips = (json.animations ?? []).filter(a =>
-        a.name?.startsWith("Fighters_Mixamo_"));
-      const marker = gameplayClips[0]?.extras?.retargeting;
-      const approvedFormats = new Set([
-        "warconquer-inverse-bind-world-v1",
-        "same-rig-mixamo-fbx-v1",
-      ]);
-      if (gameplayClips.length !== 7 || !marker || !approvedFormats.has(marker) ||
-          gameplayClips.some(a => a.extras?.retargeting !== marker)) {
-        throw new Error("Character animations quarantined: incomplete or inconsistent skeletal source");
-      }
-      if (marker === "same-rig-mixamo-fbx-v1") nativeSourceRigs.add(key);
+      const kind = validateMotionSource(gltf.parser.json.animations ?? []);
+      if (kind === "native-same-rig") nativeSourceRigs.add(key);
       sources.set(key, gltf.scene);
       animations.set(key, gltf.animations);
     }));
-    const enemySource = sources.get(roleModels.enemy);
-    const sourceAnimation = animations.get(roleModels.enemy)?.[0];
-    if (!enemySource || !sourceAnimation) {
-      throw new Error("The acquired enemy model has no real animation to test");
-    }
     for (const actorId of this.actorIds) {
       const isHero = actorId === this.heroId;
       const key = isHero ? roleModels.hero : roleModels.enemy;
@@ -131,19 +110,13 @@ export class BeatEmUpScene {
       });
       visual.add(holder);
       const ownClips = animations.get(key) ?? [];
-      if (canAnimateRealGameMotions(ownClips)) {
-        const actor = this.actorIds.indexOf(actorId);
-        const initial = this.initialActors[actor];
-        this.gameAnimators.set(actorId,
-          new BeatCharacterAnimator(visual, clone, ownClips, initial.facing, isHero,
-            this.stage.gravityMmPerTick2, nativeSourceRigs.has(key)));
-      } else {
-        // Compatibility while the agent-driven Mixamo packaging action runs.
-        const mixer = isHero
-          ? retargetEmbeddedMotion(clone, enemySource, sourceAnimation).mixer
-          : playEmbeddedMotion(clone, sourceAnimation);
-        this.mixers.set(actorId, mixer);
+      if (!canAnimateRealGameMotions(ownClips)) {
+        throw new Error("A required real Mixamo clip failed GLBLoader parsing");
       }
+      const initial = this.initialActors[this.actorIds.indexOf(actorId)];
+      this.gameAnimators.set(actorId,
+        new BeatCharacterAnimator(visual, clone, ownClips, initial.facing, isHero,
+          this.stage.gravityMmPerTick2, nativeSourceRigs.has(key)));
       // Reset parent yaw while measuring and centering the model in its
       // local frame; fitRigToActor expects an unrotated parent.
       const facingYaw = visual.rotation.y;
@@ -155,7 +128,6 @@ export class BeatEmUpScene {
   }
 
   updateAnimations(elapsedSeconds: number, previous: BeatWorldState, current: BeatWorldState): void {
-    for (const mixer of this.mixers.values()) mixer.update(Math.max(0, Math.min(0.05, elapsedSeconds)));
     const preceding = new Map(previous.actors.map(actor => [actor.id, actor]));
     for (const actor of current.actors) {
       const animator = this.gameAnimators.get(actor.id);
@@ -212,9 +184,6 @@ export class BeatEmUpScene {
       const visual = this.visuals.get(actor.id);
       if (visual) {
         visual.position.set(meters(focus.xMm), meters(focus.heightMm), meters(focus.depthMm));
-        if (!this.gameAnimators.has(actor.id)) {
-          visual.rotation.y = actor.facing === 1 ? Math.PI / 2 : -Math.PI / 2;
-        }
         visual.visible = actor.alive;
       }
       if (actor.id === this.heroId) heroFocus = focus;
@@ -269,8 +238,6 @@ export class BeatEmUpScene {
     geometries.forEach(geometry => geometry.dispose());
     materials.forEach(material => material.dispose());
     this.visuals.clear();
-    for (const mixer of this.mixers.values()) mixer.stopAllAction();
-    this.mixers.clear();
     for (const animator of this.gameAnimators.values()) animator.dispose();
     this.gameAnimators.clear();
     this.renderer.dispose();
