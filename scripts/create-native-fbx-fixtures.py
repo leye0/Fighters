@@ -31,6 +31,8 @@ def main(source,folder):
     check(len(active)>=20,"Need >=20 bones for animated smoke fixture")
     os.makedirs(folder,exist_ok=True)
     bpy.context.scene.render.fps=30
+    bpy.context.scene.frame_start=1
+    bpy.context.scene.frame_end=30
     for index,basename in enumerate(MOTIONS):
         if rig.animation_data:
             rig.animation_data_clear()
