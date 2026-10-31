@@ -32,6 +32,16 @@ Ces valeurs décrivent le profil de mouvement corrigé, et non une garantie sur 
 
 **Publication :** [GitHub Pages action 41142001693](https://github.com/leye0/Fighters/actions/runs/41142001693) réussie pour le vrai bundle Vite le plus récent. L'ancienne version pouvait plier les genoux violemment en l'air ; ne pas restaurer l'ancienne lecture intégrale du clip Jump.
 
+## Pipeline standard Adobe Mixamo — FBX export du rig d'origine
+
+**Objectif demandé :** remplacer le retargeting maison qui effondre les bras par le flux documenté par Adobe pour les **personnages déjà riggés** : FBX original complet → Mixamo (`Upload Character`, reconnaissance du squelette et prévisualisation des animations sur le véritable personnage) → FBX animé téléchargé → consolidation GLB → intégration au jeu. La documentation d'Adobe exige **FBX** pour un personnage riggé, avec textures intégrées ; ce n'est pas un téléchargement GLB direct.
+
+**Automatisation dans le dépôt :** `scripts/export-character-for-mixamo.py` importe les **trois GLB sources propres** du commit `8979a7f` dans Blender (ni les versions retargetées, ni les clips bakes), conserve les poids et l'armature, normalise la taille du corps et exporte des FBX avec textures incorporées. `scripts/check-mixamo-export.py` les **réimporte à froid** et exige le bon nombre de meshes skinnés, un squelette humain, leurs groupes de poids et une taille raisonnable. Le workflow ponctuel `.github/workflows/prepare-mixamo-uploads.yml` produit les FBX en artifact GitHub Actions. Les modèles originaux restent présents dans GitHub et inchangés.
+
+**Frontière technique à ne pas dissimuler :** l'acceptation du FBX par le service Mixamo et son mappage anatomique ne peuvent **pas être confirmés par un export Blender local**. Mixamo demande une session Adobe authentifiée et son parcours de téléversement officiel ; il n'y a pas de connexion Mixamo autorisée parmi les outils de cette conversation. Ne pas modifier les GLB de production avant d'avoir réellement reçu un FBX animé par Mixamo, validé les positions épaules/coudes/poignets, puis vérifié les captures WebGL. Éviter de présenter un « export FBX réussi » comme « animation Mixamo réparée ».
+
+**Retours attendus :** tester d'abord Claudia avec une marche simple, examiner les articulations dans le visualiseur Mixamo et conserver un export animé **With Skin / FBX**. Le même pipeline pourra ensuite traiter Carla et le modèle masculin. Le clip source Mixamo exporté ne doit pas être committé dans le dépôt public sans vérifier ses conditions de redistribution.
+
 ## Correction du saut Mixamo et de l'affichage des stats — 30 octobre 2026
 
 **Symptômes remontés sur iPhone :** Claudia replie brusquement les jambes une fois en l'air ; le cadre de télémétrie cache le jeu.
