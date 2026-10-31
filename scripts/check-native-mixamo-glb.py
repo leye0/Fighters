@@ -73,12 +73,22 @@ def inspect(doc,bin):
             require(idx not in rotated,anim["name"]+" rotates one joint multiple times")
             rotated.add(idx)
             samp=anim["samplers"][ch["sampler"]]
-            require(samp.get("interpolation","LINEAR")=="LINEAR",
-                    "Expected linear, baked source quaternion interpolation")
+            interp=samp.get("interpolation","LINEAR")
+            require(interp in ("LINEAR","STEP","CUBICSPLINE"),
+                    "Unsupported glTF skeletal keyframe interpolation: "+interp)
             t=accessor(doc,bin,samp["input"])
-            v=accessor(doc,bin,samp["output"])
-            require(len(t)==len(v) and len(t)>=2,
-                    "Missing meaningful joint keyframes")
+            all_values=accessor(doc,bin,samp["output"])
+            # glTF CUBICSPLINE uses in-tangent, value, out-tangent triples
+            # per keyframe; the tangents are not unit quaternions.
+            if interp=="CUBICSPLINE":
+                require(len(all_values)==3*len(t),
+                        "Cubic source quaternion keyframes are truncated")
+                v=all_values[1::3]
+            else:
+                require(len(all_values)==len(t),
+                        "Source quaternion sample count differs from timeline")
+                v=all_values
+            require(len(t)>=2,"Missing meaningful joint keyframes")
             require(all(math.isfinite(k[0]) for k in t) and t[-1][0]>t[0][0],
                     "Invalid animation timeline")
             require(all(t[j][0]>=t[j-1][0] for j in range(1,len(t))),
