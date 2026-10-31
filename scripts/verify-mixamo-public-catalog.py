@@ -38,7 +38,8 @@ def verify_one(filename, entry):
         raise RuntimeError(filename + ": no motion settings in public API")
     return {"local":filename,"name":doc["name"],"description":doc["description"],"id":motion_id,
             "catalog_description":entry["sourceDescription"],
-            "description_changed":description_changed,"has_gms_hash":True}
+            "description_changed":description_changed,"has_gms_hash":True,
+            "motion_id":doc.get("motion_id"),"detail_keys":sorted(doc.get("details",{}))}
 
 def main():
     source = json.loads(CATALOG.read_text(encoding="utf8"))
