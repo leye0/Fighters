@@ -130,7 +130,31 @@ def main(argv):
         require(len(chosen)==7 and len(set(x["name"] for x in chosen))==7,
                 "Seven uniquely named authored clips must be present")
         doc["animations"]=chosen
+        # Blender glTF force-sampling recreates translation and scale curves
+        # for NLA clips even after non-rotation F-curves were deleted. The
+        # kinematic game owns position and scale. Keep ONLY skinned bone
+        # rotations, and remove auto-sampled armature object tracks.
+        joints={i for skin in doc.get("skins",[]) for i in skin.get("joints",[])}
+        skipped={}
+        for anim in doc["animations"]:
+            retained=[]
+            dropped=[]
+            for channel in anim.get("channels",[]):
+                target=channel["target"]
+                path=target["path"]
+                require(path in ("rotation","translation","scale"),
+                        "Unknown glTF animation property: "+path)
+                if path=="rotation" and target["node"] in joints:
+                    retained.append(channel)
+                else:
+                    dropped.append(path)
+            anim["channels"]=retained
+            skipped[anim["name"]]={
+                "retained_skeletal_rotation_channels":len(retained),
+                "removed_object_translation_or_scale_channels":len(dropped)
+            }
         print("DROPPED_BLENDER_SCENE_TRACKS",json.dumps(extras))
+        print("NATIVE_RIG_ROTATION_ONLY_CHANNELS",json.dumps(skipped))
     report=inspect(doc,blob)
     if len(argv)==2:
         for anim in doc["animations"]:
