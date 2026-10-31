@@ -1,0 +1,35 @@
+:root {
+  font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+  color: #f0f3fa; background: #12161f;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+a { color: #a8c5fa; }
+.native-shell { max-width: 1060px; padding: clamp(14px, 3vw, 34px); margin: auto; }
+h1 { font-size: clamp(1.4rem, 3.5vw, 2rem); }
+p { color: #c9d1e1; line-height: 1.5; }
+.native-stage {
+  width: 100%; height: min(65dvh, 620px);
+  min-height: 300px; overflow: hidden;
+  background: #171b24; border: 1px solid #485365; border-radius: 12px;
+}
+.native-stage canvas { display: block; height: 100%; width: 100%; touch-action: none; }
+.native-upload { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 18px 0 8px; font-weight: 650; }
+input,button,select { accent-color: #9bbaf3; font: inherit; }
+input[type="file"],button,select {
+  background: #263143; border: 1px solid #5a6b86;
+  color: #f0f3fa; border-radius: 8px; padding: 10px;
+}
+input[type="file"] { max-width: 100%; }
+button { cursor: pointer; }
+button:focus-visible,input:focus-visible,select:focus-visible { outline: 3px solid #90b6ff; }
+.native-controls,.native-views { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 14px 0; }
+.native-controls label { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.native-controls label:nth-child(2) { flex: 1; min-width: 200px; }
+.native-controls label:nth-child(2) input { flex: 1; }
+.native-evidence { font-family: ui-monospace, monospace; color: #e4cf8d; overflow-wrap: anywhere; }
+@media (max-width: 650px) {
+  .native-stage { height: 53dvh; min-height: 240px; }
+  .native-views button { flex: 1; }
+  .native-controls label { width: 100%; }
+}
