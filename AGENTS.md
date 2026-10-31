@@ -44,6 +44,14 @@ Le document directeur est **docs/production-plan.md**. Le consulter avant toute 
 - La simple existence d'un emplacement d'animation dans le catalogue ne signifie pas qu'un clip Mixamo a été acquis ni que sa licence a été vérifiée.
 - **Aucun coup visuellement exécutable sans son vrai clip approuvé pour le personnage** : l'inventaire `assets/animation-inventory.json` doit être exploité pour créer ses moves, et la présence des clips exacts dans le GLB est obligatoire avant de lancer le match.
 
+## Exigence nouvelle — pipeline standard Adobe Mixamo, sans retargeting arbitraire
+
+- Priorité à l'animation directement exportée sur le propre squelette du personnage : FBX riggé original → import Mixamo → sept FBX With Skin → Blender assembleur (scripts/assemble-native-mixamo.py) → validations GLB → inspection humaine des bras → jeu.
+- **Interdire les correctifs anatomiques par personnage ou angle codé à la main** (par ex. une rotation de clavicule pour Claudia). Une différence entre poses de référence, hiérarchies ou squelettes est un problème d'import incompatible qui doit être rejeté plutôt que dissimulé.
+- **Ne jamais annoncer Mixamo comme validé** quand seul un export Blender ou un test synthétique a été exécuté. La compatibilité Adobe demande une véritable importation et visualisation des vrais riggs dans le service. Les fichiers tiers doivent respecter leurs licences et rester hors du Git public si nécessaire.
+- **Batch de validation complet à chaque itération :** les sept clips du même rig, tests négatifs clips manquants / squelette différent, validation des données et une inspection 3D sur plusieurs angles avant toute substitution d'asset.
+- Le visualiseur local (native-mixamo-review.html) ne téléverse pas le fichier. La démo publique ne doit pas être remplacée par un fichier dont les bras sont incorrects, même si tous les tests structurels sont verts. Voir docs/mixamo-native-pipeline.md.
+
 ## Sources Mixamo WarConquer (réel, pas théorique)
 
 - Consulter [docs/mixamo-real-sources.md](docs/mixamo-real-sources.md), [assets/mixamo-available-clips.json](assets/mixamo-available-clips.json) et [assets/mixamo-selected.json](assets/mixamo-selected.json) : 471 candidats indexés, 302 FBX/GLB privés convertis, **63 clips sources conservés par Léon** (noms exacts et SHA). Sélection humaine des vidéos ≠ retargeting ni approbation pour un personnage.
