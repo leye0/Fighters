@@ -119,9 +119,9 @@ def upload(page, path, character):
         if ("unable to map your existing skeleton" in low or
                 "unable to map" in low and "skeleton" in low):
             raise MixamoBlocked("Adobe cannot map the original " + character + " rig; do NOT retarget it silently")
-        if "autorig-overlay" in html and ("marker" in low or "place" in low):
+        if page.locator(".autorig-overlay").count() and page.locator(".autorig-overlay").first.is_visible():
             raise MixamoBlocked("Adobe requested manual anatomically placed markers on " + character)
-        if "autorig-holder" in html and not review_confirmed:
+        if page.locator(".autorig-holder").count() and page.locator(".autorig-holder").first.is_visible() and not review_confirmed:
             # A preview/review was actually returned, not merely a progress bar.
             page.locator(".autorig-modal .modal-footer button.btn-primary").first.click(timeout=15000)
             review_confirmed = True
@@ -158,6 +158,7 @@ def find_motion(page, filename, metadata):
     # never just click "Walking" first; two required clips share that title.
     for n in range(1, 16):
         page.goto(SEARCH.format(page=n, query=quote(title)), wait_until="domcontentloaded")
+        page.wait_for_load_state("networkidle", timeout=30000)
         try:
             page.locator(".product-animation").first.wait_for(timeout=13000)
         except Exception:
@@ -191,6 +192,7 @@ def select_motion(page, filename, metadata, found):
     n, card = found
     title = metadata["originalTitle"]
     page.goto(SEARCH.format(page=n, query=quote(title)), wait_until="domcontentloaded")
+    page.wait_for_load_state("networkidle", timeout=30000)
     page.locator(".product-animation").first.wait_for(timeout=15000)
     must(card["numericId"], "Mixamo motion thumbnail has no verifiable ID: " + filename)
     selector = '.product-animation:has(img[src*="/motions/' + card["numericId"] + '/"])'
@@ -313,15 +315,22 @@ def run(args):
 def cli():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--login-only", action="store_true")
+    p.add_argument("--catalog-only", action="store_true",
+                   help="Print the exact seven sourced motion identities; no Adobe access")
     p.add_argument("--character", choices=("claudia", "carla", "realistic-man"))
     p.add_argument("--input-dir")
     p.add_argument("--output-dir")
     p.add_argument("--profile", default=str(Path.home() / ".config/fighters/mixamo-profile"))
     p.add_argument("--headless", action="store_true")
     options = p.parse_args()
-    must(options.login_only or all((options.character,options.input_dir,options.output_dir)),
+    must(options.login_only or options.catalog_only or all((options.character,options.input_dir,options.output_dir)),
          "Provide --character, --input-dir and --output-dir, or --login-only")
     try:
+        if options.catalog_only:
+            print(json.dumps([{"file":name,"title":c["originalTitle"],
+                "description":c["sourceDescription"],"motionId":c["motionId"]}
+                for name,c in selected_catalog()], indent=2))
+            return
         run(options)
     except (MixamoBlocked, ValueError, OSError) as error:
         print("MIXAMO_AUTOMATION_BLOCKED:", str(error), file=sys.stderr)
