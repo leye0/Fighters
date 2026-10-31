@@ -1,6 +1,7 @@
-import { AnimationAction, AnimationClip, AnimationMixer, Group, LoopOnce,
+import { AnimationAction, AnimationClip, AnimationMixer, Bone, Group, LoopOnce,
   Quaternion, QuaternionKeyframeTrack } from "three";
 import type { BeatActor, Facing } from "../engine/beat-em-up-world.ts";
+import { HumanoidArmClearance } from "./humanoid-arm-clearance.ts";
 
 export const GAME_MOTION_NAMES = {
   idle: "Fighters_Mixamo_Fighting_Idle",
@@ -130,6 +131,7 @@ export function movingRole(previous: BeatActor, actor: BeatActor): MovingRole {
  */
 export class BeatCharacterAnimator {
   private readonly mixer: AnimationMixer;
+  private readonly armClearance?: HumanoidArmClearance;
   private readonly actions = new Map<string, AnimationAction>();
   private readonly outer: Group;
   private readonly isHero: boolean;
@@ -147,6 +149,15 @@ export class BeatCharacterAnimator {
     this.outer = outer;
     this.isHero = isHero;
     this.gravityMmPerTick2 = gravityMmPerTick2;
+    // Real same-rig Mixamo exports are already anatomically authored.
+    // Constrain only the existing cross-rig YBot assets until they are
+    // replaced, and do not alter any unskinned test-only proxy.
+    let hasBones = false;
+    animatedRig.traverse(child => { if (child instanceof Bone) hasBones = true; });
+    if (!nativeSameRigSource && hasBones) {
+      this.armClearance = new HumanoidArmClearance(animatedRig);
+      this.armClearance.captureReferencePose();
+    }
     if (!canAnimateRealGameMotions(clips)) throw new Error("Missing baked Mixamo gameplay animations");
     this.mixer = new AnimationMixer(animatedRig);
     for (const clip of clips) {
@@ -180,6 +191,7 @@ export class BeatCharacterAnimator {
       next.reset().play();
       next.setEffectiveWeight(1);
       this.mixer.update(0);
+      this.armClearance?.apply();
     } else {
       old?.fadeOut(0.14);
       next.reset().fadeIn(0.14).play();
@@ -224,6 +236,7 @@ export class BeatCharacterAnimator {
     }
     if (this.turningTo !== null) {
       this.mixer.update(dt);
+      this.armClearance?.apply();
       this.turnElapsed += dt;
       if (this.turnElapsed >= this.turnDuration) {
         this.visualFacing = this.turningTo;
@@ -263,6 +276,7 @@ export class BeatCharacterAnimator {
         this.actions.get(name)!.getClip().duration / flightSeconds);
     }
     this.mixer.update(dt);
+    this.armClearance?.apply();
   }
 
   dispose(): void { this.mixer.stopAllAction(); }
