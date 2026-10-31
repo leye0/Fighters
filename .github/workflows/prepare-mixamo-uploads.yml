@@ -62,8 +62,18 @@ jobs:
             python3 scripts/check-native-mixamo-glb.py "$RUNNER_TEMP/$character-native-smoke.glb" --stamp
             python3 scripts/inspect-runtime-glb.py "$RUNNER_TEMP/$character-native-smoke.glb"
           done
-      - name: Reject partial animation sets instead of silently dropping missing clips
+      - name: Reject incompatible skeleton and partial clip lists (negative tests)
         run: |
+          # Retargeting or guessing cross-character bone names is explicitly
+          # prohibited in this pipeline. Different source rigs must be rejected.
+          cp "$RUNNER_TEMP/synthetic-claudia/Walking_21.fbx" "$RUNNER_TEMP/claudia-walk.bak.fbx"
+          cp "$RUNNER_TEMP/synthetic-realistic-man/Walking_21.fbx" "$RUNNER_TEMP/synthetic-claudia/Walking_21.fbx"
+          if blender -b -t 2 --python-exit-code 1 --python scripts/assemble-native-mixamo.py -- \
+            "$RUNNER_TEMP/synthetic-claudia" "$RUNNER_TEMP/wrong-rig.glb"; then
+            echo "ERROR: mismatched skeleton was incorrectly accepted"
+            exit 1
+          fi
+          mv "$RUNNER_TEMP/claudia-walk.bak.fbx" "$RUNNER_TEMP/synthetic-claudia/Walking_21.fbx"
           rm "$RUNNER_TEMP/synthetic-claudia/Jump.fbx"
           if blender -b -t 2 --python-exit-code 1 --python scripts/assemble-native-mixamo.py -- \
             "$RUNNER_TEMP/synthetic-claudia" "$RUNNER_TEMP/must-not-exist.glb"; then
@@ -71,6 +81,15 @@ jobs:
             exit 1
           fi
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Validate TypeScript viewer and existing game regression suite
+        run: |
+          npm ci
+          npm test
+          npm run build:review
       - name: Attach original credits and user guide
         run: |
           cat > work/mixamo-upload/READ-ME.txt <<'EOF'
