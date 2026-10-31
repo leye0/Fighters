@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="description" content="Inspecter localement les GLB riggés et les animations Mixamo sur les vrais personnages."/>
+  <title>Fighters — vérification locale des rigs Mixamo</title>
+</head>
+<body>
+  <main class="native-shell">
+    <nav><a href="./beat-em-up.html">← Fighters</a></nav>
+    <h1>Inspection des animations sur les vrais personnages</h1>
+    <p>Ouvre un GLB animé depuis ton appareil. Le fichier est lu localement par le navigateur : aucun envoi vers un serveur. Cette page sert à <strong>repérer visuellement les défauts avant publication</strong>.</p>
+    <label class="native-upload">GLB à inspecter
+      <input id="native-file" type="file" accept=".glb,model/gltf-binary"/>
+    </label>
+    <p id="native-status" role="status">Aucun personnage chargé.</p>
+    <div id="native-stage" class="native-stage" aria-label="Visualisation 3D du personnage"></div>
+    <div class="native-controls">
+      <label>Animation<select id="native-animation" disabled></select></label>
+      <label>Image <input id="native-time" type="range" min="0" max="1000" value="0" disabled/></label>
+      <button type="button" id="native-play" disabled>Pause</button>
+      <label><input type="checkbox" id="native-skeleton"/> Voir le squelette</label>
+    </div>
+    <div class="native-views" aria-label="Angles de vue">
+      <button type="button" data-view="front">Face</button>
+      <button type="button" data-view="left">Profil gauche</button>
+      <button type="button" data-view="right">Profil droit</button>
+      <button type="button" data-view="back">Dos</button>
+      <button type="button" data-view="three">Trois quarts</button>
+    </div>
+    <p id="native-evidence" class="native-evidence"></p>
+    <p>Pour vérifier une marche : regarde les <strong>épaules, coudes et poignets</strong> de face, de profil et de dos à 0, 25, 50 et 75 % du clip. Le simple fait qu'une animation contienne 20 os mobiles ne prouve rien sur son anatomie.</p>
+  </main>
+  <script type="module" src="/src/native-mixamo-review.ts"></script>
+</body>
+</html>
