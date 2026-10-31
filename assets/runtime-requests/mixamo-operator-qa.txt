@@ -1,1 +1,1 @@
-2026-10-30-check-direct-adobe-browser-batch-catalog-and-tests-v1
+2026-10-30-verify-discoverable-browser-tests-true-pytest-v2
