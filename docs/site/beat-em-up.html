@@ -6,15 +6,20 @@
     <meta name="theme-color" content="#141c2b" />
     <meta name="description" content="Fighters : parcours de diagnostic 3D, caméra latérale et plateformes." />
     <title>Fighters — Scène beat’em up 3D</title>
-    <script type="module" crossorigin src="./assets/beatEmUp-BFxVc3gu.js"></script>
-    <link rel="modulepreload" crossorigin href="./assets/modulepreload-polyfill-P2Xu9kJm.js">
-    <link rel="stylesheet" crossorigin href="./assets/beatEmUp-Y9ST4knu.css">
+    <script type="module" crossorigin src="/assets/beatEmUp-BNuXSSsJ.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/beatEmUp-q2Se-BqS.css">
   </head>
   <body>
     <main class="beat-shell">
       <header class="beat-header">
         <div><strong>FIGHTERS</strong><span> · BEAT’EM UP 3D</span></div>
-        <button type="button" id="beat-debug-toggle" aria-pressed="true">Diagnostics</button>
+        <label class="beat-hero-choice" for="beat-hero-select">Héroïne
+          <select id="beat-hero-select" aria-label="Choisir le personnage jouable">
+            <option value="claudia">Claudia</option>
+            <option value="carla">Carla</option>
+          </select>
+        </label>
+        <button type="button" id="beat-debug-toggle" aria-controls="beat-diagnostics" aria-expanded="false">Stats</button>
       </header>
       <section id="beat-viewport" class="beat-viewport" aria-label="Niveau de diagnostic en trois dimensions">
         <canvas id="beat-canvas" aria-label="Parcours 3D à défilement latéral"></canvas>
@@ -28,7 +33,7 @@
           </div>
         </div>
         <div class="beat-watermark">GÉOMÉTRIE ET ACTEURS DE DIAGNOSTIC · PAS LE JEU FINAL</div>
-        <pre id="beat-diagnostics" class="beat-diagnostics" aria-live="off"></pre>
+        <pre id="beat-diagnostics" class="beat-diagnostics" aria-live="off" hidden></pre>
         <div class="beat-mobile-controls" aria-label="Commandes tactiles">
           <div class="beat-direction-pad">
             <button data-beat-key="ArrowUp" class="up" aria-label="Aller en profondeur">↑</button>
@@ -37,6 +42,9 @@
             <button data-beat-key="ArrowRight" class="right" aria-label="Aller à droite">→</button>
           </div>
           <div class="beat-action-pad">
+            <button data-beat-key="KeyF" class="beat-punch" aria-label="Coup direct">JAB</button>
+            <button data-beat-key="KeyG" class="beat-punch" aria-label="Coup croisé">CROSS</button>
+            <button data-beat-key="KeyH" class="beat-punch" aria-label="Crochet">HOOK</button>
             <button data-beat-key="KeyK" class="beat-drop" aria-label="Se laisser tomber à travers une plateforme adaptée">DESCENDRE</button>
             <button data-beat-key="Space" class="beat-jump" aria-label="Sauter">SAUT</button>
           </div>
@@ -44,8 +52,8 @@
       </section>
       <div class="beat-footer">
         <span id="beat-status" role="status">Initialisation WebGL…</span>
-        <span>WASD / flèches · Espace / J : saut · K : descendre · Manette : stick + A / B</span>
-        <a href="./animation-review.html">Les 63 animations</a>
+        <span>WASD / flèches · Espace / J : saut · K : descendre · F / G / H : gestes de combat · Manette : stick + A / B / X / Y</span>
+        <span>86 animations CC0 par personnage · Quaternius</span>
       </div>
     </main>
   </body>

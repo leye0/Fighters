@@ -1,25 +1,13 @@
-# Fighters — game-integrated Mixamo locomotion
+# Animations intégrées aux personnages
 
-Seven actual Mixamo YBot source FBX motions are acquired by the targeted GitHub
-Action into temporary private scratch, validated against `assets/mixamo-available-clips.json`,
-converted, retargeted to the bones of the actual Claudia, Carla and Realistic Man
-GLBs, and then baked **inside those game character assets only**:
+Ces trois fichiers de jeu sont construits automatiquement à partir de deux bibliothèques **Quaternius Universal Animation Library Standard**, sous licence **CC0** :
 
-| In-game clip | Exact indexed FBX | Use |
-| --- | --- | --- |
-| `Fighters_Mixamo_Fighting_Idle` | `Fighting_Idle.fbx` | Fighting/idle stance; **one of the owner's kept 63** |
-| `Fighters_Mixamo_Walk_Standard` | `Walking_21.fbx` | Standard enemy walk |
-| `Fighters_Mixamo_Walk_Feminine` | `Walking_6.fbx` | Hero locomotion demo; not a final casting identity |
-| `Fighters_Mixamo_Walk_Backward` | `Walking_Backwards.fbx` | Retreat while keeping facing |
-| `Fighters_Mixamo_Left_Turn_180` | `Left_Turn_3.fbx` | Real authored 180° change of facing |
-| `Fighters_Mixamo_Jump` | `Jump.fbx` | Authored jumping movement; **one of the owner's kept 63** |
-| `Fighters_Mixamo_Fall` | `Falling_Idle.fbx` | Authored falling pose; **one of the owner's kept 63** |
+- `claudia.glb` — modèle original riggé **Claudia** de Renderpeople, CC BY + 86 clips Quaternius.
+- `carla.glb` — modèle original riggé **Carla** de Renderpeople, CC BY + 86 clips Quaternius.
+- `realistic-man.glb` — modèle original riggé **Realistic Man** de J.azali, CC BY + 86 clips Quaternius.
 
-The raw Mixamo FBX files, reusable YBot GLBs and animation-only packs are **not**
-in this public Git repository. Their animation curves are integrated into the
-playable human character GLBs, without raw YBot geometry. The animation source
-is Adobe Mixamo, with the [Mixamo terms](https://helpx.adobe.com/creative-cloud/faq/mixamo-faq.html)
-applying separately from each character's CC BY attribution.
+Les 86 noms de clips commencent par `UAL1_` ou `UAL2_`. Les fichiers conservent les géométries, matériaux, textures et squelettes du modèle de chaque personnage, sans animations antérieures. Une propriété `fightersMotionSource` dans le GLB identifie les deux archives d’animation et le personnage.
 
-The binary and skeleton QA is a technical check, **not** certification that
-foot contacts, turns, hips and transitions look natural on Léon's phone.
+Vérifier avec `npm run animation:verify`. Le générateur et les SHA des deux ZIP sont dans [docs/quaternius-pipeline.md](../../docs/quaternius-pipeline.md).
+
+Les animations sont disponibles pour les prévisualisations de locomotion, saut et combat. Aucun dégât ou combo n’est considéré comme approuvé par la seule présence des clips.

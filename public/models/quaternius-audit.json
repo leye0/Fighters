@@ -1,0 +1,1585 @@
+{
+  "schemaVersion": 1,
+  "strategy": "quaternius-cc0-own-skin-v1",
+  "inputs": [
+    "UAL1_Standard.glb",
+    "UAL2_Standard.glb"
+  ],
+  "characters": [
+    {
+      "character": "claudia",
+      "clips": 86,
+      "smallestSkeleton": 53,
+      "outputBytes": 9853604,
+      "sha256": "d3d819319ef8f0d7a70cfcd96f87ec759dfc092d88dc90381f874d5bd267167d",
+      "clipsInfo": [
+        {
+          "name": "UAL1_A_TPose",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Crouch_Fwd_Loop",
+          "frames": 61,
+          "duration": 2,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Crouch_Idle_Loop",
+          "frames": 89,
+          "duration": 2.933333396911621,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Dance_Loop",
+          "frames": 31,
+          "duration": 1,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Death01",
+          "frames": 73,
+          "duration": 2.4000000953674316,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Driving_Loop",
+          "frames": 51,
+          "duration": 1.6666666269302368,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Fixing_Kneeling",
+          "frames": 157,
+          "duration": 5.199999809265137,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Hit_Chest",
+          "frames": 11,
+          "duration": 0.3333333432674408,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Hit_Head",
+          "frames": 14,
+          "duration": 0.4333333373069763,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Idle_Loop",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Idle_Talking_Loop",
+          "frames": 89,
+          "duration": 2.933333396911621,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Idle_Torch_Loop",
+          "frames": 39,
+          "duration": 1.2666666507720947,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Interact",
+          "frames": 61,
+          "duration": 2,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Jog_Fwd_Loop",
+          "frames": 29,
+          "duration": 0.9333333373069763,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Jump_Land",
+          "frames": 39,
+          "duration": 1.2666666507720947,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Jump_Loop",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Jump_Start",
+          "frames": 41,
+          "duration": 1.3333333730697632,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_PickUp_Table",
+          "frames": 26,
+          "duration": 0.8333333134651184,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Pistol_Aim_Down",
+          "frames": 6,
+          "duration": 0.1666666716337204,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Pistol_Aim_Neutral",
+          "frames": 6,
+          "duration": 0.1666666716337204,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Pistol_Aim_Up",
+          "frames": 6,
+          "duration": 0.1666666716337204,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Pistol_Idle_Loop",
+          "frames": 51,
+          "duration": 1.6666666269302368,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Pistol_Reload",
+          "frames": 51,
+          "duration": 1.6666666269302368,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Pistol_Shoot",
+          "frames": 20,
+          "duration": 0.6333333253860474,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Punch_Cross",
+          "frames": 31,
+          "duration": 1,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Punch_Jab",
+          "frames": 27,
+          "duration": 0.8666666746139526,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Push_Loop",
+          "frames": 81,
+          "duration": 2.6666667461395264,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Roll",
+          "frames": 45,
+          "duration": 1.4666666984558105,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Sitting_Enter",
+          "frames": 40,
+          "duration": 1.2999999523162842,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Sitting_Exit",
+          "frames": 32,
+          "duration": 1.0333333015441895,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Sitting_Idle_Loop",
+          "frames": 51,
+          "duration": 1.6666666269302368,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Sitting_Talking_Loop",
+          "frames": 89,
+          "duration": 2.933333396911621,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Spell_Simple_Enter",
+          "frames": 17,
+          "duration": 0.5333333611488342,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Spell_Simple_Exit",
+          "frames": 14,
+          "duration": 0.4333333373069763,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Spell_Simple_Idle_Loop",
+          "frames": 64,
+          "duration": 2.0999999046325684,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Spell_Simple_Shoot",
+          "frames": 16,
+          "duration": 0.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Sprint_Loop",
+          "frames": 21,
+          "duration": 0.6666666865348816,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Swim_Fwd_Loop",
+          "frames": 41,
+          "duration": 1.3333333730697632,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Swim_Idle_Loop",
+          "frames": 101,
+          "duration": 3.3333332538604736,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Sword_Attack",
+          "frames": 47,
+          "duration": 1.5333333015441895,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Sword_Idle",
+          "frames": 51,
+          "duration": 1.6666666269302368,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Walk_Formal_Loop",
+          "frames": 41,
+          "duration": 1.3333333730697632,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Walk_Loop",
+          "frames": 41,
+          "duration": 1.3333333730697632,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_A_TPose",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Chest_Open",
+          "frames": 42,
+          "duration": 1.3666666746139526,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_ClimbUp_1m",
+          "frames": 21,
+          "duration": 0.6666666865348816,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Consume",
+          "frames": 41,
+          "duration": 1.3333333730697632,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Farm_Harvest",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Farm_PlantSeed",
+          "frames": 84,
+          "duration": 2.7666666507720947,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Farm_Watering",
+          "frames": 115,
+          "duration": 3.799999952316284,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Hit_Knockback",
+          "frames": 26,
+          "duration": 0.8333333134651184,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Idle_FoldArms_Loop",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Idle_Lantern_Loop",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Idle_No_Loop",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Idle_Rail_Call",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Idle_Rail_Loop",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Idle_Shield_Break",
+          "frames": 33,
+          "duration": 1.0666667222976685,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Idle_Shield_Loop",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Idle_TalkingPhone_Loop",
+          "frames": 89,
+          "duration": 2.933333396911621,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_LayToIdle",
+          "frames": 47,
+          "duration": 1.5333333015441895,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Melee_Hook",
+          "frames": 15,
+          "duration": 0.46666666865348816,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Melee_Hook_Rec",
+          "frames": 19,
+          "duration": 0.6000000238418579,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_NinjaJump_Idle_Loop",
+          "frames": 61,
+          "duration": 2,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_NinjaJump_Land",
+          "frames": 39,
+          "duration": 1.2666666507720947,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_NinjaJump_Start",
+          "frames": 30,
+          "duration": 0.9666666388511658,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_OverhandThrow",
+          "frames": 41,
+          "duration": 1.3333333730697632,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Shield_Dash",
+          "frames": 34,
+          "duration": 1.100000023841858,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Shield_OneShot",
+          "frames": 26,
+          "duration": 0.8333333134651184,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Slide_Exit",
+          "frames": 16,
+          "duration": 0.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Slide_Loop",
+          "frames": 61,
+          "duration": 2,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Slide_Start",
+          "frames": 26,
+          "duration": 0.8333333134651184,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Sword_Block",
+          "frames": 38,
+          "duration": 1.2333333492279053,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Sword_Dash",
+          "frames": 48,
+          "duration": 1.5666667222976685,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Sword_Heavy_Combo",
+          "frames": 131,
+          "duration": 4.333333492279053,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Sword_Regular_A",
+          "frames": 14,
+          "duration": 0.4333333373069763,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Sword_Regular_A_Rec",
+          "frames": 30,
+          "duration": 0.9666666388511658,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Sword_Regular_B",
+          "frames": 17,
+          "duration": 0.5333333611488342,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Sword_Regular_B_Rec",
+          "frames": 32,
+          "duration": 1.0333333015441895,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Sword_Regular_C",
+          "frames": 61,
+          "duration": 2,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Sword_Regular_Combo",
+          "frames": 91,
+          "duration": 3,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_TreeChopping_Loop",
+          "frames": 30,
+          "duration": 0.9666666388511658,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Walk_Carry_Loop",
+          "frames": 61,
+          "duration": 2,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Yes",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Zombie_Idle_Loop",
+          "frames": 41,
+          "duration": 1.3333333730697632,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Zombie_Scratch",
+          "frames": 55,
+          "duration": 1.7999999523162842,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Zombie_Walk_Fwd_Loop",
+          "frames": 41,
+          "duration": 1.3333333730697632,
+          "joints": 53
+        }
+      ]
+    },
+    {
+      "character": "carla",
+      "clips": 86,
+      "smallestSkeleton": 53,
+      "outputBytes": 9935088,
+      "sha256": "2e63acc98ad9537180e59a807bf1c643dd369c4d13fe9de246f35d327559c989",
+      "clipsInfo": [
+        {
+          "name": "UAL1_A_TPose",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Crouch_Fwd_Loop",
+          "frames": 61,
+          "duration": 2,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Crouch_Idle_Loop",
+          "frames": 89,
+          "duration": 2.933333396911621,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Dance_Loop",
+          "frames": 31,
+          "duration": 1,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Death01",
+          "frames": 73,
+          "duration": 2.4000000953674316,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Driving_Loop",
+          "frames": 51,
+          "duration": 1.6666666269302368,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Fixing_Kneeling",
+          "frames": 157,
+          "duration": 5.199999809265137,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Hit_Chest",
+          "frames": 11,
+          "duration": 0.3333333432674408,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Hit_Head",
+          "frames": 14,
+          "duration": 0.4333333373069763,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Idle_Loop",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Idle_Talking_Loop",
+          "frames": 89,
+          "duration": 2.933333396911621,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Idle_Torch_Loop",
+          "frames": 39,
+          "duration": 1.2666666507720947,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Interact",
+          "frames": 61,
+          "duration": 2,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Jog_Fwd_Loop",
+          "frames": 29,
+          "duration": 0.9333333373069763,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Jump_Land",
+          "frames": 39,
+          "duration": 1.2666666507720947,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Jump_Loop",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Jump_Start",
+          "frames": 41,
+          "duration": 1.3333333730697632,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_PickUp_Table",
+          "frames": 26,
+          "duration": 0.8333333134651184,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Pistol_Aim_Down",
+          "frames": 6,
+          "duration": 0.1666666716337204,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Pistol_Aim_Neutral",
+          "frames": 6,
+          "duration": 0.1666666716337204,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Pistol_Aim_Up",
+          "frames": 6,
+          "duration": 0.1666666716337204,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Pistol_Idle_Loop",
+          "frames": 51,
+          "duration": 1.6666666269302368,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Pistol_Reload",
+          "frames": 51,
+          "duration": 1.6666666269302368,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Pistol_Shoot",
+          "frames": 20,
+          "duration": 0.6333333253860474,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Punch_Cross",
+          "frames": 31,
+          "duration": 1,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Punch_Jab",
+          "frames": 27,
+          "duration": 0.8666666746139526,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Push_Loop",
+          "frames": 81,
+          "duration": 2.6666667461395264,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Roll",
+          "frames": 45,
+          "duration": 1.4666666984558105,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Sitting_Enter",
+          "frames": 40,
+          "duration": 1.2999999523162842,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Sitting_Exit",
+          "frames": 32,
+          "duration": 1.0333333015441895,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Sitting_Idle_Loop",
+          "frames": 51,
+          "duration": 1.6666666269302368,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Sitting_Talking_Loop",
+          "frames": 89,
+          "duration": 2.933333396911621,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Spell_Simple_Enter",
+          "frames": 17,
+          "duration": 0.5333333611488342,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Spell_Simple_Exit",
+          "frames": 14,
+          "duration": 0.4333333373069763,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Spell_Simple_Idle_Loop",
+          "frames": 64,
+          "duration": 2.0999999046325684,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Spell_Simple_Shoot",
+          "frames": 16,
+          "duration": 0.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Sprint_Loop",
+          "frames": 21,
+          "duration": 0.6666666865348816,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Swim_Fwd_Loop",
+          "frames": 41,
+          "duration": 1.3333333730697632,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Swim_Idle_Loop",
+          "frames": 101,
+          "duration": 3.3333332538604736,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Sword_Attack",
+          "frames": 47,
+          "duration": 1.5333333015441895,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Sword_Idle",
+          "frames": 51,
+          "duration": 1.6666666269302368,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Walk_Formal_Loop",
+          "frames": 41,
+          "duration": 1.3333333730697632,
+          "joints": 53
+        },
+        {
+          "name": "UAL1_Walk_Loop",
+          "frames": 41,
+          "duration": 1.3333333730697632,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_A_TPose",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Chest_Open",
+          "frames": 42,
+          "duration": 1.3666666746139526,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_ClimbUp_1m",
+          "frames": 21,
+          "duration": 0.6666666865348816,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Consume",
+          "frames": 41,
+          "duration": 1.3333333730697632,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Farm_Harvest",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Farm_PlantSeed",
+          "frames": 84,
+          "duration": 2.7666666507720947,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Farm_Watering",
+          "frames": 115,
+          "duration": 3.799999952316284,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Hit_Knockback",
+          "frames": 26,
+          "duration": 0.8333333134651184,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Idle_FoldArms_Loop",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Idle_Lantern_Loop",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Idle_No_Loop",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Idle_Rail_Call",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Idle_Rail_Loop",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Idle_Shield_Break",
+          "frames": 33,
+          "duration": 1.0666667222976685,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Idle_Shield_Loop",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Idle_TalkingPhone_Loop",
+          "frames": 89,
+          "duration": 2.933333396911621,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_LayToIdle",
+          "frames": 47,
+          "duration": 1.5333333015441895,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Melee_Hook",
+          "frames": 15,
+          "duration": 0.46666666865348816,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Melee_Hook_Rec",
+          "frames": 19,
+          "duration": 0.6000000238418579,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_NinjaJump_Idle_Loop",
+          "frames": 61,
+          "duration": 2,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_NinjaJump_Land",
+          "frames": 39,
+          "duration": 1.2666666507720947,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_NinjaJump_Start",
+          "frames": 30,
+          "duration": 0.9666666388511658,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_OverhandThrow",
+          "frames": 41,
+          "duration": 1.3333333730697632,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Shield_Dash",
+          "frames": 34,
+          "duration": 1.100000023841858,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Shield_OneShot",
+          "frames": 26,
+          "duration": 0.8333333134651184,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Slide_Exit",
+          "frames": 16,
+          "duration": 0.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Slide_Loop",
+          "frames": 61,
+          "duration": 2,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Slide_Start",
+          "frames": 26,
+          "duration": 0.8333333134651184,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Sword_Block",
+          "frames": 38,
+          "duration": 1.2333333492279053,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Sword_Dash",
+          "frames": 48,
+          "duration": 1.5666667222976685,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Sword_Heavy_Combo",
+          "frames": 131,
+          "duration": 4.333333492279053,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Sword_Regular_A",
+          "frames": 14,
+          "duration": 0.4333333373069763,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Sword_Regular_A_Rec",
+          "frames": 30,
+          "duration": 0.9666666388511658,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Sword_Regular_B",
+          "frames": 17,
+          "duration": 0.5333333611488342,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Sword_Regular_B_Rec",
+          "frames": 32,
+          "duration": 1.0333333015441895,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Sword_Regular_C",
+          "frames": 61,
+          "duration": 2,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Sword_Regular_Combo",
+          "frames": 91,
+          "duration": 3,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_TreeChopping_Loop",
+          "frames": 30,
+          "duration": 0.9666666388511658,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Walk_Carry_Loop",
+          "frames": 61,
+          "duration": 2,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Yes",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Zombie_Idle_Loop",
+          "frames": 41,
+          "duration": 1.3333333730697632,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Zombie_Scratch",
+          "frames": 55,
+          "duration": 1.7999999523162842,
+          "joints": 53
+        },
+        {
+          "name": "UAL2_Zombie_Walk_Fwd_Loop",
+          "frames": 41,
+          "duration": 1.3333333730697632,
+          "joints": 53
+        }
+      ]
+    },
+    {
+      "character": "realistic-man",
+      "clips": 86,
+      "smallestSkeleton": 22,
+      "outputBytes": 12993676,
+      "sha256": "cc9b196af2f72d7316c3dc5b6cf6ffb3a7b5af2e14e6056e595f8d09ba37ae66",
+      "clipsInfo": [
+        {
+          "name": "UAL1_A_TPose",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Crouch_Fwd_Loop",
+          "frames": 61,
+          "duration": 2,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Crouch_Idle_Loop",
+          "frames": 89,
+          "duration": 2.933333396911621,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Dance_Loop",
+          "frames": 31,
+          "duration": 1,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Death01",
+          "frames": 73,
+          "duration": 2.4000000953674316,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Driving_Loop",
+          "frames": 51,
+          "duration": 1.6666666269302368,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Fixing_Kneeling",
+          "frames": 157,
+          "duration": 5.199999809265137,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Hit_Chest",
+          "frames": 11,
+          "duration": 0.3333333432674408,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Hit_Head",
+          "frames": 14,
+          "duration": 0.4333333373069763,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Idle_Loop",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Idle_Talking_Loop",
+          "frames": 89,
+          "duration": 2.933333396911621,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Idle_Torch_Loop",
+          "frames": 39,
+          "duration": 1.2666666507720947,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Interact",
+          "frames": 61,
+          "duration": 2,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Jog_Fwd_Loop",
+          "frames": 29,
+          "duration": 0.9333333373069763,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Jump_Land",
+          "frames": 39,
+          "duration": 1.2666666507720947,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Jump_Loop",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Jump_Start",
+          "frames": 41,
+          "duration": 1.3333333730697632,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_PickUp_Table",
+          "frames": 26,
+          "duration": 0.8333333134651184,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Pistol_Aim_Down",
+          "frames": 6,
+          "duration": 0.1666666716337204,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Pistol_Aim_Neutral",
+          "frames": 6,
+          "duration": 0.1666666716337204,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Pistol_Aim_Up",
+          "frames": 6,
+          "duration": 0.1666666716337204,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Pistol_Idle_Loop",
+          "frames": 51,
+          "duration": 1.6666666269302368,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Pistol_Reload",
+          "frames": 51,
+          "duration": 1.6666666269302368,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Pistol_Shoot",
+          "frames": 20,
+          "duration": 0.6333333253860474,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Punch_Cross",
+          "frames": 31,
+          "duration": 1,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Punch_Jab",
+          "frames": 27,
+          "duration": 0.8666666746139526,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Push_Loop",
+          "frames": 81,
+          "duration": 2.6666667461395264,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Roll",
+          "frames": 45,
+          "duration": 1.4666666984558105,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Sitting_Enter",
+          "frames": 40,
+          "duration": 1.2999999523162842,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Sitting_Exit",
+          "frames": 32,
+          "duration": 1.0333333015441895,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Sitting_Idle_Loop",
+          "frames": 51,
+          "duration": 1.6666666269302368,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Sitting_Talking_Loop",
+          "frames": 89,
+          "duration": 2.933333396911621,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Spell_Simple_Enter",
+          "frames": 17,
+          "duration": 0.5333333611488342,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Spell_Simple_Exit",
+          "frames": 14,
+          "duration": 0.4333333373069763,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Spell_Simple_Idle_Loop",
+          "frames": 64,
+          "duration": 2.0999999046325684,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Spell_Simple_Shoot",
+          "frames": 16,
+          "duration": 0.5,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Sprint_Loop",
+          "frames": 21,
+          "duration": 0.6666666865348816,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Swim_Fwd_Loop",
+          "frames": 41,
+          "duration": 1.3333333730697632,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Swim_Idle_Loop",
+          "frames": 101,
+          "duration": 3.3333332538604736,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Sword_Attack",
+          "frames": 47,
+          "duration": 1.5333333015441895,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Sword_Idle",
+          "frames": 51,
+          "duration": 1.6666666269302368,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Walk_Formal_Loop",
+          "frames": 41,
+          "duration": 1.3333333730697632,
+          "joints": 22
+        },
+        {
+          "name": "UAL1_Walk_Loop",
+          "frames": 41,
+          "duration": 1.3333333730697632,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_A_TPose",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Chest_Open",
+          "frames": 42,
+          "duration": 1.3666666746139526,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_ClimbUp_1m",
+          "frames": 21,
+          "duration": 0.6666666865348816,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Consume",
+          "frames": 41,
+          "duration": 1.3333333730697632,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Farm_Harvest",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Farm_PlantSeed",
+          "frames": 84,
+          "duration": 2.7666666507720947,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Farm_Watering",
+          "frames": 115,
+          "duration": 3.799999952316284,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Hit_Knockback",
+          "frames": 26,
+          "duration": 0.8333333134651184,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Idle_FoldArms_Loop",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Idle_Lantern_Loop",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Idle_No_Loop",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Idle_Rail_Call",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Idle_Rail_Loop",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Idle_Shield_Break",
+          "frames": 33,
+          "duration": 1.0666667222976685,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Idle_Shield_Loop",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Idle_TalkingPhone_Loop",
+          "frames": 89,
+          "duration": 2.933333396911621,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_LayToIdle",
+          "frames": 47,
+          "duration": 1.5333333015441895,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Melee_Hook",
+          "frames": 15,
+          "duration": 0.46666666865348816,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Melee_Hook_Rec",
+          "frames": 19,
+          "duration": 0.6000000238418579,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_NinjaJump_Idle_Loop",
+          "frames": 61,
+          "duration": 2,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_NinjaJump_Land",
+          "frames": 39,
+          "duration": 1.2666666507720947,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_NinjaJump_Start",
+          "frames": 30,
+          "duration": 0.9666666388511658,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_OverhandThrow",
+          "frames": 41,
+          "duration": 1.3333333730697632,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Shield_Dash",
+          "frames": 34,
+          "duration": 1.100000023841858,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Shield_OneShot",
+          "frames": 26,
+          "duration": 0.8333333134651184,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Slide_Exit",
+          "frames": 16,
+          "duration": 0.5,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Slide_Loop",
+          "frames": 61,
+          "duration": 2,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Slide_Start",
+          "frames": 26,
+          "duration": 0.8333333134651184,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Sword_Block",
+          "frames": 38,
+          "duration": 1.2333333492279053,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Sword_Dash",
+          "frames": 48,
+          "duration": 1.5666667222976685,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Sword_Heavy_Combo",
+          "frames": 131,
+          "duration": 4.333333492279053,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Sword_Regular_A",
+          "frames": 14,
+          "duration": 0.4333333373069763,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Sword_Regular_A_Rec",
+          "frames": 30,
+          "duration": 0.9666666388511658,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Sword_Regular_B",
+          "frames": 17,
+          "duration": 0.5333333611488342,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Sword_Regular_B_Rec",
+          "frames": 32,
+          "duration": 1.0333333015441895,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Sword_Regular_C",
+          "frames": 61,
+          "duration": 2,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Sword_Regular_Combo",
+          "frames": 91,
+          "duration": 3,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_TreeChopping_Loop",
+          "frames": 30,
+          "duration": 0.9666666388511658,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Walk_Carry_Loop",
+          "frames": 61,
+          "duration": 2,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Yes",
+          "frames": 76,
+          "duration": 2.5,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Zombie_Idle_Loop",
+          "frames": 41,
+          "duration": 1.3333333730697632,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Zombie_Scratch",
+          "frames": 55,
+          "duration": 1.7999999523162842,
+          "joints": 22
+        },
+        {
+          "name": "UAL2_Zombie_Walk_Fwd_Loop",
+          "frames": 41,
+          "duration": 1.3333333730697632,
+          "joints": 22
+        }
+      ]
+    }
+  ]
+}
