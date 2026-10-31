@@ -22,7 +22,20 @@ jobs:
               with urllib.request.urlopen(request, timeout=12) as reply:
                   print("MIXAMO_API_ANONYMOUS_HTTP_STATUS",reply.status)
                   print("MIXAMO_API_CONTENT_TYPE",reply.headers.get("Content-Type"))
-                  print("MIXAMO_API_CONTENT_BYTES",len(reply.read(250000)))
+                  raw=reply.read(250000)
+                  print("MIXAMO_API_CONTENT_BYTES",len(raw))
+                  if reply.status == 200 and "json" in reply.headers.get("Content-Type",""):
+                      import json
+                      document=json.loads(raw)
+                      print("MIXAMO_API_RESPONSE_KEYS",sorted(document))
+                      print("MIXAMO_API_PAGINATION",json.dumps(document.get("pagination",{})))
+                      items=document.get("results",[])
+                      print("MIXAMO_API_ITEMS",len(items))
+                      print("MIXAMO_API_FIRST_ITEMS",json.dumps([
+                          {"id":x.get("id"),"name":x.get("name"),
+                           "description":x.get("description"),"keys":sorted(x)}
+                          for x in items[:6]
+                      ]))
           except urllib.error.HTTPError as e:
               print("MIXAMO_API_ANONYMOUS_HTTP_STATUS",e.code)
               print("MIXAMO_API_CONTENT_TYPE",e.headers.get("Content-Type"))
