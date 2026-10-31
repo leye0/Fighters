@@ -46,6 +46,12 @@ Ces valeurs décrivent le profil de mouvement corrigé, et non une garantie sur 
 
 [Instructions exactes du pipeline](mixamo-native-pipeline.md).
 
+## API Mixamo : résultat authentifié versus anonyme — 30 octobre 2026
+
+**Preuves exécutées sur GitHub Actions, et non simples hypothèses :** [sept UUID vérifiés](https://github.com/leye0/Fighters/actions/runs/41161871429) avec `gms_hash`, réponse HTTP **200** pour les GET anonymes; [requêtes POST vides](https://github.com/leye0/Fighters/actions/runs/41162017168) HTTP **401** sur `/api/v1/characters` et `/api/v1/animations/export`. Les téléchargements sur les personnages réels requièrent encore une session Adobe autorisée. Un test anonyme avec données incomplètes n'est ni un upload ni une génération réussie. **Aucun GLB de production n'a été remplacé.**
+
+**Correctif de robustesse :** le navigateur automatisé résout désormais chaque mouvement par son UUID dans l'API publique avant sa sélection dans Mixamo; il utilise la description actuelle plutôt qu'un texte historique. [Sept tests de régression réussis](https://github.com/leye0/Fighters/actions/runs/41162110846). Cette validation est technique, non une preuve visuelle des poses. Voir [le pipeline documenté](mixamo-native-pipeline.md).
+
 ## Pipeline standard Adobe Mixamo — FBX export du rig d'origine
 
 **Objectif demandé :** remplacer le retargeting maison qui effondre les bras par le flux documenté par Adobe pour les **personnages déjà riggés** : FBX original complet → Mixamo (`Upload Character`, reconnaissance du squelette et prévisualisation des animations sur le véritable personnage) → FBX animé téléchargé → consolidation GLB → intégration au jeu. La documentation d'Adobe exige **FBX** pour un personnage riggé, avec textures intégrées ; ce n'est pas un téléchargement GLB direct.
