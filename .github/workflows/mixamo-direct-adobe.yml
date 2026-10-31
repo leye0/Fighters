@@ -1,6 +1,10 @@
 name: Fighters · Adobe direct Mixamo (private)
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - assets/runtime-requests/mixamo-direct-adobe.txt
   workflow_dispatch:
     inputs:
       character:
@@ -20,7 +24,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
-      CHARACTER: ${{ inputs.character }}
+      CHARACTER: ${{ inputs.character || 'claudia' }}
       MIXAMO_STORAGE_STATE_B64: ${{ secrets.MIXAMO_STORAGE_STATE_B64 }}
     steps:
       - uses: actions/checkout@v4
@@ -65,7 +69,7 @@ jobs:
       - name: Upload ONLY unpublished integrated GLB for visual QA
         uses: actions/upload-artifact@v4
         with:
-          name: fighters-real-adobe-${{ inputs.character }}-UNPUBLISHED
+          name: fighters-real-adobe-${{ inputs.character || 'claudia' }}-UNPUBLISHED
           path: ${{ runner.temp }}/final/*.glb
           retention-days: 2
           if-no-files-found: error
