@@ -25,8 +25,9 @@ jobs:
       - name: Install Blender's standard glTF and FBX import/export tools
         run: |
           sudo apt-get update -qq
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y blender
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y blender python3-numpy
           blender --version | head -3
+          blender -b --python-exit-code 1 --python-expr 'import numpy; print("BLENDER_NUMPY_READY", numpy.__version__)'
       - name: Restore immutable original model GLBs
         run: |
           mkdir -p "$RUNNER_TEMP/mixamo-input" work/mixamo-upload
@@ -37,13 +38,15 @@ jobs:
       - name: Generate one embedded-media rigged FBX per original human
         run: |
           for character in claudia carla realistic-man; do
-            blender -b -t 2 --python scripts/export-character-for-mixamo.py -- \
+            blender -b -t 2 --python-exit-code 1 --python scripts/export-character-for-mixamo.py -- \
               "$RUNNER_TEMP/mixamo-input/$character.glb" "$GITHUB_WORKSPACE/work/mixamo-upload/$character.fbx"
+            test -s "work/mixamo-upload/$character.fbx"
+            test -s "work/mixamo-upload/$character.fbx.json"
           done
       - name: Cold re-import and validate all FBX rigs
         run: |
           for character in claudia carla realistic-man; do
-            blender -b -t 2 --python scripts/check-mixamo-export.py -- \
+            blender -b -t 2 --python-exit-code 1 --python scripts/check-mixamo-export.py -- \
               "$GITHUB_WORKSPACE/work/mixamo-upload/$character.fbx"
           done
       - name: Attach original credits and user guide
