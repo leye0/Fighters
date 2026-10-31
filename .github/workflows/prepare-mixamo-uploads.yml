@@ -49,6 +49,28 @@ jobs:
             blender -b -t 2 --python-exit-code 1 --python scripts/check-mixamo-export.py -- \
               "$GITHUB_WORKSPACE/work/mixamo-upload/$character.fbx"
           done
+      - name: Smoke-test complete 7-motion native pipeline with synthetic non-Adobe rig motions
+        run: |
+          # Synthetic keyframes are for mechanical CI only and are never
+          # uploaded as game assets or represented as actual Mixamo output.
+          for character in claudia realistic-man; do
+            mkdir -p "$RUNNER_TEMP/synthetic-$character"
+            blender -b -t 2 --python-exit-code 1 --python scripts/create-native-fbx-fixtures.py -- \
+              "$GITHUB_WORKSPACE/work/mixamo-upload/$character.fbx" "$RUNNER_TEMP/synthetic-$character"
+            blender -b -t 2 --python-exit-code 1 --python scripts/assemble-native-mixamo.py -- \
+              "$RUNNER_TEMP/synthetic-$character" "$RUNNER_TEMP/$character-native-smoke.glb"
+            python3 scripts/check-native-mixamo-glb.py "$RUNNER_TEMP/$character-native-smoke.glb" --stamp
+            python3 scripts/inspect-runtime-glb.py "$RUNNER_TEMP/$character-native-smoke.glb"
+          done
+      - name: Reject partial animation sets instead of silently dropping missing clips
+        run: |
+          rm "$RUNNER_TEMP/synthetic-claudia/Jump.fbx"
+          if blender -b -t 2 --python-exit-code 1 --python scripts/assemble-native-mixamo.py -- \
+            "$RUNNER_TEMP/synthetic-claudia" "$RUNNER_TEMP/must-not-exist.glb"; then
+            echo "ERROR: a missing Mixamo clip was improperly accepted"
+            exit 1
+          fi
+
       - name: Attach original credits and user guide
         run: |
           cat > work/mixamo-upload/READ-ME.txt <<'EOF'
