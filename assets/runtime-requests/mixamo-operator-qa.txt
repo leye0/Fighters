@@ -1,1 +1,1 @@
-2026-10-30-verify-discoverable-browser-tests-true-pytest-v2
+2026-10-30-final-ci-safe-session-export-and-browser-operator-tests-v3
