@@ -13,7 +13,7 @@ const all=[];
 const visit=node=>{all.push(node);node.listChildren().forEach(visit);};
 scene.listChildren().forEach(visit);
 const hasMesh=node=>!!node.getMesh()||node.listChildren().some(hasMesh);
-const candidates=all.filter(node=>hasMesh(node)&&/^(orc_(?:barrack|hut|cabin|house|tower|factory|forge|mine|workshop|temple|town|main|storage|lumber|mill|tavern|altar|throne|smelt|oven)|.*(?:_Lv[123]|_level[123]))/i.test(node.getName())&&node.listChildren().length>0);
+const candidates=all.filter(node=>hasMesh(node)&&/^(?:orc_)?(?:barrack|hut|mine|factory|cauldron)_Lv[123]$/i.test(node.getName())&&node.listChildren().length>0);
 // Reject mesh subnodes and prefer complete, named asset groups.
 console.log('Candidate building groups:',candidates.map(n=>n.getName()).join(', '));
 if(candidates.length<2)throw Error('Fewer than two complete named building groups found');
@@ -22,7 +22,9 @@ const manifest=[];
 for(let i=0;i<candidates.length;i++){
   const node=candidates[i];
   const doc=new (await import('@gltf-transform/core')).Document();
-  const copy=copyToDocument(doc,source,[node])[0];
+  const copied=copyToDocument(doc,source,[node]);
+  const copy=copied.find(item=>item?.propertyType==='Node')||doc.getRoot().listNodes().find(n=>n.getName()===node.getName());
+  if(!copy)throw Error('Failed to copy node '+node.getName());
   const dstScene=doc.createScene('Building '+(i+1));
   dstScene.addChild(copy);
   const filename='building-'+String(i+1).padStart(2,'0')+'.glb';
