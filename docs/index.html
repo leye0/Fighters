@@ -84,6 +84,21 @@ const INV_SQRT2=Math.SQRT1_2;
 function screenToWorld(horizontal,vertical){
   return {x:(horizontal+vertical)*INV_SQRT2,z:(vertical-horizontal)*INV_SQRT2};
 }
+// Quaternius looks toward +Z at zero yaw. Gameplay, combat and the rendered
+// model share this exact world-space X/Z heading.
+function faceDirection(actor,x,z){
+  const length=Math.hypot(x,z);
+  if(length<1e-6)return;
+  actor.heading.x=x/length;actor.heading.z=z/length;
+  if(Math.abs(x)>1e-5)actor.facing=x>0?1:-1;
+}
+function applyFacing(actor){
+  actor.visual.rotation.y=Math.atan2(actor.heading.x,actor.heading.z);
+}
+function faceTarget(actor,target){
+  faceDirection(actor,target.root.position.x-actor.root.position.x,
+    target.root.position.z-actor.root.position.z);
+}
 scene.add(new THREE.HemisphereLight(0xd6e7ff,0x203051,2.65));
 const key = new THREE.DirectionalLight(0xffe7cf,3.1);key.position.set(-9,16,10);scene.add(key);
 const blue = new THREE.DirectionalLight(0x558df8,1.6);blue.position.set(4,8,-6);scene.add(blue);
@@ -316,7 +331,7 @@ function spawnActor(gltf,kind,x,z,index=0){
   const actor={
     kind,root,visual,mixer:new THREE.AnimationMixer(visual),actions:new Map(),action:null,current:'',
     health:kind==='hero'?100:(30+wave*5),maxHealth:kind==='hero'?100:(30+wave*5),
-    facing:kind==='hero'?1:(x<0?1:-1),attack:null,queue:[],guard:false,stun:0,cooldown:random(.65,1.65),
+    facing:kind==='hero'?1:(x<0?1:-1),heading:{x:kind==='hero'||x<0?1:-1,z:0},attack:null,queue:[],guard:false,stun:0,cooldown:random(.65,1.65),
     jumpY:0,jumpV:0,baseY:visual.position.y,landing:0,dead:false,deadTime:0,roll:0,invulnerable:0,
     speed:kind==='hero'?3.8*HERO_PACE:random(1.3,1.8),label:null,
     legBones:{l:{thigh:visual.getObjectByName('thigh_l'),calf:visual.getObjectByName('calf_l')},
@@ -347,7 +362,7 @@ function spawnActor(gltf,kind,x,z,index=0){
     if(actor.weapon)label.classList.add('swordsman');
   }
   animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop',true);
-  actor.visual.rotation.y=actor.facing>0?Math.PI/2:-Math.PI/2;
+  applyFacing(actor);
   return actor;
 }
 function detach(actor){
@@ -392,28 +407,38 @@ function startSession(){
       qaPassive=true;inputs.clear();touchDirection.x=0;touchDirection.z=0;
       hero.root.position.set(clamp(x,-ARENA_HALF,ARENA_HALF),0,clamp(z,-ARENA_HALF,ARENA_HALF));
     },
+    setMoveDirection:(x,z)=>{
+      qaPassive=true;inputs.clear();touchDirection.x=x;touchDirection.z=z;
+    },
+    setEnemyApproach:(x,z)=>{
+      startSession();hero.root.position.set(0,0,0);
+      const enemy=enemies[0];enemy.root.position.set(x,0,z);
+      enemy.cooldown=100;enemy.stun=0;enemy.attack=null;
+      for(const other of enemies.slice(1)){other.root.position.set(22,0,22);other.cooldown=100;}
+      qaPassive=false;
+    },
     freeze:value=>{paused=!!value;},
     // Advance the actual physics/mixer at 60 Hz, then hold the rendered pose.
     // Headless SwiftShader frame stalls must not decide whether a kick looks correct.
     setupSwordDuel:()=>{
       // Exercise a real native Sword_Attack with a provably socketed mesh.
-      qaPassive=false;hero.root.position.set(-1.7,0,0);hero.facing=1;
+      qaPassive=false;hero.root.position.set(-1.7,0,0);faceDirection(hero,1,0);
       hero.health=100;hero.stun=0;hero.invulnerable=0;hero.attack=null;setHUD();
       const enemy=enemies[0];if(!enemy.weapon)mountNativeSword(enemy);
       enemy.label?.classList.add('swordsman');
       enemy.root.position.set(hero.root.position.x+1.6,0,hero.root.position.z);
-      enemy.facing=-1;enemy.cooldown=100;enemy.stun=0;enemy.attack=null;
+      faceDirection(enemy,-1,0);enemy.cooldown=100;enemy.stun=0;enemy.attack=null;
       for(const other of enemies.slice(1)){other.root.position.set(20,0,0);other.cooldown=100;other.attack=null;}
       attack(enemy,'swordAttack');
       paused=true;
     },
     arrangeDuel:()=>{
       qaPassive=true;
-      hero.root.position.set(-1.7,0,0);hero.facing=1;
+      hero.root.position.set(-1.7,0,0);faceDirection(hero,1,0);
       for(let i=0;i<enemies.length;i++){
         const e=enemies[i];
         e.root.position.set(hero.root.position.x+(i===0?1.15:6+i*2),0,0);
-        e.attack=null;e.stun=0;e.cooldown=100;e.facing=-1;
+        e.attack=null;e.stun=0;e.cooldown=100;faceDirection(e,-1,0);
       }
     },
     poseAtAttack:seconds=>{
@@ -427,7 +452,7 @@ function startSession(){
     startKickPose:kind=>{qaPassive=true;attack(hero,kind);paused=true;},
     setupAirPunch:(facing,kind='jab')=>{
       startSession();qaPassive=true;
-      hero.facing=facing;
+      faceDirection(hero,facing,0);
       jump();attack(hero,kind);paused=true;
     },
     armPose:()=>{
@@ -437,7 +462,7 @@ function startSession(){
       };
       const hands={left:point('hand_l'),right:point('hand_r')};
       const shoulders={left:point('upperarm_l'),right:point('upperarm_r')};
-      return {facing:hero.facing,rootX:hero.root.position.x,hands,shoulders,
+      return {facing:hero.facing,heading:{...hero.heading},rootX:hero.root.position.x,hands,shoulders,
         armX:{
           left:hands.left&&shoulders.left?hands.left[0]-shoulders.left[0]:null,
           right:hands.right&&shoulders.right?hands.right[0]-shoulders.right[0]:null
@@ -454,6 +479,9 @@ function startSession(){
     cameraX:cameraFollow.x,cameraZ:cameraFollow.z,
     heroMotion:hero.current,heroGuard:hero.guard,heroAirAttack:!!hero.attack?.air,heroAirLayer:!!hero.airLayer&&hero.airLayer.isRunning(),heroAirLayerTime:hero.airLayer?.time??0,heroSpeed:hero.speed,heroClipScale:hero.action?.getEffectiveTimeScale()??0,enemyClipScales:enemies.map(e=>e.action?.getEffectiveTimeScale()??0),heroAttack:hero.attack?.type||null,heroJumpY:hero.jumpY,heroKickExtension:hero.kickExtension,heroKickPivot:hero.kickPivot,heroKickDuration:hero.attack?.type?.startsWith('kick')?hero.attack.duration:null,legBonesFound:{left:!!hero.legBones.l.thigh&&!!hero.legBones.l.calf,right:!!hero.legBones.r.thigh&&!!hero.legBones.r.calf},boneNames:hero.legBones.r.thigh?[]:Array.from(new Set(hero.visual.getObjectsByProperty('isBone',true).map(b=>b.name))).slice(0,80),lastRightGesture,lastRightAction,touchX:touchDirection.x,touchZ:touchDirection.z,
     heroX:hero.root.position.x,heroZ:hero.root.position.z,
+    heroHeading:{...hero.heading},heroYaw:hero.visual.rotation.y,
+    enemyHeadings:enemies.map(e=>({...e.heading})),enemyYaws:enemies.map(e=>e.visual.rotation.y),
+    enemyPositions:enemies.map(e=>({x:e.root.position.x,z:e.root.position.z})),
     outfit:hero.outfitInfo,enemyOutfits:enemies.map(e=>e.outfitInfo),enemyMotions:enemies.map(e=>e.current),enemyHealth:enemies.map(e=>e.health),
     enemyWeapons:enemies.map(e=>!!e.weapon),enemySwordGrips:enemies.map(e=>e.weapon?e.weapon.socket.getWorldPosition(new THREE.Vector3()).distanceTo(e.weapon.hand.getWorldPosition(new THREE.Vector3())):null)
   })};
@@ -525,7 +553,8 @@ function floatDamage(actor,amount,good){
 function damage(target,amount,attacker){
   if(target.dead||target.invulnerable>0)return;
   if(target.kind==='hero'&&target.guard&&
-     (attacker.root.position.x-target.root.position.x)*target.facing>=-.1){
+     ((attacker.root.position.x-target.root.position.x)*target.heading.x+
+       (attacker.root.position.z-target.root.position.z)*target.heading.z)>=-.1){
     const reduced=Math.max(1,Math.round(amount*.2));
     target.health=Math.max(0,target.health-reduced);
     floatDamage(target,reduced,false);
@@ -537,7 +566,8 @@ function damage(target,amount,attacker){
   if(target.attack)target.attack=null;
   target.queue=[];
   target.stun=target.kind==='hero'?.37/HERO_PACE:.37;
-  target.root.position.x+=attacker.facing*.22;
+  target.root.position.x=clamp(target.root.position.x+attacker.heading.x*.22,-ARENA_HALF,ARENA_HALF);
+  target.root.position.z=clamp(target.root.position.z+attacker.heading.z*.22,-ARENA_HALF,ARENA_HALF);
   if(target.health===0){
     target.dead=true;target.deadTime=1.7;target.stun=0;
     animation(target,'Death01',true);
@@ -560,7 +590,9 @@ function hit(actor){
     if(!target||target.dead)continue;
     const dx=target.root.position.x-actor.root.position.x;
     const dz=target.root.position.z-actor.root.position.z;
-    if(dx*actor.facing<-.12 || Math.abs(dx)>profile.range+(actor.attack.air?.18:0) || Math.abs(dz)>.85)continue;
+    const forward=dx*actor.heading.x+dz*actor.heading.z;
+    const sideways=dx*actor.heading.z-dz*actor.heading.x;
+    if(forward<-.12||forward>profile.range+(actor.attack.air?.18:0)||Math.abs(sideways)>.85)continue;
     damage(target,profile.damage+(actor.attack.air?3:0),actor);
     if(!target.dead&&profile.stagger)target.stun=Math.max(target.stun,profile.stagger);
     if(++hitCount>=2)break;
@@ -588,7 +620,12 @@ function moveHero(dt){
   // temporarily suspends horizontal locomotion.
   const airSteerX=Number(inputs.has('ArrowRight')||inputs.has('KeyD'))-
     Number(inputs.has('ArrowLeft')||inputs.has('KeyA'))+touchDirection.x;
-  if(hero.jumpY>0&&Math.abs(airSteerX)>.2)hero.facing=airSteerX>0?1:-1;
+  const airSteerZ=Number(inputs.has('ArrowDown')||inputs.has('KeyS'))-
+    Number(inputs.has('ArrowUp')||inputs.has('KeyW'))+touchDirection.z;
+  if(hero.jumpY>0&&Math.hypot(airSteerX,airSteerZ)>.2){
+    const direction=screenToWorld(airSteerX,airSteerZ);
+    faceDirection(hero,direction.x,direction.z);
+  }
   hero.stun=Math.max(0,hero.stun-dt);
   hero.invulnerable=Math.max(0,hero.invulnerable-dt);
   if(hero.jumpY>0){
@@ -605,7 +642,8 @@ function moveHero(dt){
   }
   if(hero.roll>0){
     hero.roll=Math.max(0,hero.roll-dt);
-    hero.root.position.x=clamp(hero.root.position.x+hero.facing*5.5*HERO_PACE*dt,-ARENA_HALF,ARENA_HALF);
+    hero.root.position.x=clamp(hero.root.position.x+hero.heading.x*5.5*HERO_PACE*dt,-ARENA_HALF,ARENA_HALF);
+    hero.root.position.z=clamp(hero.root.position.z+hero.heading.z*5.5*HERO_PACE*dt,-ARENA_HALF,ARENA_HALF);
     if(hero.roll===0)animation(hero,'Idle_Loop');
     return;
   }
@@ -618,7 +656,7 @@ function moveHero(dt){
     const moveSpeed=hero.speed*(hero.guard?.37:1);
     hero.root.position.x=clamp(hero.root.position.x+mx*moveSpeed*dt,-ARENA_HALF,ARENA_HALF);
     hero.root.position.z=clamp(hero.root.position.z+mz*moveSpeed*dt,-ARENA_HALF,ARENA_HALF);
-    if(Math.abs(mx)>.01)hero.facing=mx>0?1:-1;
+    faceDirection(hero,mx,mz);
     if(hero.jumpY===0)animation(hero,hero.guard?'Idle_FoldArms_Loop':'Jog_Fwd_Loop');
   } else if(hero.jumpY===0)animation(hero,hero.guard?'Idle_FoldArms_Loop':'Idle_Loop');
 }
@@ -629,19 +667,20 @@ function moveEnemies(dt){
     if(e.dead){e.deadTime-=dt;continue;}
     e.stun=Math.max(0,e.stun-dt);
     e.cooldown-=dt;
+    if(!hero.dead)faceTarget(e,hero);
     if(stepAttack(e,dt)||e.stun>0)continue;
     const dx=hero.root.position.x-e.root.position.x;
     const dz=hero.root.position.z-e.root.position.z;
-    e.facing=dx>=0?1:-1;
-    if(!hero.dead&&Math.abs(dx)<1.5&&Math.abs(dz)<.78&&e.cooldown<=0&&
+    const distance=Math.hypot(dx,dz);
+    if(!hero.dead&&distance<(e.weapon?2.03:1.45)&&e.cooldown<=0&&
        alive.filter(v=>v.attack).length<2){
       attack(e,e.weapon?'swordAttack':Math.random()<.68?'jab':'cross');
       e.cooldown=random(1.65,2.6);
       continue;
     }
     const gapX=Math.abs(dx),gapZ=Math.abs(dz);
-    if(gapX>1.18||gapZ>.55){
-      let vx=dx, vz=dz*1.4;
+    if(distance>(e.weapon?1.72:1.1)){
+      let vx=dx, vz=dz;
       const len=Math.max(.001,Math.hypot(vx,vz));vx/=len;vz/=len;
       e.root.position.x=clamp(e.root.position.x+vx*e.speed*dt,-ARENA_HALF,ARENA_HALF);
       e.root.position.z=clamp(e.root.position.z+vz*e.speed*dt,-ARENA_HALF,ARENA_HALF);
@@ -702,12 +741,12 @@ function stepGame(dt){
   }
   if(ready&&!paused){
     if(hero){
-      hero.visual.rotation.y=hero.facing>0?Math.PI/2:-Math.PI/2;
+      applyFacing(hero);
       hero.mixer.update(dt);
       poseNativeKick(hero);
       poseAirPunch(hero);
     }
-    for(const e of enemies){e.visual.rotation.y=e.facing>0?Math.PI/2:-Math.PI/2;e.mixer.update(dt);}
+    for(const e of enemies){applyFacing(e);e.mixer.update(dt);}
   }
   shake=Math.max(0,shake-dt);
 }
@@ -726,7 +765,7 @@ function poseAirPunch(actor){
   const shoulder=upper.getWorldPosition(new THREE.Vector3());
   const from=fist.getWorldPosition(new THREE.Vector3()).sub(shoulder);
   if(from.lengthSq()<.001)return;
-  const forward=new THREE.Vector3(actor.facing,-.025,0).normalize();
+  const forward=new THREE.Vector3(actor.heading.x,-.025,actor.heading.z).normalize();
   const worldCorrection=new THREE.Quaternion().setFromUnitVectors(from.normalize(),forward);
   const parentWorld=upper.parent.getWorldQuaternion(new THREE.Quaternion());
   const localCorrection=parentWorld.clone().invert().multiply(worldCorrection).multiply(parentWorld);
@@ -764,7 +803,7 @@ function poseNativeKick(actor){
   const start=thigh.getWorldPosition(new THREE.Vector3());
   const end=calf.getWorldPosition(new THREE.Vector3());
   const from=end.sub(start).normalize();
-  const to=new THREE.Vector3(actor.facing*.98,-.18,0).normalize();
+  const to=new THREE.Vector3(actor.heading.x*.98,-.18,actor.heading.z*.98).normalize();
   const worldCorrection=new THREE.Quaternion().setFromUnitVectors(from,to);
   const parentWorld=thigh.parent.getWorldQuaternion(new THREE.Quaternion());
   const localCorrection=parentWorld.clone().invert().multiply(worldCorrection).multiply(parentWorld);

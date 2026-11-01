@@ -86,3 +86,7 @@ Le workflow de QA navigateur teste le vrai canvas WebGL avec Chrome SwiftShader 
 ## Stage 2 — arène isométrique carrée
 
 Vue orthographique isométrique (45° en plan, 35,264° en élévation). Terrain de **56 × 56** unités jouables, avec les mêmes limites en X et en Z. La caméra interpole **les deux coordonnées X/Z** du joueur indépendamment. Les commandes écran, clavier et manette restent en coordonnées écran, converties en déplacements diagonaux au sol; les ennemis apparaissent autour de Nova dans les deux dimensions. Les animations et armes Quaternius demeurent inchangées. Le test WebGL vérifie que la caméra suit réellement Nova de (0,0) vers (12,11). Le tag `stage-1` conserve la première étape.
+
+## Stage 2 — orientation 360°
+
+Personnages et ennemis ont une direction de face normalisée X/Z. Rotation immédiate dans la vraie direction du déplacement, et orientation de l'IA vers Nova dans les deux dimensions. Coups, garde, recul, poings aériens et pieds suivent ce vecteur. Aucun clip Quaternius n'est remplacé. Un test WebGL couvre huit directions et le regard des ennemis.

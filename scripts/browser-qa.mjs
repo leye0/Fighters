@@ -128,6 +128,34 @@ try{
   await snap('isometric-square-two-axis-follow');
   await evaluate('window.__fightersQA.reset()');
   console.log('ISOMETRIC PASS: 56x56 square, true orthographic camera following X and Z');
+  // Real simulation along each screen octant, verifying both heading and yaw.
+  for(const [sx,sz,label] of [[1,0,'right'],[0,-1,'up'],[-1,0,'left'],[0,1,'down'],
+    [1,-1,'upper-right'],[-1,-1,'upper-left'],[1,1,'lower-right'],[-1,1,'lower-left']]){
+    await evaluate('window.__fightersQA.reset()');
+    await evaluate('window.__fightersQA.setMoveDirection('+sx+','+sz+')');
+    const before=await evaluate('window.__fightersQA.snapshot()');
+    await evaluate('window.__fightersQA.poseAtAttack(.20)');
+    const after=await evaluate('window.__fightersQA.snapshot()');
+    const wx=(sx+sz)*Math.SQRT1_2,wz=(sz-sx)*Math.SQRT1_2,mag=Math.hypot(wx,wz);
+    const ux=wx/mag,uz=wz/mag,expectedYaw=Math.atan2(ux,uz);
+    const yawError=Math.atan2(Math.sin(after.heroYaw-expectedYaw),Math.cos(after.heroYaw-expectedYaw));
+    const movedX=after.heroX-before.heroX,movedZ=after.heroZ-before.heroZ;
+    if(Math.abs(yawError)>1e-3||Math.hypot(after.heroHeading.x-ux,after.heroHeading.z-uz)>1e-3||
+      movedX*ux+movedZ*uz<.35||Math.abs(movedX*uz-movedZ*ux)>.03)
+      fail('Hero 360-degree rotation fails '+label+' '+JSON.stringify({after,expectedYaw,yawError,movedX,movedZ}));
+    if(label==='upper-right')await snap('isometric-hero-facing-diagonal');
+  }
+  await evaluate('window.__fightersQA.setEnemyApproach(3.1,3.4)');
+  await evaluate('window.__fightersQA.poseAtAttack(.20)');
+  const pursued=await evaluate('window.__fightersQA.snapshot()');
+  const enemy=pursued.enemyPositions[0],expectedEnemyAngle=Math.atan2(-enemy.x,-enemy.z);
+  const enemyError=Math.atan2(Math.sin(pursued.enemyYaws[0]-expectedEnemyAngle),
+    Math.cos(pursued.enemyYaws[0]-expectedEnemyAngle));
+  if(Math.abs(enemyError)>1e-3)
+    fail('Enemy did not face target in 2D '+JSON.stringify(pursued));
+  await snap('isometric-enemy-facing-hero');
+  await evaluate('window.__fightersQA.reset()');
+  console.log('FULL HEADING PASS: eight octants, exact visual yaw, enemies face targets');
   // Native Quaternius Sword_Attack, the authored weapon GLTF grip, and both facing directions.
   await evaluate('window.__fightersQA.setupSwordDuel()');
   const equipped=await evaluate('window.__fightersQA.snapshot()');
