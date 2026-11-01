@@ -279,7 +279,7 @@ async function loadOrcVillage(limit=3){
 }
 // Opt-in diagnostic only: no building assets are fetched on normal startup.
 // ?orcDebug=1 loads a single building, ?orcDebug=3 loads three.
-const orcDebugCount=Math.min(3,Math.max(0,Number(new URLSearchParams(location.search).get('orcDebug'))||0));
+const orcDebugCount=Math.min(15,Math.max(0,Math.floor(Number(new URLSearchParams(location.search).get('orcDebug'))||0)));
 if(orcDebugCount){
   window.addEventListener('load',()=>{
     setTimeout(()=>loadOrcVillage(orcDebugCount).catch(err=>console.warn('Orc village loading failed:',err)),1500);
