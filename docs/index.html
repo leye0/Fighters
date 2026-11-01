@@ -228,7 +228,7 @@ const ORC_VILLAGE={
   ]
 };
 let orcVillage=null;
-async function loadOrcVillage(){
+async function loadOrcVillage(limit=3){
   const response=await fetch('./models/orc-buildings/manifest.json');
   if(!response.ok)throw Error('Orc manifest HTTP '+response.status);
   const manifest=await response.json();
@@ -239,7 +239,7 @@ async function loadOrcVillage(){
   // Each file contains exactly one complete building and its dependencies.
   // Target a visible 3–5 world-unit footprint; never shrink an already
   // small model and never confuse a single roof or wall with a building.
-  const entries=manifest.buildings.slice(0,ORC_VILLAGE.positions.length);
+  const entries=manifest.buildings.slice(0,Math.min(limit,ORC_VILLAGE.positions.length));
   // Never decode all 15 textured GLBs simultaneously. On mobile this can
   // exhaust memory and freeze the main thread during the loading screen.
   for(let i=0;i<entries.length;i++){
@@ -277,7 +277,14 @@ async function loadOrcVillage(){
   orcVillage=village;
   console.info('Orc village:',village.children.length,'/',entries.length,'individual buildings loaded');
 }
-loadOrcVillage().catch(err=>console.warn('Orc village loading failed:',err));
+// Opt-in diagnostic only: no building assets are fetched on normal startup.
+// ?orcDebug=1 loads a single building, ?orcDebug=3 loads three.
+const orcDebugCount=Math.min(3,Math.max(0,Number(new URLSearchParams(location.search).get('orcDebug'))||0));
+if(orcDebugCount){
+  window.addEventListener('load',()=>{
+    setTimeout(()=>loadOrcVillage(orcDebugCount).catch(err=>console.warn('Orc village loading failed:',err)),1500);
+  },{once:true});
+}
 const cameraLook=new THREE.Vector3(0,1.15,0);
 function resize(){
   const w=viewport.clientWidth,h=viewport.clientHeight;
