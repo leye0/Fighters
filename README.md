@@ -1,6 +1,6 @@
 # Fighters — Night Street
 
-Prototype de **beat ’em up 2,5D** inspiré des classiques d'arcade à la Double Dragon : une héroïne, Nova, contre des adversaires masculins. Le jeu réutilise les animations intégrées aux GLB Quaternius. Pour le coup de pied absent du kit standard, il utilise un mouvement procédural appliqué directement aux os de la jambe du personnage, sans retargeting vers un modèle tiers.
+Prototype de **beat ’em up 2,5D** inspiré des classiques d'arcade à la Double Dragon : Nova coiffée et habillée en paysanne contre des adversaires masculins portant différentes couleurs de vêtements civils médiévaux. Aucune armure. Le jeu réutilise les animations intégrées aux GLB Quaternius. Pour le coup de pied absent du kit standard, il utilise un mouvement procédural appliqué directement aux os de la jambe du personnage, sans retargeting vers un modèle tiers.
 
 ## Jouer
 
@@ -8,10 +8,10 @@ Prototype de **beat ’em up 2,5D** inspiré des classiques d'arcade à la Doubl
 
 - **Mobile, main gauche :** glisser dans une direction, puis garder le doigt posé pour continuer à avancer; lever le doigt stoppe le déplacement. Pas de pavé directionnel affiché.
 - **Mobile, main droite :** gestes de 8 directions, reconnus dès le mouvement (pas besoin de lever le doigt) :
-  - **↑** : saut immédiat.
-  - **↖ / ↗** : coups de poing hauts (jab rapide / cross puissant).
+  - **↑** : saut immédiat dès un geste bref de 20 pixels; un saut peut interrompre un coup.
+  - **↖ / ↗** : coups de poing hauts (jab rapide / cross puissant), **y compris en l’air** avec mélange additif des animations du haut du corps.
   - **← / →** : coups de poing au corps (rapide / puissant, avec fenêtres de récupération différentes).
-  - **↙ / ↘** : coups de pied gauche / droit (plus de portée, mais plus de récupération).
+  - **↙ / ↘** : coups de pied gauche / droit (plus de portée, mais plus de récupération), aussi possibles pendant un saut.
   - **↓ tenu** : garde qui absorbe environ 80 % des dégâts frontaux. **↓ bref** : roulade d'esquive.
   - **Tap**, **double/triple tap** : combo automatique jab / cross / hook. **Appui long**, même sans glisser : garde tant que le doigt reste posé.
 - Les coups s'enchaînent via une courte file d'attente, mais chaque attaque crée une fenêtre de vulnérabilité : choix entre portée, vitesse et défense.
@@ -34,6 +34,18 @@ Nova se déplace et combat **45 % plus rapidement** : vitesse au sol, vitesse de
 Fonctionnalités : caméra latérale qui suit l'action, garde défensive, combos bufferisés, vagues d'ennemis, IA d'approche, fenêtres de contact, dégâts, vies, knockback, animations de réaction/de mort, KO, score et redémarrage.
 
 **[Laboratoire des 86 animations par personnage](https://www.streamlev.com/Fighters/motion-lab.html)** : vue orbitale indépendante pour choisir entre Superhero Male et Superhero Female et examiner chaque animation, avec vitesse et scrubbing.
+
+## Vêtements civils et coiffures Quaternius
+
+- Vêtements : **Female Peasant** et **Male Peasant**, sans armure, issus du kit CC0 officiel [Modular Character Outfits – Fantasy](https://quaternius.itch.io/modular-character-outfits-fantasy).
+- Coiffures : **Hair Buns** sur Nova, **Hair Buzzed / Simple Parted** sur les adversaires, tirées du kit [Universal Base Characters](https://quaternius.itch.io/universal-base-characters).
+- Les cinq GLB modulaires sont distribués individuellement par [PixelTriks](https://www.pixeltriks.com/browse?pack=quaternius-modular-outfits-fantasy) et vérifiés par leur SHA-256 dans le workflow de publication.
+- **Même ordre de 65 os** pour tous les modèles. Le vêtement féminin et sa coiffure partagent exactement les matrices de repos et les matrices inverses de skinning de Nova. Le modèle masculin a quelques différences de morphologie; les vêtements masculins seront validés sur captures WebGL avant d’être déclarés finalisés.
+- Le moteur conserve la tête et les yeux d’origine et ne rend plus le corps situé sous les vêtements afin d’éviter que la peau traverse le tissu. Toutes les pièces sont attachées au squelette déjà animé du personnage.
+
+## Attaques aériennes
+
+Le coup de poing aérien utilise un calque additif des animations de bras et de torse Quaternius, par-dessus la boucle de saut du bas du corps. Le coup de pied conserve la pose de saut et fait tourner la jambe du rig natif. Aucune animation étrangère n’est retargetée. L’attaque aérienne ajoute un petit bonus de dégâts et de portée; lancer un saut pendant un coup au sol l’interrompt.
 
 ## Choix technique crucial
 

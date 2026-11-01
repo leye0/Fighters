@@ -6,6 +6,8 @@ on:
       - 'docs/**'
       - 'index.html'
       - 'scripts/verify-glb.mjs'
+      - 'scripts/verify-costumes.mjs'
+      - 'scripts/download-costumes.sh'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 permissions:
@@ -37,6 +39,7 @@ jobs:
             "https://raw.githubusercontent.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/5821923af517ac5fdc82505faa92a0d575fc1b1a/test/human_female.glb" \
             --output docs/models/human_female.glb
           node scripts/verify-glb.mjs docs/models/human_male.glb docs/models/human_female.glb
+          bash scripts/download-costumes.sh
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

@@ -112,6 +112,10 @@ try{
   await waitUntil("!!window.__fightersQA && window.__fightersQA.snapshot().ready===true",'game models',100000);
   const initial=await evaluate("window.__fightersQA.snapshot()");
   if(initial.enemies!==3||initial.health!==100)fail('Game initial state incorrect '+JSON.stringify(initial));
+  if(initial.outfit?.garmentMeshes!==4||initial.outfit?.hairMeshes!==1||
+     initial.outfit?.headTriangles<20||initial.enemyOutfits?.some(o=>o.garmentMeshes!==4||o.hairMeshes!==1))
+    fail('Civilian clothing/hair not bound to all actors '+JSON.stringify(initial));
+  console.log('COSTUMES PASS: civilian Peasant outfits, hair and isolated head, matching 65-joint bindings');
   const layout=await evaluate("(()=>{const el=document.getElementById('viewport'),r=el.getBoundingClientRect(),b=getComputedStyle(document.body);return {w:r.width,h:r.height,iw:innerWidth,ih:innerHeight,scrollX:scrollX,scrollY:scrollY,overflow:b.overflow,userSelect:b.userSelect,meta:document.querySelector('meta[name=viewport]').content,header:!!document.querySelector('.top'),panels:!!document.querySelector('.under')};})()");
   if(layout.w<layout.iw-1||layout.h<layout.ih-1||layout.scrollY!==0||layout.overflow!=='hidden'||layout.userSelect!=='none'||layout.header||layout.panels||!layout.meta.includes('user-scalable=no'))fail('Fullscreen/scroll/select/zoom lock failed '+JSON.stringify(layout));
   if(initial.heroSpeed<5||Math.abs(initial.heroClipScale-1.45)>.05||initial.enemyClipScales.some(v=>Math.abs(v-1)>.05))
@@ -188,13 +192,33 @@ try{
   await waitUntil("!window.__fightersQA.snapshot().heroAttack",'kick recovery',10000);
   const jx=rightX,jy=ry;
   await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:21,x:jx,y:jy}]});
-  await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:21,x:jx,y:jy-72}]});
+  await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:21,x:jx,y:jy-24}]});
   await delay(120);
   const jumping=await evaluate("window.__fightersQA.snapshot()");
   if(jumping.lastRightAction!=='jump'||jumping.heroJumpY<=0)fail('North swipe did not jump immediately '+JSON.stringify(jumping));
   await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  const airJab=await swipe(22,-59,-59,'NW','jab');
+  if(!airJab.heroAirAttack||!airJab.heroAirLayer||airJab.heroAttack!=='jab')
+    fail('Jump + punch must blend a real upper-body punch over the leap '+JSON.stringify(airJab));
+  await snap('night-street-air-punch');
+  await waitUntil("!window.__fightersQA.snapshot().heroAttack",'air punch recovery',10000);
+  await evaluate('window.__fightersQA.reset()');
+  await evaluate('window.__fightersQA.setEnemiesPassive(true)');
+  await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:31,x:jx,y:jy}]});
+  await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:31,x:jx,y:jy-24}]});
+  await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:32,x:jx,y:jy}]});
+  await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:32,x:jx+58,y:jy+58}]});
+  await waitUntil("window.__fightersQA.snapshot().heroKickExtension>.25",'air kick pose',8000);
+  await evaluate('window.__fightersQA.freeze(true)');
+  const airKick=await evaluate("window.__fightersQA.snapshot()");
+  if(!airKick.heroAirAttack||airKick.heroAttack!=='kickRight')fail('Jump + air kick failed '+JSON.stringify(airKick));
+  await snap('night-street-air-kick-frozen');
+  await evaluate('window.__fightersQA.freeze(false)');
+  await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  await waitUntil("!window.__fightersQA.snapshot().heroAttack",'air kick recovery',10000);
+  console.log('AIR COMBAT PASS: short up flick, additive upper-body punch over jumping legs, procedural airborne kick');
   for(const [direction,dx,dy,action,id] of [
-    ['NW',-59,-59,'jab',22],
     ['NE',59,-59,'cross',23],
     ['W',-72,0,'bodyLeft',24],
     ['E',72,0,'bodyRight',25],

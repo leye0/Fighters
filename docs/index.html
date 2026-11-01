@@ -62,7 +62,7 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;padding:0;overf
 <div class="hud"><div class="hero-hud"><div class="hud-kicker">1UP · HÉROÏNE</div><strong>NOVA</strong><div class="life-track"><div id="life"></div></div></div><div class="score"><div><small>ROUND</small><strong id="wave">01</strong></div><div><small>KO</small><strong id="ko">00</strong></div><div><small>SCORE</small><strong id="score">000000</strong></div></div><div class="utility"><button id="pause" aria-label="Pause" disabled>Ⅱ</button><button id="restart" aria-label="Recommencer">↻</button></div></div>
 <div id="viewport" class="viewport" aria-label="Scène de jeu beat ’em up 3D"><div class="scanlines"></div><div id="hit-flash" class="hit-flash"></div><div id="banner" class="banner">ROUND 1</div>
 <div id="gesture-indicator" class="gesture-indicator" aria-hidden="true">→</div><div id="guard-indicator" class="guard-indicator">🛡 GARDE</div>
-<div class="start-overlay" id="overlay"><div class="start-card"><div class="stamp">FIGHTERS · ARCADE EXPERIMENT 01</div><h2 id="overlay-title">NIGHT STREET</h2><p id="overlay-desc">Une héroïne contre des voyous. Mobile : main gauche, glisser et tenir pour avancer. Main droite : ↑ saut · ↖↗ poings hauts · ←→ poings au corps · ↙↘ pieds · ↓ tenu garde / ↓ bref esquive. Tap répété pour combos. Le pied est animé directement sur le rig Quaternius.</p><button class="primary" id="start" disabled>Chargement des combattants…</button><div class="load-progress"><div id="load-bar"></div></div></div></div>
+<div class="start-overlay" id="overlay"><div class="start-card"><div class="stamp">FIGHTERS · ARCADE EXPERIMENT 01</div><h2 id="overlay-title">NIGHT STREET</h2><p id="overlay-desc">Une héroïne avec coiffure et tenue de paysanne, contre des voyous en vêtements civils. À droite : ↑ saute avec un petit geste; ↖↗ poings et ↙↘ coups de pied, même en l’air; ↓ tenu protège, ↓ bref esquive. Aucun équipement d’armure.</p><button class="primary" id="start" disabled>Chargement des combattants…</button><div class="load-progress"><div id="load-bar"></div></div></div></div>
 </div>
 </section>
 <div aria-hidden="true" style="display:none"><span id="status">Chargement…</span><span id="motion"></span><span id="stats"></span></div>
@@ -111,7 +111,7 @@ const ATTACKS = {
   kickRight: {name:null,damage:20,range:1.96,recovery:.35,impact:.48,duration:.8,stagger:.68}
 };
 let ready=false,running=false,paused=false,gameOver=false;
-let female=null,male=null,hero=null,enemies=[],wave=1,ko=0,score=0,invuln=0,cameraX=0,shake=0,roundDelay=-1;
+let female=null,male=null,clothingFemale=null,clothingMale=null,hairBuns=null,hairBuzzed=null,hairParted=null,hero=null,enemies=[],wave=1,ko=0,score=0,invuln=0,cameraX=0,shake=0,roundDelay=-1;
 let gamepadLast={jab:false,cross:false,hook:false,jump:false,roll:false};
 const gamepadKeys=new Set();
 const nameMap={};
@@ -194,9 +194,58 @@ function animation(actor,name,force=false){
   actor.action=next;actor.current=name;
   if(actor.kind==='hero')$('motion').textContent='Animation : '+name;
 }
+// The official Peasant meshes carry exactly the same named 65-bone Quaternius rig.
+// Skin the garments/hair with this actor's own skeleton, never copy foreign joints.
+const headGeometryCache=new WeakMap();
+function headOnlyGeometry(body){
+  if(headGeometryCache.has(body.geometry))return headGeometryCache.get(body.geometry);
+  const geom=body.geometry,si=geom.getAttribute('skinIndex'),sw=geom.getAttribute('skinWeight');
+  const active=new Set(body.skeleton.bones.flatMap((b,i)=>['Head','neck_01'].includes(b.name)?[i]:[]));
+  const score=v=>{let sum=0;for(let k=0;k<4;k++)if(active.has(si.getComponent(v,k)))sum+=sw.getComponent(v,k);return sum;};
+  const ix=geom.getIndex(),indices=[];
+  for(let k=0;k<(ix?ix.count:geom.getAttribute('position').count);k+=3){
+    const a=ix?ix.getX(k):k,b=ix?ix.getX(k+1):k+1,c=ix?ix.getX(k+2):k+2;
+    if((score(a)>.45)+(score(b)>.45)+(score(c)>.45)>=2)indices.push(a,b,c);
+  }
+  if(indices.length<60)throw Error('Impossible d’isoler la tête du corps Quaternius');
+  const cut=geom.clone();cut.setIndex(indices);cut.clearGroups();cut.computeBoundingSphere();
+  headGeometryCache.set(geom,cut);
+  return cut;
+}
+function costumeLayers(visual,kind,index){
+  const bodyName=kind==='hero'?'Superhero_Female':'SuperHero_Male';
+  let body=null;
+  visual.traverse(o=>{if(o.isSkinnedMesh&&o.name===bodyName)body=o;});
+  if(!body)throw Error('Le squelette du personnage est introuvable : '+bodyName);
+  const skeleton=body.skeleton;
+  // Preserve head, face, eyes and brows, but hide the torso/underwear under the garments.
+  body.geometry=headOnlyGeometry(body);
+  const clothing=kind==='hero'?clothingFemale:clothingMale;
+  const hairstyle=kind==='hero'?hairBuns:(index%2?hairParted:hairBuzzed);
+  let garmentMeshes=0,hairMeshes=0;
+  for(const [source,type] of [[clothing,'garment'],[hairstyle,'hair']]){
+    if(!source)throw Error('Tenue ou coiffure manquante : '+type);
+    source.scene.traverse(o=>{
+      if(!o.isSkinnedMesh)return;
+      if(o.skeleton.bones.length!==skeleton.bones.length||
+         o.skeleton.bones.some((b,i)=>b.name!==skeleton.bones[i].name))
+        throw Error('Ordre des os incompatible pour '+o.name);
+      const materials=(Array.isArray(o.material)?o.material:[o.material]).map(m=>m.clone());
+      const layer=new THREE.SkinnedMesh(o.geometry,Array.isArray(o.material)?materials:materials[0]);
+      layer.name=type+'_'+o.name;layer.userData.costumeLayer=type;
+      layer.frustumCulled=false;
+      layer.bind(skeleton,body.bindMatrix.clone());
+      visual.add(layer);
+      if(type==='garment')garmentMeshes++;else hairMeshes++;
+    });
+  }
+  if(garmentMeshes<4||hairMeshes!==1)throw Error('Tenue civile incomplète');
+  return {garmentMeshes,hairMeshes,headTriangles:body.geometry.getIndex()?.count/3||0};
+}
 function spawnActor(gltf,kind,x,z,index=0){
   const root=new THREE.Group();
   const visual=cloneSkeleton(gltf.scene);
+  const outfitInfo=costumeLayers(visual,kind,index);
   const bbox=new THREE.Box3().setFromObject(visual);
   const center=bbox.getCenter(new THREE.Vector3());
   visual.position.set(-center.x,-bbox.min.y,-center.z);
@@ -206,7 +255,7 @@ function spawnActor(gltf,kind,x,z,index=0){
   if(kind==='enemy'){
     const tint=new THREE.Color(ENEMY_PALETTE[index%ENEMY_PALETTE.length]);
     visual.traverse(o=>{
-      if(o.isMesh&&o.material){
+      if(o.isMesh&&o.material&&o.userData.costumeLayer==='garment'){
         const mats=Array.isArray(o.material)?o.material:[o.material];
         const replacements=mats.map(mat=>{const m=mat.clone();if(m.color)m.color.multiply(tint);return m;});
         o.material=Array.isArray(o.material)?replacements:replacements[0];
@@ -223,9 +272,25 @@ function spawnActor(gltf,kind,x,z,index=0){
     speed:kind==='hero'?3.8*HERO_PACE:random(1.3,1.8),label:null,
     legBones:{l:{thigh:visual.getObjectByName('thigh_l'),calf:visual.getObjectByName('calf_l')},
               r:{thigh:visual.getObjectByName('thigh_r'),calf:visual.getObjectByName('calf_r')}},
-    kickExtension:0,kickBase:null
+    kickExtension:0,kickBase:null,outfitInfo,airActions:new Map(),airLayer:null
   };
   for(const clip of gltf.animations)if(!actor.actions.has(clip.name))actor.actions.set(clip.name,actor.mixer.clipAction(clip));
+  if(kind==='hero'){
+    for(const profile of Object.values(ATTACKS)){
+      if(!profile.name||actor.airActions.has(profile.name))continue;
+      const original=actor.actions.get(profile.name)?.getClip();
+      if(!original)continue;
+      const upper=original.tracks.filter(track=>{
+        const bone=track.name.split('.')[0].split('/').pop();
+        return /^(spine_|neck_|Head$|clavicle_|upperarm_|lowerarm_|hand_|thumb_|index_|middle_|ring_|pinky_)/.test(bone);
+      });
+      if(!upper.length)throw Error('Aucune piste de bras pour le combat aérien : '+profile.name);
+      const airClip=new THREE.AnimationClip('Air_'+profile.name,original.duration,upper.map(t=>t.clone()));
+      const reference=new THREE.AnimationClip('Reference_'+profile.name,original.duration,upper.map(t=>t.clone()));
+      THREE.AnimationUtils.makeClipAdditive(airClip,0,reference,30);
+      actor.airActions.set(profile.name,actor.mixer.clipAction(airClip));
+    }
+  }
   if(kind==='enemy'){
     const label=document.createElement('div');label.className='enemy-label';
     label.innerHTML='<div></div>';viewport.appendChild(label);actor.label=label;
@@ -275,9 +340,9 @@ function startSession(){
     reset:()=>startSession(),
     snapshot:()=>({
     ready,running,paused,wave,ko,score,health:hero.health,enemies:enemies.filter(e=>!e.dead).length,
-    heroMotion:hero.current,heroGuard:hero.guard,heroSpeed:hero.speed,heroClipScale:hero.action?.getEffectiveTimeScale()??0,enemyClipScales:enemies.map(e=>e.action?.getEffectiveTimeScale()??0),heroAttack:hero.attack?.type||null,heroJumpY:hero.jumpY,heroKickExtension:hero.kickExtension,legBonesFound:{left:!!hero.legBones.l.thigh&&!!hero.legBones.l.calf,right:!!hero.legBones.r.thigh&&!!hero.legBones.r.calf},boneNames:hero.legBones.r.thigh?[]:Array.from(new Set(hero.visual.getObjectsByProperty('isBone',true).map(b=>b.name))).slice(0,80),lastRightGesture,lastRightAction,touchX:touchDirection.x,touchZ:touchDirection.z,
+    heroMotion:hero.current,heroGuard:hero.guard,heroAirAttack:!!hero.attack?.air,heroAirLayer:!!hero.airLayer&&hero.airLayer.isRunning(),heroSpeed:hero.speed,heroClipScale:hero.action?.getEffectiveTimeScale()??0,enemyClipScales:enemies.map(e=>e.action?.getEffectiveTimeScale()??0),heroAttack:hero.attack?.type||null,heroJumpY:hero.jumpY,heroKickExtension:hero.kickExtension,legBonesFound:{left:!!hero.legBones.l.thigh&&!!hero.legBones.l.calf,right:!!hero.legBones.r.thigh&&!!hero.legBones.r.calf},boneNames:hero.legBones.r.thigh?[]:Array.from(new Set(hero.visual.getObjectsByProperty('isBone',true).map(b=>b.name))).slice(0,80),lastRightGesture,lastRightAction,touchX:touchDirection.x,touchZ:touchDirection.z,
     heroX:hero.root.position.x,heroZ:hero.root.position.z,
-    enemyMotions:enemies.map(e=>e.current),enemyHealth:enemies.map(e=>e.health)
+    outfit:hero.outfitInfo,enemyOutfits:enemies.map(e=>e.outfitInfo),enemyMotions:enemies.map(e=>e.current),enemyHealth:enemies.map(e=>e.health)
   })};
 }
 function showBanner(text){
@@ -293,25 +358,42 @@ function gameEnd(){
   $('pause').disabled=true;
 }
 function attack(actor,kind){
-  if(!actor||actor.dead||actor.guard||actor.attack||actor.stun>0||actor.jumpY>.08||actor.roll>0||actor.landing>0)return;
+  if(!actor||actor.dead||actor.guard||actor.attack||actor.stun>0||actor.roll>0)return;
+  const airborne=actor.kind==='hero'&&actor.jumpY>.02;
+  if((actor.jumpY>.08&&!airborne)||(actor.landing>0&&!airborne))return;
   const a=ATTACKS[kind];
   const clip=a.name?actor.actions.get(a.name)?.getClip():null;
   if(a.name&&!clip)return;
   const pace=actor.kind==='hero'?HERO_PACE:1;
   const duration=(clip?.duration??a.duration)/pace;
-  actor.attack={type:kind,elapsed:0,duration:duration+a.recovery/pace,struck:false,impact:duration*a.impact};actor.kickBase=null;
-  if(a.name)animation(actor,a.name,true);
+  actor.attack={type:kind,elapsed:0,duration:duration+a.recovery/pace,struck:false,impact:duration*a.impact,air:airborne};actor.kickBase=null;
+  if(a.name&&airborne){
+    // Lower body stays in the airborne clip; an additive, upper-body-only
+    // punch overlays the leap without stomping the leg tracks.
+    animation(actor,'Jump_Loop',true);
+    const layer=actor.airActions.get(a.name);
+    if(!layer)throw Error('Calque aérien introuvable : '+a.name);
+    layer.reset().stopFading().setEffectiveWeight(1).setEffectiveTimeScale(pace);
+    layer.setLoop(THREE.LoopOnce,1);layer.clampWhenFinished=true;
+    layer.fadeIn(.07).play();actor.airLayer=layer;actor.current='Air_'+kind;
+    $('motion').textContent='Animation : saut + '+kind+' (haut du corps)';
+  } else if(a.name)animation(actor,a.name,true);
   else {
     // The kick uses this same GLB's thigh/calf hierarchy, no imported retargeting.
     const leg=actor.legBones[kind==='kickLeft'?'l':'r'];
     if(!leg.thigh||!leg.calf){actor.attack=null;return;}
-    animation(actor,'Idle_Loop',true);
-    actor.current=kind;
+    animation(actor,airborne?'Jump_Loop':'Idle_Loop',true);
+    actor.current=airborne?'Air_'+kind:kind;
     if(actor.kind==='hero')$('motion').textContent='Animation : '+(kind==='kickLeft'?'coup de pied gauche':'coup de pied droit')+' (rig natif)';
   }
 }
 function jump(){
-  if(!hero||hero.dead||hero.jumpY>.02||hero.attack||hero.stun>0||hero.roll>0)return;
+  if(!hero||hero.dead||hero.jumpY>.02||hero.stun>0||hero.roll>0||hero.landing>0)return;
+  // Jump-cancel after an attack starts: an upward flick should feel instant.
+  if(hero.attack){
+    hero.attack=null;hero.queue=[];hero.kickBase=null;hero.kickExtension=0;
+    if(hero.airLayer){hero.airLayer.fadeOut(.08);hero.airLayer=null;}
+  }
   hero.jumpV=6.75;hero.jumpY=.01;animation(hero,'Jump_Start',true);
 }
 function roll(){
@@ -367,8 +449,8 @@ function hit(actor){
     if(!target||target.dead)continue;
     const dx=target.root.position.x-actor.root.position.x;
     const dz=target.root.position.z-actor.root.position.z;
-    if(dx*actor.facing<-.12 || Math.abs(dx)>profile.range || Math.abs(dz)>.85)continue;
-    damage(target,profile.damage,actor);
+    if(dx*actor.facing<-.12 || Math.abs(dx)>profile.range+(actor.attack.air?.18:0) || Math.abs(dz)>.85)continue;
+    damage(target,profile.damage+(actor.attack.air?3:0),actor);
     if(!target.dead&&profile.stagger)target.stun=Math.max(target.stun,profile.stagger);
     if(++hitCount>=2)break;
   }
@@ -383,8 +465,9 @@ function stepAttack(actor,dt){
   }
   if(a.elapsed>=a.duration){
     actor.attack=null;actor.kickExtension=0;actor.kickBase=null;
+    if(actor.airLayer){actor.airLayer.fadeOut(.1);actor.airLayer=null;}
     if(actor.kind==='hero'&&actor.queue.length)attack(actor,actor.queue.shift());
-    else animation(actor,'Idle_Loop');
+    else animation(actor,actor.jumpY>.02?'Jump_Loop':actor.landing>0?'Jump_Land':'Idle_Loop');
   }
   return true;
 }
@@ -399,7 +482,11 @@ function moveHero(dt){
     if(hero.jumpY===0){hero.jumpV=0;hero.landing=.32/HERO_PACE;animation(hero,'Jump_Land',true);}
     else if(hero.jumpV<2.2&&!hero.attack)animation(hero,'Jump_Loop');
   }
-  if(hero.landing>0){hero.landing=Math.max(0,hero.landing-dt);if(hero.landing===0)animation(hero,'Idle_Loop');return;}
+  if(hero.landing>0){
+    hero.landing=Math.max(0,hero.landing-dt);
+    if(hero.landing===0&&!hero.attack)animation(hero,'Idle_Loop');
+    if(!hero.attack)return;
+  }
   if(hero.roll>0){
     hero.roll=Math.max(0,hero.roll-dt);
     hero.root.position.x=clamp(hero.root.position.x+hero.facing*5.5*HERO_PACE*dt,-28,28);
@@ -646,8 +733,11 @@ viewport.addEventListener('pointermove',event=>{
   const rect=viewport.getBoundingClientRect();
   const x=event.clientX-rect.left,y=event.clientY-rect.top;
   if(leftGesture?.id===event.pointerId)updateLeftDirection(x,y);
-  if(rightGesture?.id===event.pointerId&&!rightGesture.committed&&Math.hypot(x-rightGesture.x,y-rightGesture.y)>=34){
-    const direction=rightDirection(x-rightGesture.x,y-rightGesture.y);
+  if(rightGesture?.id===event.pointerId&&!rightGesture.committed){
+    const dx=x-rightGesture.x,dy=y-rightGesture.y;
+    const quickUp=dy<=-20&&Math.abs(dx)<Math.abs(dy)*.45;
+    if(!quickUp&&Math.hypot(dx,dy)<34)return;
+    const direction=quickUp?'N':rightDirection(dx,dy);
     rightGesture.committed=direction;
     clearTimeout(rightGuardTimer);rightGuardTimer=null;
     setGuard('touch',false);
@@ -702,7 +792,7 @@ $('restart').onclick=()=>{if(ready)startSession();};
 $('start').onclick=startSession;
 async function getBinary(file,onProgress){
   let response=await fetch('./models/'+file);
-  if(!response.ok)response=await fetch(gltfRoot+file);
+  if(!response.ok)response=await fetch(file.startsWith('human_')?gltfRoot+file:'https://www.pixeltriks.com/characters/humans/'+(file.includes('Peasant')?'outfits/':'hair/')+file);
   if(!response.ok)throw Error(file+' HTTP '+response.status);
   const length=Number(response.headers.get('content-length'))||0;
   if(!response.body)return response.arrayBuffer();
@@ -729,11 +819,24 @@ async function load(){
         throw Error(file+' n’a pas les animations Quaternius attendues.');
       if(gender==='female')female=gltf;else male=gltf;
     }
+    const garmentFiles=[
+      ['quaternius_outfit_Female_Peasant.glb','clothingFemale'],
+      ['quaternius_outfit_Male_Peasant.glb','clothingMale'],
+      ['quaternius_ubc_Hair_Buns.glb','hairBuns'],
+      ['quaternius_ubc_Hair_Buzzed.glb','hairBuzzed'],
+      ['quaternius_ubc_Hair_SimpleParted.glb','hairParted']
+    ];
+    // Same rig, native garment skinning. Files are integrity-pinned in Pages CI.
+    const garments=await Promise.all(garmentFiles.map(async ([file])=>{
+      const data=await getBinary(file,()=>{});
+      return loader.parseAsync(data,'');
+    }));
+    [clothingFemale,clothingMale,hairBuns,hairBuzzed,hairParted]=garments;
     ready=true;$('load-bar').style.width='100%';
     $('start').disabled=false;$('start').textContent='▶ COMMENCER LE COMBAT';
-    $('overlay-desc').textContent='Nova contre les voyous. Main gauche : glisser et tenir pour avancer. Main droite : ↑ saut · ↖↗ poings hauts · ←→ poings au corps · ↙↘ coups de pied · ↓ tenu garde / bref esquive. Tap répété pour combos. Clavier : flèches, J/K/L, Q, Espace et Shift.';
-    status('Deux modèles 3D chargés · moteur prêt');
-    $('stats').textContent='2 rigs d’origine · 86 animations par rig · ennemis clonés sur le squelette masculin';
+    $('overlay-desc').textContent='Nova en tenue civile contre trois voyous en habits de paysan. Main gauche : glisser et tenir pour avancer. Main droite : ↑ petit geste pour sauter; ↖↗ poings, ←→ coups au corps, ↙↘ coups de pied, même en l’air; ↓ tenu garde, bref esquive. Tap répété pour combos.';
+    status('Deux modèles et cinq pièces vestimentaires Quaternius chargés · moteur prêt');
+    $('stats').textContent='2 rigs d’origine · 86 animations par rig · vêtements paysans (sans armures) + cheveux skinnés sur les mêmes os';
     if(new URLSearchParams(location.search).has('qa'))startSession();
   }catch(err){
     console.error(err);$('overlay-title').textContent='Erreur de chargement';
