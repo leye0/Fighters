@@ -112,6 +112,11 @@ try{
   if(initial.outfit?.garmentMeshes!==4||initial.outfit?.hairMeshes!==1||
      initial.outfit?.headTriangles<20||initial.enemyOutfits?.some(o=>o.garmentMeshes<4||o.hairMeshes!==1))
     fail('Civilian clothing/hair not bound to all actors '+JSON.stringify(initial));
+  const deployedSword=await evaluate("fetch('./models/equipment.sword.arming.default.gltf?v=uncompressed-20261101').then(r=>r.json())");
+  if(deployedSword.extensionsRequired?.includes('EXT_meshopt_compression')||deployedSword.extensionsUsed?.includes('EXT_meshopt_compression')||
+    deployedSword.bufferViews?.some(v=>v.extensions?.EXT_meshopt_compression))
+    fail('Deployed sword must NOT require Meshopt decoding in any browser');
+  console.log('SWORD STATIC PASS: deployed asset is uncompressed even for a stale JS loader');
   console.log('COSTUMES PASS: civilian Peasant outfits, hair and isolated head, matching 65-joint bindings');
   // Native Quaternius Sword_Attack, the authored weapon GLTF grip, and both facing directions.
   await evaluate('window.__fightersQA.setupSwordDuel()');

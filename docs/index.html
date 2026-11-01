@@ -956,7 +956,7 @@ async function load(){
       return loader.parseAsync(data,'');
     }));
     [clothingFemale,clothingMale,hairBuns,hairBuzzed,hairParted]=garments;
-    swordModel=await loader.loadAsync('./models/equipment.sword.arming.default.gltf');
+    swordModel=await loader.loadAsync('./models/equipment.sword.arming.default.gltf?v=uncompressed-20261101');
     const grip=swordModel.scene.getObjectByName('grip');
     if(!grip||grip.position.length()>1e-5||!swordModel.scene.getObjectByProperty('isMesh',true))
       throw Error('GLTF de l’épée sans poignée calibrée');
