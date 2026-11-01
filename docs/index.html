@@ -220,57 +220,60 @@ async function loadWitchHouse(){
 loadWitchHouse().catch(err=>console.warn('Witch house GLB unavailable:',err));
 
 const ORC_VILLAGE={
-  // Building centers along the eastern and southern margins; leave a wide
-  // diagonal corridor for enemy spawns and travel toward the heroine.
+  // All fifteen extracted structures, positioned around the enemy corner.
   positions:[
-    {x:12,z:19},{x:12,z:25},{x:17,z:17},{x:19,z:12},
-    {x:25,z:12},{x:25,z:18},{x:13,z:12},{x:7,z:23},
-    {x:23,z:7},{x:7,z:16},{x:16,z:7},{x:26,z:26},
-    {x:8,z:8},{x:2,z:24},{x:24,z:2},{x:2,z:17}
+    {x:12,z:19},{x:12,z:25},{x:17,z:17},{x:19,z:12},{x:25,z:12},
+    {x:25,z:18},{x:13,z:12},{x:7,z:23},{x:23,z:7},{x:7,z:16},
+    {x:16,z:7},{x:26,z:26},{x:8,z:8},{x:2,z:24},{x:24,z:2}
   ]
 };
 let orcVillage=null;
 async function loadOrcVillage(){
-  const gltf=await loader.loadAsync('./models/orc_rts_building_set_-_proto_series.glb');
-  const source=gltf.scene;
-  // GLB asset packs often organize each building as a transform group
-  // containing multiple meshes. Preserve these groups rather than picking
-  // individual walls/roofs as if they were separate buildings.
-  const candidates=[];
-  const rootChildren=source.children.filter(o=>o.type!=='Bone');
-  const top=rootChildren.length===1&&rootChildren[0].children.length>1
-    ?rootChildren[0].children:rootChildren;
-  for(const child of top){
-    if(!child.getObjectByProperty('isMesh',true)&&!child.getObjectByProperty('isSkinnedMesh',true)){
-      let hasMesh=false;child.traverse(o=>{if(o.isMesh)hasMesh=true;});
-      if(!hasMesh)continue;
-    }
-    candidates.push(child);
-  }
+  const response=await fetch('./models/orc-buildings/manifest.json');
+  if(!response.ok)throw Error('Orc manifest HTTP '+response.status);
+  const manifest=await response.json();
+  if(!Array.isArray(manifest.buildings)||!manifest.buildings.length)
+    throw Error('Orc building manifest is empty');
   const village=new THREE.Group();
-  for(let i=0;i<Math.min(candidates.length,ORC_VILLAGE.positions.length);i++){
-    const original=candidates[i];
-    const model=original.clone(true);
+  // Each file contains exactly one complete building and its dependencies.
+  // Target a visible 3–5 world-unit footprint; never shrink an already
+  // small model and never confuse a single roof or wall with a building.
+  const entries=manifest.buildings.slice(0,ORC_VILLAGE.positions.length);
+  const results=await Promise.allSettled(entries.map(entry=>loader.loadAsync(entry.file)));
+  for(let i=0;i<results.length;i++){
+    const result=results[i];
+    if(result.status!=='fulfilled'){
+      console.warn('Orc building unavailable:',entries[i].name,result.reason);
+      continue;
+    }
+    const model=result.value.scene;
     model.updateMatrixWorld(true);
     const bounds=new THREE.Box3().setFromObject(model);
     const size=bounds.getSize(new THREE.Vector3());
-    if(Math.max(size.x,size.z)<1e-5||size.y<1e-5)continue;
+    const footprint=Math.max(size.x,size.z);
+    if(!Number.isFinite(footprint)||footprint<=1e-6)continue;
     const center=bounds.getCenter(new THREE.Vector3());
-    const pivot=new THREE.Group();
-    model.position.x-=center.x;
-    model.position.y-=bounds.min.y;
-    model.position.z-=center.z;
-    pivot.add(model);
-    pivot.scale.setScalar(Math.min(1,4.2/Math.max(size.x,size.z)));
+    const anchor=new THREE.Group();
+    // Center the source asset using a separate transform, preserving
+    // the original node transforms and every mesh/material underneath.
+    const offset=new THREE.Group();
+    offset.position.set(-center.x,-bounds.min.y,-center.z);
+    offset.add(model);
+    anchor.add(offset);
+    const target=3.5+(i%3)*.55;
+    anchor.scale.setScalar(target/footprint);
     const p=ORC_VILLAGE.positions[i];
-    pivot.position.set(p.x,0,p.z);
-    pivot.rotation.y=(i%4)*Math.PI/2;
-    village.add(pivot);
+    anchor.position.set(p.x,0,p.z);
+    anchor.rotation.y=(i%4)*Math.PI/2;
+    anchor.userData={buildingId:entries[i].id,buildingName:entries[i].name,
+      description:entries[i].description,originalFootprint:footprint,targetFootprint:target};
+    village.add(anchor);
   }
-  scene.add(village);orcVillage=village;
-  console.info('Orc building set:',candidates.length,'top-level objects;',village.children.length,'placed');
+  scene.add(village);
+  orcVillage=village;
+  console.info('Orc village:',village.children.length,'/',entries.length,'individual buildings loaded');
 }
-loadOrcVillage().catch(err=>console.warn('Orc village GLB unavailable:',err));
+loadOrcVillage().catch(err=>console.warn('Orc village loading failed:',err));
 const cameraLook=new THREE.Vector3(0,1.15,0);
 function resize(){
   const w=viewport.clientWidth,h=viewport.clientHeight;
