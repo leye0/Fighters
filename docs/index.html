@@ -205,13 +205,17 @@ async function loadWitchHouse(){
   const size=bounds.getSize(new THREE.Vector3());
   const center=bounds.getCenter(new THREE.Vector3());
   const scale=WITCH_HOUSE.maxFootprint/Math.max(size.x,size.z);
-  house.scale.setScalar(scale);
-  // Place the model's local -Z facade toward southeast (+X,+Z).
-  // Rotate -Z by -135° to point (+X,+Z).
-  house.rotation.y=-3*Math.PI/4;
-  house.position.set(WITCH_HOUSE.x-center.x*scale,
-    -bounds.min.y*scale,WITCH_HOUSE.z-center.z*scale);
-  scene.add(house);witchHouse=house;
+  // Center in the model's own coordinates BEFORE rotating it. Otherwise
+  // the building drifts away from its intended footprint as yaw changes.
+  house.position.set(-center.x,-bounds.min.y,-center.z);
+  const anchor=new THREE.Group();
+  anchor.scale.setScalar(scale);
+  // Model facade is provisionally assumed to face local -Z.
+  // -135° yaw maps local -Z to world (+X,+Z), the southeast.
+  anchor.rotation.y=-3*Math.PI/4;
+  anchor.position.set(WITCH_HOUSE.x,0,WITCH_HOUSE.z);
+  anchor.add(house);
+  scene.add(anchor);witchHouse=anchor;
 }
 loadWitchHouse().catch(err=>console.warn('Witch house GLB unavailable:',err));
 const cameraLook=new THREE.Vector3(0,1.15,0);
@@ -417,7 +421,7 @@ function startSession(){
   inputs.clear();guardInputs.clear();touchDirection.x=0;touchDirection.z=0;
   leftGesture=null;rightGesture=null;clearTimeout(rightGuardTimer);rightGuardTimer=null;$('gesture-indicator').style.display='none';$('guard-indicator').style.display='none';
   hero=spawnActor(female,'hero',SPAWNS.hero.x,SPAWNS.hero.z);
-  faceDirection(hero,1,1);
+  faceDirection(hero,1,1);applyFacing(hero);
   spawnWave();
   setHUD();
   $('pause').disabled=false;$('pause').textContent='Ⅱ';$('pause').setAttribute('aria-label','Pause');
