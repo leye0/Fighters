@@ -218,6 +218,46 @@ async function loadWitchHouse(){
   scene.add(anchor);witchHouse=anchor;
 }
 loadWitchHouse().catch(err=>console.warn('Witch house GLB unavailable:',err));
+
+const ORC_VILLAGE={
+  // Leave the southeast spawn clear, with buildings along its northern/eastern edges.
+  positions:[{x:14,z:20,yaw:-.7},{x:20,z:14,yaw:.5},{x:25,z:17,yaw:-.4},{x:17,z:25,yaw:.8}]
+};
+let orcVillage=null;
+async function loadOrcVillage(){
+  const gltf=await loader.loadAsync('./models/orc_rts_building_set_-_proto_series.glb');
+  const source=gltf.scene;
+  // A building set can contain many individual models. Prefer separately
+  // named subtrees; never blindly duplicate the entire atlas as four houses.
+  const candidates=[];
+  source.traverse(o=>{
+    if(o===source||!o.isMesh)return;
+    const name=(o.name||'').toLowerCase();
+    if(/house|hut|building|barrack|tower|tent/.test(name))candidates.push(o);
+  });
+  const village=new THREE.Group();
+  if(!candidates.length){
+    console.warn('Orc GLB has no individually identifiable houses; keeping atlas hidden');
+    return;
+  }
+  for(let i=0;i<Math.min(candidates.length,ORC_VILLAGE.positions.length);i++){
+    const model=candidates[i].clone(true);
+    model.updateMatrixWorld(true);
+    const b=new THREE.Box3().setFromObject(model);
+    const size=b.getSize(new THREE.Vector3());
+    if(!size.x||!size.y||!size.z)continue;
+    const center=b.getCenter(new THREE.Vector3());
+    const group=new THREE.Group();
+    model.position.sub(center);model.position.y+=size.y/2;
+    group.add(model);
+    group.scale.setScalar(4.4/Math.max(size.x,size.z));
+    const p=ORC_VILLAGE.positions[i];
+    group.position.set(p.x,0,p.z);group.rotation.y=p.yaw;
+    village.add(group);
+  }
+  scene.add(village);orcVillage=village;
+}
+loadOrcVillage().catch(err=>console.warn('Orc village GLB unavailable:',err));
 const cameraLook=new THREE.Vector3(0,1.15,0);
 function resize(){
   const w=viewport.clientWidth,h=viewport.clientHeight;
