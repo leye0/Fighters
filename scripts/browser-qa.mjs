@@ -2,6 +2,7 @@
 /**
  * Browser QA with real Chrome WebGL via software SwiftShader.
  * Verifies both supplied characters and motion playback; captures real canvas frames.
+ * Tests hold-to-move using wall-clock time on software-rendered WebGL.
  * No puppeteer/playwright dependency.
  */
 import { spawn } from 'node:child_process';

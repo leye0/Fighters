@@ -18,6 +18,8 @@ Prototype de **beat ’em up 2,5D** inspiré des classiques d'arcade à la Doubl
 - **P** : pause.
 - Gestes tactiles sans boutons dessinés par-dessus le jeu, et premiers contrôles de manette.
 
+La simulation avance par pas fixes de 1/60 s, avec rattrapage borné des images lentes, afin que la durée des déplacements et fenêtres de coups ne dépende pas directement des FPS.
+
 Fonctionnalités : caméra latérale qui suit l'action, garde défensive, combos bufferisés, vagues d'ennemis, IA d'approche, fenêtres de contact, dégâts, vies, knockback, animations de réaction/de mort, KO, score et redémarrage.
 
 **[Laboratoire des 86 animations par personnage](https://www.streamlev.com/Fighters/motion-lab.html)** : vue orbitale indépendante pour choisir entre Superhero Male et Superhero Female et examiner chaque animation, avec vitesse et scrubbing.
