@@ -47,7 +47,15 @@ Fonctionnalités : caméra latérale qui suit l'action, garde défensive, combos
 
 Le saut dure environ une seconde pour laisser le temps d’enchaîner un geste offensif. Le poing aérien mélange les animations Quaternius du haut du corps avec le saut et corrige la trajectoire de la main selon le sens du personnage, même en se retournant en l’air. Le coup de pied pivote brièvement le corps et déploie rapidement la jambe sur le rig natif. Aucune animation étrangère n’est retargetée. L’attaque aérienne ajoute un petit bonus de dégâts et de portée; lancer un saut pendant un coup au sol l’interrompt. La barre de vie revient à 100 % au début de chaque nouveau round.
 
-## Armes — état de compatibilité (sans intégration)
+## Armes — état de compatibilité (étendue)
+
+## Ennemis armés — épées CC0 et animations natives
+
+À chaque apparition d'ennemi, une probabilité de **40 %** lui attribue une épée déjà modélisée (issue du projet [asset-tooling](https://github.com/moritzbrantner/asset-tooling/blob/main/docs/weapon-recipes.md), sous CC0), avec un repère de prise `grip` à l'origine, deux ressources GLTF+BIN vérifiées par SHA-256. La prise est déduite des os de doigts du **rig masculin réel de Fighters** d'après la méthode documentée [derive-sockets.ts](https://github.com/moritzbrantner/asset-tooling/blob/main/examples/weapons/derive-sockets.ts) : aucun décalage réglé à l'œil. Le groupe de l'arme est enfant de `hand_r`, il suit donc ses animations sans retargeting. L'ennemi équipé joue directement `Sword_Idle` et `Sword_Attack` de **son propre GLB natif**, avec portée/dégâts ajustés au jeu; les adversaires sans arme gardent leurs poings. Les barres de vie des épéistes sont dorées.
+
+La vérification automatisée charge l'épée réelle en WebGL, contrôle son socket et exécute un coup d'épée qui inflige des dégâts à Nova. Ce mécanisme n'invente aucune animation; l'aspect visuel de la prise et du mouvement doit néanmoins être jugé en jeu.
+
+
 
 Les deux fichiers `human_male.glb` et `human_female.glb` contiennent **sur leurs propres 65 os** les clips de combat `Sword_*` et `Pistol_*` des bibliothèques Standard Quaternius. Le vérificateur `scripts/verify-glb.mjs` impose maintenant la présence des 11 clips d'épée et des 6 clips de pistolet dans **chacun** des GLB déjà épinglés par SHA. Il ne valide pas la géométrie d'une arme ni son point de préhension.
 

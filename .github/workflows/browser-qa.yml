@@ -7,6 +7,7 @@ on:
       - 'scripts/browser-qa.mjs'
       - 'scripts/verify-costumes.mjs'
       - 'scripts/download-costumes.sh'
+      - 'scripts/download-sword.sh'
       - '.github/workflows/browser-qa.yml'
   workflow_dispatch:
 permissions:
@@ -27,6 +28,7 @@ jobs:
           curl -fLsS --retry 3 https://raw.githubusercontent.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/5821923af517ac5fdc82505faa92a0d575fc1b1a/test/human_female.glb -o docs/models/human_female.glb
           node scripts/verify-glb.mjs docs/models/human_male.glb docs/models/human_female.glb
           bash scripts/download-costumes.sh
+          bash scripts/download-sword.sh
       - name: Start preview server
         run: |
           python3 -m http.server 8000 --directory docs >/tmp/fighters-browser-qa-http.log 2>&1 &

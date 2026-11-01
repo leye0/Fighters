@@ -113,6 +113,18 @@ try{
      initial.outfit?.headTriangles<20||initial.enemyOutfits?.some(o=>o.garmentMeshes<4||o.hairMeshes!==1))
     fail('Civilian clothing/hair not bound to all actors '+JSON.stringify(initial));
   console.log('COSTUMES PASS: civilian Peasant outfits, hair and isolated head, matching 65-joint bindings');
+  // Native Quaternius Sword_Attack, the authored weapon GLTF grip, and both facing directions.
+  await evaluate('window.__fightersQA.setupSwordDuel()');
+  const equipped=await evaluate('window.__fightersQA.snapshot()');
+  if(!equipped.enemyWeapons[0]||equipped.enemyMotions[0]!=='Sword_Attack'||equipped.enemySwordGrips[0]>.16)
+    fail('Weapon rig attachment or native Sword_Attack failed '+JSON.stringify(equipped));
+  await evaluate('window.__fightersQA.poseAtAttack(.95)');
+  const slashed=await evaluate('window.__fightersQA.snapshot()');
+  if(slashed.health>=100)fail('Actual sword swing did not damage Nova '+JSON.stringify(slashed));
+  await snap('night-street-native-enemy-sword');
+  console.log('SWORD PASS: gripped imported mesh, native Sword_Attack, real hit and health loss');
+  await evaluate('window.__fightersQA.reset()');
+
   await snap('night-street-costumed-start');
   const layout=await evaluate("(()=>{const el=document.getElementById('viewport'),r=el.getBoundingClientRect(),b=getComputedStyle(document.body);return {w:r.width,h:r.height,iw:innerWidth,ih:innerHeight,scrollX:scrollX,scrollY:scrollY,overflow:b.overflow,userSelect:b.userSelect,meta:document.querySelector('meta[name=viewport]').content,header:!!document.querySelector('.top'),panels:!!document.querySelector('.under')};})()");
   if(layout.w<layout.iw-1||layout.h<layout.ih-1||layout.scrollY!==0||layout.overflow!=='hidden'||layout.userSelect!=='none'||layout.header||layout.panels||!layout.meta.includes('user-scalable=no'))fail('Fullscreen/scroll/select/zoom lock failed '+JSON.stringify(layout));
