@@ -64,7 +64,7 @@ async function waitUntil(test,label,limitMs=75000){
   fail('Timeout: '+label+' / '+String(await evaluate("document.getElementById('load-status')?.textContent")));
 }
 async function snap(name){
-  const box=await evaluate("(()=>{const x=document.getElementById('stage').getBoundingClientRect();return {x:x.left,y:x.top,width:x.width,height:x.height};})()");
+  const box=await evaluate("(()=>{const x=(document.getElementById('stage')||document.getElementById('viewport')).getBoundingClientRect();return {x:x.left,y:x.top,width:x.width,height:x.height};})()");
   const r=await call('Page.captureScreenshot',{format:'png',captureBeyondViewport:false,clip:{...box,scale:1}});
   const bytes=Buffer.from(r.data,'base64');
   writeFileSync(join(results,name+'.png'),bytes);
@@ -106,6 +106,29 @@ try{
   if(!webgl)fail('No WebGL canvas');
   await character('SUPERHERO_MALE');
   await character('SUPERHERO_FEMALE',true);
+  console.log('Character Motion Lab PASS');
+  await call('Page.navigate',{url:'http://127.0.0.1:8000/?qa=1'});
+  await waitUntil("!!window.__fightersQA && window.__fightersQA.snapshot().ready===true",'game models',100000);
+  const initial=await evaluate("window.__fightersQA.snapshot()");
+  if(initial.enemies!==3||initial.health!==100)fail('Game initial state incorrect '+JSON.stringify(initial));
+  const beforeX=initial.heroX;
+  await call('Input.dispatchKeyEvent',{type:'rawKeyDown',key:'ArrowRight',code:'ArrowRight',windowsVirtualKeyCode:39});
+  await delay(500);
+  await call('Input.dispatchKeyEvent',{type:'keyUp',key:'ArrowRight',code:'ArrowRight',windowsVirtualKeyCode:39});
+  const afterX=await evaluate("window.__fightersQA.snapshot().heroX");
+  if(afterX<=beforeX+.35)fail('Hero did not move right under keyboard input');
+  await snap('night-street-start');
+  await delay(1800);
+  for(let n=0;n<5;n++){
+    await call('Input.dispatchKeyEvent',{type:'rawKeyDown',key:'j',code:'KeyJ',windowsVirtualKeyCode:74});
+    await delay(70);
+    await call('Input.dispatchKeyEvent',{type:'keyUp',key:'j',code:'KeyJ',windowsVirtualKeyCode:74});
+    await delay(750);
+  }
+  const afterCombat=await evaluate("window.__fightersQA.snapshot()");
+  await snap('night-street-combat');
+  if(afterCombat.score<=0)fail('No successful punch contact in game '+JSON.stringify(afterCombat));
+  console.log('Beat em up PASS: movement, three enemies, attack contacts, score '+afterCombat.score);
   console.log('Fighters real WebGL QA PASS');
 } finally {
   if(socket)socket.close();

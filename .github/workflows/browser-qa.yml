@@ -31,7 +31,9 @@ jobs:
             sleep 0.25
           done
           exit 1
-      - name: Exercise actual model and motion clips in Chrome SwiftShader
+      - name: Exercise real rigs and beat em up in Chrome SwiftShader
+        env:
+          FIGHTERS_URL: http://127.0.0.1:8000/motion-lab.html
         run: |
           google-chrome --version
           node scripts/browser-qa.mjs

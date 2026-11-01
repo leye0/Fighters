@@ -1,347 +1,522 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#0a0e19">
-  <meta name="description" content="Fighters Motion Lab — 2 personnages Quaternius et 86 animations intégrées par personnage, à essayer en 3D.">
-  <title>Fighters · Motion Lab</title>
-  <style>
-    :root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#090c16;color:#eaf0ff;font-synthesis:none}
-    *{box-sizing:border-box}body{margin:0;min-height:100vh}button,input,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.35;cursor:not-allowed}a{color:#98b8ff}
-    .shell{display:grid;grid-template-columns:315px minmax(0,1fr);min-height:100vh}.sidebar{background:#101525;border-right:1px solid #25304c;padding:23px 20px;display:flex;flex-direction:column;gap:24px;z-index:2}
-    .brand{display:flex;align-items:center;gap:12px}.brand-mark{background:#f2f55a;color:#12140d;font-size:22px;font-weight:1000;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;transform:rotate(-5deg)}.brand h1{font-size:17px;letter-spacing:.15em;margin:0;font-weight:850}.brand small{font-size:10px;color:#818eab;letter-spacing:.23em}
-    .eyebrow{font-size:10px;letter-spacing:.19em;font-weight:800;color:#8794b5;text-transform:uppercase;margin:0 0 12px;display:flex;justify-content:space-between}.choices{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-    .choice{color:#e9eefc;background:#1c2437;border:1px solid #34405b;border-radius:13px;min-height:84px;padding:10px;text-align:left;transition:.15s}.choice:hover{border-color:#a8b1dc}.choice.active{border-color:#eff56b;background:#30372e;box-shadow:inset 0 0 0 1px #eff56b}.choice .avatar{font-size:23px;display:block;margin-bottom:8px}.choice strong{font-size:12px;display:block}.choice small{color:#9ea9c4;font-size:10px}
-    .search{width:100%;background:#0a0f1f;border:1px solid #2f3a56;color:#eef2ff;border-radius:10px;padding:12px 14px;outline:none}.search:focus{border-color:#d4ed75}.tabs{display:flex;gap:5px;overflow:auto;padding:2px 0 7px;scrollbar-width:none}.tabs button{border:1px solid #34405b;background:#1c2437;color:#a6b0cc;border-radius:9px;padding:8px 10px;white-space:nowrap;font-size:11px}.tabs button.active{background:#e9f064;border-color:#e9f064;color:#1b2111;font-weight:800}
-    .scroll{overflow:auto;max-height:calc(100vh - 410px);min-height:190px;padding:0 3px 0 0;scrollbar-color:#34405b transparent;scrollbar-width:thin}.motion{width:100%;margin:0 0 6px;background:#161d2e;border:1px solid transparent;border-radius:10px;display:flex;align-items:center;justify-content:space-between;padding:12px;color:#c4cee7;text-align:left;font-size:12px;gap:8px}.motion:hover{background:#212b40}.motion.active{color:#f3f7ff;background:#303c34;border-color:#b8ed75}.motion small{font-family:ui-monospace,monospace;color:#788aa9;font-size:10px}.empty{padding:20px;color:#8594af;font-size:13px}
-    .sidebar-foot{margin-top:auto;border-top:1px solid #26324c;padding-top:16px;font-size:11px;line-height:1.65;color:#8b99b8}.sidebar-foot strong{color:#dce7fc}.status-dot{display:inline-block;width:8px;height:8px;background:#e4c170;border-radius:50%;margin-right:5px}.status-dot.ok{background:#9df293}.status-dot.bad{background:#ff7079}
-    .main{display:flex;flex-direction:column;min-width:0;min-height:100vh}.topbar{padding:23px 29px 14px;display:flex;align-items:start;justify-content:space-between;gap:15px}.topbar h2{margin:0;font-size:clamp(23px,3vw,36px);letter-spacing:-.06em;font-weight:850}.topbar p{color:#8d9bb8;font-size:12px;margin:8px 0 0}.pill{border:1px solid #5d6d57;background:#1b2d29;color:#b9ef96;border-radius:99px;font-size:10px;font-weight:800;padding:9px 12px;letter-spacing:.07em;white-space:nowrap}
-    .stage-wrap{position:relative;flex:1;min-height:445px;margin:0 22px;background:radial-gradient(ellipse at 55% 37%,#253654 0%,#151e34 38%,#0c1425 75%);border:1px solid #273653;border-radius:22px;overflow:hidden}.stage-wrap canvas{display:block;width:100%;height:100%;outline:none}.stage-fade{pointer-events:none;position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,10,20,.12),transparent 45%,rgba(4,7,15,.28))}
-    .corner{position:absolute;font-size:10px;color:#c6d3e8;letter-spacing:.15em;font-weight:700;pointer-events:none}.tl{top:20px;left:24px}.tr{top:20px;right:24px;color:#97ffbb}.bl{bottom:21px;left:24px;color:#8b9bbb}.br{bottom:21px;right:24px;color:#8b9bbb}.load{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(360px,80%);background:#101b2deb;border:1px solid #3e5271;padding:26px;border-radius:18px;text-align:center;z-index:3}.load h3{margin:0 0 8px}.load p{color:#9baac7;line-height:1.5;font-size:12px}.progress{height:4px;background:#344661;border-radius:99px;overflow:hidden;margin-top:17px}.progress >div{height:100%;width:0;background:#e9ee61;transition:width .2s}.load[hidden]{display:none}
-    .hud{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(210px,.7fr);gap:18px;margin:16px 22px 20px}.panel{background:#11192a;border:1px solid #293650;border-radius:17px;padding:17px 20px;min-width:0}.panel .meta{font-size:10px;letter-spacing:.16em;color:#8495b8;font-weight:800;margin-bottom:8px}.now{display:flex;align-items:baseline;justify-content:space-between;gap:12px}.now h3{font-size:21px;letter-spacing:-.02em;margin:0}.now span{color:#a9b8d3;font:11px ui-monospace,monospace;white-space:nowrap}.transport{display:flex;gap:9px;align-items:center;margin-top:15px;flex-wrap:wrap}.primary{background:#ebf26d;color:#1b2412;border:0;border-radius:11px;padding:10px 18px;font-weight:900}.secondary{background:#242e44;color:#d4e0fa;border:1px solid #3a4865;border-radius:10px;padding:10px 13px}.transport label{font-size:11px;color:#a4b3cf;margin-left:auto}.transport select{background:#20283c;color:#eef2ff;border:1px solid #3c4b68;padding:9px;border-radius:9px}.timeline{display:flex;gap:12px;align-items:center;margin-top:16px}.timeline input{width:100%;accent-color:#e6ed6d}.timeline span{color:#8696b5;white-space:nowrap;font:11px ui-monospace,monospace}
-    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px}.stat{border-radius:12px;background:#1c2639;padding:13px 8px;text-align:center}.stat strong{display:block;font-size:22px;color:#e6ee78}.stat span{display:block;font-size:10px;color:#8e9cb9;margin-top:5px}.footnote{font-size:11px;line-height:1.55;color:#8592b1;margin-top:12px}.footer{margin:0 25px 18px;color:#6f819f;font-size:10px}
-    @media(max-width:920px){.shell{grid-template-columns:265px minmax(0,1fr)}.sidebar{padding:20px 13px}.hud{grid-template-columns:1fr}.scroll{max-height:360px}.topbar{padding:18px 21px 12px}}
-    @media(max-width:650px){.shell{display:flex;flex-direction:column}.main{order:0;min-height:0}.sidebar{order:1;border-right:0;border-top:1px solid #25304c}.topbar{padding:18px}.topbar h2{font-size:26px}.pill{font-size:9px}.stage-wrap{margin:0 11px;min-height:410px;height:56vh;flex:unset}.hud{margin:12px 11px}.scroll{max-height:340px}.footer{margin:0 13px 15px}.choice{min-height:73px}.sidebar-foot{margin-top:0}}
-    @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
-  </style>
-  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#080c17">
+<meta name="description" content="Fighters — un beat ’em up 2,5D inspiré des classiques d'arcade, avec des animations Quaternius intégrées.">
+<title>Fighters — Night Street</title>
+<style>
+:root{background:#080c17;color:#edf3ff;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;overflow-x:hidden}button{font:inherit;cursor:pointer}button:disabled{cursor:wait;opacity:.5}a{color:#baf6f0;text-decoration:none}
+.game-shell{max-width:1740px;margin:auto;padding:15px 22px 26px}
+.top{display:flex;align-items:center;gap:20px;justify-content:space-between;margin-bottom:13px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:11px}.logo-mark{background:#f4ed66;color:#101016;transform:skew(-9deg);font-weight:1000;font-size:26px;padding:5px 12px;border-radius:8px;box-shadow:5px 5px 0 #f1658a}.logo h1{font-size:21px;letter-spacing:.17em;margin:0;font-weight:950}.logo small{letter-spacing:.25em;color:#8599b9;font-size:9px}
+.top-actions{display:flex;gap:9px;align-items:center}.top-actions a,.top-actions button{padding:9px 13px;border:1px solid #314360;border-radius:9px;background:#172239;color:#bfd0ee;font-size:12px}
+.top-actions button:hover,.top-actions a:hover{border-color:#b6ead4}
+.arcade{border:1px solid #364966;border-radius:17px;overflow:hidden;background:linear-gradient(145deg,#111d35,#0a1021);box-shadow:0 12px 55px #02040b7a;position:relative}
+.hud{position:absolute;z-index:3;left:0;top:0;right:0;display:flex;justify-content:space-between;gap:8px;align-items:start;padding:17px 20px;pointer-events:none;background:linear-gradient(#080d1ac9,transparent)}
+.hero-hud{min-width:210px;max-width:310px;width:35%}.hud-kicker{font-size:10px;color:#b2ddf5;letter-spacing:.15em;font-weight:900}.hero-hud strong{display:block;letter-spacing:.06em;font-size:18px;margin:4px 0 6px}.life-track{height:12px;border:2px solid #566c85;border-radius:4px;background:#481d35;box-shadow:0 0 0 2px #0b1120}.life-track>div{width:100%;height:100%;background:linear-gradient(90deg,#65e8a3,#bdec76);transition:width .18s}
+.score{display:flex;gap:18px;text-align:right}.score strong{display:block;color:#f7e775;font-size:24px;font-weight:900;font-variant-numeric:tabular-nums}.score small{color:#a1acc5;font-size:9px;letter-spacing:.14em;font-weight:800}
+.viewport{height:min(70vh,720px);min-height:510px;position:relative;overflow:hidden}.viewport canvas{display:block;height:100%;width:100%;outline:none}
+.scanlines{pointer-events:none;position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 3px,#050a1120 4px 5px);opacity:.18;mix-blend-mode:multiply}
+.enemy-label{position:absolute;transform:translate(-50%,-100%);width:55px;height:7px;background:#481c33;border:1px solid #a17798;border-radius:5px;pointer-events:none;z-index:2}.enemy-label>div{height:100%;width:100%;background:#f27d94}
+.impact{position:absolute;z-index:4;color:#fff1a5;text-shadow:0 2px 5px #000,0 0 12px #f35370;font-weight:1000;font-size:24px;pointer-events:none;animation:rise .8s ease-out forwards}.impact.good{color:#91f9b8}.hit-flash{position:absolute;inset:0;background:#e13d64;opacity:0;pointer-events:none;z-index:4;transition:opacity .14s}@keyframes rise{to{transform:translateY(-50px) scale(1.2);opacity:0}}
+.start-overlay{position:absolute;z-index:10;inset:0;background:#080d19bc;display:grid;place-items:center;padding:28px;text-align:center;backdrop-filter:blur(5px)}.start-overlay[hidden]{display:none}.start-card{max-width:540px;background:#101a2af0;border:1px solid #4b6280;border-radius:20px;padding:30px;box-shadow:0 28px 75px #0008}.start-card .stamp{font-size:11px;letter-spacing:.25em;color:#c1ed94;font-weight:900}.start-card h2{font-size:clamp(30px,5vw,55px);line-height:1;letter-spacing:-.065em;font-weight:1000;margin:12px 0;color:#f0f5ff}.start-card p{color:#acbdd6;line-height:1.65;font-size:14px}.start-card .primary{background:#f4ed66;color:#1c1b11;border:0;font-weight:950;border-radius:12px;font-size:15px;padding:13px 30px;margin-top:14px;box-shadow:4px 5px 0 #ec638c}.load-progress{height:5px;background:#394761;border-radius:5px;margin-top:16px;overflow:hidden}.load-progress>div{height:100%;width:0;background:#b9f18b;transition:width .2s}
+.banner{position:absolute;top:42%;left:50%;transform:translate(-50%,-50%);font-size:clamp(24px,5vw,54px);font-weight:1000;color:#fce97b;letter-spacing:.1em;text-shadow:0 4px 0 #ad476c,0 10px 20px #000;pointer-events:none;z-index:5;opacity:0;transition:opacity .2s;white-space:nowrap}
+.touch{position:absolute;bottom:17px;left:16px;right:16px;display:flex;align-items:end;justify-content:space-between;z-index:5;gap:12px;pointer-events:none}.pad{display:grid;grid-template-columns:repeat(3,49px);grid-template-rows:repeat(2,49px);gap:4px;pointer-events:auto}.touch button{touch-action:none;user-select:none;background:#172942bd;color:#f4f8ff;border:1px solid #6b8cad90;border-radius:12px;font-weight:850;box-shadow:0 4px 0 #090f19;min-width:48px;min-height:48px}.touch button:active{background:#52648d}.pad [data-key="ArrowUp"]{grid-column:2;grid-row:1}.pad [data-key="ArrowLeft"]{grid-column:1;grid-row:2}.pad [data-key="ArrowDown"]{grid-column:2;grid-row:2}.pad [data-key="ArrowRight"]{grid-column:3;grid-row:2}.actions{pointer-events:auto;display:grid;grid-template-columns:repeat(3,57px);gap:7px}.actions button{height:56px;font-size:10px;background:#263a50ee}.actions .strike{background:#8c3151e8;border-color:#ff7894}.actions .jump{background:#2f5262e8;border-color:#70d2dd}
+.under{padding:16px 2px 0;display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}.panel{border:1px solid #2c3b58;background:#111a2c;border-radius:14px;padding:17px}.panel h3{font-size:11px;color:#a4b4d1;letter-spacing:.16em;margin:0 0 12px}.controls-text{display:flex;flex-wrap:wrap;gap:10px;color:#d3dcf0;font-size:11px}.controls-text b{display:inline-block;padding:5px 8px;border:1px solid #485676;background:#202b42;border-radius:7px;color:#f5ed9d;margin-right:4px;min-width:30px;text-align:center}.status-panel{font-size:12px;line-height:1.7;color:#a6b4ce}.status-panel strong{color:#d5f8a5}.status-panel .detail{display:block;color:#8393b1;margin-top:5px}.footer{text-align:center;margin-top:16px;color:#6f7e9a;font-size:10px}
+@media(max-width:720px){.game-shell{padding:8px 6px 16px}.top{margin:8px 9px 13px}.logo h1{font-size:17px}.logo-mark{font-size:18px;padding:5px 10px}.top-actions a,.top-actions button{font-size:10px;padding:8px}.viewport{height:66vh;min-height:475px}.hud{padding:12px}.hero-hud{min-width:150px}.hero-hud strong{font-size:15px}.score{gap:9px}.score strong{font-size:17px}.score small{font-size:8px}.touch{left:7px;right:7px;bottom:9px}.pad{grid-template-columns:repeat(3,42px);grid-template-rows:repeat(2,42px)}.touch button{min-width:42px;min-height:42px;border-radius:10px}.actions{grid-template-columns:repeat(3,45px);gap:4px}.actions button{height:45px}.under{grid-template-columns:1fr}.start-card{padding:22px}.start-card p{font-size:12px}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
 </head>
 <body>
-  <div class="shell">
-    <aside class="sidebar" aria-label="Sélection du personnage et des animations">
-      <div class="brand"><div class="brand-mark">F</div><div><h1>FIGHTERS</h1><small>MOTION LAB / 01</small></div></div>
-      <section><p class="eyebrow">01 · Personnage <span>2 disponibles</span></p><div class="choices"><button class="choice active" data-character="male"><span class="avatar">🧍</span><strong>Superhero M</strong><small>Quaternius · 86 clips</small></button><button class="choice" data-character="female"><span class="avatar">🦸‍♀️</span><strong>Superhero F</strong><small>Quaternius · 86 clips</small></button></div></section>
-      <section style="min-height:0"><p class="eyebrow">02 · Bibliothèque <span id="filtered-count">86 mouvements</span></p><input id="search" class="search" aria-label="Rechercher un mouvement" placeholder="Rechercher une animation…" autocomplete="off"><div class="tabs" role="group" aria-label="Catégorie"><button data-filter="all" class="active">Tous</button><button data-filter="combat">Combat</button><button data-filter="move">Déplacement</button><button data-filter="other">Autres</button></div><div class="scroll" id="motion-list" aria-label="Mouvements disponibles"><div class="empty">Chargement du modèle…</div></div></section>
-      <div class="sidebar-foot"><span id="status-dot" class="status-dot"></span><strong id="load-status">Préparation du personnage…</strong><div>Personnage et animations dans un même fichier GLB. Aucun retargeting à l'exécution.</div><div><a href="https://github.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender" target="_blank" rel="noopener">Voir le kit et sa provenance</a></div></div>
-    </aside>
-    <main class="main">
-      <header class="topbar"><div><h2>Character Motion Studio<span style="color:#e8ee68">.</span></h2><p>Teste des mouvements de combat, de marche et de vie · orbite avec la souris ou le doigt.</p></div><span class="pill">✓ RIG STANDARD QUATERNIUS</span></header>
-      <div id="stage" class="stage-wrap" aria-label="Vue 3D interactive du personnage">
-        <div class="stage-fade"></div><div class="corner tl">● LIVE MOTION PREVIEW</div><div class="corner tr">GLTF 2.0 / THREE.JS</div><div class="corner bl">GLISSER POUR TOURNER · MOLETTE POUR ZOOMER</div><div class="corner br" id="character-label">SUPERHERO_MALE</div>
-        <div id="loading" class="load" role="status"><h3 id="loading-title">Chargement du personnage</h3><p id="loading-copy">Fichier original comprenant le maillage, le squelette et 86 animations. Environ 35 Mo au premier chargement.</p><div class="progress"><div id="progress-bar"></div></div></div>
-      </div>
-      <div class="hud">
-        <section class="panel"><div class="meta">MOUVEMENT ACTIF</div><div class="now"><h3 id="current-motion">—</h3><span id="duration">— s</span></div><div class="transport"><button id="play-pause" class="primary" disabled>Pause</button><button id="restart" class="secondary" disabled>↺ Rejouer</button><label for="speed">Vitesse</label><select id="speed" aria-label="Vitesse de lecture"><option value="0.5">0,5×</option><option value="1" selected>1×</option><option value="1.5">1,5×</option><option value="2">2×</option></select></div><div class="timeline"><input id="scrub" type="range" min="0" max="1000" value="0" disabled aria-label="Position dans l'animation"><span id="time">0:00 / 0:00</span></div></section>
-        <section class="panel"><div class="meta">DIAGNOSTIC DU FICHIER CHARGÉ</div><div class="stats"><div class="stat"><strong id="clip-stat">—</strong><span>clips intégrés</span></div><div class="stat"><strong id="skin-stat">—</strong><span>skins</span></div><div class="stat"><strong id="track-stat">—</strong><span>pistes actives</span></div></div><div class="footnote" id="diag">Vérification des clips et des cibles au chargement. La validation visuelle reste nécessaire.</div></section>
-      </div>
-      <p class="footer">Modèles et mouvements : Quaternius (CC0). Assemblage GLB : NafisRayan. Visualisation : Fighters. Les 86 clips sont intégrés au rig d'origine; ceci ne garantit pas un retargeting vers un autre personnage.</p>
-    </main>
-  </div>
-  <script type="module">
-    import * as THREE from 'three';
-    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-
-    const upstream = 'https://raw.githubusercontent.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/5821923af517ac5fdc82505faa92a0d575fc1b1a/test/';
-    const CHARACTERS = {
-      male: { file: 'human_male.glb', label: 'SUPERHERO_MALE' },
-      female: { file: 'human_female.glb', label: 'SUPERHERO_FEMALE' }
-    };
-    const $ = id => document.getElementById(id);
-    const stage = $('stage');
-    const loading = $('loading');
-    let renderer;
-    try {
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
-    } catch (error) {
-      $('loading-title').textContent = 'WebGL indisponible';
-      $('loading-copy').textContent = 'Ouvre cette démo dans un navigateur avec WebGL activé. ' + error.message;
-      throw error;
+<div class="game-shell">
+<header class="top"><div class="logo"><div class="logo-mark">F</div><div><h1>FIGHTERS</h1><small>NIGHT STREET / ARCADE</small></div></div><div class="top-actions"><a href="./motion-lab.html">Laboratoire des mouvements ↗</a><button id="pause" disabled>Ⅱ Pause</button><button id="restart">↻ Recommencer</button></div></header>
+<section class="arcade">
+<div class="hud"><div class="hero-hud"><div class="hud-kicker">1UP · HÉROÏNE</div><strong>NOVA</strong><div class="life-track"><div id="life"></div></div></div><div class="score"><div><small>ROUND</small><strong id="wave">01</strong></div><div><small>KO</small><strong id="ko">00</strong></div><div><small>SCORE</small><strong id="score">000000</strong></div></div></div>
+<div id="viewport" class="viewport" aria-label="Scène de jeu beat ’em up 3D"><div class="scanlines"></div><div id="hit-flash" class="hit-flash"></div><div id="banner" class="banner">ROUND 1</div>
+<div class="touch">
+<div class="pad" aria-label="Direction"><button aria-label="Monter" data-key="ArrowUp">▲</button><button aria-label="Gauche" data-key="ArrowLeft">◀</button><button aria-label="Descendre" data-key="ArrowDown">▼</button><button aria-label="Droite" data-key="ArrowRight">▶</button></div>
+<div class="actions" aria-label="Combat"><button class="strike" data-action="jab">JAB<br>J</button><button class="strike" data-action="cross">CROSS<br>K</button><button class="strike" data-action="hook">HOOK<br>L</button><button class="jump" data-action="roll">ESQUIVE<br>SHIFT</button><button class="jump" data-action="jump">SAUT<br>ESPACE</button><button data-action="pause">PAUSE</button></div>
+</div>
+<div class="start-overlay" id="overlay"><div class="start-card"><div class="stamp">FIGHTERS · ARCADE EXPERIMENT 01</div><h2 id="overlay-title">NIGHT STREET</h2><p id="overlay-desc">Une héroïne contre une bande de voyous. Déplace-toi dans la rue, enchaîne jab, cross et hook, évite les attaques et survis aux vagues. Chaque combattant conserve son rig et ses animations Quaternius d'origine.</p><button class="primary" id="start" disabled>Chargement des combattants…</button><div class="load-progress"><div id="load-bar"></div></div></div></div>
+</div>
+</section>
+<div class="under">
+<section class="panel"><h3>COMMANDES · CLAVIER / MOBILE</h3><div class="controls-text"><span><b>← ↑ ↓ →</b> Déplacer / profondeur</span><span><b>J</b> Jab</span><span><b>K</b> Cross</span><span><b>L</b> Hook</span><span><b>ESPACE</b> Saut</span><span><b>SHIFT</b> Esquive</span></div></section>
+<section class="panel"><h3>ÉTAT DE L'EXPÉRIENCE</h3><div class="status-panel"><strong id="status">Chargement des modèles…</strong><span class="detail" id="motion">Moteur 2,5D · caméra latérale · 3D animée</span><span class="detail" id="stats">Personnages : chargement · animations : chargement</span></div></section>
+</div>
+<p class="footer">Inspiration : beat 'em up arcade des années 1980. Modèles et 86 animations intégrées : Quaternius (CC0), assemblage : NafisRayan. Aucun transfert vers des rigs Sketchfab.</p>
+</div>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
+const $ = id => document.getElementById(id);
+const viewport = $('viewport');
+const gltfRoot = 'https://raw.githubusercontent.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/5821923af517ac5fdc82505faa92a0d575fc1b1a/test/';
+let renderer;
+try { renderer = new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'}); }
+catch(err) { $('overlay-title').textContent = 'WebGL indisponible'; $('overlay-desc').textContent = err.message; $('start').textContent = 'Navigateur incompatible'; throw err; }
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.3;
+viewport.insertBefore(renderer.domElement,viewport.firstChild);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a1325);
+scene.fog = new THREE.FogExp2(0x0a1325,.018);
+const camera = new THREE.PerspectiveCamera(43,1,.05,300);
+camera.position.set(0,7.1,16.3);
+scene.add(new THREE.HemisphereLight(0xd6e7ff,0x203051,2.65));
+const key = new THREE.DirectionalLight(0xffe7cf,3.1);key.position.set(-9,16,10);scene.add(key);
+const blue = new THREE.DirectionalLight(0x558df8,1.6);blue.position.set(4,8,-6);scene.add(blue);
+const pink = new THREE.PointLight(0xfa498a,35,25);pink.position.set(-6,6,-4);scene.add(pink);
+const loader = new GLTFLoader();
+const random = (low,high) => low+Math.random()*(high-low);
+const clamp = THREE.MathUtils.clamp;
+const clock = new THREE.Clock();
+const inputs = new Set();
+const ENEMY_PALETTE = [0xe8d3e3,0xb1e2ff,0xd8e6a7,0xf5c5a5,0xc2b3e6];
+const ATTACKS = {
+  jab: {name:'Punch_Jab',damage:9,range:1.4,recovery:.12,impact:.39},
+  cross: {name:'Punch_Cross',damage:13,range:1.55,recovery:.17,impact:.45},
+  hook: {name:'Melee_Hook',damage:17,range:1.45,recovery:.23,impact:.52}
+};
+let ready=false,running=false,paused=false,gameOver=false;
+let female=null,male=null,hero=null,enemies=[],wave=1,ko=0,score=0,invuln=0,cameraX=0,shake=0,roundDelay=-1;
+let gamepadLast={jab:false,cross:false,hook:false,jump:false,roll:false};
+const gamepadKeys=new Set();
+const nameMap={};
+function status(text){$('status').textContent=text;}
+function createSign(label,color,width=4){
+  const c=document.createElement('canvas');c.width=512;c.height=160;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#080b17';ctx.fillRect(0,0,c.width,c.height);
+  ctx.strokeStyle=color;ctx.lineWidth=10;ctx.strokeRect(12,10,488,140);
+  ctx.shadowColor=color;ctx.shadowBlur=18;ctx.fillStyle=color;ctx.font='bold 58px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(label,256,80);
+  const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,1.25),new THREE.MeshBasicMaterial({map:tex,transparent:true}));
+  return mesh;
+}
+function box(w,h,d,color,x,y,z,emissive=0x000000){
+  const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color,roughness:.85,emissive,emissiveIntensity:emissive? .42:0}));
+  mesh.position.set(x,y,z);scene.add(mesh);return mesh;
+}
+function buildStreet(){
+  const road=new THREE.Mesh(new THREE.PlaneGeometry(400,16),new THREE.MeshStandardMaterial({color:0x263345,roughness:.96}));
+  road.rotation.x=-Math.PI/2;road.position.set(0,-.045,1);scene.add(road);
+  const sidewalk=new THREE.Mesh(new THREE.PlaneGeometry(400,3),new THREE.MeshStandardMaterial({color:0x56606b,roughness:.95}));
+  sidewalk.rotation.x=-Math.PI/2;sidewalk.position.set(0,-.025,-3.12);scene.add(sidewalk);
+  box(400,.26,.24,0x7b8997,0,.055,-1.58);
+  for(let x=-49;x<50;x+=3.2){
+    box(1.65,.019,.08,0xc6bd7a,x,-.012,1.2);
+    box(.035,.025,5,0x3f475b,x,.002,4.1);
+  }
+  for(let x=-47,i=0;x<48;x+=9.5,i++){
+    const palette=[0x253f5d,0x4d304f,0x294654,0x4b3f4b];
+    const h=5+(i%3)*1.1;
+    box(9.3,h,2,palette[i%palette.length],x,h/2-0.08,-6.1);
+    box(8.9,.5,.4,0x131827,x,3.0,-4.98);
+    for(let yy=3.6;yy<h-0.4;yy+=1.35)for(let xx=-3.1;xx<=3.2;xx+=2.1){
+      const lit=(i+Math.round(xx)+Math.round(yy))%3!==0;
+      box(1.3,.75,.03,lit?0x98bdca:0x141e2c,x+xx,yy,-5.068,lit?0x527b9a:0);
     }
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.4;
-    stage.insertBefore(renderer.domElement, stage.firstChild);
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(40, 1, .03, 130);
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.minDistance = 1.4;
-    controls.maxDistance = 13;
-    controls.maxPolarAngle = Math.PI * .51;
-    scene.add(new THREE.HemisphereLight(0xd9efff, 0x25325b, 2.8));
-    const key = new THREE.DirectionalLight(0xffeed4, 3.3);
-    key.position.set(-3, 7, 5);
-    scene.add(key);
-    const rim = new THREE.DirectionalLight(0x8eaaff, 2.8);
-    rim.position.set(4, 4, -5);
-    scene.add(rim);
-    const floor = new THREE.Mesh(new THREE.CircleGeometry(2.1, 100), new THREE.MeshStandardMaterial({color:0x1c2a43,roughness:.86,metalness:.2}));
-    floor.rotation.x = -Math.PI / 2;
-    floor.position.y = -.022;
-    scene.add(floor);
-    const grid = new THREE.GridHelper(30, 60, 0x425875, 0x25314c);
-    grid.position.y = -.03;
-    grid.material.transparent = true;
-    grid.material.opacity = .4;
-    scene.add(grid);
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(2.1, .015, 5, 110), new THREE.MeshBasicMaterial({color:0x7cc9c5, transparent:true, opacity:.7}));
-    ring.rotation.x = -Math.PI / 2;
-    ring.position.y = .008;
-    scene.add(ring);
-
-    const loader = new GLTFLoader();
-    let currentCharacter = 'male';
-    let activeFilter = 'all';
-    let clips = [];
-    let root = null;
-    let mixer = null;
-    let action = null;
-    let actionIndex = -1;
-    let paused = false;
-    let requestId = 0;
-    const ticker = new THREE.Clock();
-
-    function setStatus(text, state = '') {
-      $('load-status').textContent = text;
-      $('status-dot').className = 'status-dot ' + state;
+    if(i%2===0){
+      const labels=['ARCADE 84','RAMEN','NEON CITY','MOTEL','NIGHT CLUB','METRO'];
+      const colors=['#f379a3','#83e8e0','#e9cc6b','#8eaffe'];
+      const sign=createSign(labels[i%labels.length],colors[i%colors.length],4.7);
+      sign.position.set(x,2.05,-5.09);scene.add(sign);
     }
-    function showLoading(title, description) {
-      $('loading-title').textContent = title;
-      $('loading-copy').textContent = description;
-      $('progress-bar').style.width = '0%';
-      loading.hidden = false;
-    }
-    function classification(name) {
-      if (/Punch|Melee|Sword|Shield|Hit_|Pistol|Death|OverhandThrow|Zombie_Scratch/i.test(name)) return 'combat';
-      if (/Walk|Jog|Sprint|Crouch|Slide|Jump|Roll|Dash|Climb|Swim|Ninja/i.test(name)) return 'move';
-      return 'other';
-    }
-    function isLoop(name) {
-      return /Loop|Idle|Aim|Pose|Driving|A_TPose/.test(name);
-    }
-    function labelFor(clip, index) {
-      const dupes = clips.slice(0, index).filter(a => a.name === clip.name).length;
-      return clip.name.replaceAll('_',' ') + (dupes ? ' (variante ' + (dupes + 1) + ')' : '');
-    }
-    function renderList() {
-      const query = $('search').value.trim().toLowerCase();
-      const filtered = clips.map((clip, index) => ({clip,index})).filter(item =>
-        (activeFilter === 'all' || classification(item.clip.name) === activeFilter)
-        && (item.clip.name.toLowerCase().includes(query) || labelFor(item.clip, item.index).toLowerCase().includes(query)));
-      $('filtered-count').textContent = filtered.length + ' / ' + clips.length;
-      const list = $('motion-list');
-      list.replaceChildren();
-      if (!filtered.length) {
-        const empty = document.createElement('p');
-        empty.className = 'empty';
-        empty.textContent = 'Aucune animation dans ce filtre.';
-        list.appendChild(empty);
+    box(.13,2,.13,0x242b3c,x+4.3,1,-4.2);
+    if(Math.abs(x)<18){const bulb=new THREE.PointLight(i%2?0x62dcff:0xe96094,7,5);
+      bulb.position.set(x+4,2.7,-4.4);scene.add(bulb);}
+  }
+  for(let x=-45;x<46;x+=17){
+    box(.13,5,.13,0x53687d,x,2.5,-2.8);
+    box(1.4,.14,.2,0x6a778e,x+.62,4.9,-2.8);
+    const lamp=new THREE.Mesh(new THREE.SphereGeometry(.19,8,8),new THREE.MeshBasicMaterial({color:0xffe8ae}));
+    lamp.position.set(x+1.16,4.8,-2.8);scene.add(lamp);
+  }
+  for(let x=-44;x<45;x+=13){
+    box(.55,.7,.48,0x324854,x,.35,-2.1);
+    box(.66,.09,.55,0x5b7b86,x,.74,-2.1);
+  }
+}
+buildStreet();
+const cameraLook=new THREE.Vector3(0,1.25,0);
+function resize(){
+  const w=viewport.clientWidth,h=viewport.clientHeight;
+  camera.aspect=w/Math.max(1,h);camera.updateProjectionMatrix();
+  renderer.setSize(w,h,false);
+}
+new ResizeObserver(resize).observe(viewport);
+resize();
+function animation(actor,name,force=false){
+  if(!actor||(!force&&actor.current===name))return;
+  const next=actor.actions.get(name);
+  if(!next)return;
+  const last=actor.action;
+  if(last&&last!==next)last.fadeOut(.13);
+  next.reset().stopFading().setEffectiveWeight(1).setEffectiveTimeScale(1);
+  const oneshot=!name.includes('Loop')&&!name.includes('Idle');
+  next.setLoop(oneshot?THREE.LoopOnce:THREE.LoopRepeat,oneshot?1:Infinity);
+  next.clampWhenFinished=oneshot;
+  if(last&&last!==next)next.fadeIn(.13);
+  next.play();
+  actor.action=next;actor.current=name;
+  if(actor.kind==='hero')$('motion').textContent='Animation : '+name;
+}
+function spawnActor(gltf,kind,x,z,index=0){
+  const root=new THREE.Group();
+  const visual=cloneSkeleton(gltf.scene);
+  const bbox=new THREE.Box3().setFromObject(visual);
+  const center=bbox.getCenter(new THREE.Vector3());
+  visual.position.set(-center.x,-bbox.min.y,-center.z);
+  root.add(visual);
+  root.position.set(x,0,z);
+  scene.add(root);
+  if(kind==='enemy'){
+    const tint=new THREE.Color(ENEMY_PALETTE[index%ENEMY_PALETTE.length]);
+    visual.traverse(o=>{
+      if(o.isMesh&&o.material){
+        const mats=Array.isArray(o.material)?o.material:[o.material];
+        const replacements=mats.map(mat=>{const m=mat.clone();if(m.color)m.color.multiply(tint);return m;});
+        o.material=Array.isArray(o.material)?replacements:replacements[0];
       }
-      for (const item of filtered) {
-        const button = document.createElement('button');
-        button.className = 'motion' + (item.index === actionIndex ? ' active' : '');
-        button.type = 'button';
-        button.dataset.index = String(item.index);
-        const text = document.createElement('span');
-        text.textContent = labelFor(item.clip, item.index);
-        const extra = document.createElement('small');
-        extra.textContent = item.clip.duration.toFixed(2) + 's';
-        button.append(text, extra);
-        button.onclick = () => play(item.index);
-        list.appendChild(button);
-      }
-    }
-    function updateSelection() {
-      document.querySelectorAll('.motion').forEach(el => el.classList.toggle('active', Number(el.dataset.index) === actionIndex));
-      const clip = clips[actionIndex];
-      $('current-motion').textContent = clip ? labelFor(clip, actionIndex) : '—';
-      $('duration').textContent = clip ? clip.duration.toFixed(2) + ' s' : '— s';
-      $('track-stat').textContent = clip ? String(clip.tracks.length) : '—';
-    }
-    function play(index, fromReturn = false) {
-      if (!mixer || !clips[index]) return;
-      const previous = action;
-      const next = mixer.clipAction(clips[index]);
-      if (previous && previous !== next) previous.fadeOut(.18);
-      next.reset();
-      next.setLoop(isLoop(clips[index].name) ? THREE.LoopRepeat : THREE.LoopOnce, isLoop(clips[index].name) ? Infinity : 1);
-      next.clampWhenFinished = !isLoop(clips[index].name);
-      next.stopFading().setEffectiveWeight(1).setEffectiveTimeScale(Number($('speed').value));
-      if (previous && previous !== next) next.fadeIn(.18);
-      next.play();
-      action = next;
-      actionIndex = index;
-      paused = false;
-      mixer.timeScale = 1;
-      $('play-pause').textContent = 'Pause';
-      updateSelection();
-      renderList();
-      if (!fromReturn) setStatus('Mouvement : ' + clips[index].name, 'ok');
-    }
-    function clearModel() {
-      if (mixer) {
-        mixer.stopAllAction();
-        if (root && root.children[0]) mixer.uncacheRoot(root.children[0]);
-      }
-      if (root) {
-        scene.remove(root);
-        root.traverse(object => {
-          if (object.geometry) object.geometry.dispose();
-          for (const material of object.material ? (Array.isArray(object.material) ? object.material : [object.material]) : []) {
-            for (const value of Object.values(material)) if (value && value.isTexture) value.dispose();
-            material.dispose();
-          }
-        });
-      }
-      root = null; mixer = null; action = null; actionIndex = -1; clips = [];
-      $('play-pause').disabled = $('restart').disabled = $('scrub').disabled = true;
-    }
-    function validateGltf(gltf) {
-      const skins = new Set();
-      gltf.scene.traverse(node => { if (node.isSkinnedMesh) skins.add(node.skeleton); });
-      const required = ['Idle_Loop','Walk_Loop','Punch_Jab','Punch_Cross','Melee_Hook','Sword_Attack'];
-      const issues = required.filter(name => !gltf.animations.some(clip => clip.name === name));
-      const names = gltf.animations.map(c => c.name);
-      if (gltf.animations.length !== 86 || skins.size === 0 || issues.length) {
-        throw Error('Fichier inattendu : ' + gltf.animations.length + ' animations, ' + skins.size + ' rig(s), absentes : ' + issues.join(', '));
-      }
-      if (gltf.animations.some(clip => !clip.tracks.length || !Number.isFinite(clip.duration) || clip.duration <= 0)) {
-        throw Error('Animation vide ou mal formée.');
-      }
-      return {skins:skins.size, duplicateNames:names.length - new Set(names).size};
-    }
-    async function load(character) {
-      const id = ++requestId;
-      currentCharacter = character;
-      document.querySelectorAll('.choice').forEach(el => el.classList.toggle('active', el.dataset.character === character));
-      $('character-label').textContent = CHARACTERS[character].label;
-      clearModel();
-      renderList();
-      showLoading('Chargement de ' + CHARACTERS[character].label, 'Le personnage et ses 86 mouvements font partie d’un seul fichier GLB (~35 Mo).');
-      setStatus('Téléchargement en cours…');
-      const file = CHARACTERS[character].file;
-      const upstreamUrl = upstream + file;
-      async function tryUrl(url) {
-        const response = await fetch(url);
-        if (!response.ok) throw Error('HTTP ' + response.status);
-        const length = Number(response.headers.get('content-length')) || 0;
-        if (response.body && length) {
-          const reader = response.body.getReader();
-          const chunks = [];
-          let loaded = 0;
-          while (true) {
-            const part = await reader.read();
-            if (part.done) break;
-            chunks.push(part.value);
-            loaded += part.value.byteLength;
-            if (id === requestId) $('progress-bar').style.width = Math.min(97, 100 * loaded / length).toFixed(1) + '%';
-          }
-          const data = new Uint8Array(loaded);
-          let offset = 0;
-          for (const chunk of chunks) {data.set(chunk, offset); offset += chunk.length;}
-          return data.buffer;
-        }
-        return response.arrayBuffer();
-      }
-      try {
-        let buffer;
-        try { buffer = await tryUrl('./models/' + file); }
-        catch { buffer = await tryUrl(upstreamUrl); }
-        if (id !== requestId) return;
-        $('progress-bar').style.width = '100%';
-        const gltf = await loader.parseAsync(buffer, '');
-        if (id !== requestId) return;
-        const verified = validateGltf(gltf);
-        const wrapper = new THREE.Group();
-        wrapper.add(gltf.scene);
-        const box = new THREE.Box3().setFromObject(gltf.scene);
-        const size = box.getSize(new THREE.Vector3());
-        if (!Number.isFinite(size.y) || size.y <= 0) throw Error('Dimensions de personnage invalides.');
-        const center = box.getCenter(new THREE.Vector3());
-        gltf.scene.position.x -= center.x;
-        gltf.scene.position.y -= box.min.y;
-        gltf.scene.position.z -= center.z;
-        scene.add(wrapper);
-        root = wrapper;
-        controls.target.set(0, Math.max(.6,size.y * .51), 0);
-        camera.position.set(size.y * .9, size.y * .65, size.y * 1.9);
-        controls.minDistance = size.y * .7;
-        controls.maxDistance = size.y * 5;
-        camera.near = Math.max(.005,size.y * .01);
-        camera.far = Math.max(80,size.y * 20);
-        camera.updateProjectionMatrix();
-        controls.update();
-        mixer = new THREE.AnimationMixer(gltf.scene);
-        clips = gltf.animations;
-        mixer.addEventListener('finished', event => {
-          if (event.action !== action || !clips[actionIndex]) return;
-          if (clips[actionIndex].name === 'Death01') return;
-          const idleIndex = clips.findIndex(clip => clip.name === 'Idle_Loop');
-          if (idleIndex >= 0) play(idleIndex, true);
-        });
-        $('clip-stat').textContent = String(clips.length);
-        $('skin-stat').textContent = String(verified.skins);
-        $('diag').textContent = '86 clips avec pistes lisibles · ' + verified.duplicateNames + ' nom(s) dupliqué(s) distingué(s) dans la liste. Vérification visuelle à confirmer par l’utilisateur.';
-        loading.hidden = true;
-        $('play-pause').disabled = $('restart').disabled = $('scrub').disabled = false;
-        setStatus('Modèle prêt · 86 mouvements', 'ok');
-        const idleIndex = clips.findIndex(clip => clip.name === 'Idle_Loop');
-        play(idleIndex >= 0 ? idleIndex : 0);
-      } catch (error) {
-        if (id !== requestId) return;
-        showLoading('Impossible de charger le modèle', String(error.message) + ' — Recharge la page ou consulte la source.');
-        setStatus('Erreur : ' + error.message, 'bad');
-        console.error(error);
-      }
-    }
-    document.querySelectorAll('.choice').forEach(el => el.onclick = () => {if (el.dataset.character !== currentCharacter) load(el.dataset.character);});
-    document.querySelectorAll('.tabs button').forEach(el => el.onclick = () => {
-      activeFilter = el.dataset.filter;
-      document.querySelectorAll('.tabs button').forEach(btn => btn.classList.toggle('active',btn === el));
-      renderList();
     });
-    $('search').oninput = renderList;
-    $('play-pause').onclick = () => {if(!mixer)return;paused = !paused;mixer.timeScale = paused ? 0 : 1;$('play-pause').textContent = paused ? '▶ Reprendre' : 'Pause';};
-    $('restart').onclick = () => play(actionIndex);
-    $('speed').onchange = () => {if(action)action.setEffectiveTimeScale(Number($('speed').value));};
-    $('scrub').oninput = () => {if(!action)return;action.time = action.getClip().duration * Number($('scrub').value) / 1000;mixer.update(0);};
-    function timeLabel(seconds) {
-      return Math.floor(seconds / 60) + ':' + String(Math.floor(seconds % 60)).padStart(2,'0');
+  }
+  const shadow=new THREE.Mesh(new THREE.CircleGeometry(.56,22),new THREE.MeshBasicMaterial({color:0x050711,transparent:true,opacity:.28,depthWrite:false}));
+  shadow.rotation.x=-Math.PI/2;shadow.position.y=.014;root.add(shadow);
+  const actor={
+    kind,root,visual,mixer:new THREE.AnimationMixer(visual),actions:new Map(),action:null,current:'',
+    health:kind==='hero'?100:(30+wave*5),maxHealth:kind==='hero'?100:(30+wave*5),
+    facing:kind==='hero'?1:(x<0?1:-1),attack:null,stun:0,cooldown:random(.65,1.65),
+    jumpY:0,jumpV:0,baseY:visual.position.y,landing:0,dead:false,deadTime:0,roll:0,invulnerable:0,
+    speed:kind==='hero'?3.8:random(1.3,1.8),label:null
+  };
+  for(const clip of gltf.animations)if(!actor.actions.has(clip.name))actor.actions.set(clip.name,actor.mixer.clipAction(clip));
+  if(kind==='enemy'){
+    const label=document.createElement('div');label.className='enemy-label';
+    label.innerHTML='<div></div>';viewport.appendChild(label);actor.label=label;
+  }
+  animation(actor,'Idle_Loop',true);
+  actor.visual.rotation.y=actor.facing>0?Math.PI/2:-Math.PI/2;
+  return actor;
+}
+function detach(actor){
+  actor.mixer.stopAllAction();scene.remove(actor.root);
+  if(actor.label)actor.label.remove();
+}
+function setHUD(){
+  if(hero)$('life').style.width=clamp(hero.health/hero.maxHealth*100,0,100)+'%';
+  $('score').textContent=String(score).padStart(6,'0');
+  $('ko').textContent=String(ko).padStart(2,'0');
+  $('wave').textContent=String(wave).padStart(2,'0');
+}
+function spawnWave(){
+  const count=Math.min(2+wave,6);
+  for(let i=0;i<count;i++){
+    const side=i%2===0?1:-1;
+    const x=clamp(hero.root.position.x+side*(4.4+i*.8),-25,25);
+    const z=random(-1.6,1.7);
+    enemies.push(spawnActor(male,'enemy',x,z,i+wave));
+  }
+  showBanner('ROUND '+wave);
+  status(count+' ennemis · Reste en mouvement !');
+  setHUD();
+}
+function startSession(){
+  if(!ready)return;
+  if(hero)detach(hero);
+  for(const e of enemies)detach(e);
+  enemies=[];wave=1;ko=0;score=0;gameOver=false;paused=false;running=true;roundDelay=-1;cameraX=0;
+  hero=spawnActor(female,'hero',0,0);
+  hero.root.position.x=-1.7;
+  spawnWave();
+  setHUD();
+  $('pause').disabled=false;$('pause').textContent='Ⅱ Pause';
+  $('overlay').hidden=true;
+  if(new URLSearchParams(location.search).has('qa'))window.__fightersQA={snapshot:()=>({
+    ready,running,paused,wave,ko,score,health:hero.health,enemies:enemies.filter(e=>!e.dead).length,
+    heroMotion:hero.current,heroX:hero.root.position.x,heroZ:hero.root.position.z,
+    enemyMotions:enemies.map(e=>e.current),enemyHealth:enemies.map(e=>e.health)
+  })};
+}
+function showBanner(text){
+  $('banner').textContent=text;$('banner').style.opacity=1;
+  clearTimeout(showBanner.timer);
+  showBanner.timer=setTimeout(()=>$('banner').style.opacity=0,1350);
+}
+function gameEnd(){
+  running=false;gameOver=true;
+  $('overlay-title').textContent='GAME OVER';
+  $('overlay-desc').textContent='Score : '+score+' · K.-O. : '+ko+' · Vague : '+wave+'. Recommence pour tenter de battre ton record.';
+  $('start').textContent='Rejouer';$('overlay').hidden=false;
+  $('pause').disabled=true;
+}
+function attack(actor,kind){
+  if(!actor||actor.dead||actor.attack||actor.stun>0||actor.jumpY>.08||actor.roll>0||actor.landing>0)return;
+  const a=ATTACKS[kind];
+  const clip=actor.actions.get(a.name)?.getClip();
+  if(!clip)return;
+  actor.attack={type:kind,elapsed:0,duration:clip.duration+a.recovery,struck:false,impact:clip.duration*a.impact};
+  animation(actor,a.name,true);
+}
+function jump(){
+  if(!hero||hero.dead||hero.jumpY>.02||hero.attack||hero.stun>0||hero.roll>0)return;
+  hero.jumpV=5.5;hero.jumpY=.01;animation(hero,'Jump_Start',true);
+}
+function roll(){
+  if(!hero||hero.dead||hero.attack||hero.stun>0||hero.jumpY>.02||hero.roll>0)return;
+  hero.roll=.85;hero.invulnerable=.85;animation(hero,'Roll',true);
+}
+function floatDamage(actor,amount,good){
+  const p=new THREE.Vector3();actor.root.getWorldPosition(p);p.y+=2.1;p.project(camera);
+  const rect=viewport.getBoundingClientRect();
+  const el=document.createElement('div');el.className='impact'+(good?' good':'');
+  el.textContent=good?'+ '+amount:'− '+amount;
+  el.style.left=((p.x+1)*rect.width/2)+'px';
+  el.style.top=((-p.y+1)*rect.height/2)+'px';
+  viewport.appendChild(el);
+  setTimeout(()=>el.remove(),800);
+}
+function damage(target,amount,attacker){
+  if(target.dead||target.invulnerable>0)return;
+  target.health=Math.max(0,target.health-amount);
+  floatDamage(target,amount,attacker.kind==='hero');
+  if(target.attack)target.attack=null;
+  target.stun=.37;
+  target.root.position.x+=attacker.facing*.22;
+  if(target.health===0){
+    target.dead=true;target.deadTime=1.7;target.stun=0;
+    animation(target,'Death01',true);
+    if(target.kind==='enemy'){ko++;score+=125;showBanner('K.O.');}
+    else gameEnd();
+  } else {
+    animation(target,'Hit_Chest',true);
+    if(target.kind==='hero'){
+      shake=.24;$('hit-flash').style.opacity=.25;
+      setTimeout(()=>$('hit-flash').style.opacity=0,130);
     }
-    const resize = () => {
-      const width = stage.clientWidth, height = stage.clientHeight;
-      camera.aspect = width / Math.max(1,height);camera.updateProjectionMatrix();
-      renderer.setSize(width, height, false);
-    };
-    new ResizeObserver(resize).observe(stage);
-    resize();
-    function frame() {
-      requestAnimationFrame(frame);
-      const dt = Math.min(ticker.getDelta(),.05);
-      if (mixer) mixer.update(dt);
-      if (action) {
-        const length = action.getClip().duration;
-        $('scrub').value = String(Math.min(1000, 1000 * action.time / length));
-        $('time').textContent = timeLabel(action.time) + ' / ' + timeLabel(length);
-      }
-      controls.update();
-      renderer.render(scene,camera);
+  }
+  setHUD();
+}
+function hit(actor){
+  const profile=ATTACKS[actor.attack.type];
+  const targets=actor.kind==='hero'?enemies:[hero];
+  let hitCount=0;
+  for(const target of targets){
+    if(!target||target.dead)continue;
+    const dx=target.root.position.x-actor.root.position.x;
+    const dz=target.root.position.z-actor.root.position.z;
+    if(dx*actor.facing<-.12 || Math.abs(dx)>profile.range || Math.abs(dz)>.85)continue;
+    damage(target,profile.damage,actor);
+    if(++hitCount>=2)break;
+  }
+  if(actor.kind==='hero'&&hitCount)score+=15*hitCount;
+  setHUD();
+}
+function stepAttack(actor,dt){
+  if(!actor.attack)return false;
+  const a=actor.attack;a.elapsed+=dt;
+  if(!a.struck&&a.elapsed>=a.impact){
+    a.struck=true;hit(actor);
+  }
+  if(a.elapsed>=a.duration){
+    actor.attack=null;
+    animation(actor,'Idle_Loop');
+  }
+  return true;
+}
+function moveHero(dt){
+  if(hero.dead)return;
+  hero.stun=Math.max(0,hero.stun-dt);
+  hero.invulnerable=Math.max(0,hero.invulnerable-dt);
+  if(hero.jumpY>0){
+    hero.jumpV-=13.5*dt;
+    hero.jumpY=Math.max(0,hero.jumpY+hero.jumpV*dt);
+    hero.visual.position.y=hero.baseY+hero.jumpY;
+    if(hero.jumpY===0){hero.jumpV=0;hero.landing=.32;animation(hero,'Jump_Land',true);}
+    else if(hero.jumpV<2.2&&!hero.attack)animation(hero,'Jump_Loop');
+  }
+  if(hero.landing>0){hero.landing=Math.max(0,hero.landing-dt);if(hero.landing===0)animation(hero,'Idle_Loop');return;}
+  if(hero.roll>0){
+    hero.roll=Math.max(0,hero.roll-dt);
+    hero.root.position.x=clamp(hero.root.position.x+hero.facing*5.5*dt,-28,28);
+    if(hero.roll===0)animation(hero,'Idle_Loop');
+    return;
+  }
+  if(stepAttack(hero,dt)||hero.stun>0)return;
+  let dx=Number(inputs.has('ArrowRight')||inputs.has('KeyD'))-Number(inputs.has('ArrowLeft')||inputs.has('KeyA'));
+  let dz=Number(inputs.has('ArrowDown')||inputs.has('KeyS'))-Number(inputs.has('ArrowUp')||inputs.has('KeyW'));
+  if(dx||dz){
+    const length=Math.hypot(dx,dz);dx/=length;dz/=length;
+    hero.root.position.x=clamp(hero.root.position.x+dx*hero.speed*dt,-28,28);
+    hero.root.position.z=clamp(hero.root.position.z+dz*hero.speed*.65*dt,-1.35,2.3);
+    if(Math.abs(dx)>.01)hero.facing=dx>0?1:-1;
+    if(hero.jumpY===0)animation(hero,'Jog_Fwd_Loop');
+  } else if(hero.jumpY===0)animation(hero,'Idle_Loop');
+}
+function moveEnemies(dt){
+  const alive=enemies.filter(e=>!e.dead);
+  for(const e of enemies){
+    if(e.dead){e.deadTime-=dt;continue;}
+    e.stun=Math.max(0,e.stun-dt);
+    e.cooldown-=dt;
+    if(stepAttack(e,dt)||e.stun>0)continue;
+    const dx=hero.root.position.x-e.root.position.x;
+    const dz=hero.root.position.z-e.root.position.z;
+    e.facing=dx>=0?1:-1;
+    if(!hero.dead&&Math.abs(dx)<1.5&&Math.abs(dz)<.78&&e.cooldown<=0&&
+       alive.filter(v=>v.attack).length<2){
+      attack(e,Math.random()<.68?'jab':'cross');
+      e.cooldown=random(1.65,2.6);
+      continue;
     }
-    frame();
-    load('male');
-  </script>
+    const gapX=Math.abs(dx),gapZ=Math.abs(dz);
+    if(gapX>1.18||gapZ>.55){
+      let vx=dx, vz=dz*1.4;
+      const len=Math.max(.001,Math.hypot(vx,vz));vx/=len;vz/=len;
+      e.root.position.x+=vx*e.speed*dt;
+      e.root.position.z=clamp(e.root.position.z+vz*e.speed*.67*dt,-1.35,2.3);
+      animation(e,'Walk_Loop');
+    } else animation(e,'Idle_Loop');
+  }
+  const cleared=enemies.filter(e=>e.dead&&e.deadTime<=0);
+  for(const e of cleared){detach(e);enemies.splice(enemies.indexOf(e),1);}
+  if(enemies.length===0&&running&&roundDelay<0){
+    roundDelay=1.5;showBanner('RUE NETTOYÉE');
+  }
+  if(roundDelay>=0){
+    roundDelay-=dt;
+    if(roundDelay<0){wave++;spawnWave();}
+  }
+}
+function updateLabels(){
+  const box=viewport.getBoundingClientRect();
+  for(const e of enemies)if(e.label){
+    if(e.dead){e.label.style.display='none';continue;}
+    const p=new THREE.Vector3();
+    e.root.getWorldPosition(p);p.y+=2.15;p.project(camera);
+    e.label.style.display=p.z>1?'none':'';
+    e.label.style.left=(p.x+1)*box.width/2+'px';
+    e.label.style.top=(-p.y+1)*box.height/2+'px';
+    e.label.firstElementChild.style.width=100*e.health/e.maxHealth+'%';
+  }
+}
+function getPad(){
+  const pads=navigator.getGamepads?.()||[];
+  const pad=Array.from(pads).find(Boolean);
+  for(const key of gamepadKeys)inputs.delete(key);
+  gamepadKeys.clear();
+  if(!pad)return;
+  const axes=pad.axes;
+  for(const [pressed,key] of [[axes[0]<-.2,'ArrowLeft'],[axes[0]>.2,'ArrowRight'],[axes[1]<-.2,'ArrowUp'],[axes[1]>.2,'ArrowDown']])if(pressed){inputs.add(key);gamepadKeys.add(key);}
+  const map={jab:0,cross:1,hook:2,jump:3,roll:5};
+  for(const [action,index] of Object.entries(map)){
+    const pressed=!!pad.buttons[index]?.pressed;
+    if(pressed&&!gamepadLast[action])doAction(action);
+    gamepadLast[action]=pressed;
+  }
+}
+function frame(){
+  requestAnimationFrame(frame);
+  const dt=Math.min(clock.getDelta(),.043);
+  if(ready&&running&&!paused){
+    getPad();
+    moveHero(dt);
+    moveEnemies(dt);
+    cameraX=THREE.MathUtils.damp(cameraX,hero.root.position.x,2.4,dt);
+  }
+  if(ready){
+    if(hero){hero.visual.rotation.y=hero.facing>0?Math.PI/2:-Math.PI/2;hero.mixer.update(dt);}
+    for(const e of enemies){e.visual.rotation.y=e.facing>0?Math.PI/2:-Math.PI/2;e.mixer.update(dt);}
+  }
+  camera.position.set(cameraX+(Math.random()-.5)*shake,7.1,16.5);
+  cameraLook.set(cameraX,1.15,0);
+  camera.lookAt(cameraLook);
+  shake=Math.max(0,shake-dt);
+  updateLabels();
+  renderer.render(scene,camera);
+}
+frame();
+function doAction(type){
+  if(type==='pause'){pauseGame();return;}
+  if(!running||paused||!hero)return;
+  if(type==='jump')jump();
+  else if(type==='roll')roll();
+  else if(ATTACKS[type])attack(hero,type);
+}
+function pauseGame(){
+  if(!running)return;
+  paused=!paused;$('pause').textContent=paused?'▶ Reprendre':'Ⅱ Pause';
+  showBanner(paused?'PAUSE':'GO !');
+}
+const keyActions={KeyJ:'jab',KeyK:'cross',KeyL:'hook',Space:'jump',ShiftLeft:'roll',ShiftRight:'roll'};
+document.addEventListener('keydown',e=>{
+  if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(e.code))e.preventDefault();
+  inputs.add(e.code);
+  if(!e.repeat&&keyActions[e.code])doAction(keyActions[e.code]);
+  if(!e.repeat&&e.code==='KeyP')pauseGame();
+});
+document.addEventListener('keyup',e=>inputs.delete(e.code));
+window.addEventListener('blur',()=>inputs.clear());
+for(const button of document.querySelectorAll('[data-key]')){
+  const key=button.dataset.key;
+  button.addEventListener('pointerdown',event=>{event.preventDefault();inputs.add(key);button.setPointerCapture(event.pointerId);});
+  for(const type of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(type,()=>inputs.delete(key));
+}
+for(const button of document.querySelectorAll('[data-action]')){
+  button.addEventListener('pointerdown',e=>{e.preventDefault();doAction(button.dataset.action);});
+}
+$('pause').onclick=pauseGame;
+$('restart').onclick=()=>{if(ready)startSession();};
+$('start').onclick=startSession;
+async function getBinary(file,onProgress){
+  let response=await fetch('./models/'+file);
+  if(!response.ok)response=await fetch(gltfRoot+file);
+  if(!response.ok)throw Error(file+' HTTP '+response.status);
+  const length=Number(response.headers.get('content-length'))||0;
+  if(!response.body)return response.arrayBuffer();
+  const reader=response.body.getReader(),chunks=[];
+  let n=0;
+  while(true){
+    const result=await reader.read();if(result.done)break;
+    chunks.push(result.value);n+=result.value.length;
+    if(length)onProgress(Math.round(n/length*100));
+  }
+  const out=new Uint8Array(n);let offset=0;
+  for(const b of chunks){out.set(b,offset);offset+=b.length;}
+  return out.buffer;
+}
+async function load(){
+  try{
+    for(const [idx,gender] of ['female','male'].entries()){
+      const file='human_'+gender+'.glb';
+      status('Téléchargement '+(idx+1)+'/2 : '+file);
+      const data=await getBinary(file,pct=>$('load-bar').style.width=((idx+pct/100)/2*100).toFixed(0)+'%');
+      const gltf=await loader.parseAsync(data,'');
+      const need=['Idle_Loop','Walk_Loop','Jog_Fwd_Loop','Punch_Jab','Punch_Cross','Melee_Hook','Hit_Chest','Death01','Roll','Jump_Start'];
+      if(gltf.animations.length!==86||need.some(n=>!gltf.animations.some(c=>c.name===n)))
+        throw Error(file+' n’a pas les animations Quaternius attendues.');
+      if(gender==='female')female=gltf;else male=gltf;
+    }
+    ready=true;$('load-bar').style.width='100%';
+    $('start').disabled=false;$('start').textContent='▶ COMMENCER LE COMBAT';
+    $('overlay-desc').textContent='Nova contre les voyous : flèches pour avancer ou changer de profondeur, J/K/L pour enchaîner les coups. Ennemis, impacts, réactions et vagues sont actifs. Les animations sont intégrées aux personnages du même kit.';
+    status('Deux modèles 3D chargés · moteur prêt');
+    $('stats').textContent='2 rigs d’origine · 86 animations par rig · ennemis clonés sur le squelette masculin';
+    if(new URLSearchParams(location.search).has('qa'))startSession();
+  }catch(err){
+    console.error(err);$('overlay-title').textContent='Erreur de chargement';
+    $('overlay-desc').textContent=err.message;
+    $('start').textContent='Recharge la page';
+    status('Erreur : '+err.message);
+  }
+}
+load();
+</script>
 </body>
 </html>
