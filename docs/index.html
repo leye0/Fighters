@@ -342,6 +342,15 @@ function startSession(){
   if(new URLSearchParams(location.search).has('qa'))window.__fightersQA={
     setEnemiesPassive:value=>{qaPassive=!!value;},
     freeze:value=>{paused=!!value;},
+    // Advance the actual physics/mixer at 60 Hz, then hold the rendered pose.
+    // Headless SwiftShader frame stalls must not decide whether a kick looks correct.
+    poseAtAttack:seconds=>{
+      paused=false;
+      const ticks=Math.min(75,Math.max(1,Math.round(seconds/FIXED_DT)));
+      for(let i=0;i<ticks;i++)stepGame(FIXED_DT);
+      paused=true;
+      renderer.render(scene,camera);
+    },
     reset:()=>startSession(),
     snapshot:()=>({
     ready,running,paused,wave,ko,score,health:hero.health,enemies:enemies.filter(e=>!e.dead).length,

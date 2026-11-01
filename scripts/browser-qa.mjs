@@ -212,8 +212,10 @@ try{
   console.log('AIR_JAB_DIAG '+JSON.stringify(airJab));
   if(!airJab.heroAirAttack||!airJab.heroAirLayer||airJab.heroAttack!=='jab')
     fail('Jump + punch must blend a real upper-body punch over the leap '+JSON.stringify(airJab));
-  await waitUntil("(()=>{const s=window.__fightersQA.snapshot();return s.heroAirLayer&&s.heroAirLayerTime>.08&&s.heroJumpY>.25})()",'visible additive air-punch pose',8000);
-  await evaluate('window.__fightersQA.freeze(true)');
+  await evaluate('window.__fightersQA.poseAtAttack(.18)');
+  const posedPunch=await evaluate("window.__fightersQA.snapshot()");
+  if(!posedPunch.heroAirAttack||posedPunch.heroAirLayerTime<.08||posedPunch.heroJumpY<.2)
+    fail('Actual upper-body punch clip not advancing over the jump '+JSON.stringify(posedPunch));
   await snap('night-street-air-punch-frozen');
   await evaluate('window.__fightersQA.freeze(false)');
   await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
@@ -231,9 +233,10 @@ try{
   console.log('AIR_KICK_DIAG '+JSON.stringify(airKickStart));
   if(!airKickStart.heroAirAttack||airKickStart.heroAttack!=='kickRight')
     fail('Jump + air kick not triggered '+JSON.stringify(airKickStart));
-  await waitUntil("window.__fightersQA.snapshot().heroKickExtension>.25",'air kick pose',8000);
-  await evaluate('window.__fightersQA.freeze(true)');
+  await evaluate('window.__fightersQA.poseAtAttack(.28)');
   const airKick=await evaluate("window.__fightersQA.snapshot()");
+  if(!airKick.heroAirAttack||airKick.heroKickExtension<.5||airKick.heroJumpY<.2)
+    fail('Actual airborne leg kick did not extend '+JSON.stringify(airKick));
   await snap('night-street-air-kick-frozen');
   await evaluate('window.__fightersQA.freeze(false)');
   await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
