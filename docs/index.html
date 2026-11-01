@@ -220,42 +220,55 @@ async function loadWitchHouse(){
 loadWitchHouse().catch(err=>console.warn('Witch house GLB unavailable:',err));
 
 const ORC_VILLAGE={
-  // Leave the southeast spawn clear, with buildings along its northern/eastern edges.
-  positions:[{x:14,z:20,yaw:-.7},{x:20,z:14,yaw:.5},{x:25,z:17,yaw:-.4},{x:17,z:25,yaw:.8}]
+  // Building centers along the eastern and southern margins; leave a wide
+  // diagonal corridor for enemy spawns and travel toward the heroine.
+  positions:[
+    {x:12,z:19},{x:12,z:25},{x:17,z:17},{x:19,z:12},
+    {x:25,z:12},{x:25,z:18},{x:13,z:12},{x:7,z:23},
+    {x:23,z:7},{x:7,z:16},{x:16,z:7},{x:26,z:26},
+    {x:8,z:8},{x:2,z:24},{x:24,z:2},{x:2,z:17}
+  ]
 };
 let orcVillage=null;
 async function loadOrcVillage(){
   const gltf=await loader.loadAsync('./models/orc_rts_building_set_-_proto_series.glb');
   const source=gltf.scene;
-  // A building set can contain many individual models. Prefer separately
-  // named subtrees; never blindly duplicate the entire atlas as four houses.
+  // GLB asset packs often organize each building as a transform group
+  // containing multiple meshes. Preserve these groups rather than picking
+  // individual walls/roofs as if they were separate buildings.
   const candidates=[];
-  source.traverse(o=>{
-    if(o===source||!o.isMesh)return;
-    const name=(o.name||'').toLowerCase();
-    if(/house|hut|building|barrack|tower|tent/.test(name))candidates.push(o);
-  });
-  const village=new THREE.Group();
-  if(!candidates.length){
-    console.warn('Orc GLB has no individually identifiable houses; keeping atlas hidden');
-    return;
+  const rootChildren=source.children.filter(o=>o.type!=='Bone');
+  const top=rootChildren.length===1&&rootChildren[0].children.length>1
+    ?rootChildren[0].children:rootChildren;
+  for(const child of top){
+    if(!child.getObjectByProperty('isMesh',true)&&!child.getObjectByProperty('isSkinnedMesh',true)){
+      let hasMesh=false;child.traverse(o=>{if(o.isMesh)hasMesh=true;});
+      if(!hasMesh)continue;
+    }
+    candidates.push(child);
   }
+  const village=new THREE.Group();
   for(let i=0;i<Math.min(candidates.length,ORC_VILLAGE.positions.length);i++){
-    const model=candidates[i].clone(true);
+    const original=candidates[i];
+    const model=original.clone(true);
     model.updateMatrixWorld(true);
-    const b=new THREE.Box3().setFromObject(model);
-    const size=b.getSize(new THREE.Vector3());
-    if(!size.x||!size.y||!size.z)continue;
-    const center=b.getCenter(new THREE.Vector3());
-    const group=new THREE.Group();
-    model.position.sub(center);model.position.y+=size.y/2;
-    group.add(model);
-    group.scale.setScalar(4.4/Math.max(size.x,size.z));
+    const bounds=new THREE.Box3().setFromObject(model);
+    const size=bounds.getSize(new THREE.Vector3());
+    if(Math.max(size.x,size.z)<1e-5||size.y<1e-5)continue;
+    const center=bounds.getCenter(new THREE.Vector3());
+    const pivot=new THREE.Group();
+    model.position.x-=center.x;
+    model.position.y-=bounds.min.y;
+    model.position.z-=center.z;
+    pivot.add(model);
+    pivot.scale.setScalar(Math.min(1,4.2/Math.max(size.x,size.z)));
     const p=ORC_VILLAGE.positions[i];
-    group.position.set(p.x,0,p.z);group.rotation.y=p.yaw;
-    village.add(group);
+    pivot.position.set(p.x,0,p.z);
+    pivot.rotation.y=(i%4)*Math.PI/2;
+    village.add(pivot);
   }
   scene.add(village);orcVillage=village;
+  console.info('Orc building set:',candidates.length,'top-level objects;',village.children.length,'placed');
 }
 loadOrcVillage().catch(err=>console.warn('Orc village GLB unavailable:',err));
 const cameraLook=new THREE.Vector3(0,1.15,0);
