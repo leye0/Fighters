@@ -399,7 +399,7 @@ function jump(){
     hero.attack=null;hero.queue=[];hero.kickBase=null;hero.kickExtension=0;
     if(hero.airLayer){hero.airLayer.fadeOut(.08);hero.airLayer=null;}
   }
-  hero.jumpV=6.2;hero.jumpY=.01;animation(hero,'Jump_Start',true);
+  hero.jumpV=6.2;hero.jumpY=.08;hero.visual.position.y=hero.baseY+.08;animation(hero,'Jump_Start',true);
 }
 function roll(){
   if(!hero||hero.dead||hero.attack||hero.stun>0||hero.jumpY>.02||hero.roll>0)return;

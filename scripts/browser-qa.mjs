@@ -197,24 +197,42 @@ try{
   const jumping=await evaluate("window.__fightersQA.snapshot()");
   if(jumping.lastRightAction!=='jump'||jumping.heroJumpY<=0)fail('North swipe did not jump immediately '+JSON.stringify(jumping));
   await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
-  const airJab=await swipe(22,-59,-59,'NW','jab',0);
+  // Dispatch consecutive CDP touch commands in one browser input burst.
+  // SwiftShader frames are slow: sequential remote round trips can exceed the full leap.
+  await evaluate('window.__fightersQA.reset()');
+  await evaluate('window.__fightersQA.setEnemiesPassive(true)');
+  await Promise.all([
+    call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:41,x:jx,y:jy}]}),
+    call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:41,x:jx,y:jy-24}]}),
+    call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]}),
+    call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:42,x:jx,y:jy}]}),
+    call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:42,x:jx-59,y:jy-59}]})
+  ]);
+  const airJab=await evaluate("window.__fightersQA.snapshot()");
+  console.log('AIR_JAB_DIAG '+JSON.stringify(airJab));
   if(!airJab.heroAirAttack||!airJab.heroAirLayer||airJab.heroAttack!=='jab')
     fail('Jump + punch must blend a real upper-body punch over the leap '+JSON.stringify(airJab));
   await evaluate('window.__fightersQA.freeze(true)');
   await snap('night-street-air-punch-frozen');
   await evaluate('window.__fightersQA.freeze(false)');
+  await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   await waitUntil("!window.__fightersQA.snapshot().heroAttack",'air punch recovery',10000);
   await evaluate('window.__fightersQA.reset()');
   await evaluate('window.__fightersQA.setEnemiesPassive(true)');
-  await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:31,x:jx,y:jy}]});
-  await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:31,x:jx,y:jy-24}]});
-  await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
-  await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:32,x:jx,y:jy}]});
-  await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:32,x:jx+58,y:jy+58}]});
+  await Promise.all([
+    call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:43,x:jx,y:jy}]}),
+    call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:43,x:jx,y:jy-24}]}),
+    call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]}),
+    call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:44,x:jx,y:jy}]}),
+    call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:44,x:jx+58,y:jy+58}]})
+  ]);
+  const airKickStart=await evaluate("window.__fightersQA.snapshot()");
+  console.log('AIR_KICK_DIAG '+JSON.stringify(airKickStart));
+  if(!airKickStart.heroAirAttack||airKickStart.heroAttack!=='kickRight')
+    fail('Jump + air kick not triggered '+JSON.stringify(airKickStart));
   await waitUntil("window.__fightersQA.snapshot().heroKickExtension>.25",'air kick pose',8000);
   await evaluate('window.__fightersQA.freeze(true)');
   const airKick=await evaluate("window.__fightersQA.snapshot()");
-  if(!airKick.heroAirAttack||airKick.heroAttack!=='kickRight')fail('Jump + air kick failed '+JSON.stringify(airKick));
   await snap('night-street-air-kick-frozen');
   await evaluate('window.__fightersQA.freeze(false)');
   await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
