@@ -211,8 +211,8 @@ async function loadWitchHouse(){
   const anchor=new THREE.Group();
   anchor.scale.setScalar(scale);
   // Model facade is provisionally assumed to face local -Z.
-  // -135° yaw maps local -Z to world (+X,+Z), the southeast.
-  anchor.rotation.y=-3*Math.PI/4;
+  // Rotate the house 90 degrees counterclockwise from its previous orientation.
+  anchor.rotation.y=-Math.PI/4;
   anchor.position.set(WITCH_HOUSE.x,0,WITCH_HOUSE.z);
   anchor.add(house);
   scene.add(anchor);witchHouse=anchor;
