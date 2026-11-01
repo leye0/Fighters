@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { NodeIO, copyToDocument } from '@gltf-transform/core';
+import { NodeIO } from '@gltf-transform/core';
+import { copyToDocument } from '@gltf-transform/functions';
 
 const input=process.argv[2],output=process.argv[3];
 if(!input||!output)throw Error('Usage: node split-orc-buildings.mjs <pack.glb> <output-dir>');
