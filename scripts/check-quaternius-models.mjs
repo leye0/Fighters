@@ -8,8 +8,9 @@ import { canonicalBone, encodeGLB, parseGLB } from "./build-quaternius-animation
 
 const EXPECTED = ["claudia", "carla", "realistic-man"];
 const MOTIONS = ["UAL1_Idle_Loop", "UAL1_Walk_Loop", "UAL1_Jump_Start",
-  "UAL1_Jump_Loop", "UAL1_Jump_Land", "UAL1_Punch_Cross", "UAL2_Melee_Hook"];
-const SOURCE = "quaternius-cc0-own-skin-v1";
+  "UAL1_Jump_Loop", "UAL1_Jump_Land", "UAL1_Punch_Cross", "UAL2_Melee_Hook",
+  "ACCAD_Front_Kick", "ACCAD_Roundhouse_Kick"];
+const SOURCE = "fighters-quaternius-accad-own-skin-v2";
 function requireCondition(condition, message) { if (!condition) throw Error(message); }
 
 async function withoutTextures(binary) {
@@ -33,15 +34,17 @@ async function checkCharacter(file, name) {
     name + ": unknown animation source");
   requireCondition(doc.asset.extras.fightersMotionSource.character === name,
     name + ": another character's animations have been substituted");
-  requireCondition(doc.animations.length === 86 &&
-    new Set(doc.animations.map(a => a.name)).size === 86,
-    name + ": incomplete 86-clip pack");
+  requireCondition(doc.animations.length === 88 &&
+    new Set(doc.animations.map(a => a.name)).size === 88,
+    name + ": incomplete 88-clip pack");
   requireCondition(!doc.animations.some(a => /mixamo|ybot|adobe/i.test(JSON.stringify(a))),
     name + ": legacy animation remains");
   const joints = new Set(doc.skins.flatMap(skin => skin.joints));
   for (const clip of doc.animations) {
     requireCondition(clip.extras?.rigTransfer === SOURCE && clip.channels.length >= 20,
       name + ": missing clip provenance or incomplete skeleton: " + clip.name);
+    requireCondition(clip.extras?.license === (clip.name.startsWith("ACCAD_") ? "CC-BY-3.0" : "CC0-1.0"),
+      name + ": inaccurate licence on " + clip.name);
     requireCondition(clip.channels.every(channel => channel.target.path === "rotation" &&
       joints.has(channel.target.node)), name + ": unwanted root translation or foreign bone");
   }

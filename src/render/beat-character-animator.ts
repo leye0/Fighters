@@ -1,7 +1,7 @@
 import { AnimationAction, AnimationClip, AnimationMixer, Group, LoopOnce, LoopRepeat } from "three";
 import type { BeatActor, Facing } from "../engine/beat-em-up-world.ts";
 
-/** All clips come from the two free Quaternius Universal Animation Libraries. */
+/** Two Quaternius CC0 libraries plus two ACCAD CC BY foot strikes on native rigs. */
 export const GAME_MOTION_NAMES = {
   idle: "UAL1_Idle_Loop",
   walk: "UAL1_Walk_Loop",
@@ -15,6 +15,8 @@ export const GAME_MOTION_NAMES = {
   punchJab: "UAL1_Punch_Jab",
   punchCross: "UAL1_Punch_Cross",
   hook: "UAL2_Melee_Hook",
+  kickFront: "ACCAD_Front_Kick",
+  kickRound: "ACCAD_Roundhouse_Kick",
   knockback: "UAL2_Hit_Knockback",
   death: "UAL1_Death01",
 } as const;
@@ -30,14 +32,14 @@ export function movingRole(previous: BeatActor, actor: BeatActor): MovingRole {
 /** A partial pack cannot animate a production character. */
 export function canAnimateRealGameMotions(clips: readonly AnimationClip[]): boolean {
   const names = new Set(clips.map(clip => clip.name));
-  return clips.length === 86 && names.size === 86 &&
+  return clips.length === 88 && names.size === 88 &&
     Object.values(GAME_MOTION_NAMES).every(name => names.has(name)) &&
     clips.every(clip => clip.tracks.length >= 20 && clip.duration > 0);
 }
 
 /**
  * Visual playback only. Simulation controls X/Z/Y, facing and collisions.
- * Every action is a Quaternius authored clip baked onto THIS character skin.
+ * Every action is a licensed authored clip baked onto THIS character skin.
  * No runtime rebind, anatomy correction, source offsets or body warping.
  */
 export class BeatCharacterAnimator {
@@ -55,7 +57,7 @@ export class BeatCharacterAnimator {
   constructor(outer: Group, animatedRig: Group, clips: readonly AnimationClip[], facing: Facing,
     _isHero: boolean, _gravityMmPerTick2 = 5) {
     if (!canAnimateRealGameMotions(clips))
-      throw new Error("Expected 86 Quaternius CC0 clips on the actual rig");
+      throw new Error("Expected 88 Quaternius CC0 + ACCAD CC BY clips on the actual rig");
     this.outer = outer;
     this.mixer = new AnimationMixer(animatedRig);
     for (const clip of clips) this.actions.set(clip.name, this.mixer.clipAction(clip));
@@ -69,14 +71,15 @@ export class BeatCharacterAnimator {
     if (this.active === name) return;
     const old = this.active && this.actions.get(this.active);
     const next = this.actions.get(name);
-    if (!next) throw new Error("Missing Quaternius animation: " + name);
+    if (!next) throw new Error("Missing licensed baked animation: " + name);
     if (immediate) this.mixer.stopAllAction();
     else if (old) old.fadeOut(0.12);
     next.reset();
     const oneShots: readonly string[] = [
       GAME_MOTION_NAMES.jumpStart, GAME_MOTION_NAMES.jumpLand,
       GAME_MOTION_NAMES.punchJab, GAME_MOTION_NAMES.punchCross,
-      GAME_MOTION_NAMES.hook, GAME_MOTION_NAMES.knockback, GAME_MOTION_NAMES.death,
+      GAME_MOTION_NAMES.hook, GAME_MOTION_NAMES.kickFront, GAME_MOTION_NAMES.kickRound,
+      GAME_MOTION_NAMES.knockback, GAME_MOTION_NAMES.death,
     ];
     const oneShot = oneShots.includes(name);
     next.setLoop(oneShot ? LoopOnce : LoopRepeat, oneShot ? 1 : Infinity);
@@ -132,7 +135,8 @@ export class BeatCharacterAnimator {
 
   /** Authored attack takes; damage is determined independently by gameplay data. */
   availableCombatClips(): readonly string[] {
-    return [GAME_MOTION_NAMES.punchJab, GAME_MOTION_NAMES.punchCross, GAME_MOTION_NAMES.hook];
+    return [GAME_MOTION_NAMES.punchJab, GAME_MOTION_NAMES.punchCross,
+      GAME_MOTION_NAMES.kickFront, GAME_MOTION_NAMES.kickRound];
   }
 
   get currentMotion(): string { return this.active ?? GAME_MOTION_NAMES.idle; }

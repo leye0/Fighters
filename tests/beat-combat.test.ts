@@ -8,7 +8,7 @@ import { demoEnemyCombatInputs } from "../src/game/beat-enemy-ai.ts";
 import { DIAGNOSTIC_ACTORS, DIAGNOSTIC_STAGE } from "../src/game/beat-stage.ts";
 
 const neutral: BeatCombatInput = { movement: { horizontal: 0, depth: 0, jump: false } };
-const attack = (name: "jab" | "cross" | "hook"): BeatCombatInput =>
+const attack = (name: "jab" | "cross" | "kickFront" | "kickRound"): BeatCombatInput =>
   ({ ...neutral, attack: name });
 function tick(state: BeatCombatState, command: BeatCombatInput = neutral): BeatCombatState {
   return stepBeatCombat(state, { hero: command }, DIAGNOSTIC_STAGE);
@@ -32,6 +32,20 @@ test("a real authored jab damages only the facing, depth-aligned enemy once", ()
   assert.equal(game.fighters["enemy-a"].health, 32, "one strike cannot hit the same enemy twice");
   assert.equal(game.world.actors[0].facing, 1, "targeting never rotates the heroine");
   assert.equal(game.world.actors[1].xMm, -10100, "no knockback/pushbox added");
+});
+
+test("two real ACCAD foot attacks have independent authored clips and hit volumes", () => {
+  let game = createBeatCombat(DIAGNOSTIC_STAGE, DIAGNOSTIC_ACTORS);
+  game = tick(game, attack("kickFront"));
+  assert.deepEqual(game.events, [{ kind: "attack", actorId: "hero", attack: "kickFront" }]);
+  game = advance(game, DEMO_ATTACKS.kickFront.contactFrom);
+  assert.equal(game.fighters["enemy-a"].health, 26);
+  assert.equal(game.fighters["enemy-b"].health, 44);
+  game = advance(game, DEMO_ATTACKS.kickFront.totalTicks);
+  assert.equal(game.fighters["enemy-a"].health, 26);
+  game = tick(game, attack("kickRound"));
+  game = advance(game, DEMO_ATTACKS.kickRound.contactFrom);
+  assert.equal(game.fighters["enemy-a"].health, 3);
 });
 
 test("three authored cross hits KO an enemy and end a one-enemy round", () => {
@@ -95,8 +109,10 @@ test("identical combat inputs replay byte-for-byte at 60 Hz", () => {
   assert.deepEqual(play(), play());
 });
 
-test("all demo attack durations are measured from the actual published CC0 GLB", async () => {
-  const binary = await readFile(new URL("../public/models/claudia.glb", import.meta.url));
+test("all four demo durations are measured from the actual baked CC0 / CC BY GLB", async () => {
+  const binary = await readFile(process.env.FIGHTERS_MODEL_DIR
+    ? `${process.env.FIGHTERS_MODEL_DIR}/claudia.glb`
+    : new URL("../public/models/claudia.glb", import.meta.url));
   assert.equal(binary.toString("ascii", 0, 4), "glTF");
   const jsonLength = binary.readUInt32LE(12);
   const doc = JSON.parse(binary.toString("utf8", 20, 20 + jsonLength));

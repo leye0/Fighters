@@ -2,7 +2,7 @@ name: Publish Fighters 3D beat-em-up
 
 on:
   workflow_run:
-    workflows: ["Fighters - CC0 animations on original character rigs"]
+    workflows: ["Fighters - licensed combat animations on original character rigs"]
     types: [completed]
   push:
     branches: [main]

@@ -8,14 +8,14 @@ Construire un **beat’em up d’action 3D à défilement latéral** pour naviga
 
 Le document directeur est **docs/production-plan.md**. Le consulter avant toute modification, mettre à jour les cases réalisées dans le même commit que le travail associé et ne jamais marquer une case terminée sans preuve concrète.
 
-**Agent externe ou reprise sans historique de conversation :** commencer par le [Guide de reprise](docs/production-plan.md#guide-de-reprise-pour-agent-externe). Il décrit la scène 3D actuelle, les trois modèles, les 86 clips CC0 par rig, les tests et les tâches non approuvées.
+**Agent externe ou reprise sans historique de conversation :** commencer par le [Guide de reprise](docs/production-plan.md#guide-de-reprise-pour-agent-externe). Il décrit la scène 3D actuelle, les trois modèles, les 88 clips (86 CC0 + 2 CC BY) par rig, les tests et les tâches non approuvées.
 
 ## Méthode demandée par le propriétaire
 
 1. **Toujours travailler directement dans main.** Ne pas créer de branche de fonctionnalité ou de pull request. Ne pas forcer les pushes et ne pas réécrire l'historique.
 2. **Production dès le départ.** Aucun MVP, prototype jetable ou faux mécanisme présenté comme complet. Les étapes de réalisation peuvent être ordonnées par dépendances mais n'annulent aucune exigence du plan.
 3. **Qualité mesurable.** Définir le comportement attendu, implémenter, tester, vérifier les régressions pertinentes, puis committer sur main.
-4. **Architecture extensible et animation-first.** Combattants, coups, animations, arènes, sons et effets sont pilotés par des données. **Les coups du jeu final doivent provenir de clips réellement disponibles, inspectés et retargetés**, puis leurs commandes et combos sont choisis. La démo utilise trois vrais clips et des données de contact/dégâts **explicitement provisoires**, sans prétendre à une approbation esthétique ou biomécanique. Voir `docs/animation-first.md`.
+4. **Architecture extensible et animation-first.** Combattants, coups, animations, arènes, sons et effets sont pilotés par des données. **Les coups du jeu final doivent provenir de clips réellement disponibles, inspectés et retargetés**, puis leurs commandes et combos sont choisis. La démo utilise quatre vrais clips (deux poings Quaternius, deux pieds ACCAD) et des données de contact/dégâts **explicitement provisoires**, sans prétendre à une approbation esthétique ou biomécanique. Voir `docs/animation-first.md`.
 5. **Personnages 3D réels dès maintenant.** Léon a précisé que les volumes provisoires valent pour le décor et les plateformes, **pas pour les personnages** : une capsule/silhouette ne prouve aucun progrès sur les rigs, proportions, textures, contacts ou animations. Les marqueurs peuvent subsister dans des tests techniques isolés, mais aucun jalon personnages ou gameplay visuel ne peut être validé sans de vrais humains 3D riggés. Utiliser d'abord **les candidats déjà inscrits dans `assets/manifest.json` et `docs/asset-register.md`** ; ne pas repartir en recherche générale de modèles.
    **Casting narratif approuvé :** quatre héroïnes adultes sélectionnables — femme de bureau noire, femme de bureau blanche, femme trans, hipster engagée à gauche — qui affrontent des misogynes, proxénètes, machos et « douches ». Le catalogue acquis propose Claudia et Carla comme candidates héroïnes, Realistic Man comme candidat ennemi, **sans attribution visuelle définitive**. Voir les tâches précises de casting dans `docs/production-plan.md`.
 6. **Ne pas inventer de validation visuelle.** Lorsque la perception humaine du rendu ou du gameplay est nécessaire, fournir une version testable et demander au propriétaire de juger ; ne pas créer un processus « Lab » autonome qui s'arrogerait cette validation.
@@ -41,15 +41,16 @@ Le document directeur est **docs/production-plan.md**. Le consulter avant toute 
 
 - Le moteur courant `src/engine/beat-combat.ts` applique aux héroïnes et ennemis les mêmes fenêtres de contact/dégâts à 60 Hz. `npm test` vérifie la reproductibilité, les échanges, la victoire/défaite et les volumes X/Z/Y ; WebSuite capture le vrai WebGL des deux héroïnes et du combat. Voir `docs/ai-combat-qa.md`.
 - **Ne jamais déduire qu'un combat est « fun » à partir de simples statistiques.** Faire tester la démo WebGL à Léon à vitesse réelle avant toute validation de ressenti.
-- La simple présence des 86 animations CC0 sur chaque personnage ne signifie pas que les coups et leurs contacts ont été approuvés.
-- Les trois coups de démo requièrent chacun leur **vrai clip exact** intégré aux trois GLB. Ils ne deviennent des attaques de production inscrites dans `assets/animation-inventory.json` qu’après revue effective des contacts sur chaque morphologie.
+- La simple présence des 88 animations libres sur chaque personnage ne signifie pas que les coups et leurs contacts ont été approuvés.
+- Les **quatre coups de démo** (deux poings et deux pieds) requièrent chacun leur **vrai clip exact** intégré aux trois GLB. Ils ne deviennent des attaques de production inscrites dans `assets/animation-inventory.json` qu’après revue effective des contacts sur chaque morphologie.
 
-## Pipeline unique — Quaternius CC0, automatique et vérifiable
+## Pipeline unique — Quaternius CC0 + ACCAD CC BY, automatique et vérifiable
 
-- **Seules sources d’animation :** Quaternius Universal Animation Library Standard 1 + 2 sous CC0, 43 clips de chaque pack intégrés directement aux **trois vrais squelettes** Claudia, Carla, Realistic Man, soit 86 clips par personnage. Voir `docs/quaternius-pipeline.md`.
+- **Sources vérifiées :** Quaternius Universal Animation Library Standard 1 + 2 sous CC0, 43 clips de chaque pack, **plus deux kicks ACCAD / The Ohio State University CC BY 3.0** tirés de l’archive BVH `Male2_bvh.zip`, intégrés aux **trois vrais squelettes** Claudia, Carla, Realistic Man, soit 88 clips par personnage. Télécharger par SHA figé, conserver l’attribution ACCAD. Voir `docs/quaternius-pipeline.md`.
 - Génération et tests dans `scripts/build-quaternius-animations.mjs` et `scripts/check-quaternius-models.mjs` ; les deux archives ZIP sont figées par SHA-256. Workflow GitHub Actions autorisé sur `main` pour construire et publier les GLB et le site. Aucun compte ni intervention d'export manuel nécessaire.
 - **Interdire les correctifs anatomiques par personnage ou rotation codée à la main.** En cas de rig incompatible, la génération doit échouer et ne jamais publier un avatar factice. La qualité visuelle doit être vérifiée honnêtement sur les vraies morphologies.
-- Les 86 clips fournissent une bibliothèque de mouvements, **pas une liste de frappes aux contacts validés**. Les trois attaques F/G/H infligent des dégâts dans la **démo provisoire** ; les valeurs d’impact n’ont pas fait l’objet de revue artistique humaine.
+- Les 88 clips fournissent une bibliothèque de mouvements, **pas une liste de frappes aux contacts validés**. Les quatre attaques F/G/H/I infligent des dégâts dans la **démo provisoire** ; les valeurs d’impact n’ont pas fait l’objet de revue artistique humaine.
+- **Mobile — décision du propriétaire :** aucune croix ni bouton de déplacement. Glissement libre gauche jusqu’au lever du doigt ; à droite quatre grands cadrans translucides (fond 10 %, contour 20 %), poings en haut, pieds en bas, **saut au centre**. Chaque frappe se déclenche à l’entrée du doigt et par glissement entre cadrans. Préserver le multitouch et le buffering des coups.
 
 ## Statut du projet
 

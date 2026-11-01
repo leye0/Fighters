@@ -1,35 +1,37 @@
 #!/usr/bin/env node
 /**
- * Rebuild the three original Fighters meshes with all CC0 Quaternius Standard
- * animations baked on their OWN skins. No Adobe service, GUI, bone offsets,
- * Mixamo/YBot clips or character-specific skeleton corrections are involved.
+ * Bake CC0 Quaternius Standard motions plus two genuine ACCAD CC BY kicks
+ * onto the three original skinned humans. No GUI, sign-in, manual export,
+ * YBot clips or character-specific skeleton corrections are involved.
  *
  * Usage:
- *   node scripts/build-quaternius-animations.mjs UAL1_Standard.glb UAL2_Standard.glb \
- *     public/models work/quaternius-models
+ *   node scripts/build-quaternius-animations.mjs UAL1.glb UAL2.glb \
+ *     Male2_G2_FrontKick.bvh Male2_G9_RoundhouseRight.bvh public/models work/models
  *
  * Sources: https://quaternius.itch.io/universal-animation-library
  *          https://quaternius.itch.io/universal-animation-library-2
- * Licence: CC0 1.0, Standard editions. The input meshes retain their own
+ * ACCAD: https://accad.osu.edu/research/motion-lab/mocap-system-and-data
+ * Licence: Quaternius CC0 1.0; ACCAD CC BY 3.0. The input meshes retain their own
  * Renderpeople/J.azali Sketchfab CC BY credits and geometry/skin.
  */
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { Matrix4, Quaternion, Vector3 } from "three";
+import { BVHLoader } from "three/addons/loaders/BVHLoader.js";
 
 const JSON_CHUNK = 0x4e4f534a;
 const BIN_CHUNK = 0x004e4942;
-const MARKER = "quaternius-cc0-own-skin-v1";
+const MARKER = "fighters-quaternius-accad-own-skin-v2";
 const ROSTER = ["claudia", "carla", "realistic-man"];
 const PACKS = ["UAL1", "UAL2"];
-const NUMBER_OF_MOTIONS = 86;
+const NUMBER_OF_MOTIONS = 88;
 const REQUIRED_BONES = ["pelvis", "spine_01", "Head", "upperarm_l", "lowerarm_l",
   "hand_l", "upperarm_r", "lowerarm_r", "hand_r", "thigh_l", "calf_l",
   "foot_l", "thigh_r", "calf_r", "foot_r"];
 const CORE_ANIMATIONS = ["UAL1_Idle_Loop", "UAL1_Walk_Loop", "UAL1_Jump_Start",
   "UAL1_Jump_Loop", "UAL1_Jump_Land", "UAL1_Punch_Jab", "UAL1_Punch_Cross",
-  "UAL2_Melee_Hook", "UAL2_Zombie_Walk_Fwd_Loop"];
+  "UAL2_Melee_Hook", "UAL2_Zombie_Walk_Fwd_Loop", "ACCAD_Front_Kick", "ACCAD_Roundhouse_Kick"];
 const hash = bytes => createHash("sha256").update(bytes).digest("hex");
 const q = () => new Quaternion();
 
@@ -193,6 +195,9 @@ function anatomyFrame(index, positions) {
 }
 
 function sourceAnimation(gltf, animation) {
+  if (animation.syntheticTracks) return {
+    tracks: animation.syntheticTracks, duration: animation.syntheticDuration,
+  };
   const tracks = new Map();
   let duration = 0;
   for (const channel of animation.channels) {
@@ -211,6 +216,47 @@ function sourceAnimation(gltf, animation) {
   if (duration <= 0 || duration > 30 || tracks.size < 50)
     throw Error("Quaternius clip has inadequate source skeleton tracks: " + animation.name);
   return { tracks, duration };
+}
+
+/** Use an actual CC BY ACCAD BVH humanoid skeleton; never invent a leg swing. */
+export function sourceFromBVH(text, name, speed = 2) {
+  const { skeleton, clip } = new BVHLoader().parse(text);
+  const bones = skeleton.bones;
+  if (bones.length < 20 || !Number.isFinite(speed) || speed <= 0)
+    throw Error("Invalid ACCAD BVH skeleton or playback speed");
+  bones[0].updateMatrixWorld(true);
+  const indices = new Map(bones.map((bone, id) => [bone, id]));
+  const byName = new Map(bones.map((bone, id) => [bone.name, id]));
+  const nodes = bones.map(bone => ({
+    name: bone.name,
+    translation: bone.position.toArray(),
+    rotation: bone.quaternion.toArray(),
+    children: bone.children.filter(child => indices.has(child)).map(child => indices.get(child)),
+  }));
+  const positions = new Map(bones.map((bone, id) => [id, bone.getWorldPosition(new Vector3())]));
+  const tracks = new Map();
+  for (const track of clip.tracks) {
+    if (!track.name.endsWith(".quaternion")) continue;
+    const id = byName.get(track.name.slice(0, -".quaternion".length));
+    if (id === undefined || track.values.length !== track.times.length * 4)
+      throw Error("Invalid ACCAD BVH rotation: " + track.name);
+    const frames = Array.from({ length: track.times.length }, (_, i) =>
+      q().fromArray(track.values, i * 4).normalize());
+    tracks.set(id, { times: Array.from(track.times, t => t / speed), frames });
+  }
+  if (tracks.size < 20 || clip.duration <= 0 || clip.duration > 20)
+    throw Error("Incomplete ACCAD BVH kick: " + name);
+  // MoCap does not include a neutral T-pose. Calibrate to the first recorded
+  // stance per clip; raw BVH absolute Euler orientations would otherwise be
+  // mistaken for bind-pose deltas and explode the actual skinned anatomy.
+  const firstWorld = worldRotations(parentsOf(nodes), nodes.map((node, id) =>
+    tracks.get(id)?.frames[0] ?? q().fromArray(node.rotation)));
+  const rotations = new Map(firstWorld.map((rotation, id) => [id, rotation]));
+  return {
+    name: "ACCAD", gltf: { doc: { nodes } }, bind: { rotations, positions },
+    animation: { name, syntheticTracks: tracks, syntheticDuration: clip.duration / speed },
+    sha256: hash(Buffer.from(text)),
+  };
 }
 
 function sample(track, time) {
@@ -360,8 +406,10 @@ function bakeMotion(source, target, mapping, animation, packName, output) {
   }
   const name = `${packName}_${animation.name}`;
   const motion = { name, samplers: [], channels: [], extras: {
-    source: "Quaternius Universal Animation Library Standard", sourceClip: animation.name,
-    license: "CC0-1.0", rigTransfer: MARKER, rootMotion: "in-place" } };
+    source: packName === "ACCAD" ? "Open Motion Project / ACCAD / Ohio State University" :
+      "Quaternius Universal Animation Library Standard",
+    sourceClip: animation.name, license: packName === "ACCAD" ? "CC-BY-3.0" : "CC0-1.0",
+    rigTransfer: MARKER, rootMotion: "in-place" } };
   const times = addFloatAccessor(output, timeline, timeline.length, "SCALAR");
   for (const [id, frames] of values) {
     const curve = addFloatAccessor(output, frames, count, "VEC4");
@@ -373,9 +421,11 @@ function bakeMotion(source, target, mapping, animation, packName, output) {
   return { name, frames: count, duration: sampled.duration, joints: motion.channels.length };
 }
 
-export function buildCharacter(original, sources, label) {
+export function buildCharacter(original, sources, kicks, label) {
   if (sources.length !== 2 || sources.some(source => source.gltf.doc.animations.length !== 43))
     throw Error("Expected exactly two 43-clip Quaternius Standard packs");
+  if (kicks.length !== 2 || kicks.some(kick => kick.name !== "ACCAD"))
+    throw Error("Exactly two official ACCAD kick animations required");
   const target = { gltf: parseGLB(original) };
   target.bind = binds(target.gltf);
   const output = compactWithoutAnimations(target.gltf);
@@ -387,15 +437,21 @@ export function buildCharacter(original, sources, label) {
       audits.push(bakeMotion(sources[i], target, mapping, animation, PACKS[i], output));
     }
   }
+  for (const kick of kicks) {
+    const mapping = mappedBones(kick, target);
+    audits.push(bakeMotion(kick, target, mapping, kick.animation, "ACCAD", output));
+  }
   if (audits.length !== NUMBER_OF_MOTIONS ||
       new Set(audits.map(item => item.name)).size !== NUMBER_OF_MOTIONS ||
       CORE_ANIMATIONS.some(name => !audits.some(item => item.name === name)))
-    throw Error("Missing or duplicate required Quaternius motions");
+    throw Error("Missing or duplicate Quaternius / ACCAD motions");
   output.doc.asset.extras ??= {};
   output.doc.asset.extras.fightersMotionSource = {
     strategy: MARKER, character: label, clips: audits.length,
-    sources: sources.map(source => ({ pack: source.name, sha256: source.sha256,
-      license: "CC0-1.0" })),
+    sources: [...sources.map(source => ({ pack: source.name, sha256: source.sha256,
+      license: "CC0-1.0" })), ...kicks.map(kick => ({ pack: "ACCAD/" + kick.animation.name,
+      sha256: kick.sha256, license: "CC-BY-3.0",
+      credit: "Open Motion Project by ACCAD / The Ohio State University" }))],
   };
   output.doc.buffers[0].byteLength = output.length;
   const bytes = encodeGLB(output.doc, Buffer.concat(output.parts));
@@ -413,10 +469,10 @@ export function buildCharacter(original, sources, label) {
 }
 
 async function main() {
-  const [first, second, inputDir, outputDir] = process.argv.slice(2);
-  if (!first || !second || !inputDir || !outputDir ||
+  const [first, second, frontKick, roundKick, inputDir, outputDir] = process.argv.slice(2);
+  if (!first || !second || !frontKick || !roundKick || !inputDir || !outputDir ||
       resolve(inputDir) === resolve(outputDir))
-    throw Error("Usage: node scripts/build-quaternius-animations.mjs UAL1.glb UAL2.glb input-dir output-dir");
+    throw Error("Usage: node scripts/build-quaternius-animations.mjs UAL1.glb UAL2.glb FrontKick.bvh Roundhouse.bvh input-dir output-dir");
   const sources = await Promise.all([first, second].map(async (path, i) => {
     const binary = await readFile(path);
     const gltf = parseGLB(binary);
@@ -424,16 +480,20 @@ async function main() {
     item.bind = binds(gltf);
     return item;
   }));
+  const kicks = await Promise.all([frontKick, roundKick].map(async (path, i) =>
+    sourceFromBVH(await readFile(path, "utf8"),
+      i === 0 ? "Front_Kick" : "Roundhouse_Kick")));
   await mkdir(outputDir, { recursive: true });
   const report = [];
   for (const name of ROSTER) {
-    const { bytes, audit } = buildCharacter(await readFile(join(inputDir, name + ".glb")), sources, name);
+    const { bytes, audit } = buildCharacter(await readFile(join(inputDir, name + ".glb")), sources, kicks, name);
     await writeFile(join(outputDir, name + ".glb"), bytes);
     report.push(audit);
-    console.log(`${name}: ${audit.clips} CC0 clips, ${audit.smallestSkeleton} animated bones min; ${audit.outputBytes} bytes`);
+    console.log(`${name}: ${audit.clips} CC0/CC BY clips, ${audit.smallestSkeleton} animated bones min; ${audit.outputBytes} bytes`);
   }
   await writeFile(join(outputDir, "quaternius-audit.json"), JSON.stringify({
-    schemaVersion: 1, strategy: MARKER, inputs: [basename(first), basename(second)],
+    schemaVersion: 2, strategy: MARKER,
+    inputs: [basename(first), basename(second), basename(frontKick), basename(roundKick)],
     characters: report }, null, 2) + "\n");
 }
 

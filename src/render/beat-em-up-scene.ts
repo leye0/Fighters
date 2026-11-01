@@ -11,12 +11,12 @@ import { makeBeatCamera, placeBeatCamera } from "./beat-camera-three.ts";
 import { CHARACTER_MODEL_FILES, fitRigToActor, requireSkinnedRig,
   type AcquiredCharacterKey } from "./rigged-character.ts";
 import { BeatCharacterAnimator, canAnimateRealGameMotions } from "./beat-character-animator.ts";
-import { CC0_ANIMATION_PROVENANCE, validateMotionSource } from "./beat-motion-source.ts";
+import { FIGHTERS_MOTION_PROVENANCE, validateMotionSource } from "./beat-motion-source.ts";
 import { ATTACK_ORDER, type BeatCombatEvent } from "../engine/beat-combat.ts";
 
 const meters = (mm: number): number => mm / 1000;
 
-/** The playable scrolling combat scene, using only actual skinned humans and CC0 motions. */
+/** The playable scrolling combat scene, using real skins and licensed authored motions. */
 export class BeatEmUpScene {
   readonly scene = new Scene();
   readonly camera = makeBeatCamera();
@@ -86,8 +86,8 @@ export class BeatEmUpScene {
       requireSkinnedRig(gltf.scene);
       validateMotionSource(gltf.parser.json.animations ?? []);
       const provenance = gltf.parser.json.asset?.extras?.fightersMotionSource;
-      if (provenance?.strategy !== CC0_ANIMATION_PROVENANCE || provenance.character !== key) {
-        throw new Error("Character GLB has no verified Quaternius CC0 provenance: " + key);
+      if (provenance?.strategy !== FIGHTERS_MOTION_PROVENANCE || provenance.character !== key) {
+        throw new Error("Character GLB has no verified Quaternius/ACCAD provenance: " + key);
       }
       sources.set(key, gltf.scene);
       animations.set(key, gltf.animations);
@@ -101,7 +101,7 @@ export class BeatEmUpScene {
       const clone = cloneSkeleton(source) as Group;
       const holder = new Group();
       holder.add(clone);
-      // The original character's skin is preserved; 86 named actions target
+      // The original character's skin is preserved; 88 named actions target
       // only its own bones and never move the authoritative game-world root.
       clone.traverse(object => {
         if (object instanceof Mesh) {
@@ -112,7 +112,7 @@ export class BeatEmUpScene {
       visual.add(holder);
       const ownClips = animations.get(key) ?? [];
       if (!canAnimateRealGameMotions(ownClips)) {
-        throw new Error("The character is missing baked Quaternius motions");
+        throw new Error("The character is missing baked licensed motions");
       }
       const initial = this.initialActors[this.actorIds.indexOf(actorId)];
       this.gameAnimators.set(actorId,
@@ -235,8 +235,8 @@ export class BeatEmUpScene {
 
   get animationMode(): string {
     return this.gameAnimators.size === this.actorIds.length
-      ? "Quaternius CC0 : 86 animations natives par personnage"
-      : "animations Quaternius non chargées";
+      ? "86 Quaternius CC0 + 2 ACCAD CC BY · 88 animations par personnage"
+      : "animations CC0/CC BY non chargées";
   }
 
   dispose(): void {

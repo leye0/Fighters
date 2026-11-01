@@ -1,7 +1,7 @@
 name: Fighters · real WebGL gameplay regression
 on:
   workflow_run:
-    workflows: ["Fighters - CC0 animations on original character rigs"]
+    workflows: ["Fighters - licensed combat animations on original character rigs"]
     types: [completed]
   push:
     branches: [main]
@@ -52,7 +52,9 @@ jobs:
           node scripts/websuite.mjs --scenario tests/browser/beat-em-up-control.json captures/claudia
           node scripts/websuite.mjs --scenario tests/browser/beat-em-up-carla.json captures/carla
           node scripts/websuite.mjs --scenario tests/browser/beat-em-up-combat.json captures/combat
+          node scripts/websuite.mjs --scenario tests/browser/beat-em-up-roundhouse.json captures/roundhouse
           node scripts/websuite.mjs --scenario tests/browser/beat-em-up-enemy-ai.json captures/enemy-ai
+          node scripts/websuite.mjs --scenario tests/browser/beat-em-up-touch.json captures/touch
       - uses: actions/upload-artifact@v4
         if: always()
         with:

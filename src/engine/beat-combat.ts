@@ -5,7 +5,7 @@ import {
 
 /**
  * Playable demo tuning, NOT human-approved animation contact-frame metadata.
- * Durations are from the actual baked Quaternius Standard clips (30 FPS).
+ * Durations are measured from actual baked Quaternius CC0 / ACCAD CC BY clips.
  * All hit windows, ranges, stun and damage are explicit and testable.
  */
 export const DEMO_ATTACKS = {
@@ -17,14 +17,18 @@ export const DEMO_ATTACKS = {
     clip: "UAL1_Punch_Cross", totalTicks: 60, contactFrom: 19, contactTo: 27,
     damage: 20, rangeMm: 1480, depthMm: 700, verticalMm: 700, stunTicks: 50,
   },
-  hook: {
-    clip: "UAL2_Melee_Hook", totalTicks: 28, contactFrom: 9, contactTo: 14,
-    damage: 16, rangeMm: 1000, depthMm: 620, verticalMm: 650, stunTicks: 50,
+  kickFront: {
+    clip: "ACCAD_Front_Kick", totalTicks: 69, contactFrom: 24, contactTo: 32,
+    damage: 18, rangeMm: 1740, depthMm: 630, verticalMm: 800, stunTicks: 60,
+  },
+  kickRound: {
+    clip: "ACCAD_Roundhouse_Kick", totalTicks: 54, contactFrom: 19, contactTo: 27,
+    damage: 23, rangeMm: 1510, depthMm: 820, verticalMm: 1150, stunTicks: 60,
   },
 } as const;
 
 export type DemoAttack = keyof typeof DEMO_ATTACKS;
-export const ATTACK_ORDER: readonly DemoAttack[] = ["jab", "cross", "hook"];
+export const ATTACK_ORDER: readonly DemoAttack[] = ["jab", "cross", "kickFront", "kickRound"];
 
 export interface BeatCombatInput {
   readonly movement: BeatInput;

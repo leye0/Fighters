@@ -1,0 +1,27 @@
+{
+  "url": "http://127.0.0.1:4173/beat-em-up.html?qa=1&hero=claudia",
+  "touchViewport": { "width": 844, "height": 390 },
+  "steps": [
+    {"action":"assert","expression":"window.__fightersBeatReady===true && document.querySelectorAll('[data-beat-attack]').length===4 && !document.querySelector('[data-beat-key^=Arrow]')"},
+    {"action":"touchDown","id":1,"selector":"#beat-steering-zone","fx":0.23,"fy":0.72},
+    {"action":"touchMove","id":1,"selector":"#beat-steering-zone","fx":0.73,"fy":0.72},
+    {"action":"wait","ms":450},
+    {"action":"assert","expression":"window.__fightersBeatHero.facing===1 && window.__fightersBeatHero.xMm>-10800"},
+    {"action":"touchDown","id":2,"selector":"[data-beat-attack=jab]","fx":0.3,"fy":0.3},
+    {"action":"touchMove","id":2,"selector":"[data-beat-attack=cross]","fx":0.7,"fy":0.3},
+    {"action":"wait","ms":2000},
+    {"action":"assert","expression":"window.__fightersBeatLastCombatGesture==='UAL1_Punch_Cross'"},
+    {"action":"screenshot","name":"touch-two-thumbs-combo"},
+    {"action":"touchUp","id":2},
+    {"action":"touchUp","id":1},
+    {"action":"assert","expression":"(window.__touchReleaseX=window.__fightersBeatHero.xMm,true)"},
+    {"action":"wait","ms":500},
+    {"action":"assert","expression":"window.__fightersBeatHero.xMm-window.__touchReleaseX<240"},
+    {"action":"wait","ms":1000},
+    {"action":"touchDown","id":3,"selector":"#beat-jump-button","fx":0.5,"fy":0.5},
+    {"action":"wait","ms":220},
+    {"action":"assert","expression":"window.__fightersBeatHero.heightMm>100 && window.__fightersBeatHero.supportingPlatformId===null"},
+    {"action":"screenshot","name":"touch-center-jump"},
+    {"action":"touchUp","id":3}
+  ]
+}

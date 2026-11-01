@@ -1,0 +1,13 @@
+{
+  "url": "http://127.0.0.1:4173/beat-em-up.html?qa=1&hero=carla",
+  "steps": [
+    {"action":"assert","expression":"window.__fightersBeatCombat?.enemyHealth[0]===44"},
+    {"action":"assert","expression":"(window.__fightersBeatFreezeAtAttackAge=22,true)"},
+    {"action":"keyDown","key":"KeyI"},
+    {"action":"wait","ms":160},
+    {"action":"assert","expression":"window.__fightersBeatFreeze===true && window.__fightersBeatHeroMotion==='ACCAD_Roundhouse_Kick' && window.__fightersBeatCombat.enemyHealth[0]===21"},
+    {"action":"screenshot","name":"roundhouse-authentic-contact"},
+    {"action":"keyUp","key":"KeyI"},
+    {"action":"assert","expression":"(window.__fightersBeatFreeze=false,true)"}
+  ]
+}

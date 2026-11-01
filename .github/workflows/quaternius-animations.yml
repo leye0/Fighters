@@ -1,4 +1,4 @@
-name: Fighters - CC0 animations on original character rigs
+name: Fighters - licensed combat animations on original character rigs
 
 on:
   push:
@@ -34,19 +34,21 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Download and checksum the two CC0 Standard archives
+      - name: Download and checksum two CC0 packs and licensed ACCAD kicks
         run: |
           set -euo pipefail
           base='https://media.githubusercontent.com/media/MightyBubble/Ludots-Assets/main/animations'
           curl -fLsS --retry 3 --max-time 120 "$base/Quaternius-Universal-Animation-Library-Standard.zip" -o /tmp/ual1.zip
           curl -fLsS --retry 3 --max-time 120 "$base/Quaternius-Universal-Animation-Library-2-Standard.zip" -o /tmp/ual2.zip
-          printf 'cc73fc4e495b82958207316596317a3f40b9fa38065bde1027937452da537724  /tmp/ual1.zip\n4008ea208a604773a2b2177d965f0f5d3195498b5bf838c3f5785d68e95f2a68  /tmp/ual2.zip\n' | sha256sum --check
+          curl -fLsS --retry 3 --max-time 120 'https://accad.osu.edu/sites/accad.osu.edu/files/Male2_bvh.zip' -o /tmp/accad-bvh.zip
+          printf 'cc73fc4e495b82958207316596317a3f40b9fa38065bde1027937452da537724  /tmp/ual1.zip\n4008ea208a604773a2b2177d965f0f5d3195498b5bf838c3f5785d68e95f2a68  /tmp/ual2.zip\nf30dc56f8557d4b9f1bd6b8b0c4218c076471de0a9c1a20f3bc4a8b776cc14b1  /tmp/accad-bvh.zip\n' | sha256sum --check
           unzip -jo /tmp/ual1.zip '*/Unreal-Godot/UAL1_Standard.glb' -d /tmp
           unzip -jo /tmp/ual2.zip '*/Unreal-Godot/UAL2_Standard.glb' -d /tmp
+          unzip -jo /tmp/accad-bvh.zip Male2_G2_FrontKick.bvh Male2_G9_RoundhouseRight.bvh -d /tmp
       - name: Build and audit all three character GLBs
         run: |
           set -euo pipefail
-          node scripts/build-quaternius-animations.mjs /tmp/UAL1_Standard.glb /tmp/UAL2_Standard.glb public/models /tmp/fighters-cc0
+          node scripts/build-quaternius-animations.mjs /tmp/UAL1_Standard.glb /tmp/UAL2_Standard.glb /tmp/Male2_G2_FrontKick.bvh /tmp/Male2_G9_RoundhouseRight.bvh public/models /tmp/fighters-cc0
           node scripts/check-quaternius-models.mjs /tmp/fighters-cc0
           cp /tmp/fighters-cc0/claudia.glb public/models/claudia.glb
           cp /tmp/fighters-cc0/carla.glb public/models/carla.glb
@@ -68,12 +70,12 @@ jobs:
             exit 0
           fi
           git -c user.name='fighters-animation-bot' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-            commit -m 'Bake Quaternius CC0 animations onto the three Fighters skins'
+            commit -m 'Bake 86 Quaternius CC0 motions and two experimental ACCAD kicks'
           git push origin HEAD:main
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: quaternius-character-audit
+          name: fighters-licensed-character-audit
           path: /tmp/fighters-cc0/quaternius-audit.json
           retention-days: 3
           if-no-files-found: warn

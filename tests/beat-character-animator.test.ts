@@ -18,12 +18,12 @@ function testRig(): { outer: Group; rig: Group; clips: AnimationClip[] } {
       [0, 0, 0, 1, 0, 0, 0, 1]));
   const names = new Set<string>(Object.values(GAME_MOTION_NAMES));
   let index = 0;
-  while (names.size < 86) names.add("UAL1_Additional_" + index++);
+  while (names.size < 88) names.add("UAL1_Additional_" + index++);
   const clips = [...names].map(name => new AnimationClip(name, 0.4, tracks));
   return { outer, rig, clips };
 }
 
-test("the gameplay gate requires all 86 own-skin authored motions", () => {
+test("the gameplay gate requires all 88 own-skin authored motions", () => {
   const { clips } = testRig();
   assert.equal(canAnimateRealGameMotions(clips), true);
   assert.equal(canAnimateRealGameMotions(clips.slice(1)), false);
@@ -55,7 +55,8 @@ test("hero direction is immediate and cannot be stolen by a visual turn or jump"
   controller.update(airborne, { ...airborne, facing: 1 }, 1 / 60);
   assert.equal(outer.rotation.y, Math.PI / 2);
   assert.deepEqual(controller.availableCombatClips(),
-    [GAME_MOTION_NAMES.punchJab, GAME_MOTION_NAMES.punchCross, GAME_MOTION_NAMES.hook]);
+    [GAME_MOTION_NAMES.punchJab, GAME_MOTION_NAMES.punchCross,
+      GAME_MOTION_NAMES.kickFront, GAME_MOTION_NAMES.kickRound]);
   assert.equal(controller.playCombatAttack(0), true);
   assert.equal(controller.playCombatAttack(1), false);
   controller.dispose();

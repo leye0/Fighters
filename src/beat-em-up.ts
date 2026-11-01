@@ -177,10 +177,16 @@ async function startBeatScene(): Promise<void> {
         ? Object.fromEntries(Object.entries(demoEnemyInputs(current, DIAGNOSTIC_STAGE))
           .map(([id, movement]) => [id, { movement }]))
         : demoEnemyCombatInputs(combat, DIAGNOSTIC_STAGE);
-      const chosenGesture = controls.consumeCombatGesture();
+      const heroMovement = controls.snapshot();
+      const heroActor = current.actors.find(actor => actor.id === "hero")!;
+      const heroCombat = combat.fighters.hero;
+      const canStrike = combat.outcome === "playing" && heroActor.alive &&
+        heroActor.supportingPlatformId !== null && heroCombat.stunTicks === 0 &&
+        heroCombat.attack === null && !heroMovement.jump;
+      const chosenGesture = controls.consumeCombatGesture(canStrike);
       combat = stepBeatCombat(combat, {
         ...enemyCommands,
-        hero: { movement: controls.snapshot(),
+        hero: { movement: heroMovement,
           attack: chosenGesture === null ? null : ATTACK_ORDER[chosenGesture] },
       }, DIAGNOSTIC_STAGE);
       current = combat.world;

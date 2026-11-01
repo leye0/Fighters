@@ -165,6 +165,16 @@ try {
   await client.send('Emulation.setDeviceMetricsOverride', {
     width: 1280, height: 800, deviceScaleFactor: 1, mobile: false
   });
+  if (scenario?.touchViewport) {
+    const { width, height } = scenario.touchViewport;
+    if (!Number.isInteger(width) || !Number.isInteger(height) ||
+        width < 600 || width > 1600 || height < 300 || height > 900 || width <= height)
+      throw new Error('Invalid landscape touch viewport');
+    await client.send('Emulation.setDeviceMetricsOverride', {
+      width, height, deviceScaleFactor: 2, mobile: true
+    });
+    await client.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 3 });
+  }
   const entries = [];
   const actionResults = [];
   async function settle() {
@@ -211,11 +221,31 @@ try {
     await client.send('Input.dispatchKeyEvent', { type: 'keyUp', ...params });
   }
   async function heldKey(key, down) {
-    const map = { ArrowLeft: 37, ArrowRight: 39, Space: 32, KeyF: 70, KeyG: 71, KeyH: 72 };
+    const map = { ArrowLeft: 37, ArrowRight: 39, Space: 32,
+      KeyF: 70, KeyG: 71, KeyH: 72, KeyI: 73 };
     if (!Object.hasOwn(map, key)) throw new Error('Unsupported held QA key: ' + key);
     await client.send('Input.dispatchKeyEvent', {
       type: down ? 'rawKeyDown' : 'keyUp', key: key.startsWith('Key') ? key.slice(3).toLowerCase() : key, code: key,
       windowsVirtualKeyCode: map[key]
+    });
+  }
+  const activeTouches = new Map();
+  async function touch(step) {
+    if (!scenario?.touchViewport || !Number.isInteger(step.id) || step.id < 1 || step.id > 3)
+      throw new Error('Touch action requires an emulated landscape viewport and finger id 1-3');
+    if (step.action !== 'touchUp') {
+      if (typeof step.selector !== 'string' || !Number.isFinite(step.fx) ||
+          !Number.isFinite(step.fy) || step.fx < 0 || step.fx > 1 ||
+          step.fy < 0 || step.fy > 1) throw new Error('Invalid normalized touch point');
+      const rect = await inspect(step.selector);
+      const x = rect.x + (step.fx - 0.5) * rect.width;
+      const y = rect.y + (step.fy - 0.5) * rect.height;
+      activeTouches.set(step.id, { x, y, id: step.id });
+    } else if (!activeTouches.has(step.id)) throw new Error('Unknown touch id');
+    if (step.action === 'touchUp') activeTouches.delete(step.id);
+    await client.send('Input.dispatchTouchEvent', {
+      type: { touchDown: 'touchStart', touchMove: 'touchMove', touchUp: 'touchEnd' }[step.action],
+      touchPoints: [...activeTouches.values()],
     });
   }
   async function typeInto(selector, text) {
@@ -232,8 +262,8 @@ try {
     await settle();
     const metrics = await client.send('Page.getLayoutMetrics');
     const size = metrics.cssContentSize || metrics.contentSize;
-    const width = Math.ceil(Math.max(size.width, 1280));
-    const height = Math.ceil(Math.max(size.height, 800));
+    const width = Math.ceil(scenario?.touchViewport ? size.width : Math.max(size.width, 1280));
+    const height = Math.ceil(scenario?.touchViewport ? size.height : Math.max(size.height, 800));
     const shot = await client.send('Page.captureScreenshot', {
       format: 'png', fromSurface: true, captureBeyondViewport: true,
       clip: { x: 0, y: 0, width, height, scale: 1 }
@@ -280,6 +310,9 @@ try {
         case 'press': await press(step.key); break;
         case 'keyDown': await heldKey(step.key, true); break;
         case 'keyUp': await heldKey(step.key, false); break;
+        case 'touchDown':
+        case 'touchMove':
+        case 'touchUp': await touch(step); break;
         case 'logExpr': {
           if (typeof step.expression !== 'string' || step.expression.length > 1000) {
             throw new Error('Expected concise QA metrics expression');
