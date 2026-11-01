@@ -1,9 +1,0 @@
-node_modules/
-dist/
-.vite/
-coverage/
-captures/
-renders/
-render.png
-*.log
-.DS_Store

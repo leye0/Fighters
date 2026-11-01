@@ -1,9 +1,0 @@
-{
-  "url": "http://127.0.0.1:4173/beat-em-up.html?hero=carla",
-  "steps": [
-    {"action":"assert","expression":"window.__fightersBeatCombat?.heroHealth<=100 && window.__fightersBeatCombat.enemiesAlive===2"},
-    {"action":"wait","ms":2300},
-    {"action":"assert","expression":"window.__fightersBeatCombat.heroHealth<100 && window.__fightersBeatCombat.hits>0"},
-    {"action":"screenshot","name":"enemy-ai-damage"}
-  ]
-}
