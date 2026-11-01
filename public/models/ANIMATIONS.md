@@ -10,4 +10,4 @@ Les 86 noms de clips commencent par `UAL1_` ou `UAL2_`. Les fichiers conservent 
 
 Vérifier avec `npm run animation:verify`. Le générateur et les SHA des deux ZIP sont dans [docs/quaternius-pipeline.md](../../docs/quaternius-pipeline.md).
 
-Les animations sont disponibles pour les prévisualisations de locomotion, saut et combat. Aucun dégât ou combo n’est considéré comme approuvé par la seule présence des clips.
+La démo utilise repos, locomotion, saut, trois attaques, réactions et mort. Les trois attaques calculent des dégâts avec des fenêtres provisoires documentées dans `src/engine/beat-combat.ts` ; la présence d'un clip ne constitue **pas** une approbation des contacts visuels ou des combos pour le jeu final.

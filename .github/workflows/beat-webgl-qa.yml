@@ -44,13 +44,15 @@ jobs:
           done
           cat /tmp/fighters-http.log
           exit 1
-      - name: Exercise real rigs, walking, jump and two combat clips in software WebGL
+      - name: Exercise both real heroines, authored contacts and hostile AI in software WebGL
         env:
           WEBSUITE_RENDER_BACKEND: software
           WEBSUITE_REQUIRE_FIGHTERS: "1"
         run: |
           node scripts/websuite.mjs --scenario tests/browser/beat-em-up-control.json captures/claudia
           node scripts/websuite.mjs --scenario tests/browser/beat-em-up-carla.json captures/carla
+          node scripts/websuite.mjs --scenario tests/browser/beat-em-up-combat.json captures/combat
+          node scripts/websuite.mjs --scenario tests/browser/beat-em-up-enemy-ai.json captures/enemy-ai
       - uses: actions/upload-artifact@v4
         if: always()
         with:

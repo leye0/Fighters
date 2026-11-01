@@ -4,7 +4,7 @@
  * Actors intentionally have no rigid-body collision or mutual pushboxes:
  * heroes and enemies may overlap/cross. Combat uses separate hit tests.
  * Platforms are scripted supports, not outputs of a physics solver.
- * This is distinct from the legacy two-fighter arena benchmark.
+ * Combat logic lives in beat-combat.ts, not in the kinematic navigation rules.
  */
 export type Axis = -1 | 0 | 1;
 export type Facing = -1 | 1;

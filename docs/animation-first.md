@@ -9,7 +9,7 @@ Les **86 animations CC0 de Quaternius par personnage** constituent une biblioth�
 1. La simulation autoritative conserve X, Z, Y, orientation, collisions et dégâts à 60 Hz ; le clip ne déplace pas le monde.
 2. Pour une frappe, choisir un clip réel sur **chaque personnage**, examiner sa posture et ses contacts, mesurer les fenêtres temporelles et tester l’interaction avec la locomotion.
 3. Remplir `assets/animation-inventory.json` avec le nom exact du clip, URL source, SHA, licence, rig, mesures, revue visuelle et propriété de combat. Une entrée non approuvée ne crée aucun mouvement de gameplay.
-4. Ne pas inventer de dégâts ou de combos à partir d’un nom de clip. Les gestes F/G/H actuels sont uniquement des démonstrations visuelles sans hitboxes.
-5. Construire ensuite les tests d’intégration IA contre IA et les captures de rendu pour voir les vrais contacts.
+4. Ne jamais **homologuer** dégâts ou combos à partir d’un nom de clip. La démo F/G/H est une étape testable : `src/engine/beat-combat.ts` fixe explicitement des fenêtres, profondeurs et dégâts provisoires, sans approbation des contacts du rig. Le code les distingue de l’inventaire de production, qui reste vide.
+5. Les tests de combats déterministes et les captures navigateur prouvent le déclenchement mécanique des coups ; conserver séparée la revue visuelle des contacts par clip et personnage.
 
-Les modules de simulation indépendants peuvent proposer des scénarios de stress-test ; ceux-ci ne sont pas l’arsenal de production.
+Le système de combat de la démo est celui du vrai monde 3D, pas un moteur de duel de test parallèle. Son équilibrage sera modifié après les observations de jeu réelles.

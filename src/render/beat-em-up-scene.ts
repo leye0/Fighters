@@ -12,10 +12,11 @@ import { CHARACTER_MODEL_FILES, fitRigToActor, requireSkinnedRig,
   type AcquiredCharacterKey } from "./rigged-character.ts";
 import { BeatCharacterAnimator, canAnimateRealGameMotions } from "./beat-character-animator.ts";
 import { CC0_ANIMATION_PROVENANCE, validateMotionSource } from "./beat-motion-source.ts";
+import { ATTACK_ORDER, type BeatCombatEvent } from "../engine/beat-combat.ts";
 
 const meters = (mm: number): number => mm / 1000;
 
-/** Diagnostic navigation scene: real rigs, but no certified combat clips yet. */
+/** The playable scrolling combat scene, using only actual skinned humans and CC0 motions. */
 export class BeatEmUpScene {
   readonly scene = new Scene();
   readonly camera = makeBeatCamera();
@@ -135,11 +136,17 @@ export class BeatEmUpScene {
     }
   }
 
-  previewHeroCombatGesture(index: number): boolean {
-    return this.gameAnimators.get(this.heroId)?.previewCombatGesture(index) ?? false;
-  }
-
   get heroMotion(): string { return this.gameAnimators.get(this.heroId)?.currentMotion ?? "unloaded"; }
+
+  applyCombatEvents(events: readonly BeatCombatEvent[]): void {
+    for (const event of events) {
+      const animator = this.gameAnimators.get(event.actorId);
+      if (!animator) continue;
+      if (event.kind === "attack") animator.playCombatAttack(ATTACK_ORDER.indexOf(event.attack));
+      if (event.kind === "hit") animator.receiveHit();
+      if (event.kind === "ko") animator.die();
+    }
+  }
 
   private addStageVolumes(): void {
     for (const [index, p] of this.stage.platforms.entries()) {
@@ -190,7 +197,8 @@ export class BeatEmUpScene {
       const visual = this.visuals.get(actor.id);
       if (visual) {
         visual.position.set(meters(focus.xMm), meters(focus.heightMm), meters(focus.depthMm));
-        visual.visible = actor.alive;
+        // Defeated enemies remain visible in their genuine authored KO pose.
+        visual.visible = true;
       }
       if (actor.id === this.heroId) heroFocus = focus;
     }

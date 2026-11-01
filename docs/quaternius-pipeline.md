@@ -47,4 +47,4 @@ La sortie contient `claudia.glb`, `carla.glb`, `realistic-man.glb` et `quaterniu
 
 Les noms `UAL1_*` et `UAL2_*` couvrent marche, course, saut (départ/boucle/réception), coups, réactions et autres gestes. Les mouvements sont liés à l’animation Three.js des vrais rigs, indépendamment du monde à 60 Hz.
 
-La validation de données/poses ne prouve pas à elle seule la **qualité perceptuelle** du retargeting, les pieds au sol, la lisibilité du contact ou la jouabilité des coups. Les gestes F/G/H ne font donc pas de dégâts avant mesure des fenêtres de contact et revue visuelle. Voir [production-plan.md](production-plan.md) et [animation-first.md](animation-first.md).
+La validation de données/poses ne prouve pas à elle seule la **qualité perceptuelle** du retargeting, les pieds au sol, la lisibilité du contact ou la jouabilité des coups. Les gestes F/G/H infligent désormais des dégâts **dans la démo uniquement** selon des fenêtres explicites provisoires ; ce sont toujours des contacts **non approuvés pour la production** tant qu'une revue visuelle n'a pas été effectuée. Voir [production-plan.md](production-plan.md) et [animation-first.md](animation-first.md).

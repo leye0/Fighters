@@ -22,8 +22,6 @@
   },
   "include": [
     "src/**/*.ts",
-    "tests/**/*.ts",
-    "scripts/verify-mixamo-layers.ts",
-    "scripts/generate-review-catalog.ts"
+    "tests/**/*.ts"
   ]
 }

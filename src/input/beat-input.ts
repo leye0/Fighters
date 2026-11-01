@@ -18,7 +18,7 @@ const keys = new Set(["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp",
   "KeyA", "KeyD", "KeyW", "KeyS", "Space", "KeyJ", "KeyK", "KeyF", "KeyG", "KeyH"]);
 const combatKeys = ["KeyF", "KeyG", "KeyH"] as const;
 
-/** Separate from the legacy duel's up/down = crouch/jump binding. */
+/** Unified keyboard, touch and gamepad controls for the playable beat'em up. */
 export class BeatControls {
   private readonly held = new Set<string>();
   private readonly touch = new Map<number, string>();

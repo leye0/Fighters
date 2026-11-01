@@ -49,6 +49,8 @@ export class BeatCharacterAnimator {
   private elapsed = 0;
   private airborneFromJump = false;
   private attackEndsAt = -Infinity;
+  private hitEndsAt = -Infinity;
+  private dead = false;
 
   constructor(outer: Group, animatedRig: Group, clips: readonly AnimationClip[], facing: Facing,
     _isHero: boolean, _gravityMmPerTick2 = 5) {
@@ -90,6 +92,10 @@ export class BeatCharacterAnimator {
     this.elapsed += dt;
     // Always honor actual left/right input; enemies never impose an orientation.
     this.outer.rotation.y = this.yaw(actor.facing);
+    if (this.dead) {
+      this.mixer.update(dt);
+      return;
+    }
     const tookOff = before.supportingPlatformId !== null && actor.supportingPlatformId === null;
     const landed = before.supportingPlatformId === null && actor.supportingPlatformId !== null;
     if (tookOff) {
@@ -103,6 +109,10 @@ export class BeatCharacterAnimator {
       this.play(GAME_MOTION_NAMES.jumpLand);
     }
     if (actor.supportingPlatformId !== null && this.elapsed < this.attackEndsAt) {
+      this.mixer.update(dt);
+      return;
+    }
+    if (this.elapsed < this.hitEndsAt) {
       this.mixer.update(dt);
       return;
     }
@@ -127,15 +137,29 @@ export class BeatCharacterAnimator {
 
   get currentMotion(): string { return this.active ?? GAME_MOTION_NAMES.idle; }
 
-  /** Plays a genuine authored combat gesture; no unreviewed hitboxes/damage are inferred. */
-  previewCombatGesture(index: number): boolean {
+  /** Playback of a true CC0 strike; damage is determined by beat-combat.ts. */
+  playCombatAttack(index: number): boolean {
     const name = this.availableCombatClips()[index];
-    if (!name || this.elapsed < this.attackEndsAt) return false;
+    if (!name || this.dead || this.elapsed < this.attackEndsAt ||
+        this.elapsed < this.hitEndsAt) return false;
     const clip = this.actions.get(name)?.getClip();
     if (!clip) return false;
     this.play(name);
     this.attackEndsAt = this.elapsed + clip.duration;
     return true;
+  }
+
+  receiveHit(): void {
+    if (this.dead) return;
+    this.attackEndsAt = -Infinity;
+    this.hitEndsAt = this.elapsed + this.actions.get(GAME_MOTION_NAMES.knockback)!.getClip().duration;
+    this.play(GAME_MOTION_NAMES.knockback);
+  }
+
+  die(): void {
+    this.dead = true;
+    this.attackEndsAt = this.hitEndsAt = -Infinity;
+    this.play(GAME_MOTION_NAMES.death);
   }
 
   dispose(): void { this.mixer.stopAllAction(); }

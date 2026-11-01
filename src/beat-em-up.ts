@@ -1,7 +1,9 @@
 import "./beat-em-up.css";
-import { createBeatWorld, stepBeatWorld, type BeatWorldState } from "./engine/beat-em-up-world.ts";
+import { type BeatWorldState } from "./engine/beat-em-up-world.ts";
+import { ATTACK_ORDER, createBeatCombat, stepBeatCombat,
+  type BeatCombatInput, type BeatCombatState } from "./engine/beat-combat.ts";
 import { BeatControls } from "./input/beat-input.ts";
-import { demoEnemyInputs } from "./game/beat-enemy-ai.ts";
+import { demoEnemyCombatInputs, demoEnemyInputs } from "./game/beat-enemy-ai.ts";
 import { BEAT_PROJECTION, DIAGNOSTIC_ACTORS, DIAGNOSTIC_STAGE,
   diagnosticScrollBounds } from "./game/beat-stage.ts";
 import { BeatEmUpScene } from "./render/beat-em-up-scene.ts";
@@ -23,6 +25,8 @@ declare global {
     __fightersBeatHeroMotion?: string;
     /** Last accepted authored combat gesture; survives very short clip playback. */
     __fightersBeatLastCombatGesture?: string;
+    __fightersBeatCombat?: { heroHealth: number; enemiesAlive: number;
+      enemyHealth: number[]; outcome: string; hits: number };
   }
 }
 
@@ -40,8 +44,19 @@ const toggle = get<HTMLButtonElement>("beat-debug-toggle");
 const landscapeButton = get<HTMLButtonElement>("beat-landscape-lock");
 const orientationGate = get<HTMLElement>("beat-orientation-gate");
 const heroSelect = get<HTMLSelectElement>("beat-hero-select");
+const heroHealthFill = get<HTMLElement>("beat-hero-health");
+const heroHealthLabel = get<HTMLElement>("beat-hero-hp-label");
+const enemiesLeft = get<HTMLElement>("beat-enemies-left");
+const enemyHealthFills = [get<HTMLElement>("beat-enemy-a-health"), get<HTMLElement>("beat-enemy-b-health")];
+const impact = get<HTMLElement>("beat-impact");
+const endOverlay = get<HTMLElement>("beat-end");
+const endTitle = get<HTMLElement>("beat-end-title");
+const endMessage = get<HTMLElement>("beat-end-message");
+const qaMode = new URLSearchParams(location.search).has("qa");
 const heroName = new URLSearchParams(location.search).get("hero") === "carla" ? "carla" : "claudia";
 heroSelect.value = heroName;
+get<HTMLElement>("beat-hero-name").textContent = heroName.toUpperCase();
+get<HTMLButtonElement>("beat-restart").addEventListener("click", () => location.reload());
 heroSelect.addEventListener("change", () => {
   const next = new URL(location.href);
   next.searchParams.set("hero", heroSelect.value === "carla" ? "carla" : "claudia");
@@ -90,7 +105,8 @@ async function startBeatScene(): Promise<void> {
   const controls = new BeatControls(document.body);
   const resize = new ResizeObserver(() => scene.resize(viewport.clientWidth, viewport.clientHeight));
   resize.observe(viewport);
-  let previous: BeatWorldState = createBeatWorld(DIAGNOSTIC_STAGE, DIAGNOSTIC_ACTORS);
+  let combat: BeatCombatState = createBeatCombat(DIAGNOSTIC_STAGE, DIAGNOSTIC_ACTORS);
+  let previous: BeatWorldState = combat.world;
   let current = previous;
   let accumulator = 0;
   let lastTime = performance.now();
@@ -98,7 +114,30 @@ async function startBeatScene(): Promise<void> {
   let frameWindow = lastTime;
   let framesPerSecond = 0;
   let active = true;
+  let hitCount = 0;
+  let lastImpactTick = -1000;
   const tickDuration = 1000 / 60;
+  function updateHud(): void {
+    const hero = combat.fighters.hero;
+    heroHealthFill.style.width = `${100 * hero.health / hero.maxHealth}%`;
+    heroHealthLabel.textContent = `${hero.health} / ${hero.maxHealth}`;
+    const enemies = combat.world.actors.filter(a => a.team === "hostiles");
+    const left = enemies.filter(a => a.alive).length;
+    enemiesLeft.textContent = `${left} / ${enemies.length}`;
+    enemies.forEach((enemy, index) => {
+      const fighter = combat.fighters[enemy.id];
+      if (enemyHealthFills[index])
+        enemyHealthFills[index].style.width = `${100 * fighter.health / fighter.maxHealth}%`;
+    });
+    if (combat.outcome !== "playing" && endOverlay.hidden) {
+      endOverlay.hidden = false;
+      endTitle.textContent = combat.outcome === "victory" ? "VICTOIRE !" : "K.O. !";
+      endMessage.textContent = combat.outcome === "victory"
+        ? `${heroName === "carla" ? "Carla" : "Claudia"} a vaincu les deux adversaires.`
+        : "Les adversaires ont gagné cette manche. Reprends le combat !";
+    }
+  }
+  updateHud();
   toggle.addEventListener("click", () => {
     const expanded = diagnostics.hidden;
     diagnostics.hidden = !expanded;
@@ -117,7 +156,7 @@ async function startBeatScene(): Promise<void> {
       requestAnimationFrame(frame);
       return;
     }
-    if (new URLSearchParams(location.search).has("qa") && window.__fightersBeatFreeze) {
+    if (qaMode && window.__fightersBeatFreeze) {
       // The GPU/software renderer can take several seconds per capture.
       // Freeze game time so snapshots show the exact tested pose and controls
       // do not keep moving under a long screenshot operation.
@@ -132,16 +171,29 @@ async function startBeatScene(): Promise<void> {
     lastTime = now;
     while (accumulator >= tickDuration) {
       previous = current;
-      current = stepBeatWorld(current, {
-        ...demoEnemyInputs(current, DIAGNOSTIC_STAGE),
-        hero: controls.snapshot(),
+      const enemyCommands: Readonly<Record<string, BeatCombatInput>> = qaMode
+        ? Object.fromEntries(Object.entries(demoEnemyInputs(current, DIAGNOSTIC_STAGE))
+          .map(([id, movement]) => [id, { movement }]))
+        : demoEnemyCombatInputs(combat, DIAGNOSTIC_STAGE);
+      const chosenGesture = controls.consumeCombatGesture();
+      combat = stepBeatCombat(combat, {
+        ...enemyCommands,
+        hero: { movement: controls.snapshot(),
+          attack: chosenGesture === null ? null : ATTACK_ORDER[chosenGesture] },
       }, DIAGNOSTIC_STAGE);
-      const combatGesture = controls.consumeCombatGesture();
-      if (combatGesture !== null && current.actors.find(actor => actor.id === "hero")?.supportingPlatformId !== null) {
-        const accepted = scene.previewHeroCombatGesture(combatGesture);
-        if (accepted && new URLSearchParams(location.search).has("qa"))
+      current = combat.world;
+      scene.applyCombatEvents(combat.events);
+      for (const event of combat.events) {
+        if (event.kind === "attack" && event.actorId === "hero" && qaMode)
           window.__fightersBeatLastCombatGesture = scene.heroMotion;
+        if (event.kind === "hit") {
+          hitCount++;
+          lastImpactTick = current.tick;
+          impact.textContent = event.actorId === "hero"
+            ? `-${event.damage} PV !` : `COUP ! -${event.damage} PV`;
+        }
       }
+      if (current.tick % 6 === 0 || combat.events.length) updateHud();
       // Animation and authored movement are advanced on EACH simulation tick.
       // A 30 FPS display must not halve authored gait speed by applying only the
       // last of two physics ticks to a full render-frame elapsed time.
@@ -150,13 +202,21 @@ async function startBeatScene(): Promise<void> {
     }
     const camera = scene.render(previous, current, accumulator / tickDuration);
     // Only explicit, local screenshot QA needs the expensive skinned bounds.
-    if (new URLSearchParams(location.search).has("qa") &&
+    if (qaMode &&
         (!window.__fightersBeatActorBounds || current.tick % 30 === 0)) {
       window.__fightersBeatActorBounds = scene.actorVisualDiagnostics;
     }
     window.__fightersBeatReady = true;
     window.__fightersBeatTick = current.tick;
-    if (new URLSearchParams(location.search).has("qa")) window.__fightersBeatHeroMotion = scene.heroMotion;
+    if (qaMode) window.__fightersBeatHeroMotion = scene.heroMotion;
+    window.__fightersBeatCombat = {
+      heroHealth: combat.fighters.hero.health,
+      enemiesAlive: current.actors.filter(a => a.team === "hostiles" && a.alive).length,
+      enemyHealth: current.actors.filter(a => a.team === "hostiles")
+        .map(a => combat.fighters[a.id].health),
+      outcome: combat.outcome, hits: hitCount,
+    };
+    if (current.tick - lastImpactTick > 40) impact.textContent = "";
     const liveHero = current.actors.find(actor => actor.id === "hero")!;
     window.__fightersBeatHero = {
       xMm: liveHero.xMm, depthMm: liveHero.depthMm, heightMm: liveHero.heightMm,
@@ -180,8 +240,8 @@ async function startBeatScene(): Promise<void> {
         `Vitesse Y ${hero.verticalVelocityMmPerTick} mm/tick · Appui ${hero.supportingPlatformId ?? "air"}\n` +
         `Cible ${hero.targetId ?? "aucune"} · Regard ${hero.facing > 0 ? "droite" : "gauche"}\n` +
         `Caméra : bords ${pinned} · ${scene.metrics.drawCalls} draws · ${scene.metrics.triangles} triangles`;
-      status.textContent = `Vrais rigs · ${scene.animationMode} · ${framesPerSecond} FPS · ` +
-        (hero.targetId ? `menace : ${hero.targetId}` : "aucune menace proche");
+      status.textContent = `${combat.outcome === "playing" ? "Combat en cours" : "Manche terminée"}` +
+        ` · ${scene.animationMode} · ${framesPerSecond} FPS · ${hitCount} impacts`;
     }
     requestAnimationFrame(frame);
   }

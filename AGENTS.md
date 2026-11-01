@@ -4,7 +4,7 @@ Ce document s'applique à toute intervention dans le dépôt **Fighters**.
 
 ## Mandat
 
-Construire un **beat’em up d’action 3D à défilement latéral** pour navigateur, inspiré de la structure de *Double Dragon* : exploration de rues, bâtiments et plateformes surélevées, plusieurs ennemis, déplacements X/profondeur/saut, **orientation exclusivement commandée par gauche/droite, jamais imposée par une cible**, et combats animation-first. Le duel d’arène 1v1 existant est un **banc de simulation hérité**, pas l’expérience principale.
+Construire un **beat’em up d’action 3D à défilement latéral** pour navigateur, inspiré de la structure de *Double Dragon* : exploration de rues, bâtiments et plateformes surélevées, plusieurs ennemis, déplacements X/profondeur/saut, **orientation exclusivement commandée par gauche/droite, jamais imposée par une cible**, et combats animation-first. **Aucun système de duel 1v1 historique n’est conservé.**
 
 Le document directeur est **docs/production-plan.md**. Le consulter avant toute modification, mettre à jour les cases réalisées dans le même commit que le travail associé et ne jamais marquer une case terminée sans preuve concrète.
 
@@ -15,7 +15,7 @@ Le document directeur est **docs/production-plan.md**. Le consulter avant toute 
 1. **Toujours travailler directement dans main.** Ne pas créer de branche de fonctionnalité ou de pull request. Ne pas forcer les pushes et ne pas réécrire l'historique.
 2. **Production dès le départ.** Aucun MVP, prototype jetable ou faux mécanisme présenté comme complet. Les étapes de réalisation peuvent être ordonnées par dépendances mais n'annulent aucune exigence du plan.
 3. **Qualité mesurable.** Définir le comportement attendu, implémenter, tester, vérifier les régressions pertinentes, puis committer sur main.
-4. **Architecture extensible et animation-first.** Combattants, coups, animations, arènes, sons et effets sont pilotés par des données. **Les coups du vrai jeu doivent provenir de clips réellement disponibles, inspectés et retargetés**, puis leurs commandes et combos sont choisis. Les gestes de combat affichés actuellement ne font aucun dégât avant validation des contacts. Voir `docs/animation-first.md`.
+4. **Architecture extensible et animation-first.** Combattants, coups, animations, arènes, sons et effets sont pilotés par des données. **Les coups du jeu final doivent provenir de clips réellement disponibles, inspectés et retargetés**, puis leurs commandes et combos sont choisis. La démo utilise trois vrais clips et des données de contact/dégâts **explicitement provisoires**, sans prétendre à une approbation esthétique ou biomécanique. Voir `docs/animation-first.md`.
 5. **Personnages 3D réels dès maintenant.** Léon a précisé que les volumes provisoires valent pour le décor et les plateformes, **pas pour les personnages** : une capsule/silhouette ne prouve aucun progrès sur les rigs, proportions, textures, contacts ou animations. Les marqueurs peuvent subsister dans des tests techniques isolés, mais aucun jalon personnages ou gameplay visuel ne peut être validé sans de vrais humains 3D riggés. Utiliser d'abord **les candidats déjà inscrits dans `assets/manifest.json` et `docs/asset-register.md`** ; ne pas repartir en recherche générale de modèles.
    **Casting narratif approuvé :** quatre héroïnes adultes sélectionnables — femme de bureau noire, femme de bureau blanche, femme trans, hipster engagée à gauche — qui affrontent des misogynes, proxénètes, machos et « douches ». Le catalogue acquis propose Claudia et Carla comme candidates héroïnes, Realistic Man comme candidat ennemi, **sans attribution visuelle définitive**. Voir les tâches précises de casting dans `docs/production-plan.md`.
 6. **Ne pas inventer de validation visuelle.** Lorsque la perception humaine du rendu ou du gameplay est nécessaire, fournir une version testable et demander au propriétaire de juger ; ne pas créer un processus « Lab » autonome qui s'arrogerait cette validation.
@@ -37,19 +37,19 @@ Le document directeur est **docs/production-plan.md**. Le consulter avant toute 
 - Replays reproductibles, tests de règles, données de frame, tests navigateur et mesure de performance.
 - Priorité simultanée au **rendu photoréaliste maximal** et à la **fluidité/puissance mesurée**. Les profils dégradés restent explicites ; la référence de qualité Ultra ne doit pas être abaissée tacitement.
 
-## QA de gameplay IA contre IA
+## QA de gameplay et IA
 
-- Le banc historique `npm run simulate:ai` évalue des **duels 1v1 de simulation** à 60 ticks/s avec les mêmes `InputFrame` que les joueurs ; il n’est pas le scénario principal de production. Les tests doivent vérifier la reproductibilité, la présence d'échanges, les attaques spéciales et les avertissements d'inactivité.
-- **Ne jamais déduire qu'un combat est « fun » à partir de simples statistiques.** Après intégration de deux combattants photoréalistes et d'animations, exécuter un véritable match IA contre IA dans WebGL, l'enregistrer avec WebSuite et demander au propriétaire une appréciation à vitesse réelle. Voir `docs/ai-combat-qa.md`.
+- Le moteur courant `src/engine/beat-combat.ts` applique aux héroïnes et ennemis les mêmes fenêtres de contact/dégâts à 60 Hz. `npm test` vérifie la reproductibilité, les échanges, la victoire/défaite et les volumes X/Z/Y ; WebSuite capture le vrai WebGL des deux héroïnes et du combat. Voir `docs/ai-combat-qa.md`.
+- **Ne jamais déduire qu'un combat est « fun » à partir de simples statistiques.** Faire tester la démo WebGL à Léon à vitesse réelle avant toute validation de ressenti.
 - La simple présence des 86 animations CC0 sur chaque personnage ne signifie pas que les coups et leurs contacts ont été approuvés.
-- **Aucun coup visuellement exécutable sans son vrai clip approuvé pour le personnage** : l'inventaire `assets/animation-inventory.json` doit être exploité pour créer ses moves, et la présence des clips exacts dans le GLB est obligatoire avant de lancer le match.
+- Les trois coups de démo requièrent chacun leur **vrai clip exact** intégré aux trois GLB. Ils ne deviennent des attaques de production inscrites dans `assets/animation-inventory.json` qu’après revue effective des contacts sur chaque morphologie.
 
 ## Pipeline unique — Quaternius CC0, automatique et vérifiable
 
 - **Seules sources d’animation :** Quaternius Universal Animation Library Standard 1 + 2 sous CC0, 43 clips de chaque pack intégrés directement aux **trois vrais squelettes** Claudia, Carla, Realistic Man, soit 86 clips par personnage. Voir `docs/quaternius-pipeline.md`.
 - Génération et tests dans `scripts/build-quaternius-animations.mjs` et `scripts/check-quaternius-models.mjs` ; les deux archives ZIP sont figées par SHA-256. Workflow GitHub Actions autorisé sur `main` pour construire et publier les GLB et le site. Aucun compte ni intervention d'export manuel nécessaire.
 - **Interdire les correctifs anatomiques par personnage ou rotation codée à la main.** En cas de rig incompatible, la génération doit échouer et ne jamais publier un avatar factice. La qualité visuelle doit être vérifiée honnêtement sur les vraies morphologies.
-- Les 86 clips fournissent une bibliothèque de mouvements, **pas une liste de frappes aux contacts validés**. Les gestes de combat prévisualisés n’infligent aucun dégât avant mesure et approbation.
+- Les 86 clips fournissent une bibliothèque de mouvements, **pas une liste de frappes aux contacts validés**. Les trois attaques F/G/H infligent des dégâts dans la **démo provisoire** ; les valeurs d’impact n’ont pas fait l’objet de revue artistique humaine.
 
 ## Statut du projet
 
@@ -65,7 +65,7 @@ Fighters est **non commercial pour le moment**, selon le propriétaire. Ce statu
 - Respecter droits à l'image, marques et personnages protégés. Fighters doit posséder une identité visuelle originale.
 - Ne jamais affirmer qu'une licence est validée sans l'avoir vérifiée pour **l'asset précis**.
 
-- **QA perceptuelle avant d'affirmer qu'une démo est prête :** utiliser le scénario WebGL `tests/browser/beat-em-up-control.json` via `.github/workflows/beat-webgl-qa.yml` et inspecter les PNG de vrais modèles (idle, marche droite/gauche, saut, atterrissage). Les assertions doivent couvrir les dimensions et projections des trois rigs, pas seulement des bones qui bougent ou des URLs 200. Le rendu logiciel CI ne valide pas les FPS iPhone. Ne pas réintroduire la normalisation pré-animation qui rendait les ennemis invisibles (620 m de hauteur animée).\n
+- **QA perceptuelle avant de valider le rendu final :** utiliser les scénarios WebGL `tests/browser/beat-em-up-*.json` via `.github/workflows/beat-webgl-qa.yml` et inspecter les PNG de vrais modèles (repos, marche droite/gauche, saut, coups, réactions). Les assertions doivent couvrir les dimensions et projections des trois rigs, pas seulement des bones qui bougent ou des URLs 200. Le rendu logiciel CI ne valide ni les FPS iPhone ni le jugement esthétique. Ne pas réintroduire la normalisation pré-animation qui rendait les ennemis invisibles (620 m de hauteur animée).
 ## Définition de terminé
 
 Une tâche est terminée seulement lorsqu'elle a :

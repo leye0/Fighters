@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Fighters — photorealistic 2.5D WebGL fighting game",
+  "description": "Fighters — real-rig 3D scrolling beat-em-up with deterministic combat",
   "engines": {
     "node": ">=24"
   },
@@ -14,8 +14,6 @@
     "test": "node --test tests/*.test.ts",
     "test:engine": "node --test tests/*.test.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test:ai": "node --test tests/ai-battle.test.ts",
-    "simulate:ai": "node scripts/ai-battle.ts",
     "animation:build": "node scripts/build-quaternius-animations.mjs",
     "animation:verify": "node scripts/check-quaternius-models.mjs public/models"
   },

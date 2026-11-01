@@ -56,7 +56,7 @@ test("hero direction is immediate and cannot be stolen by a visual turn or jump"
   assert.equal(outer.rotation.y, Math.PI / 2);
   assert.deepEqual(controller.availableCombatClips(),
     [GAME_MOTION_NAMES.punchJab, GAME_MOTION_NAMES.punchCross, GAME_MOTION_NAMES.hook]);
-  assert.equal(controller.previewCombatGesture(0), true);
-  assert.equal(controller.previewCombatGesture(1), false);
+  assert.equal(controller.playCombatAttack(0), true);
+  assert.equal(controller.playCombatAttack(1), false);
   controller.dispose();
 });

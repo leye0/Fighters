@@ -1,0 +1,21 @@
+{
+  "url": "http://127.0.0.1:4173/beat-em-up.html?qa=1&hero=claudia",
+  "steps": [
+    {"action":"assert","expression":"window.__fightersBeatCombat?.heroHealth===100 && window.__fightersBeatCombat.enemyHealth.every(h=>h===44)"},
+    {"action":"keyDown","key":"KeyF"},
+    {"action":"wait","ms":1400},
+    {"action":"keyUp","key":"KeyF"},
+    {"action":"assert","expression":"window.__fightersBeatCombat.enemyHealth[0]===32 && window.__fightersBeatCombat.hits===1"},
+    {"action":"screenshot","name":"combat-jab-impact"},
+    {"action":"keyDown","key":"KeyG"},
+    {"action":"wait","ms":1600},
+    {"action":"keyUp","key":"KeyG"},
+    {"action":"assert","expression":"window.__fightersBeatCombat.enemyHealth[0]===12"},
+    {"action":"screenshot","name":"combat-cross-impact"},
+    {"action":"keyDown","key":"KeyH"},
+    {"action":"wait","ms":1400},
+    {"action":"keyUp","key":"KeyH"},
+    {"action":"assert","expression":"window.__fightersBeatCombat.enemyHealth[0]===0 && window.__fightersBeatCombat.enemiesAlive===1 && window.__fightersBeatCombat.outcome==='playing'"},
+    {"action":"screenshot","name":"combat-enemy-ko"}
+  ]
+}
