@@ -106,7 +106,7 @@ try{
   await character('SUPERHERO_FEMALE',true);
   console.log('Character Motion Lab PASS');
   await call('Page.navigate',{url:'http://127.0.0.1:8000/?qa=1'});
-  await waitUntil("!!window.__fightersQA && window.__fightersQA.snapshot().ready===true",'game models',100000);
+  await waitUntil("(()=>{const title=document.getElementById('overlay-title')?.textContent;if(title==='Erreur de chargement')return 'ERROR: '+document.getElementById('overlay-desc')?.textContent;return !!window.__fightersQA&&window.__fightersQA.snapshot().ready===true;})()",'game models',100000);
   const initial=await evaluate("window.__fightersQA.snapshot()");
   if(initial.enemies!==3||initial.health!==100)fail('Game initial state incorrect '+JSON.stringify(initial));
   if(initial.outfit?.garmentMeshes!==4||initial.outfit?.hairMeshes!==1||
