@@ -236,6 +236,8 @@ async function loadOrcVillage(limit=3){
     throw Error('Orc building manifest is empty');
   const village=new THREE.Group();
   scene.add(village);
+  const sharedTextureSlots=new Map();
+  let deduplicatedTextures=0;
   // Each file contains exactly one complete building and its dependencies.
   // Target a visible 3–5 world-unit footprint; never shrink an already
   // small model and never confuse a single roof or wall with a building.
@@ -249,6 +251,31 @@ async function loadOrcVillage(limit=3){
     }catch(err){
       console.warn('Orc building unavailable:',entries[i].name,err);
       continue;
+    }
+    if(manifest.sharedTexturesVerified){
+      // The build compares SHA-256 of every embedded image across all buildings.
+      // GLTFLoader otherwise creates a separate GPU texture per GLB.
+      model.traverse(object=>{
+        if(!object.isMesh)return;
+        const materials=Array.isArray(object.material)?object.material:[object.material];
+        for(const material of materials){
+          if(!material)continue;
+          for(const slot of ['map','normalMap','roughnessMap','metalnessMap','aoMap','emissiveMap','alphaMap']){
+            const texture=material[slot];
+            if(!texture)continue;
+            const key=slot+'|'+texture.wrapS+'|'+texture.wrapT+'|'+texture.flipY+
+              '|'+texture.colorSpace+'|'+texture.offset.toArray()+'|'+texture.repeat.toArray()+
+              '|'+texture.rotation+'|'+texture.magFilter+'|'+texture.minFilter;
+            const canonical=sharedTextureSlots.get(key);
+            if(canonical&&canonical!==texture){
+              material[slot]=canonical;
+              texture.dispose();
+              deduplicatedTextures++;
+              material.needsUpdate=true;
+            }else if(!canonical)sharedTextureSlots.set(key,texture);
+          }
+        }
+      });
     }
     // Let the renderer and input loop run between buildings.
     await new Promise(resolve=>setTimeout(resolve,0));
@@ -275,7 +302,7 @@ async function loadOrcVillage(limit=3){
     village.add(anchor);
   }
   orcVillage=village;
-  console.info('Orc village:',village.children.length,'/',entries.length,'individual buildings loaded');
+  console.info('Orc village:',village.children.length,'/',entries.length,'individual buildings loaded; textures reused:',deduplicatedTextures,'verified:',manifest.sharedTexturesVerified);
 }
 // Opt-in diagnostic only: no building assets are fetched on normal startup.
 // ?orcDebug=1 loads a single building, ?orcDebug=3 loads three.
