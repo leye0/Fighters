@@ -307,6 +307,19 @@ function costumeLayers(visual,kind,index){
   visual.traverse(o=>{if(o.isSkinnedMesh&&o.name===bodyName)body=o;});
   if(!body)throw Error('Le squelette du personnage est introuvable : '+bodyName);
   const skeleton=body.skeleton;
+  if(kind==='enemy'){
+    // Orc appearance is material-only: preserve every vertex, skin weight,
+    // bone, bind pose and native Quaternius animation clip.
+    const skin=[0x62845a,0x718c58,0x536f4a,0x7e8e5c][index%4];
+    const materials=(Array.isArray(body.material)?body.material:[body.material]).map(original=>{
+      const mat=original.clone();
+      if(mat.color)mat.color.setHex(skin);
+      if(mat.emissive)mat.emissive.setHex(0x101a0a);
+      mat.roughness=.94;
+      return mat;
+    });
+    body.material=Array.isArray(body.material)?materials:materials[0];
+  }
   // Preserve head, face, eyes and brows, but hide the torso/underwear under the garments.
   body.geometry=headOnlyGeometry(body);
   const clothing=kind==='hero'?clothingFemale:clothingMale;
@@ -389,6 +402,15 @@ function spawnActor(gltf,kind,x,z,index=0){
         const replacements=mats.map(mat=>{const m=mat.clone();if(m.color)m.color.multiply(tint);return m;});
         o.material=Array.isArray(o.material)?replacements:replacements[0];
       }
+    });
+  }
+  if(kind==='enemy'){
+    // Darker hair and weathered earth-tone clothing distinguish the orcs,
+    // without altering the skinned meshes or the animation hierarchy.
+    visual.traverse(o=>{
+      if(!o.isMesh||o.userData.costumeLayer!=='hair')return;
+      const mats=Array.isArray(o.material)?o.material:[o.material];
+      o.material=Array.isArray(o.material)?mats.map(m=>{const c=m.clone();if(c.color)c.color.setHex(0x29291f);return c;}):(()=>{const c=mats[0].clone();if(c.color)c.color.setHex(0x29291f);return c;})();
     });
   }
   const shadow=new THREE.Mesh(new THREE.CircleGeometry(.56,22),new THREE.MeshBasicMaterial({color:0x050711,transparent:true,opacity:.28,depthWrite:false}));
