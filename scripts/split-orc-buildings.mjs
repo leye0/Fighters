@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { NodeIO } from '@gltf-transform/core';
 import { copyToDocument } from '@gltf-transform/functions';
 
@@ -32,7 +33,7 @@ for(let i=0;i<candidates.length;i++){
   const textureStats=doc.getRoot().listTextures().map(t=>{
     const image=t.getImage();
     return {name:t.getName(),mime:t.getMimeType(),bytes:image?.byteLength||0,
-      sha:image?Buffer.from(image).subarray(0,24).toString('hex'):null};
+      sha:image?createHash('sha256').update(image).digest('hex'):null};
   });
   console.log('Building texture audit',node.getName(),JSON.stringify(textureStats));
   const stat=await fs.stat(path.join(output,filename));
