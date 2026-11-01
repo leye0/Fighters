@@ -199,7 +199,7 @@ buildStreet();
 // House is a genuine GLB asset, not a procedural stand-in. Its local front
 // vector is configurable until visually calibrated against the Sketchfab mesh.
 async function loadWitchHouse(){
-  const gltf=await loader.loadAsync('https://raw.githubusercontent.com/leye0/Fighters/main/witch_house.glb');
+  const gltf=await loader.loadAsync('./models/witch_house.glb');
   const house=gltf.scene;
   const bounds=new THREE.Box3().setFromObject(house);
   const size=bounds.getSize(new THREE.Vector3());
