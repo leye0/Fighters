@@ -13,6 +13,15 @@ const expected = {
 const required = ['Idle_Loop','Walk_Loop','Jog_Fwd_Loop','Sprint_Loop',
   'Punch_Jab','Punch_Cross','Melee_Hook',
   'Hit_Chest','Death01'];
+// Weapon animations already embedded in BOTH pinned 65-bone GLBs. This
+// verifies their source clips only; it does not certify any 3D weapon grip.
+const armedClips = {
+  sword: ['Sword_Idle','Sword_Attack','Sword_Block','Sword_Dash',
+    'Sword_Regular_A','Sword_Regular_A_Rec','Sword_Regular_B','Sword_Regular_B_Rec',
+    'Sword_Regular_C','Sword_Regular_Combo','Sword_Heavy_Combo'],
+  pistol: ['Pistol_Idle_Loop','Pistol_Aim_Neutral','Pistol_Aim_Up',
+    'Pistol_Aim_Down','Pistol_Shoot','Pistol_Reload']
+};
 function assert(value, reason) { if (!value) throw Error(reason); }
 function check(path) {
   const bytes = readFileSync(path);
@@ -32,7 +41,10 @@ function check(path) {
   assert((gltf.animations?.length || 0)===86, filename + ': expected 86 animations');
   const skins = new Set(gltf.skins.flatMap(s=>s.joints));
   assert(skins.size >= 20, filename + ': implausibly small skeleton');
-  for (const name of required) assert(gltf.animations.some(a=>a.name===name), filename + ': missing '+name);
+  const clipNames = new Set(gltf.animations.map(clip => clip.name));
+  for (const name of required) assert(clipNames.has(name), filename + ': missing '+name);
+  for (const [category, names] of Object.entries(armedClips))
+    for (const name of names) assert(clipNames.has(name), filename + ': missing '+category+' clip '+name);
   let channels = 0;
   for (const clip of gltf.animations) {
     assert(clip.channels?.length >= 20, filename + ': insufficient channels '+clip.name);
@@ -47,7 +59,7 @@ function check(path) {
   }
   console.log(JSON.stringify({file:filename,bytes:bytes.length,animations:gltf.animations.length,
     joints:skins.size,channels,duplicateNames:86-new Set(gltf.animations.map(a=>a.name)).size,
-    sha,integrity:'PASS'},null,2));
+    sha,weaponClips:Object.fromEntries(Object.entries(armedClips).map(([kind,names])=>[kind,names.length])),integrity:'PASS'},null,2));
 }
 const files = process.argv.slice(2);
 if (!files.length) {
