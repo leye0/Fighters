@@ -118,6 +118,16 @@ try{
     fail('Deployed sword must NOT require Meshopt decoding in any browser');
   console.log('SWORD STATIC PASS: deployed asset is uncompressed even for a stale JS loader');
   console.log('COSTUMES PASS: civilian Peasant outfits, hair and isolated head, matching 65-joint bindings');
+  if(initial.arenaWidth!==56||initial.arenaDepth!==56||initial.projection!=='orthographic')
+    fail('Square isometric arena not loaded '+JSON.stringify(initial));
+  await evaluate('window.__fightersQA.moveHeroTo(12,11)');
+  await evaluate('window.__fightersQA.poseAtAttack(.85)');
+  const tracked=await evaluate('window.__fightersQA.snapshot()');
+  if(tracked.cameraX<7||tracked.cameraZ<6||Math.abs(tracked.heroX-12)>.2||Math.abs(tracked.heroZ-11)>.2)
+    fail('Camera must follow BOTH X and Z '+JSON.stringify(tracked));
+  await snap('isometric-square-two-axis-follow');
+  await evaluate('window.__fightersQA.reset()');
+  console.log('ISOMETRIC PASS: 56x56 square, true orthographic camera following X and Z');
   // Native Quaternius Sword_Attack, the authored weapon GLTF grip, and both facing directions.
   await evaluate('window.__fightersQA.setupSwordDuel()');
   const equipped=await evaluate('window.__fightersQA.snapshot()');

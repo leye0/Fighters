@@ -74,8 +74,16 @@ viewport.insertBefore(renderer.domElement,viewport.firstChild);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0a1325);
 scene.fog = new THREE.FogExp2(0x0a1325,.018);
-const camera = new THREE.PerspectiveCamera(43,1,.05,300);
-camera.position.set(0,7.1,16.3);
+// True isometric projection: 45 degrees azimuth, 35.264 degrees elevation.
+const CAMERA_OFFSET=new THREE.Vector3(18,18,18);
+const camera=new THREE.OrthographicCamera(-11,11,11,-11,.1,180);
+camera.position.copy(CAMERA_OFFSET);
+const ARENA_HALF=28,ARENA_SIZE=2*ARENA_HALF;
+const INV_SQRT2=Math.SQRT1_2;
+// Input stays in screen coordinates even though the world axes are diagonal.
+function screenToWorld(horizontal,vertical){
+  return {x:(horizontal+vertical)*INV_SQRT2,z:(vertical-horizontal)*INV_SQRT2};
+}
 scene.add(new THREE.HemisphereLight(0xd6e7ff,0x203051,2.65));
 const key = new THREE.DirectionalLight(0xffe7cf,3.1);key.position.set(-9,16,10);scene.add(key);
 const blue = new THREE.DirectionalLight(0x558df8,1.6);blue.position.set(4,8,-6);scene.add(blue);
@@ -104,7 +112,7 @@ const ATTACKS = {
   swordAttack: {name:'Sword_Attack',damage:19,range:2.15,recovery:.35,impact:.43,stagger:.6,enemyOnly:true}
 };
 let ready=false,running=false,paused=false;
-let female=null,male=null,swordModel=null,clothingFemale,clothingMale=null,hairBuns=null,hairBuzzed=null,hairParted=null,hero=null,enemies=[],wave=1,ko=0,score=0,cameraX=0,shake=0,roundDelay=-1;
+let female=null,male=null,swordModel=null,clothingFemale,clothingMale=null,hairBuns=null,hairBuzzed=null,hairParted=null,hero=null,enemies=[],wave=1,ko=0,score=0,cameraFollow={x:0,z:0},shake=0,roundDelay=-1;
 let gamepadLast={jab:false,cross:false,hook:false,jump:false,roll:false};
 const gamepadKeys=new Set();
 function createSign(label,color,width=4){
@@ -122,50 +130,61 @@ function box(w,h,d,color,x,y,z,emissive=0x000000){
   mesh.position.set(x,y,z);scene.add(mesh);return mesh;
 }
 function buildStreet(){
-  const road=new THREE.Mesh(new THREE.PlaneGeometry(400,16),new THREE.MeshStandardMaterial({color:0x263345,roughness:.96}));
-  road.rotation.x=-Math.PI/2;road.position.set(0,-.045,1);scene.add(road);
-  const sidewalk=new THREE.Mesh(new THREE.PlaneGeometry(400,3),new THREE.MeshStandardMaterial({color:0x56606b,roughness:.95}));
-  sidewalk.rotation.x=-Math.PI/2;sidewalk.position.set(0,-.025,-3.12);scene.add(sidewalk);
-  box(400,.26,.24,0x7b8997,0,.055,-1.58);
-  for(let x=-49;x<50;x+=3.2){
-    box(1.65,.019,.08,0xc6bd7a,x,-.012,1.2);
-    box(.035,.025,5,0x3f475b,x,.002,4.1);
+  // A playable square, not the old endless 400 × 16 street strip.
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(ARENA_SIZE,ARENA_SIZE),
+    new THREE.MeshStandardMaterial({color:0x364454,roughness:.96}));
+  ground.rotation.x=-Math.PI/2;ground.position.y=-.045;scene.add(ground);
+  // Cross-streets and paving communicate depth as strongly as width.
+  box(ARENA_SIZE,.012,11,0x263345,0,-.026,0);
+  box(11,.012,ARENA_SIZE,0x263345,0,-.025,0);
+  for(let p=-ARENA_HALF;p<=ARENA_HALF;p+=4){
+    box(ARENA_SIZE,.013,.034,0x485363,0,-.012,p);
+    box(.034,.013,ARENA_SIZE,0x485363,p,-.011,0);
   }
-  for(let x=-47,i=0;x<48;x+=9.5,i++){
-    const palette=[0x253f5d,0x4d304f,0x294654,0x4b3f4b];
+  // A visible low curb marks the four identical limits.
+  const edge=ARENA_HALF+.12;
+  box(ARENA_SIZE+.4,.12,.23,0x758598,0,.015,-edge);
+  box(ARENA_SIZE+.4,.12,.23,0x758598,0,.015,edge);
+  box(.23,.12,ARENA_SIZE+.4,0x758598,-edge,.015,0);
+  box(.23,.12,ARENA_SIZE+.4,0x758598,edge,.015,0);
+  // Shops and neon remain behind the northern edge, not in the arena.
+  const labels=['ARCADE 84','RAMEN','NEON CITY','MOTEL','NIGHT CLUB','METRO'];
+  const colors=['#f379a3','#83e8e0','#e9cc6b','#8eaffe'];
+  const palette=[0x253f5d,0x4d304f,0x294654,0x4b3f4b];
+  for(let x=-24,i=0;x<=24;x+=8,i++){
     const h=5+(i%3)*1.1;
-    box(9.3,h,2,palette[i%palette.length],x,h/2-0.08,-6.1);
-    box(8.9,.5,.4,0x131827,x,3.0,-4.98);
-    for(let yy=3.6;yy<h-0.4;yy+=1.35)for(let xx=-3.1;xx<=3.2;xx+=2.1){
-      const lit=(i+Math.round(xx)+Math.round(yy))%3!==0;
-      box(1.3,.75,.03,lit?0x98bdca:0x141e2c,x+xx,yy,-5.068,lit?0x527b9a:0);
-    }
+    box(7.7,h,2,palette[i%palette.length],x,h/2-.08,-32.1);
+    box(7.3,.4,.35,0x131827,x,3,-31);
+    for(let yy=3.6;yy<h-.4;yy+=1.35)
+      for(let xx=-2.5;xx<=2.5;xx+=1.7){
+        const lit=(i+Math.round(xx)+Math.round(yy))%3!==0;
+        box(1.1,.7,.03,lit?0x98bdca:0x141e2c,x+xx,yy,-31.07,lit?0x527b9a:0);
+      }
     if(i%2===0){
-      const labels=['ARCADE 84','RAMEN','NEON CITY','MOTEL','NIGHT CLUB','METRO'];
-      const colors=['#f379a3','#83e8e0','#e9cc6b','#8eaffe'];
-      const sign=createSign(labels[i%labels.length],colors[i%colors.length],4.7);
-      sign.position.set(x,2.05,-5.09);scene.add(sign);
+      const sign=createSign(labels[i%labels.length],colors[i%colors.length],3.3);
+      sign.position.set(x,2.2,-30.99);scene.add(sign);
     }
-    box(.13,2,.13,0x242b3c,x+4.3,1,-4.2);
-    if(Math.abs(x)<18){const bulb=new THREE.PointLight(i%2?0x62dcff:0xe96094,7,5);
-      bulb.position.set(x+4,2.7,-4.4);scene.add(bulb);}
+    if(i%2){
+      const bulb=new THREE.PointLight(0x62dcff,6,7);
+      bulb.position.set(x+2,3.3,-29.4);scene.add(bulb);
+    }
   }
-  for(let x=-45;x<46;x+=17){
-    box(.13,5,.13,0x53687d,x,2.5,-2.8);
-    box(1.4,.14,.2,0x6a778e,x+.62,4.9,-2.8);
-    const lamp=new THREE.Mesh(new THREE.SphereGeometry(.19,8,8),new THREE.MeshBasicMaterial({color:0xffe8ae}));
-    lamp.position.set(x+1.16,4.8,-2.8);scene.add(lamp);
-  }
-  for(let x=-44;x<45;x+=13){
-    box(.55,.7,.48,0x324854,x,.35,-2.1);
-    box(.66,.09,.55,0x5b7b86,x,.74,-2.1);
+  for(let x=-24;x<=24;x+=12){
+    box(.13,4.4,.13,0x53687d,x,2.2,-29.4);
+    box(1.1,.12,.2,0x6a778e,x+.5,4.3,-29.4);
+    const lamp=new THREE.Mesh(new THREE.SphereGeometry(.18,8,8),
+      new THREE.MeshBasicMaterial({color:0xffe8ae}));
+    lamp.position.set(x+.9,4.2,-29.4);scene.add(lamp);
   }
 }
 buildStreet();
-const cameraLook=new THREE.Vector3(0,1.25,0);
+const cameraLook=new THREE.Vector3(0,1.15,0);
 function resize(){
   const w=viewport.clientWidth,h=viewport.clientHeight;
-  camera.aspect=w/Math.max(1,h);camera.updateProjectionMatrix();
+  const aspect=w/Math.max(1,h),halfHeight=10.5;
+  camera.left=-halfHeight*aspect;camera.right=halfHeight*aspect;
+  camera.top=halfHeight;camera.bottom=-halfHeight;
+  camera.updateProjectionMatrix();
   renderer.setSize(w,h,false);
 }
 new ResizeObserver(resize).observe(viewport);
@@ -346,9 +365,9 @@ function spawnWave(){
   hero.health=hero.maxHealth;
   const count=Math.min(2+wave,6);
   for(let i=0;i<count;i++){
-    const side=i%2===0?1:-1;
-    const x=clamp(hero.root.position.x+side*(4.4+i*.8),-25,25);
-    const z=random(-1.6,1.7);
+    const angle=i*2*Math.PI/count+random(-.28,.28),radius=random(5.1,7.5);
+    const x=clamp(hero.root.position.x+Math.cos(angle)*radius,-ARENA_HALF+.7,ARENA_HALF-.7);
+    const z=clamp(hero.root.position.z+Math.sin(angle)*radius,-ARENA_HALF+.7,ARENA_HALF-.7);
     enemies.push(spawnActor(male,'enemy',x,z,i+wave));
   }
   showBanner('ROUND '+wave);
@@ -358,7 +377,7 @@ function startSession(){
   if(!ready)return;
   if(hero)detach(hero);
   for(const e of enemies)detach(e);
-  enemies=[];wave=1;ko=0;score=0;paused=false;running=true;roundDelay=-1;cameraX=0;
+  enemies=[];wave=1;ko=0;score=0;paused=false;running=true;roundDelay=-1;cameraFollow.x=0;cameraFollow.z=0;
   inputs.clear();guardInputs.clear();touchDirection.x=0;touchDirection.z=0;
   leftGesture=null;rightGesture=null;clearTimeout(rightGuardTimer);rightGuardTimer=null;$('gesture-indicator').style.display='none';$('guard-indicator').style.display='none';
   hero=spawnActor(female,'hero',0,0);
@@ -369,6 +388,10 @@ function startSession(){
   $('overlay').hidden=true;
   if(new URLSearchParams(location.search).has('qa'))window.__fightersQA={
     setEnemiesPassive:value=>{qaPassive=!!value;},
+    moveHeroTo:(x,z)=>{
+      qaPassive=true;inputs.clear();touchDirection.x=0;touchDirection.z=0;
+      hero.root.position.set(clamp(x,-ARENA_HALF,ARENA_HALF),0,clamp(z,-ARENA_HALF,ARENA_HALF));
+    },
     freeze:value=>{paused=!!value;},
     // Advance the actual physics/mixer at 60 Hz, then hold the rendered pose.
     // Headless SwiftShader frame stalls must not decide whether a kick looks correct.
@@ -398,7 +421,7 @@ function startSession(){
       const ticks=Math.min(75,Math.max(1,Math.round(seconds/FIXED_DT)));
       for(let i=0;i<ticks;i++)stepGame(FIXED_DT);
       paused=true;
-      renderer.render(scene,camera);
+      positionCamera();renderer.render(scene,camera);
     },
     reset:()=>startSession(),
     startKickPose:kind=>{qaPassive=true;attack(hero,kind);paused=true;},
@@ -427,6 +450,8 @@ function startSession(){
     },
     snapshot:()=>({
     ready,running,paused,wave,ko,score,health:hero.health,enemies:enemies.filter(e=>!e.dead).length,
+    arenaWidth:ARENA_SIZE,arenaDepth:ARENA_SIZE,projection:camera.isOrthographicCamera?'orthographic':'perspective',
+    cameraX:cameraFollow.x,cameraZ:cameraFollow.z,
     heroMotion:hero.current,heroGuard:hero.guard,heroAirAttack:!!hero.attack?.air,heroAirLayer:!!hero.airLayer&&hero.airLayer.isRunning(),heroAirLayerTime:hero.airLayer?.time??0,heroSpeed:hero.speed,heroClipScale:hero.action?.getEffectiveTimeScale()??0,enemyClipScales:enemies.map(e=>e.action?.getEffectiveTimeScale()??0),heroAttack:hero.attack?.type||null,heroJumpY:hero.jumpY,heroKickExtension:hero.kickExtension,heroKickPivot:hero.kickPivot,heroKickDuration:hero.attack?.type?.startsWith('kick')?hero.attack.duration:null,legBonesFound:{left:!!hero.legBones.l.thigh&&!!hero.legBones.l.calf,right:!!hero.legBones.r.thigh&&!!hero.legBones.r.calf},boneNames:hero.legBones.r.thigh?[]:Array.from(new Set(hero.visual.getObjectsByProperty('isBone',true).map(b=>b.name))).slice(0,80),lastRightGesture,lastRightAction,touchX:touchDirection.x,touchZ:touchDirection.z,
     heroX:hero.root.position.x,heroZ:hero.root.position.z,
     outfit:hero.outfitInfo,enemyOutfits:enemies.map(e=>e.outfitInfo),enemyMotions:enemies.map(e=>e.current),enemyHealth:enemies.map(e=>e.health),
@@ -580,7 +605,7 @@ function moveHero(dt){
   }
   if(hero.roll>0){
     hero.roll=Math.max(0,hero.roll-dt);
-    hero.root.position.x=clamp(hero.root.position.x+hero.facing*5.5*HERO_PACE*dt,-28,28);
+    hero.root.position.x=clamp(hero.root.position.x+hero.facing*5.5*HERO_PACE*dt,-ARENA_HALF,ARENA_HALF);
     if(hero.roll===0)animation(hero,'Idle_Loop');
     return;
   }
@@ -588,11 +613,12 @@ function moveHero(dt){
   let dx=Number(inputs.has('ArrowRight')||inputs.has('KeyD'))-Number(inputs.has('ArrowLeft')||inputs.has('KeyA'))+touchDirection.x;
   let dz=Number(inputs.has('ArrowDown')||inputs.has('KeyS'))-Number(inputs.has('ArrowUp')||inputs.has('KeyW'))+touchDirection.z;
   if(dx||dz){
-    const length=Math.hypot(dx,dz);dx/=length;dz/=length;
+    const direction=screenToWorld(dx,dz),length=Math.hypot(direction.x,direction.z);
+    const mx=direction.x/length,mz=direction.z/length;
     const moveSpeed=hero.speed*(hero.guard?.37:1);
-    hero.root.position.x=clamp(hero.root.position.x+dx*moveSpeed*dt,-28,28);
-    hero.root.position.z=clamp(hero.root.position.z+dz*moveSpeed*.65*dt,-1.35,2.3);
-    if(Math.abs(dx)>.01)hero.facing=dx>0?1:-1;
+    hero.root.position.x=clamp(hero.root.position.x+mx*moveSpeed*dt,-ARENA_HALF,ARENA_HALF);
+    hero.root.position.z=clamp(hero.root.position.z+mz*moveSpeed*dt,-ARENA_HALF,ARENA_HALF);
+    if(Math.abs(mx)>.01)hero.facing=mx>0?1:-1;
     if(hero.jumpY===0)animation(hero,hero.guard?'Idle_FoldArms_Loop':'Jog_Fwd_Loop');
   } else if(hero.jumpY===0)animation(hero,hero.guard?'Idle_FoldArms_Loop':'Idle_Loop');
 }
@@ -617,8 +643,8 @@ function moveEnemies(dt){
     if(gapX>1.18||gapZ>.55){
       let vx=dx, vz=dz*1.4;
       const len=Math.max(.001,Math.hypot(vx,vz));vx/=len;vz/=len;
-      e.root.position.x+=vx*e.speed*dt;
-      e.root.position.z=clamp(e.root.position.z+vz*e.speed*.67*dt,-1.35,2.3);
+      e.root.position.x=clamp(e.root.position.x+vx*e.speed*dt,-ARENA_HALF,ARENA_HALF);
+      e.root.position.z=clamp(e.root.position.z+vz*e.speed*dt,-ARENA_HALF,ARENA_HALF);
       animation(e,'Walk_Loop');
     } else animation(e,e.weapon?'Sword_Idle':'Idle_Loop');
   }
@@ -671,7 +697,8 @@ function stepGame(dt){
     getPad();
     moveHero(dt);
     moveEnemies(dt);
-    cameraX=THREE.MathUtils.damp(cameraX,hero.root.position.x,2.4,dt);
+    cameraFollow.x=THREE.MathUtils.damp(cameraFollow.x,hero.root.position.x,2.4,dt);
+    cameraFollow.z=THREE.MathUtils.damp(cameraFollow.z,hero.root.position.z,2.4,dt);
   }
   if(ready&&!paused){
     if(hero){
@@ -745,6 +772,13 @@ function poseNativeKick(actor){
   thigh.quaternion.slerp(target,extension);
   thigh.updateMatrixWorld(true);
 }
+function positionCamera(){
+  cameraLook.set(cameraFollow.x,1.15,cameraFollow.z);
+  camera.position.copy(cameraLook).add(CAMERA_OFFSET);
+  camera.position.x+=(Math.random()-.5)*shake;
+  camera.position.z+=(Math.random()-.5)*shake;
+  camera.lookAt(cameraLook);
+}
 function frame(){
   requestAnimationFrame(frame);
   // A fixed simulation step keeps travel speed and hit timing real-time on slow GPUs.
@@ -757,9 +791,7 @@ function frame(){
     iterations++;
   }
   if(iterations===16)accumulated=0;
-  camera.position.set(cameraX+(Math.random()-.5)*shake,7.1,16.5);
-  cameraLook.set(cameraX,1.15,0);
-  camera.lookAt(cameraLook);
+  positionCamera();
   updateLabels();
   renderer.render(scene,camera);
 }
@@ -962,7 +994,7 @@ async function load(){
       throw Error('GLTF de l’épée sans poignée calibrée');
     ready=true;$('load-bar').style.width='100%';
     $('start').disabled=false;$('start').textContent='▶ COMMENCER LE COMBAT';
-    $('overlay-desc').textContent='Nova en tenue civile contre trois voyous en habits de paysan. Main gauche : glisser et tenir pour avancer. Main droite : ↑ petit geste pour sauter; ↖↗ poings, ←→ coups au corps, ↙↘ coups de pied, même en l’air; ↓ tenu garde, bref esquive. Tap répété pour combos.';
+    $('overlay-desc').textContent='Arène isométrique carrée : déplace Nova sur les deux axes avec la main gauche. La caméra suit dans toutes les directions. Main droite : ↑ saut, ↖↗ poings, ←→ coups au corps, ↙↘ coups de pied, ↓ garde ou esquive. Tap répété pour combos.';
     if(new URLSearchParams(location.search).has('qa'))startSession();
   }catch(err){
     console.error(err);$('overlay-title').textContent='Erreur de chargement';

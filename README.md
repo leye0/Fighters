@@ -83,3 +83,6 @@ Le workflow GitHub Pages télécharge les deux GLB (~35 Mo chacun), compare leur
 Le workflow de QA navigateur teste le vrai canvas WebGL avec Chrome SwiftShader en CI et produit des captures pour la revue. Il utilise le laboratoire pour contrôler les animations séparément et la scène de jeu pour vérifier les contrôles.
 
 **Limites honnêtes :** il s'agit d'un prototype de beat ’em up et non d'un jeu de production. La compatibilité structurelle des GLB n'est pas une preuve de qualité de tous les contacts, des poses de mains, des pieds au sol ni du ressenti du combat. La revue humaine des captures reste indispensable.
+## Stage 2 — arène isométrique carrée
+
+Vue orthographique isométrique (45° en plan, 35,264° en élévation). Terrain de **56 × 56** unités jouables, avec les mêmes limites en X et en Z. La caméra interpole **les deux coordonnées X/Z** du joueur indépendamment. Les commandes écran, clavier et manette restent en coordonnées écran, converties en déplacements diagonaux au sol; les ennemis apparaissent autour de Nova dans les deux dimensions. Les animations et armes Quaternius demeurent inchangées. Le test WebGL vérifie que la caméra suit réellement Nova de (0,0) vers (12,11). Le tag `stage-1` conserve la première étape.
