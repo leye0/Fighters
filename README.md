@@ -27,6 +27,10 @@ Prototype de **beat ’em up 2,5D** inspiré des classiques d'arcade à la Doubl
 
 La simulation avance par pas fixes de 1/60 s, avec rattrapage borné des images lentes, afin que la durée des déplacements et fenêtres de coups ne dépende pas directement des FPS.
 
+Affichage : **plein écran sans en-tête ni panneaux externes**. Le HTML et le body sont verrouillés en position fixe et sans débordement; aucun scroll, pinch-zoom, double-tap zoom, sélection ou menu de copie sur la scène. Seul le HUD minimal de vie/score et le contrôle discret de pause restent sur l'image de jeu.
+
+Nova se déplace et combat **45 % plus rapidement** : vitesse au sol, vitesse de ses clips d'animation, synchronisation des impacts, récupération, sauts et roulades. Les ennemis conservent leur vitesse d'origine. Cette distinction est vérifiée dans le QA navigateur.
+
 Fonctionnalités : caméra latérale qui suit l'action, garde défensive, combos bufferisés, vagues d'ennemis, IA d'approche, fenêtres de contact, dégâts, vies, knockback, animations de réaction/de mort, KO, score et redémarrage.
 
 **[Laboratoire des 86 animations par personnage](https://www.streamlev.com/Fighters/motion-lab.html)** : vue orbitale indépendante pour choisir entre Superhero Male et Superhero Female et examiner chaque animation, avec vitesse et scrubbing.

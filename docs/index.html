@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#080c17">
 <meta name="description" content="Fighters — un beat ’em up 2,5D inspiré des classiques d'arcade, avec des animations Quaternius intégrées.">
 <title>Fighters — Night Street</title>
@@ -30,24 +30,42 @@
 .touch{position:absolute;bottom:17px;left:16px;right:16px;display:flex;align-items:end;justify-content:space-between;z-index:5;gap:12px;pointer-events:none}.pad{display:grid;grid-template-columns:repeat(3,49px);grid-template-rows:repeat(2,49px);gap:4px;pointer-events:auto}.touch button{touch-action:none;user-select:none;background:#172942bd;color:#f4f8ff;border:1px solid #6b8cad90;border-radius:12px;font-weight:850;box-shadow:0 4px 0 #090f19;min-width:48px;min-height:48px}.touch button:active{background:#52648d}.pad [data-key="ArrowUp"]{grid-column:2;grid-row:1}.pad [data-key="ArrowLeft"]{grid-column:1;grid-row:2}.pad [data-key="ArrowDown"]{grid-column:2;grid-row:2}.pad [data-key="ArrowRight"]{grid-column:3;grid-row:2}.actions{pointer-events:auto;display:grid;grid-template-columns:repeat(3,57px);gap:7px}.actions button{height:56px;font-size:10px;background:#263a50ee}.actions .strike{background:#8c3151e8;border-color:#ff7894}.actions .jump{background:#2f5262e8;border-color:#70d2dd}
 .under{padding:16px 2px 0;display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}.panel{border:1px solid #2c3b58;background:#111a2c;border-radius:14px;padding:17px}.panel h3{font-size:11px;color:#a4b4d1;letter-spacing:.16em;margin:0 0 12px}.controls-text{display:flex;flex-wrap:wrap;gap:10px;color:#d3dcf0;font-size:11px}.controls-text b{display:inline-block;padding:5px 8px;border:1px solid #485676;background:#202b42;border-radius:7px;color:#f5ed9d;margin-right:4px;min-width:30px;text-align:center}.status-panel{font-size:12px;line-height:1.7;color:#a6b4ce}.status-panel strong{color:#d5f8a5}.status-panel .detail{display:block;color:#8393b1;margin-top:5px}.footer{text-align:center;margin-top:16px;color:#6f7e9a;font-size:10px}
 @media(max-width:720px){.game-shell{padding:8px 6px 16px}.top{margin:8px 9px 13px}.logo h1{font-size:17px}.logo-mark{font-size:18px;padding:5px 10px}.top-actions a,.top-actions button{font-size:10px;padding:8px}.viewport{height:66vh;min-height:475px}.hud{padding:12px}.hero-hud{min-width:150px}.hero-hud strong{font-size:15px}.score{gap:9px}.score strong{font-size:17px}.score small{font-size:8px}.touch{left:7px;right:7px;bottom:9px}.pad{grid-template-columns:repeat(3,42px);grid-template-rows:repeat(2,42px)}.touch button{min-width:42px;min-height:42px;border-radius:10px}.actions{grid-template-columns:repeat(3,45px);gap:4px}.actions button{height:45px}.under{grid-template-columns:1fr}.start-card{padding:22px}.start-card p{font-size:12px}}
+
+/* True fullscreen arcade surface on mobile and desktop. */
+html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;padding:0;overflow:hidden!important;overscroll-behavior:none;touch-action:none;-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none}
+*,*::before,*::after{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none}
+.game-shell{position:fixed;inset:0;width:100%;max-width:none;height:100%;height:100dvh;margin:0;padding:0}
+.arcade{position:absolute;inset:0;overflow:hidden;border:0;border-radius:0;box-shadow:none;background:#0a1325}
+.viewport,.viewport canvas{width:100%;height:100%;min-height:0;max-height:none}
+.viewport{position:absolute;inset:0;overflow:hidden;touch-action:none}
+.hud{padding:calc(env(safe-area-inset-top,0px) + 11px) calc(env(safe-area-inset-right,0px) + 12px) 12px calc(env(safe-area-inset-left,0px) + 12px);gap:12px}
+.hud .score{margin-left:auto}
+.utility{pointer-events:auto;display:flex;gap:6px}
+.utility button{background:#0c193090;border:1px solid #6e849880;color:#daefff;border-radius:8px;width:34px;height:34px;padding:0;font-size:18px;touch-action:manipulation}
+#restart{display:none}
+.gesture-indicator{opacity:.7}
+.guard-indicator{bottom:calc(env(safe-area-inset-bottom,0px) + 14px);right:calc(env(safe-area-inset-right,0px) + 14px)}
+.start-overlay{padding:16px}
+.start-card{padding:18px;max-width:520px;max-height:calc(100dvh - 22px);overflow:hidden}
+.start-card h2{font-size:clamp(26px,5vw,42px);margin:8px 0}
+.start-card p{font-size:12px;line-height:1.42;margin:9px 0}
+.start-card .primary{margin-top:7px}
+@media(max-width:720px){.game-shell{padding:0}.viewport{height:100%;min-height:0}.hud{padding:calc(env(safe-area-inset-top,0px) + 10px) calc(env(safe-area-inset-right,0px) + 9px) 10px calc(env(safe-area-inset-left,0px) + 9px)}.hero-hud{min-width:112px;max-width:168px}.hero-hud strong{font-size:15px}.hud-kicker{font-size:8px}.life-track{height:9px}.score{gap:9px}.score strong{font-size:17px}.utility button{width:28px;height:28px;font-size:15px}.start-card{padding:14px}}
+@media(max-height:460px){.start-card .stamp{font-size:9px}.start-card h2{font-size:27px;margin:5px}.start-card p{font-size:11px;line-height:1.28}.start-card .primary{padding:8px 23px}.load-progress{margin-top:8px}}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
 </head>
 <body>
 <div class="game-shell">
-<header class="top"><div class="logo"><div class="logo-mark">F</div><div><h1>FIGHTERS</h1><small>NIGHT STREET / ARCADE</small></div></div><div class="top-actions"><a href="./motion-lab.html">Laboratoire des mouvements ↗</a><button id="pause" disabled>Ⅱ Pause</button><button id="restart">↻ Recommencer</button></div></header>
+
 <section class="arcade">
-<div class="hud"><div class="hero-hud"><div class="hud-kicker">1UP · HÉROÏNE</div><strong>NOVA</strong><div class="life-track"><div id="life"></div></div></div><div class="score"><div><small>ROUND</small><strong id="wave">01</strong></div><div><small>KO</small><strong id="ko">00</strong></div><div><small>SCORE</small><strong id="score">000000</strong></div></div></div>
+<div class="hud"><div class="hero-hud"><div class="hud-kicker">1UP · HÉROÏNE</div><strong>NOVA</strong><div class="life-track"><div id="life"></div></div></div><div class="score"><div><small>ROUND</small><strong id="wave">01</strong></div><div><small>KO</small><strong id="ko">00</strong></div><div><small>SCORE</small><strong id="score">000000</strong></div></div><div class="utility"><button id="pause" aria-label="Pause" disabled>Ⅱ</button><button id="restart" aria-label="Recommencer">↻</button></div></div>
 <div id="viewport" class="viewport" aria-label="Scène de jeu beat ’em up 3D"><div class="scanlines"></div><div id="hit-flash" class="hit-flash"></div><div id="banner" class="banner">ROUND 1</div>
-<div id="gesture-indicator" class="gesture-indicator" aria-hidden="true">→</div><div id="guard-indicator" class="guard-indicator">🛡 GARDE</div><div class="gesture-help">GAUCHE : GLISSER + TENIR · DROITE : 8 DIRECTIONS / TENIR</div>
+<div id="gesture-indicator" class="gesture-indicator" aria-hidden="true">→</div><div id="guard-indicator" class="guard-indicator">🛡 GARDE</div>
 <div class="start-overlay" id="overlay"><div class="start-card"><div class="stamp">FIGHTERS · ARCADE EXPERIMENT 01</div><h2 id="overlay-title">NIGHT STREET</h2><p id="overlay-desc">Une héroïne contre des voyous. Mobile : main gauche, glisser et tenir pour avancer. Main droite : ↑ saut · ↖↗ poings hauts · ←→ poings au corps · ↙↘ pieds · ↓ tenu garde / ↓ bref esquive. Tap répété pour combos. Le pied est animé directement sur le rig Quaternius.</p><button class="primary" id="start" disabled>Chargement des combattants…</button><div class="load-progress"><div id="load-bar"></div></div></div></div>
 </div>
 </section>
-<div class="under">
-<section class="panel"><h3>COMMANDES · GESTES ET CLAVIER</h3><div class="controls-text"><span><b>MAIN G.</b> Glisser et maintenir = déplacement continu</span><span><b>MAIN D.</b> ↑ saut · ↖↗ poings · ←→ poings bas · ↙↘ pieds · ↓ tenu garde, bref esquive · tap = combo</span><span><b>← ↑ ↓ →</b> Déplacer / profondeur</span><span><b>J</b> Jab</span><span><b>K</b> Cross</span><span><b>L</b> Hook</span><span><b>ESPACE</b> Saut</span><span><b>SHIFT</b> Esquive</span><span><b>Q</b> Garde</span></div></section>
-<section class="panel"><h3>ÉTAT DE L'EXPÉRIENCE</h3><div class="status-panel"><strong id="status">Chargement des modèles…</strong><span class="detail" id="motion">Moteur 2,5D · caméra latérale · 3D animée</span><span class="detail" id="stats">Personnages : chargement · animations : chargement</span></div></section>
-</div>
-<p class="footer">Inspiration : beat 'em up arcade des années 1980. Modèles et 86 animations intégrées : Quaternius (CC0), assemblage : NafisRayan. Aucun transfert vers des rigs Sketchfab.</p>
+<div aria-hidden="true" style="display:none"><span id="status">Chargement…</span><span id="motion"></span><span id="stats"></span></div>
 </div>
 <script type="module">
 import * as THREE from 'three';
@@ -77,10 +95,11 @@ const loader = new GLTFLoader();
 const random = (low,high) => low+Math.random()*(high-low);
 const clamp = THREE.MathUtils.clamp;
 const clock = new THREE.Clock();
+const HERO_PACE=1.45; // Only Nova: locomotion, clip playback, attack windows, jump and dodge.
 const inputs = new Set();
 const touchDirection = {x:0,z:0};
 const guardInputs = new Set();
-let leftGesture=null,rightGesture=null,lastTapAt=0,tapStage=0,qaPassive=false,lastRightGesture='',lastRightAction='';
+let leftGesture=null,rightGesture=null,rightGuardTimer=null,lastTapAt=0,tapStage=0,qaPassive=false,lastRightGesture='',lastRightAction='';
 const ENEMY_PALETTE = [0xe8d3e3,0xb1e2ff,0xd8e6a7,0xf5c5a5,0xc2b3e6];
 const ATTACKS = {
   jab: {name:'Punch_Jab',damage:9,range:1.4,recovery:.12,impact:.39},
@@ -166,7 +185,7 @@ function animation(actor,name,force=false){
   if(!next)return;
   const last=actor.action;
   if(last&&last!==next)last.fadeOut(.13);
-  next.reset().stopFading().setEffectiveWeight(1).setEffectiveTimeScale(1);
+  next.reset().stopFading().setEffectiveWeight(1).setEffectiveTimeScale(actor.kind==='hero'?HERO_PACE:1);
   const oneshot=!name.includes('Loop')&&!name.includes('Idle');
   next.setLoop(oneshot?THREE.LoopOnce:THREE.LoopRepeat,oneshot?1:Infinity);
   next.clampWhenFinished=oneshot;
@@ -201,7 +220,7 @@ function spawnActor(gltf,kind,x,z,index=0){
     health:kind==='hero'?100:(30+wave*5),maxHealth:kind==='hero'?100:(30+wave*5),
     facing:kind==='hero'?1:(x<0?1:-1),attack:null,queue:[],guard:false,stun:0,cooldown:random(.65,1.65),
     jumpY:0,jumpV:0,baseY:visual.position.y,landing:0,dead:false,deadTime:0,roll:0,invulnerable:0,
-    speed:kind==='hero'?3.8:random(1.3,1.8),label:null,
+    speed:kind==='hero'?3.8*HERO_PACE:random(1.3,1.8),label:null,
     legBones:{l:{thigh:visual.getObjectByName('thigh_l'),calf:visual.getObjectByName('calf_l')},
               r:{thigh:visual.getObjectByName('thigh_r'),calf:visual.getObjectByName('calf_r')}},
     kickExtension:0,kickBase:null
@@ -243,19 +262,19 @@ function startSession(){
   for(const e of enemies)detach(e);
   enemies=[];wave=1;ko=0;score=0;gameOver=false;paused=false;running=true;roundDelay=-1;cameraX=0;
   inputs.clear();guardInputs.clear();touchDirection.x=0;touchDirection.z=0;
-  leftGesture=null;rightGesture=null;$('gesture-indicator').style.display='none';$('guard-indicator').style.display='none';
+  leftGesture=null;rightGesture=null;clearTimeout(rightGuardTimer);rightGuardTimer=null;$('gesture-indicator').style.display='none';$('guard-indicator').style.display='none';
   hero=spawnActor(female,'hero',0,0);
   hero.root.position.x=-1.7;
   spawnWave();
   setHUD();
-  $('pause').disabled=false;$('pause').textContent='Ⅱ Pause';
+  $('pause').disabled=false;$('pause').textContent='Ⅱ';$('pause').setAttribute('aria-label','Pause');
   $('overlay').hidden=true;
   if(new URLSearchParams(location.search).has('qa'))window.__fightersQA={
     setEnemiesPassive:value=>{qaPassive=!!value;},
     reset:()=>startSession(),
     snapshot:()=>({
     ready,running,paused,wave,ko,score,health:hero.health,enemies:enemies.filter(e=>!e.dead).length,
-    heroMotion:hero.current,heroGuard:hero.guard,heroAttack:hero.attack?.type||null,heroJumpY:hero.jumpY,heroKickExtension:hero.kickExtension,legBonesFound:{left:!!hero.legBones.l.thigh&&!!hero.legBones.l.calf,right:!!hero.legBones.r.thigh&&!!hero.legBones.r.calf},boneNames:hero.legBones.r.thigh?[]:Array.from(new Set(hero.visual.getObjectsByProperty('isBone',true).map(b=>b.name))).slice(0,80),lastRightGesture,lastRightAction,touchX:touchDirection.x,touchZ:touchDirection.z,
+    heroMotion:hero.current,heroGuard:hero.guard,heroSpeed:hero.speed,heroClipScale:hero.action?.getEffectiveTimeScale()??0,enemyClipScales:enemies.map(e=>e.action?.getEffectiveTimeScale()??0),heroAttack:hero.attack?.type||null,heroJumpY:hero.jumpY,heroKickExtension:hero.kickExtension,legBonesFound:{left:!!hero.legBones.l.thigh&&!!hero.legBones.l.calf,right:!!hero.legBones.r.thigh&&!!hero.legBones.r.calf},boneNames:hero.legBones.r.thigh?[]:Array.from(new Set(hero.visual.getObjectsByProperty('isBone',true).map(b=>b.name))).slice(0,80),lastRightGesture,lastRightAction,touchX:touchDirection.x,touchZ:touchDirection.z,
     heroX:hero.root.position.x,heroZ:hero.root.position.z,
     enemyMotions:enemies.map(e=>e.current),enemyHealth:enemies.map(e=>e.health)
   })};
@@ -277,8 +296,9 @@ function attack(actor,kind){
   const a=ATTACKS[kind];
   const clip=a.name?actor.actions.get(a.name)?.getClip():null;
   if(a.name&&!clip)return;
-  const duration=clip?.duration??a.duration;
-  actor.attack={type:kind,elapsed:0,duration:duration+a.recovery,struck:false,impact:duration*a.impact};actor.kickBase=null;
+  const pace=actor.kind==='hero'?HERO_PACE:1;
+  const duration=(clip?.duration??a.duration)/pace;
+  actor.attack={type:kind,elapsed:0,duration:duration+a.recovery/pace,struck:false,impact:duration*a.impact};actor.kickBase=null;
   if(a.name)animation(actor,a.name,true);
   else {
     // The kick uses this same GLB's thigh/calf hierarchy, no imported retargeting.
@@ -291,11 +311,11 @@ function attack(actor,kind){
 }
 function jump(){
   if(!hero||hero.dead||hero.jumpY>.02||hero.attack||hero.stun>0||hero.roll>0)return;
-  hero.jumpV=5.5;hero.jumpY=.01;animation(hero,'Jump_Start',true);
+  hero.jumpV=6.75;hero.jumpY=.01;animation(hero,'Jump_Start',true);
 }
 function roll(){
   if(!hero||hero.dead||hero.attack||hero.stun>0||hero.jumpY>.02||hero.roll>0)return;
-  hero.roll=.85;hero.invulnerable=.85;animation(hero,'Roll',true);
+  hero.roll=.85/HERO_PACE;hero.invulnerable=.85/HERO_PACE;animation(hero,'Roll',true);
 }
 function floatDamage(actor,amount,good){
   const p=new THREE.Vector3();actor.root.getWorldPosition(p);p.y+=2.1;p.project(camera);
@@ -322,7 +342,7 @@ function damage(target,amount,attacker){
   floatDamage(target,amount,attacker.kind==='hero');
   if(target.attack)target.attack=null;
   target.queue=[];
-  target.stun=.37;
+  target.stun=target.kind==='hero'?.37/HERO_PACE:.37;
   target.root.position.x+=attacker.facing*.22;
   if(target.health===0){
     target.dead=true;target.deadTime=1.7;target.stun=0;
@@ -372,16 +392,16 @@ function moveHero(dt){
   hero.stun=Math.max(0,hero.stun-dt);
   hero.invulnerable=Math.max(0,hero.invulnerable-dt);
   if(hero.jumpY>0){
-    hero.jumpV-=13.5*dt;
+    hero.jumpV-=20.5*dt;
     hero.jumpY=Math.max(0,hero.jumpY+hero.jumpV*dt);
     hero.visual.position.y=hero.baseY+hero.jumpY;
-    if(hero.jumpY===0){hero.jumpV=0;hero.landing=.32;animation(hero,'Jump_Land',true);}
+    if(hero.jumpY===0){hero.jumpV=0;hero.landing=.32/HERO_PACE;animation(hero,'Jump_Land',true);}
     else if(hero.jumpV<2.2&&!hero.attack)animation(hero,'Jump_Loop');
   }
   if(hero.landing>0){hero.landing=Math.max(0,hero.landing-dt);if(hero.landing===0)animation(hero,'Idle_Loop');return;}
   if(hero.roll>0){
     hero.roll=Math.max(0,hero.roll-dt);
-    hero.root.position.x=clamp(hero.root.position.x+hero.facing*5.5*dt,-28,28);
+    hero.root.position.x=clamp(hero.root.position.x+hero.facing*5.5*HERO_PACE*dt,-28,28);
     if(hero.roll===0)animation(hero,'Idle_Loop');
     return;
   }
@@ -494,7 +514,7 @@ function poseNativeKick(actor){
   if(!thigh||!calf)return;
   if(!actor.kickBase)actor.kickBase=thigh.quaternion.clone();
   thigh.quaternion.copy(actor.kickBase);
-  const t=a.elapsed;
+  const t=a.elapsed*HERO_PACE;
   const lift=THREE.MathUtils.smoothstep(t,.04,.24);
   const recover=1-THREE.MathUtils.smoothstep(t,.43,.72);
   const extension=Math.max(0,lift*recover);
@@ -539,7 +559,7 @@ function doAction(type){
 }
 function pauseGame(){
   if(!running)return;
-  paused=!paused;$('pause').textContent=paused?'▶ Reprendre':'Ⅱ Pause';
+  paused=!paused;$('pause').textContent=paused?'▶':'Ⅱ';$('pause').setAttribute('aria-label',paused?'Reprendre':'Pause');
   showBanner(paused?'PAUSE':'GO !');
 }
 function queueAttack(kind){
@@ -612,6 +632,12 @@ viewport.addEventListener('pointerdown',event=>{
   }else{
     if(rightGesture)return;
     rightGesture={id:event.pointerId,x,y,at:performance.now(),committed:null};
+    clearTimeout(rightGuardTimer);
+    const pressedId=event.pointerId;
+    rightGuardTimer=setTimeout(()=>{
+      if(rightGesture?.id!==pressedId||rightGesture.committed||!running||paused)return;
+      lastRightGesture='HOLD';lastRightAction='guard';setGuard('touch',true);
+    },260);
   }
   viewport.setPointerCapture(event.pointerId);
 });
@@ -622,6 +648,7 @@ viewport.addEventListener('pointermove',event=>{
   if(rightGesture?.id===event.pointerId&&!rightGesture.committed&&Math.hypot(x-rightGesture.x,y-rightGesture.y)>=34){
     const direction=rightDirection(x-rightGesture.x,y-rightGesture.y);
     rightGesture.committed=direction;
+    clearTimeout(rightGuardTimer);rightGuardTimer=null;
     setGuard('touch',false);
     rightSwipe(direction);
   }
@@ -638,6 +665,7 @@ function releasePointer(event){
     const duration=performance.now()-rightGesture.at;
     const direction=rightGesture.committed;
     const held=guardInputs.has('touch');
+    clearTimeout(rightGuardTimer);rightGuardTimer=null;
     setGuard('touch',false);
     rightGesture=null;
     if(!running||paused)return;
@@ -666,6 +694,9 @@ window.addEventListener('blur',()=>{
   inputs.clear();touchDirection.x=0;touchDirection.z=0;guardInputs.clear();setGuard('keyboard',false);
 });
 $('pause').onclick=pauseGame;
+for(const name of ['gesturestart','gesturechange','gestureend','contextmenu'])document.addEventListener(name,event=>event.preventDefault(),{passive:false});
+document.addEventListener('touchmove',event=>event.preventDefault(),{passive:false});
+document.addEventListener('wheel',event=>event.preventDefault(),{passive:false});
 $('restart').onclick=()=>{if(ready)startSession();};
 $('start').onclick=startSession;
 async function getBinary(file,onProgress){

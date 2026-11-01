@@ -112,6 +112,10 @@ try{
   await waitUntil("!!window.__fightersQA && window.__fightersQA.snapshot().ready===true",'game models',100000);
   const initial=await evaluate("window.__fightersQA.snapshot()");
   if(initial.enemies!==3||initial.health!==100)fail('Game initial state incorrect '+JSON.stringify(initial));
+  const layout=await evaluate("(()=>{const el=document.getElementById('viewport'),r=el.getBoundingClientRect(),b=getComputedStyle(document.body);return {w:r.width,h:r.height,iw:innerWidth,ih:innerHeight,scrollX:scrollX,scrollY:scrollY,overflow:b.overflow,userSelect:b.userSelect,meta:document.querySelector('meta[name=viewport]').content,header:!!document.querySelector('.top'),panels:!!document.querySelector('.under')};})()");
+  if(layout.w<layout.iw-1||layout.h<layout.ih-1||layout.scrollY!==0||layout.overflow!=='hidden'||layout.userSelect!=='none'||layout.header||layout.panels||!layout.meta.includes('user-scalable=no'))fail('Fullscreen/scroll/select/zoom lock failed '+JSON.stringify(layout));
+  if(initial.heroSpeed<5||Math.abs(initial.heroClipScale-1.45)>.05||initial.enemyClipScales.some(v=>Math.abs(v-1)>.05))
+    fail('Only heroine should be sped up '+JSON.stringify(initial));
   // Isolate input response from combat stuns, then re-enable real AI for fight QA.
   await evaluate('window.__fightersQA.setEnemiesPassive(true)');
   await call('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:2});
@@ -119,7 +123,7 @@ try{
   const ry=area.y+area.h*.6;
   const rightX=area.x+area.w*.8;
   await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:11,x:rightX,y:ry}]});
-  await delay(600);
+  await waitUntil("window.__fightersQA.snapshot().heroGuard===true",'right long-press guard',6000);
   const guard=await evaluate("window.__fightersQA.snapshot().heroGuard");
   if(!guard)fail('Right long-press did not engage block');
   await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
