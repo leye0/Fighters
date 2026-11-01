@@ -167,10 +167,10 @@ try{
   const afterX=await evaluate("window.__fightersQA.snapshot().heroX");
   if(afterX<=beforeX+.35)fail('Hero did not move right under keyboard input');
   await snap('night-street-start');
-  async function swipe(id,dx,dy,direction,expected){
+  async function swipe(id,dx,dy,direction,expected,waitMs=160){
     await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id,x:rightX,y:ry}]});
     await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id,x:rightX+dx,y:ry+dy}]});
-    await delay(160);
+    if(waitMs)await delay(waitMs);
     const result=await evaluate("window.__fightersQA.snapshot()");
     if(result.lastRightGesture!==direction||result.lastRightAction!==expected)
       fail(direction+' gesture mapped incorrectly '+JSON.stringify(result));
@@ -194,14 +194,15 @@ try{
   const jx=rightX,jy=ry;
   await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:21,x:jx,y:jy}]});
   await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:21,x:jx,y:jy-24}]});
-  await delay(120);
   const jumping=await evaluate("window.__fightersQA.snapshot()");
   if(jumping.lastRightAction!=='jump'||jumping.heroJumpY<=0)fail('North swipe did not jump immediately '+JSON.stringify(jumping));
   await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
-  const airJab=await swipe(22,-59,-59,'NW','jab');
+  const airJab=await swipe(22,-59,-59,'NW','jab',0);
   if(!airJab.heroAirAttack||!airJab.heroAirLayer||airJab.heroAttack!=='jab')
     fail('Jump + punch must blend a real upper-body punch over the leap '+JSON.stringify(airJab));
-  await snap('night-street-air-punch');
+  await evaluate('window.__fightersQA.freeze(true)');
+  await snap('night-street-air-punch-frozen');
+  await evaluate('window.__fightersQA.freeze(false)');
   await waitUntil("!window.__fightersQA.snapshot().heroAttack",'air punch recovery',10000);
   await evaluate('window.__fightersQA.reset()');
   await evaluate('window.__fightersQA.setEnemiesPassive(true)');

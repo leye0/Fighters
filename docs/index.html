@@ -230,7 +230,12 @@ function costumeLayers(visual,kind,index){
       if(o.skeleton.bones.length!==skeleton.bones.length||
          o.skeleton.bones.some((b,i)=>b.name!==skeleton.bones[i].name))
         throw Error('Ordre des os incompatible pour '+o.name);
-      const materials=(Array.isArray(o.material)?o.material:[o.material]).map(m=>m.clone());
+      const materials=(Array.isArray(o.material)?o.material:[o.material]).map(mat=>{
+        const m=mat.clone();
+        if(type==='hair'&&m.color)
+          m.color.multiply(new THREE.Color(kind==='hero'?0x58372c:index%2?0x302a28:0x63452e));
+        return m;
+      });
       const layer=new THREE.SkinnedMesh(o.geometry,Array.isArray(o.material)?materials:materials[0]);
       layer.name=type+'_'+o.name;layer.userData.costumeLayer=type;
       layer.frustumCulled=false;
@@ -394,7 +399,7 @@ function jump(){
     hero.attack=null;hero.queue=[];hero.kickBase=null;hero.kickExtension=0;
     if(hero.airLayer){hero.airLayer.fadeOut(.08);hero.airLayer=null;}
   }
-  hero.jumpV=6.75;hero.jumpY=.01;animation(hero,'Jump_Start',true);
+  hero.jumpV=6.2;hero.jumpY=.01;animation(hero,'Jump_Start',true);
 }
 function roll(){
   if(!hero||hero.dead||hero.attack||hero.stun>0||hero.jumpY>.02||hero.roll>0)return;
@@ -476,7 +481,7 @@ function moveHero(dt){
   hero.stun=Math.max(0,hero.stun-dt);
   hero.invulnerable=Math.max(0,hero.invulnerable-dt);
   if(hero.jumpY>0){
-    hero.jumpV-=20.5*dt;
+    hero.jumpV-=12.4*dt;
     hero.jumpY=Math.max(0,hero.jumpY+hero.jumpV*dt);
     hero.visual.position.y=hero.baseY+hero.jumpY;
     if(hero.jumpY===0){hero.jumpV=0;hero.landing=.32/HERO_PACE;animation(hero,'Jump_Land',true);}

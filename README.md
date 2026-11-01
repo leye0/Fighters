@@ -38,14 +38,14 @@ Fonctionnalités : caméra latérale qui suit l'action, garde défensive, combos
 ## Vêtements civils et coiffures Quaternius
 
 - Vêtements : **Female Peasant** et **Male Peasant**, sans armure, issus du kit CC0 officiel [Modular Character Outfits – Fantasy](https://quaternius.itch.io/modular-character-outfits-fantasy).
-- Coiffures : **Hair Buns** sur Nova, **Hair Buzzed / Simple Parted** sur les adversaires, tirées du kit [Universal Base Characters](https://quaternius.itch.io/universal-base-characters).
+- Coiffures : **Hair Buns** châtain sur Nova, **Hair Buzzed / Simple Parted** de différentes couleurs sur les adversaires, tirées du kit [Universal Base Characters](https://quaternius.itch.io/universal-base-characters).
 - Les cinq GLB modulaires sont distribués individuellement par [PixelTriks](https://www.pixeltriks.com/browse?pack=quaternius-modular-outfits-fantasy) et vérifiés par leur SHA-256 dans le workflow de publication.
 - **Même ordre de 65 os** pour tous les modèles. Le vêtement féminin et sa coiffure partagent exactement les matrices de repos et les matrices inverses de skinning de Nova. Le modèle masculin a quelques différences de morphologie; les vêtements masculins seront validés sur captures WebGL avant d’être déclarés finalisés.
 - Le moteur conserve la tête et les yeux d’origine et ne rend plus le corps situé sous les vêtements afin d’éviter que la peau traverse le tissu. Toutes les pièces sont attachées au squelette déjà animé du personnage.
 
 ## Attaques aériennes
 
-Le coup de poing aérien utilise un calque additif des animations de bras et de torse Quaternius, par-dessus la boucle de saut du bas du corps. Le coup de pied conserve la pose de saut et fait tourner la jambe du rig natif. Aucune animation étrangère n’est retargetée. L’attaque aérienne ajoute un petit bonus de dégâts et de portée; lancer un saut pendant un coup au sol l’interrompt.
+Le saut dure environ une seconde afin de laisser le temps d’enchaîner un geste offensif. Le coup de poing aérien utilise un calque additif des animations de bras et de torse Quaternius, par-dessus la boucle de saut du bas du corps. Le coup de pied conserve la pose de saut et fait tourner la jambe du rig natif. Aucune animation étrangère n’est retargetée. L’attaque aérienne ajoute un petit bonus de dégâts et de portée; lancer un saut pendant un coup au sol l’interrompt.
 
 ## Choix technique crucial
 
