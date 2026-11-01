@@ -62,7 +62,7 @@ async function waitUntil(test,label,limitMs=75000){
     if(typeof state==='string' && state.startsWith('ERROR:'))fail(label+' '+state);
     await delay(650);
   }
-  fail('Timeout: '+label+' / '+String(await evaluate("document.getElementById('load-status')?.textContent")));
+  fail('Timeout: '+label+' / '+JSON.stringify(await evaluate("({title:document.getElementById('overlay-title')?.textContent,detail:document.getElementById('overlay-desc')?.textContent,ready:window.__fightersQA?.snapshot()?.ready,button:document.getElementById('start')?.textContent,renderer:!!document.querySelector('#viewport canvas')})")));
 }
 async function snap(name){
   const box=await evaluate("(()=>{const x=(document.getElementById('stage')||document.getElementById('viewport')).getBoundingClientRect();return {x:x.left,y:x.top,width:x.width,height:x.height};})()");
