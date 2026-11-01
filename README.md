@@ -6,16 +6,19 @@ Prototype de **beat ’em up 2,5D** inspiré des classiques d'arcade à la Doubl
 
 [Démo jouable sur le domaine du dépôt](https://www.streamlev.com/Fighters/)
 
-- **Flèches ou WASD** : déplacement horizontal et profondeur de rue.
+- **Mobile, main gauche :** glisser dans une direction, puis garder le doigt posé pour continuer à avancer; lever le doigt stoppe le déplacement. Pas de pavé directionnel affiché.
+- **Mobile, main droite :** tap = jab ; double/triple tap rapide = combo jab / cross / hook ; balayage horizontal = cross/hook ; balayage vers le bas = roulade ; vers le haut = saut ; appui long = garde tant que le doigt reste posé. Les combos se mettent en file pendant l'attaque courante.
+- **Clavier : flèches ou WASD** : déplacement horizontal et profondeur de rue.
 - **J** : jab (Punch_Jab).
 - **K** : cross (Punch_Cross).
 - **L** : hook (Melee_Hook).
 - **Espace** : saut (Jump_Start / Jump_Loop / Jump_Land).
 - **Shift** : esquive roulée (Roll).
+- **Q maintenu** : garde (réduit les dégâts de face).
 - **P** : pause.
-- Contrôles tactiles pour mobile et premiers boutons de manette.
+- Gestes tactiles sans boutons dessinés par-dessus le jeu, et premiers contrôles de manette.
 
-Fonctionnalités : caméra latérale qui suit l'action, vagues d'ennemis, IA d'approche, fenêtres de contact, dégâts, vies, knockback, animations de réaction/de mort, KO, score et redémarrage.
+Fonctionnalités : caméra latérale qui suit l'action, garde défensive, combos bufferisés, vagues d'ennemis, IA d'approche, fenêtres de contact, dégâts, vies, knockback, animations de réaction/de mort, KO, score et redémarrage.
 
 **[Laboratoire des 86 animations par personnage](https://www.streamlev.com/Fighters/motion-lab.html)** : vue orbitale indépendante pour choisir entre Superhero Male et Superhero Female et examiner chaque animation, avec vitesse et scrubbing.
 
