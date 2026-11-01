@@ -271,6 +271,7 @@ function startSession(){
   $('overlay').hidden=true;
   if(new URLSearchParams(location.search).has('qa'))window.__fightersQA={
     setEnemiesPassive:value=>{qaPassive=!!value;},
+    freeze:value=>{paused=!!value;},
     reset:()=>startSession(),
     snapshot:()=>({
     ready,running,paused,wave,ko,score,health:hero.health,enemies:enemies.filter(e=>!e.dead).length,

@@ -179,9 +179,11 @@ try{
   const kickStart=await evaluate("window.__fightersQA.snapshot()");
   console.log('KICK_START_DIAG '+JSON.stringify(kickStart));
   await waitUntil("window.__fightersQA.snapshot().heroKickExtension>.35",'native kick pose',8000);
+  await evaluate('window.__fightersQA.freeze(true)');
   const kick=await evaluate("window.__fightersQA.snapshot()");
   if(kick.lastRightGesture!=='SE'||kick.heroAttack!=='kickRight')fail('SE kick failed '+JSON.stringify(kick));
-  await snap('night-street-native-kick');
+  await snap('night-street-native-kick-frozen-impact');
+  await evaluate('window.__fightersQA.freeze(false)');
   await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   await waitUntil("!window.__fightersQA.snapshot().heroAttack",'kick recovery',10000);
   const jx=rightX,jy=ry;
@@ -212,6 +214,15 @@ try{
   await snap('night-street-combat');
   if(afterCombat.score<=0)fail('No successful punch contact in game '+JSON.stringify(afterCombat));
   console.log('Beat em up PASS: movement, three enemies, attack contacts, score '+afterCombat.score);
+  for(const [w,h,label] of [[844,390,'landscape'],[390,844,'portrait']]){
+    await call('Emulation.setDeviceMetricsOverride',{width:w,height:h,deviceScaleFactor:2,mobile:true});
+    await delay(350);
+    const rect=await evaluate("(()=>{const r=document.querySelector('#viewport').getBoundingClientRect();return {w:r.width,h:r.height,sw:document.documentElement.scrollWidth,sh:document.documentElement.scrollHeight,iw:innerWidth,ih:innerHeight};})()");
+    if(Math.abs(rect.w-rect.iw)>1||Math.abs(rect.h-rect.ih)>1||rect.sw>rect.iw+1||rect.sh>rect.ih+1)
+      fail('Mobile fullscreen overflow '+label+' '+JSON.stringify(rect));
+    await snap('night-street-mobile-'+label);
+  }
+  console.log('Mobile landscape + portrait viewport PASS');
   console.log('Fighters real WebGL QA PASS');
 } finally {
   if(socket)socket.close();
