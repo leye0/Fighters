@@ -1,0 +1,44 @@
+name: Fighters — real WebGL browser QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/browser-qa.mjs'
+      - '.github/workflows/browser-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  chrome:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare exact two source models
+        run: |
+          mkdir -p docs/models
+          curl -fLsS --retry 3 https://raw.githubusercontent.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/5821923af517ac5fdc82505faa92a0d575fc1b1a/test/human_male.glb -o docs/models/human_male.glb
+          curl -fLsS --retry 3 https://raw.githubusercontent.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/5821923af517ac5fdc82505faa92a0d575fc1b1a/test/human_female.glb -o docs/models/human_female.glb
+          node scripts/verify-glb.mjs docs/models/human_male.glb docs/models/human_female.glb
+      - name: Start preview server
+        run: |
+          python3 -m http.server 8000 --directory docs >/tmp/fighters-browser-qa-http.log 2>&1 &
+          for i in {1..40}; do
+            if curl -fsS http://127.0.0.1:8000/ >/dev/null; then exit 0; fi
+            sleep 0.25
+          done
+          exit 1
+      - name: Exercise actual model and motion clips in Chrome SwiftShader
+        run: |
+          google-chrome --version
+          node scripts/browser-qa.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fighters-real-webgl-motion-qa
+          path: captures/
+          retention-days: 3
+          if-no-files-found: ignore
