@@ -285,12 +285,25 @@ try{
   if(healed.state.wave!==2||healed.state.health!==100||healed.bar!=='100%'||healed.state.enemies!==4)
     fail('Next round did not fully replenish health and HUD '+JSON.stringify(healed));
   console.log('ROUND HEAL PASS: health 27 -> 100, HUD 27% -> 100%, wave 1 -> 2');
-  for(const facing of [1,-1]){
-    await evaluate('window.__fightersQA.setupAirPunch('+facing+')');
-    await evaluate('window.__fightersQA.poseAtAttack(.22)');
+  for(const kind of ['jab','cross'])for(const facing of [1,-1]){
+    await evaluate("window.__fightersQA.setupAirPunch("+facing+",'"+kind+"')");
+    await evaluate('window.__fightersQA.poseAtAttack(.18)');
     const arms=await evaluate('window.__fightersQA.armPose()');
-    console.log('AIR_FACING_DIAG '+JSON.stringify(arms));
+    const hand=kind==='jab'?'right':'left';
+    const reach=arms.armX[hand]*facing;
+    console.log('AIR_FACING_DIAG '+JSON.stringify({kind,facing,hand,reach,arms}));
+    if(reach<.16)fail('Air '+kind+' fist went behind Nova facing '+facing+' '+JSON.stringify(arms));
+    await snap('night-street-air-'+kind+'-facing-'+(facing>0?'right':'left'));
   }
+  // Turning the movement thumb while airborne immediately redirects the punch.
+  await evaluate("window.__fightersQA.setupAirPunch(1,'jab')");
+  await call('Input.dispatchKeyEvent',{type:'rawKeyDown',key:'a',code:'KeyA',windowsVirtualKeyCode:65});
+  await evaluate('window.__fightersQA.poseAtAttack(.18)');
+  const steered=await evaluate('window.__fightersQA.armPose()');
+  await call('Input.dispatchKeyEvent',{type:'keyUp',key:'a',code:'KeyA',windowsVirtualKeyCode:65});
+  if(steered.facing!==-1||steered.armX.right>=-.16)
+    fail('Aerial punch failed to turn toward left-thumb input '+JSON.stringify(steered));
+  console.log('AIR FACING PASS: jab/cross forward on both sides, left-thumb midair steering');
   await evaluate('window.__fightersQA.freeze(false)');
   await evaluate('window.__fightersQA.setEnemiesPassive(false)');
   for(const [w,h,label] of [[844,390,'landscape'],[390,844,'portrait']]){

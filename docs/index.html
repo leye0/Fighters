@@ -364,10 +364,10 @@ function startSession(){
     },
     reset:()=>startSession(),
     startKickPose:kind=>{qaPassive=true;attack(hero,kind);},
-    setupAirPunch:facing=>{
+    setupAirPunch:(facing,kind='jab')=>{
       startSession();qaPassive=true;
       hero.facing=facing;
-      jump();attack(hero,'jab');
+      jump();attack(hero,kind);
     },
     armPose:()=>{
       const point=name=>{
@@ -522,6 +522,11 @@ function stepAttack(actor,dt){
 }
 function moveHero(dt){
   if(hero.dead)return;
+  // Air combos can change facing with the left thumb even while an attack
+  // temporarily suspends horizontal locomotion.
+  const airSteerX=Number(inputs.has('ArrowRight')||inputs.has('KeyD'))-
+    Number(inputs.has('ArrowLeft')||inputs.has('KeyA'))+touchDirection.x;
+  if(hero.jumpY>0&&Math.abs(airSteerX)>.2)hero.facing=airSteerX>0?1:-1;
   hero.stun=Math.max(0,hero.stun-dt);
   hero.invulnerable=Math.max(0,hero.invulnerable-dt);
   if(hero.jumpY>0){
@@ -636,10 +641,36 @@ function stepGame(dt){
       hero.visual.rotation.y=hero.facing>0?Math.PI/2:-Math.PI/2;
       hero.mixer.update(dt);
       poseNativeKick(hero);
+      poseAirPunch(hero);
     }
     for(const e of enemies){e.visual.rotation.y=e.facing>0?Math.PI/2:-Math.PI/2;e.mixer.update(dt);}
   }
   shake=Math.max(0,shake-dt);
+}
+// Quaternius' airborne punch clips move the fist backward relative to the
+// gameplay facing axis. Keep the clip's upper-body blend and correct only the
+// striking arm in world space: left-facing and right-facing punches both reach
+// ahead, without flipping the character's entire torso or rig.
+function poseAirPunch(actor){
+  const a=actor.attack;
+  if(!a?.air||!ATTACKS[a.type]?.name)return;
+  const side=(a.type==='cross'||a.type==='bodyRight')?'l':'r';
+  const upper=actor.visual.getObjectByName('upperarm_'+side);
+  const fist=actor.visual.getObjectByName('hand_'+side);
+  if(!upper||!fist)return;
+  upper.updateWorldMatrix(true,true);
+  const shoulder=upper.getWorldPosition(new THREE.Vector3());
+  const from=fist.getWorldPosition(new THREE.Vector3()).sub(shoulder);
+  if(from.lengthSq()<.001)return;
+  const forward=new THREE.Vector3(actor.facing,-.025,0).normalize();
+  const worldCorrection=new THREE.Quaternion().setFromUnitVectors(from.normalize(),forward);
+  const parentWorld=upper.parent.getWorldQuaternion(new THREE.Quaternion());
+  const localCorrection=parentWorld.clone().invert().multiply(worldCorrection).multiply(parentWorld);
+  const target=upper.quaternion.clone().premultiply(localCorrection);
+  const reach=THREE.MathUtils.smoothstep(a.elapsed,.015,a.impact*.9)*
+    (1-THREE.MathUtils.smoothstep(a.elapsed,a.impact*1.16,a.duration*.85));
+  upper.quaternion.slerp(target,Math.max(0,reach));
+  upper.updateMatrixWorld(true);
 }
 // Drive the existing rig's leg bones in world space, then convert the
 // correction into the hip parent's local space. This avoids assuming bone axes.
