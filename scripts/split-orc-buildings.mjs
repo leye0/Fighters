@@ -20,6 +20,8 @@ console.log('Candidate building groups:',candidates.map(n=>n.getName()).join(', 
 if(candidates.length<2)throw Error('Fewer than two complete named building groups found');
 await fs.mkdir(output,{recursive:true});
 const manifest=[];
+let baselineTextureHashes=null;
+let sharedTexturesVerified=true;
 for(let i=0;i<candidates.length;i++){
   const node=candidates[i];
   const doc=new (await import('@gltf-transform/core')).Document();
@@ -36,11 +38,14 @@ for(let i=0;i<candidates.length;i++){
       sha:image?createHash('sha256').update(image).digest('hex'):null};
   });
   console.log('Building texture audit',node.getName(),JSON.stringify(textureStats));
+  const hashes=textureStats.map(t=>t.sha);
+  if(!baselineTextureHashes)baselineTextureHashes=hashes;
+  else if(JSON.stringify(hashes)!==JSON.stringify(baselineTextureHashes))sharedTexturesVerified=false;
   const stat=await fs.stat(path.join(output,filename));
   console.log('Building asset',node.getName(),'bytes',stat.size,'meshes',doc.getRoot().listMeshes().length,'textures',doc.getRoot().listTextures().length);
   manifest.push({id:'building-'+String(i+1).padStart(2,'0'),name:node.getName()||'Building '+(i+1),
     description:node.getExtras()?.description||null,sourceNode:node.getName()||null,
     file:'./models/orc-buildings/'+filename});
 }
-await fs.writeFile(path.join(output,'manifest.json'),JSON.stringify({buildings:manifest},null,2));
+await fs.writeFile(path.join(output,'manifest.json'),JSON.stringify({buildings:manifest,sharedTexturesVerified,textureHashes:baselineTextureHashes},null,2));
 console.log('Extracted',manifest.length,'building roots:',manifest.map(x=>x.name).join(', '));
