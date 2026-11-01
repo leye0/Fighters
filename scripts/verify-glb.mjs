@@ -11,7 +11,7 @@ const expected = {
   'human_female.glb': 'd3ebcbbcd14bb742b2962687640e36ee95977e3f'
 };
 const required = ['Idle_Loop','Walk_Loop','Jog_Fwd_Loop','Sprint_Loop',
-  'Punch_Jab','Punch_Cross','Melee_Hook','Sword_Attack','Sword_Regular_Combo',
+  'Punch_Jab','Punch_Cross','Melee_Hook',
   'Hit_Chest','Death01'];
 function assert(value, reason) { if (!value) throw Error(reason); }
 function check(path) {

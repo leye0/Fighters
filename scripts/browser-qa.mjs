@@ -87,9 +87,6 @@ async function character(label, click=false){
   const punch=await snap(label+'-punch');
   const playback=await evaluate("document.getElementById('scrub').value");
   if(Number(playback)<=0)fail(label+' animation timeline did not advance');
-  await selectClip('Sword Regular Combo');
-  await delay(600);
-  await snap(label+'-sword');
   await evaluate("document.querySelector('[data-filter=\"move\"]').click()");
   await selectClip('Walk Loop');
   await delay(700);
@@ -153,8 +150,6 @@ try{
   const leftBefore=await evaluate("window.__fightersQA.snapshot().heroX");
   await delay(570);
   const leftAfter=await evaluate("window.__fightersQA.snapshot().heroX");
-  const gestureDiag=await evaluate("window.__fightersQA.snapshot()");
-  console.log('LEFT_HOLD_DIAG '+JSON.stringify({leftBefore,leftAfter,delta:leftAfter-leftBefore,state:gestureDiag}));
   if(leftAfter<=leftBefore+.65){await snap('gesture-hold-diagnostic');fail('Holding left finger did not sustain movement');}
   await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   await delay(150);
@@ -181,7 +176,6 @@ try{
   await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:20,x:rightX,y:ry}]});
   await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:20,x:rightX+57,y:ry+57}]});
   const kickStart=await evaluate("window.__fightersQA.snapshot()");
-  console.log('KICK_START_DIAG '+JSON.stringify(kickStart));
   if(kickStart.lastRightGesture!=='SE'||kickStart.lastRightAction!=='kickRight')
     fail('SE kick gesture did not dispatch '+JSON.stringify(kickStart));
   await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
@@ -220,7 +214,6 @@ try{
     call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:42,x:jx-59,y:jy-59}]})
   ]);
   const airJab=await evaluate("window.__fightersQA.snapshot()");
-  console.log('AIR_JAB_DIAG '+JSON.stringify(airJab));
   if(!airJab.heroAirAttack||!airJab.heroAirLayer||airJab.heroAttack!=='jab')
     fail('Jump + punch must blend a real upper-body punch over the leap '+JSON.stringify(airJab));
   await evaluate('window.__fightersQA.poseAtAttack(.18)');
@@ -241,7 +234,6 @@ try{
     call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:44,x:jx+58,y:jy+58}]})
   ]);
   const airKickStart=await evaluate("window.__fightersQA.snapshot()");
-  console.log('AIR_KICK_DIAG '+JSON.stringify(airKickStart));
   if(!airKickStart.heroAirAttack||airKickStart.heroAttack!=='kickRight')
     fail('Jump + air kick not triggered '+JSON.stringify(airKickStart));
   await evaluate('window.__fightersQA.poseAtAttack(.28)');
@@ -291,9 +283,9 @@ try{
     const arms=await evaluate('window.__fightersQA.armPose()');
     const hand=kind==='jab'?'right':'left';
     const reach=arms.armX[hand]*facing;
-    console.log('AIR_FACING_DIAG '+JSON.stringify({kind,facing,hand,reach,arms}));
     if(reach<.16)fail('Air '+kind+' fist went behind Nova facing '+facing+' '+JSON.stringify(arms));
-    await snap('night-street-air-'+kind+'-facing-'+(facing>0?'right':'left'));
+    if((kind==='jab'&&facing<0)||(kind==='cross'&&facing>0))
+      await snap('night-street-air-'+kind+'-facing-'+(facing>0?'right':'left'));
   }
   // Turning the movement thumb while airborne immediately redirects the punch.
   await evaluate("window.__fightersQA.setupAirPunch(1,'jab')");

@@ -1,10 +1,9 @@
-name: Fighters — verify and publish animation lab
+name: Fighters — publish playable game
 on:
   push:
     branches: [main]
     paths:
       - 'docs/**'
-      - 'index.html'
       - 'scripts/verify-glb.mjs'
       - 'scripts/verify-costumes.mjs'
       - 'scripts/download-costumes.sh'
@@ -15,7 +14,7 @@ permissions:
   pages: write
   id-token: write
 concurrency:
-  group: fighters-motion-lab-pages
+  group: fighters-pages
   cancel-in-progress: true
 jobs:
   pages:

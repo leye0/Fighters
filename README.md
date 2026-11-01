@@ -31,7 +31,7 @@ Affichage : **plein écran sans en-tête ni panneaux externes**. Le HTML et le b
 
 Nova se déplace et combat **45 % plus rapidement** : vitesse au sol, vitesse de ses clips d'animation, synchronisation des impacts, récupération, sauts et roulades. Les ennemis conservent leur vitesse d'origine. Cette distinction est vérifiée dans le QA navigateur.
 
-Fonctionnalités : caméra latérale qui suit l'action, garde défensive, combos bufferisés, vagues d'ennemis, IA d'approche, fenêtres de contact, dégâts, vies, knockback, animations de réaction/de mort, KO, score et redémarrage.
+Fonctionnalités : caméra latérale qui suit l'action, garde défensive, combos bufferisés, vagues d'ennemis, IA d'approche, fenêtres de contact, dégâts, vie rechargée entre les rounds, recul, animations de réaction/de mort, KO, score et redémarrage.
 
 **[Laboratoire des 86 animations par personnage](https://www.streamlev.com/Fighters/motion-lab.html)** : vue orbitale indépendante pour choisir entre Superhero Male et Superhero Female et examiner chaque animation, avec vitesse et scrubbing.
 
@@ -39,17 +39,15 @@ Fonctionnalités : caméra latérale qui suit l'action, garde défensive, combos
 
 - Vêtements : **Female Peasant** et **Male Peasant**, sans armure, issus du kit CC0 officiel [Modular Character Outfits – Fantasy](https://quaternius.itch.io/modular-character-outfits-fantasy).
 - Coiffures : **Hair Buns** châtain sur Nova, **Hair Buzzed / Simple Parted** de différentes couleurs sur les adversaires, tirées du kit [Universal Base Characters](https://quaternius.itch.io/universal-base-characters).
-- Les cinq GLB modulaires sont distribués individuellement par [PixelTriks](https://www.pixeltriks.com/browse?pack=quaternius-modular-outfits-fantasy) et vérifiés par leur SHA-256 dans le workflow de publication.
-- **Même ordre de 65 os** pour tous les modèles. Le vêtement féminin et sa coiffure partagent exactement les matrices de repos et les matrices inverses de skinning de Nova. Le modèle masculin a quelques différences de morphologie; les vêtements masculins seront validés sur captures WebGL avant d’être déclarés finalisés.
+- Les cinq GLB modulaires proviennent du kit Quaternius CC0 (distribué aussi par [PixelTriks](https://www.pixeltriks.com/browse?pack=quaternius-modular-outfits-fantasy)). Le déploiement utilise une copie déjà publiée en secours et vérifie systématiquement chaque SHA-256.
+- **Même ordre de 65 os** pour tous les modèles. La tenue et les cheveux féminins partagent exactement les matrices de skinning de Nova. La tenue masculine a une légère différence de pose de repos; les deux ont été contrôlées en rendu WebGL.
 - Le moteur conserve la tête et les yeux d’origine et ne rend plus le corps situé sous les vêtements afin d’éviter que la peau traverse le tissu. Toutes les pièces sont attachées au squelette déjà animé du personnage.
 
 ## Attaques aériennes
 
-Le saut dure environ une seconde afin de laisser le temps d’enchaîner un geste offensif. Le coup de poing aérien utilise un calque additif des animations de bras et de torse Quaternius, par-dessus la boucle de saut du bas du corps. Le coup de pied conserve la pose de saut et fait tourner la jambe du rig natif. Aucune animation étrangère n’est retargetée. L’attaque aérienne ajoute un petit bonus de dégâts et de portée; lancer un saut pendant un coup au sol l’interrompt.
+Le saut dure environ une seconde pour laisser le temps d’enchaîner un geste offensif. Le poing aérien mélange les animations Quaternius du haut du corps avec le saut et corrige la trajectoire de la main selon le sens du personnage, même en se retournant en l’air. Le coup de pied pivote brièvement le corps et déploie rapidement la jambe sur le rig natif. Aucune animation étrangère n’est retargetée. L’attaque aérienne ajoute un petit bonus de dégâts et de portée; lancer un saut pendant un coup au sol l’interrompt. La barre de vie revient à 100 % au début de chaque nouveau round.
 
 ## Choix technique crucial
-
-Le précédent Fighters était parti de Claudia, Carla et Realistic Man (trois rigs Sketchfab distincts), puis avait tenté d'y plaquer des animations Quaternius via une conversion d'axes et de poses de repos. Cette opération n'était pas garantie et avait produit des membres désalignés.
 
 Ici, **les deux personnages et leurs 86 animations sont déjà assemblés** dans les GLB du projet [NafisRayan/Animate-Rigged-Humanoid-No-Blender](https://github.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender), fondé sur [Quaternius Universal Base Characters](https://quaternius.itch.io/universal-base-characters) et les bibliothèques [UAL1](https://quaternius.itch.io/universal-animation-library) et [UAL2](https://quaternius.itch.io/universal-animation-library-2). L'héroïne utilise le GLB féminin, les ennemis sont des clones du GLB masculin **avec le même rig interne**.
 
