@@ -158,6 +158,10 @@
       "expression": "(window.__fightersBeatFreeze=false,true)"
     },
     {
+      "action": "assert",
+      "expression": "(window.__fightersBeatFreezeAtAttackAge=14,true)"
+    },
+    {
       "action": "keyDown",
       "key": "KeyF"
     },
@@ -167,7 +171,7 @@
     },
     {
       "action": "assert",
-      "expression": "window.__fightersBeatHeroMotion==='UAL1_Punch_Jab'"
+      "expression": "window.__fightersBeatFreeze===true && window.__fightersBeatHeroMotion==='UAL1_Punch_Jab'"
     },
     {
       "action": "screenshot",
@@ -178,8 +182,16 @@
       "key": "KeyF"
     },
     {
+      "action": "assert",
+      "expression": "(window.__fightersBeatFreeze=false,true)"
+    },
+    {
       "action": "wait",
       "ms": 1800
+    },
+    {
+      "action": "assert",
+      "expression": "(window.__fightersBeatFreezeAtAttackAge=21,true)"
     },
     {
       "action": "keyDown",
@@ -191,7 +203,7 @@
     },
     {
       "action": "assert",
-      "expression": "window.__fightersBeatHeroMotion==='UAL1_Punch_Cross'"
+      "expression": "window.__fightersBeatFreeze===true && window.__fightersBeatHeroMotion==='UAL1_Punch_Cross'"
     },
     {
       "action": "screenshot",

@@ -14,6 +14,8 @@ declare global {
     __fightersBeatTick?: number;
     /** Freeze simulation/animation for repeatable screenshots, only with ?qa. */
     __fightersBeatFreeze?: boolean;
+    /** Capture the exact authored strike pose at this 60 Hz attack age in QA. */
+    __fightersBeatFreezeAtAttackAge?: number;
     /** Read-only browser QA snapshot of the actual authoritative hero state. */
     __fightersBeatActorBounds?: ReadonlyArray<{ id: string; width: number;
       height: number; centerNdcX: number; centerNdcY: number;
@@ -199,6 +201,16 @@ async function startBeatScene(): Promise<void> {
       // last of two physics ticks to a full render-frame elapsed time.
       scene.updateAnimations(1 / 60, previous, current);
       accumulator -= tickDuration;
+      // Software WebGL takes much longer than a gameplay frame. Pause at the
+      // requested simulation tick BEFORE consuming the rest of this RAF's
+      // catch-up ticks so screenshots inspect the actual strike/contact pose.
+      if (qaMode && combat.fighters.hero.attack &&
+          combat.fighters.hero.attack.ageTicks === window.__fightersBeatFreezeAtAttackAge) {
+        window.__fightersBeatFreeze = true;
+        window.__fightersBeatFreezeAtAttackAge = undefined;
+        accumulator = 0;
+        break;
+      }
     }
     const camera = scene.render(previous, current, accumulator / tickDuration);
     // Only explicit, local screenshot QA needs the expensive skinned bounds.
