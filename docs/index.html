@@ -364,6 +364,24 @@ function startSession(){
     },
     reset:()=>startSession(),
     startKickPose:kind=>{qaPassive=true;attack(hero,kind);},
+    setupAirPunch:facing=>{
+      startSession();qaPassive=true;
+      hero.facing=facing;
+      jump();attack(hero,'jab');
+    },
+    armPose:()=>{
+      const point=name=>{
+        const bone=hero.visual.getObjectByName(name);
+        return bone?bone.getWorldPosition(new THREE.Vector3()).toArray():null;
+      };
+      const hands={left:point('hand_l'),right:point('hand_r')};
+      const shoulders={left:point('upperarm_l'),right:point('upperarm_r')};
+      return {facing:hero.facing,rootX:hero.root.position.x,hands,shoulders,
+        armX:{
+          left:hands.left&&shoulders.left?hands.left[0]-shoulders.left[0]:null,
+          right:hands.right&&shoulders.right?hands.right[0]-shoulders.right[0]:null
+        }};
+    },
     injureAndClearRound:()=>{
       // Test the normal round-clear timer and spawnWave() healing branch.
       hero.health=27;setHUD();qaPassive=false;

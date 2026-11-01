@@ -285,6 +285,12 @@ try{
   if(healed.state.wave!==2||healed.state.health!==100||healed.bar!=='100%'||healed.state.enemies!==4)
     fail('Next round did not fully replenish health and HUD '+JSON.stringify(healed));
   console.log('ROUND HEAL PASS: health 27 -> 100, HUD 27% -> 100%, wave 1 -> 2');
+  for(const facing of [1,-1]){
+    await evaluate('window.__fightersQA.setupAirPunch('+facing+')');
+    await evaluate('window.__fightersQA.poseAtAttack(.22)');
+    const arms=await evaluate('window.__fightersQA.armPose()');
+    console.log('AIR_FACING_DIAG '+JSON.stringify(arms));
+  }
   await evaluate('window.__fightersQA.freeze(false)');
   await evaluate('window.__fightersQA.setEnemiesPassive(false)');
   for(const [w,h,label] of [[844,390,'landscape'],[390,844,'portrait']]){

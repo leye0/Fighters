@@ -4,11 +4,21 @@ set -euo pipefail
 # Quaternius CC0 Standard Peasant outfits and hairstyles, served as individual GLBs.
 # Pinned SHA-256 prevents a silent upstream replacement from changing our rig.
 mkdir -p docs/models
-curl -fLsS --retry 3 "https://www.pixeltriks.com/characters/humans/outfits/quaternius_outfit_Female_Peasant.glb" -o "docs/models/quaternius_outfit_Female_Peasant.glb"
-curl -fLsS --retry 3 "https://www.pixeltriks.com/characters/humans/outfits/quaternius_outfit_Male_Peasant.glb" -o "docs/models/quaternius_outfit_Male_Peasant.glb"
-curl -fLsS --retry 3 "https://www.pixeltriks.com/characters/humans/hair/quaternius_ubc_Hair_Buns.glb" -o "docs/models/quaternius_ubc_Hair_Buns.glb"
-curl -fLsS --retry 3 "https://www.pixeltriks.com/characters/humans/hair/quaternius_ubc_Hair_Buzzed.glb" -o "docs/models/quaternius_ubc_Hair_Buzzed.glb"
-curl -fLsS --retry 3 "https://www.pixeltriks.com/characters/humans/hair/quaternius_ubc_Hair_SimpleParted.glb" -o "docs/models/quaternius_ubc_Hair_SimpleParted.glb"
+# The upstream host sometimes blocks CI with HTTP 403. The previous, already
+# SHA-pinned GitHub Pages deployment is our stable first-party mirror.
+# Fall back to the CC0 source when the deployed copy is unavailable.
+fetch_costume(){
+  local category="$1" file="$2" dest="docs/models/$2"
+  if ! curl -fLsS --retry 2 --max-time 50 "https://www.streamlev.com/Fighters/models/$file" -o "$dest"; then
+    echo "Falling back to Quaternius CC0 source for $file" >&2
+    curl -fLsS --retry 3 --max-time 50 "https://www.pixeltriks.com/characters/humans/$category/$file" -o "$dest"
+  fi
+}
+fetch_costume outfits quaternius_outfit_Female_Peasant.glb
+fetch_costume outfits quaternius_outfit_Male_Peasant.glb
+fetch_costume hair quaternius_ubc_Hair_Buns.glb
+fetch_costume hair quaternius_ubc_Hair_Buzzed.glb
+fetch_costume hair quaternius_ubc_Hair_SimpleParted.glb
 
 sha256sum --check <<'ASSET_HASHES'
 5abc4c3b64404fa636160ae4eddf30e746875e15de1101db14dacd5b5d5e7bba  docs/models/quaternius_outfit_Female_Peasant.glb
