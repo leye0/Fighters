@@ -175,9 +175,12 @@ try{
   const touchDirection=await evaluate("window.__fightersQA.snapshot().touchX");
   if(touchDirection<.6)fail('Left gesture not recognized');
   const leftBefore=await evaluate("window.__fightersQA.snapshot().heroX");
-  await delay(570);
+  // A held direction must keep moving over many exact engine ticks, independent
+  // of how fast the CI software renderer happens to draw each frame.
+  await evaluate('window.__fightersQA.poseAtAttack(.55)');
   const leftAfter=await evaluate("window.__fightersQA.snapshot().heroX");
-  if(leftAfter<=leftBefore+.65){await snap('gesture-hold-diagnostic');fail('Holding left finger did not sustain movement');}
+  if(leftAfter<=leftBefore+.65){await snap('gesture-hold-diagnostic');fail('Holding left finger did not sustain movement: '+JSON.stringify({leftBefore,leftAfter}));}
+  await evaluate('window.__fightersQA.freeze(false)');
   await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   await delay(150);
   if((await evaluate("window.__fightersQA.snapshot().touchX"))!==0)fail('Left finger release did not stop movement');
