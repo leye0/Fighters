@@ -31,7 +31,6 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;padding:0;overf
 .hud .score{margin-left:auto}
 .utility{pointer-events:auto;display:flex;gap:6px}
 .utility button{background:#0c193090;border:1px solid #6e849880;color:#daefff;border-radius:8px;width:34px;height:34px;padding:0;font-size:18px;touch-action:manipulation}
-#restart{display:none}
 .gesture-indicator{opacity:.7}
 .guard-indicator{bottom:calc(env(safe-area-inset-bottom,0px) + 14px);right:calc(env(safe-area-inset-right,0px) + 14px)}
 .start-overlay{padding:16px}
@@ -48,13 +47,12 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;padding:0;overf
 <div class="game-shell">
 
 <section class="arcade">
-<div class="hud"><div class="hero-hud"><div class="hud-kicker">1UP · HÉROÏNE</div><strong>NOVA</strong><div class="life-track"><div id="life"></div></div></div><div class="score"><div><small>ROUND</small><strong id="wave">01</strong></div><div><small>KO</small><strong id="ko">00</strong></div><div><small>SCORE</small><strong id="score">000000</strong></div></div><div class="utility"><button id="pause" aria-label="Pause" disabled>Ⅱ</button><button id="restart" aria-label="Recommencer">↻</button></div></div>
+<div class="hud"><div class="hero-hud"><div class="hud-kicker">1UP · HÉROÏNE</div><strong>NOVA</strong><div class="life-track"><div id="life"></div></div></div><div class="score"><div><small>ROUND</small><strong id="wave">01</strong></div><div><small>KO</small><strong id="ko">00</strong></div><div><small>SCORE</small><strong id="score">000000</strong></div></div><div class="utility"><button id="pause" aria-label="Pause" disabled>Ⅱ</button></div></div>
 <div id="viewport" class="viewport" aria-label="Scène de jeu beat ’em up 3D"><div class="scanlines"></div><div id="hit-flash" class="hit-flash"></div><div id="banner" class="banner">ROUND 1</div>
 <div id="gesture-indicator" class="gesture-indicator" aria-hidden="true">→</div><div id="guard-indicator" class="guard-indicator">🛡 GARDE</div>
 <div class="start-overlay" id="overlay"><div class="start-card"><div class="stamp">FIGHTERS · NIGHT STREET</div><h2 id="overlay-title">NIGHT STREET</h2><p id="overlay-desc">Une héroïne avec coiffure et tenue de paysanne, contre des voyous en vêtements civils. À droite : ↑ saute avec un petit geste; ↖↗ poings et ↙↘ coups de pied, même en l’air; ↓ tenu protège, ↓ bref esquive. Aucun équipement d’armure.</p><button class="primary" id="start" disabled>Chargement des combattants…</button><div class="load-progress"><div id="load-bar"></div></div></div></div>
 </div>
 </section>
-<div aria-hidden="true" style="display:none"><span id="status">Chargement…</span><span id="motion"></span><span id="stats"></span></div>
 </div>
 <script type="module">
 import * as THREE from 'three';
@@ -99,11 +97,10 @@ const ATTACKS = {
   kickLeft: {name:null,damage:16,range:1.75,recovery:.19,impact:.43,duration:.56,stagger:.61},
   kickRight: {name:null,damage:20,range:1.96,recovery:.23,impact:.48,duration:.60,stagger:.68}
 };
-let ready=false,running=false,paused=false,gameOver=false;
+let ready=false,running=false,paused=false;
 let female=null,male=null,clothingFemale=null,clothingMale=null,hairBuns=null,hairBuzzed=null,hairParted=null,hero=null,enemies=[],wave=1,ko=0,score=0,cameraX=0,shake=0,roundDelay=-1;
 let gamepadLast={jab:false,cross:false,hook:false,jump:false,roll:false};
 const gamepadKeys=new Set();
-function status(text){$('status').textContent=text;}
 function createSign(label,color,width=4){
   const c=document.createElement('canvas');c.width=512;c.height=160;
   const ctx=c.getContext('2d');
@@ -180,7 +177,6 @@ function animation(actor,name,force=false){
   if(last&&last!==next)next.fadeIn(.13);
   next.play();
   actor.action=next;actor.current=name;
-  if(actor.kind==='hero')$('motion').textContent='Animation : '+name;
 }
 // The official Peasant meshes carry exactly the same named 65-bone Quaternius rig.
 // Skin the garments/hair with this actor's own skeleton, never copy foreign joints.
@@ -313,14 +309,13 @@ function spawnWave(){
     enemies.push(spawnActor(male,'enemy',x,z,i+wave));
   }
   showBanner('ROUND '+wave);
-  status(count+' ennemis · Reste en mouvement !');
   setHUD();
 }
 function startSession(){
   if(!ready)return;
   if(hero)detach(hero);
   for(const e of enemies)detach(e);
-  enemies=[];wave=1;ko=0;score=0;gameOver=false;paused=false;running=true;roundDelay=-1;cameraX=0;
+  enemies=[];wave=1;ko=0;score=0;paused=false;running=true;roundDelay=-1;cameraX=0;
   inputs.clear();guardInputs.clear();touchDirection.x=0;touchDirection.z=0;
   leftGesture=null;rightGesture=null;clearTimeout(rightGuardTimer);rightGuardTimer=null;$('gesture-indicator').style.display='none';$('guard-indicator').style.display='none';
   hero=spawnActor(female,'hero',0,0);
@@ -388,7 +383,7 @@ function showBanner(text){
   showBanner.timer=setTimeout(()=>$('banner').style.opacity=0,1350);
 }
 function gameEnd(){
-  running=false;gameOver=true;
+  running=false;
   $('overlay-title').textContent='GAME OVER';
   $('overlay-desc').textContent='Score : '+score+' · K.-O. : '+ko+' · Vague : '+wave+'. Recommence pour tenter de battre ton record.';
   $('start').textContent='Rejouer';$('overlay').hidden=false;
@@ -413,7 +408,6 @@ function attack(actor,kind){
     layer.reset().stopFading().setEffectiveWeight(1).setEffectiveTimeScale(pace);
     layer.setLoop(THREE.LoopOnce,1);layer.clampWhenFinished=true;
     layer.fadeIn(.07).play();actor.airLayer=layer;actor.current='Air_'+kind;
-    $('motion').textContent='Animation : saut + '+kind+' (haut du corps)';
   } else if(a.name)animation(actor,a.name,true);
   else {
     // The kick uses this same GLB's thigh/calf hierarchy, no imported retargeting.
@@ -421,7 +415,6 @@ function attack(actor,kind){
     if(!leg.thigh||!leg.calf){actor.attack=null;return;}
     animation(actor,airborne?'Jump_Loop':'Idle_Loop',true);
     actor.current=airborne?'Air_'+kind:kind;
-    if(actor.kind==='hero')$('motion').textContent='Animation : '+(kind==='kickLeft'?'coup de pied gauche':'coup de pied droit')+' (rig natif)';
   }
 }
 function jump(){
@@ -453,7 +446,6 @@ function damage(target,amount,attacker){
      (attacker.root.position.x-target.root.position.x)*target.facing>=-.1){
     const reduced=Math.max(1,Math.round(amount*.2));
     target.health=Math.max(0,target.health-reduced);
-    status('Garde ! '+(amount-reduced)+' dégâts absorbés');
     floatDamage(target,reduced,false);
     if(target.health===0){target.guard=false;target.dead=true;animation(target,'Death01',true);gameEnd();}
     setHUD();return;
@@ -865,7 +857,6 @@ $('pause').onclick=pauseGame;
 for(const name of ['gesturestart','gesturechange','gestureend','contextmenu'])document.addEventListener(name,event=>event.preventDefault(),{passive:false});
 document.addEventListener('touchmove',event=>event.preventDefault(),{passive:false});
 document.addEventListener('wheel',event=>event.preventDefault(),{passive:false});
-$('restart').onclick=()=>{if(ready)startSession();};
 $('start').onclick=startSession;
 async function getBinary(file,onProgress){
   let response=await fetch('./models/'+file);
@@ -888,7 +879,6 @@ async function load(){
   try{
     for(const [idx,gender] of ['female','male'].entries()){
       const file='human_'+gender+'.glb';
-      status('Téléchargement '+(idx+1)+'/2 : '+file);
       const data=await getBinary(file,pct=>$('load-bar').style.width=((idx+pct/100)/2*100).toFixed(0)+'%');
       const gltf=await loader.parseAsync(data,'');
       const need=['Idle_Loop','Walk_Loop','Jog_Fwd_Loop','Punch_Jab','Punch_Cross','Melee_Hook','Hit_Chest','Death01','Roll','Jump_Start'];
@@ -897,14 +887,14 @@ async function load(){
       if(gender==='female')female=gltf;else male=gltf;
     }
     const garmentFiles=[
-      ['quaternius_outfit_Female_Peasant.glb','clothingFemale'],
-      ['quaternius_outfit_Male_Peasant.glb','clothingMale'],
-      ['quaternius_ubc_Hair_Buns.glb','hairBuns'],
-      ['quaternius_ubc_Hair_Buzzed.glb','hairBuzzed'],
-      ['quaternius_ubc_Hair_SimpleParted.glb','hairParted']
+      'quaternius_outfit_Female_Peasant.glb',
+      'quaternius_outfit_Male_Peasant.glb',
+      'quaternius_ubc_Hair_Buns.glb',
+      'quaternius_ubc_Hair_Buzzed.glb',
+      'quaternius_ubc_Hair_SimpleParted.glb'
     ];
     // Same rig, native garment skinning. Files are integrity-pinned in Pages CI.
-    const garments=await Promise.all(garmentFiles.map(async ([file])=>{
+    const garments=await Promise.all(garmentFiles.map(async file=>{
       const data=await getBinary(file,()=>{});
       return loader.parseAsync(data,'');
     }));
@@ -912,14 +902,11 @@ async function load(){
     ready=true;$('load-bar').style.width='100%';
     $('start').disabled=false;$('start').textContent='▶ COMMENCER LE COMBAT';
     $('overlay-desc').textContent='Nova en tenue civile contre trois voyous en habits de paysan. Main gauche : glisser et tenir pour avancer. Main droite : ↑ petit geste pour sauter; ↖↗ poings, ←→ coups au corps, ↙↘ coups de pied, même en l’air; ↓ tenu garde, bref esquive. Tap répété pour combos.';
-    status('Deux modèles et cinq pièces vestimentaires Quaternius chargés · moteur prêt');
-    $('stats').textContent='2 rigs d’origine · 86 animations par rig · vêtements paysans (sans armures) + cheveux skinnés sur les mêmes os';
     if(new URLSearchParams(location.search).has('qa'))startSession();
   }catch(err){
     console.error(err);$('overlay-title').textContent='Erreur de chargement';
     $('overlay-desc').textContent=err.message;
     $('start').textContent='Recharge la page';
-    status('Erreur : '+err.message);
   }
 }
 load();
