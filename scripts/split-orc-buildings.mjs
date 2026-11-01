@@ -29,6 +29,12 @@ for(let i=0;i<candidates.length;i++){
   dstScene.addChild(copy);
   const filename='building-'+String(i+1).padStart(2,'0')+'.glb';
   await io.write(path.join(output,filename),doc);
+  const textureStats=doc.getRoot().listTextures().map(t=>{
+    const image=t.getImage();
+    return {name:t.getName(),mime:t.getMimeType(),bytes:image?.byteLength||0,
+      sha:image?Buffer.from(image).subarray(0,24).toString('hex'):null};
+  });
+  console.log('Building texture audit',node.getName(),JSON.stringify(textureStats));
   const stat=await fs.stat(path.join(output,filename));
   console.log('Building asset',node.getName(),'bytes',stat.size,'meshes',doc.getRoot().listMeshes().length,'textures',doc.getRoot().listTextures().length);
   manifest.push({id:'building-'+String(i+1).padStart(2,'0'),name:node.getName()||'Building '+(i+1),
