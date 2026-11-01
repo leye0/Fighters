@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'docs/**'
+      - 'witch_house.glb'
       - 'scripts/verify-glb.mjs'
       - 'scripts/verify-costumes.mjs'
       - 'scripts/download-costumes.sh'
@@ -33,6 +34,7 @@ jobs:
       - name: Download and pin upstream models into the Pages artifact
         run: |
           mkdir -p docs/models
+          cp witch_house.glb docs/models/witch_house.glb
           curl --fail --location --silent --show-error --retry 3 \
             "https://raw.githubusercontent.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/5821923af517ac5fdc82505faa92a0d575fc1b1a/test/human_male.glb" \
             --output docs/models/human_male.glb
