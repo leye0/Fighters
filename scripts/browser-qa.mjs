@@ -180,17 +180,28 @@ try{
   // Kick is on-rig procedural leg animation, so inspect its actual pose, too.
   await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:20,x:rightX,y:ry}]});
   await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:20,x:rightX+57,y:ry+57}]});
-  await delay(200);
   const kickStart=await evaluate("window.__fightersQA.snapshot()");
   console.log('KICK_START_DIAG '+JSON.stringify(kickStart));
-  await waitUntil("window.__fightersQA.snapshot().heroKickExtension>.35",'native kick pose',8000);
-  await evaluate('window.__fightersQA.freeze(true)');
-  const kick=await evaluate("window.__fightersQA.snapshot()");
-  if(kick.lastRightGesture!=='SE'||kick.heroAttack!=='kickRight')fail('SE kick failed '+JSON.stringify(kick));
-  await snap('night-street-native-kick-frozen-impact');
-  await evaluate('window.__fightersQA.freeze(false)');
+  if(kickStart.lastRightGesture!=='SE'||kickStart.lastRightAction!=='kickRight')
+    fail('SE kick gesture did not dispatch '+JSON.stringify(kickStart));
   await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
-  await waitUntil("!window.__fightersQA.snapshot().heroAttack",'kick recovery',10000);
+  // Pose this same in-game kick on exact physics ticks, independent of GPU frame stalls.
+  await evaluate('window.__fightersQA.reset()');
+  await evaluate("window.__fightersQA.startKickPose('kickRight')");
+  const kickTiming=await evaluate("window.__fightersQA.snapshot()");
+  if(kickTiming.heroAttack!=='kickRight'||kickTiming.heroKickDuration>=.63)
+    fail('Ground kick must recover significantly faster '+JSON.stringify(kickTiming));
+  await evaluate('window.__fightersQA.poseAtAttack(.18)');
+  const kick=await evaluate("window.__fightersQA.snapshot()");
+  if(kick.heroAttack!=='kickRight'||kick.heroKickExtension<.9||Math.abs(kick.heroKickPivot)<.13)
+    fail('Fast ground kick must extend leg and pivot the heroine '+JSON.stringify(kick));
+  await snap('night-street-native-kick-frozen-impact');
+  await evaluate('window.__fightersQA.poseAtAttack(.5)');
+  const retracted=await evaluate("window.__fightersQA.snapshot()");
+  if(retracted.heroAttack||Math.abs(retracted.heroKickPivot)>.01||retracted.heroKickExtension>.01)
+    fail('Kick must retract and untwist fully '+JSON.stringify(retracted));
+  console.log('SNAPPY KICK PASS: fast impact, body pivot, full untwist/recovery');
+  await evaluate('window.__fightersQA.freeze(false)');
   const jx=rightX,jy=ry;
   await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:21,x:jx,y:jy}]});
   await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:21,x:jx,y:jy-24}]});
@@ -235,8 +246,9 @@ try{
     fail('Jump + air kick not triggered '+JSON.stringify(airKickStart));
   await evaluate('window.__fightersQA.poseAtAttack(.28)');
   const airKick=await evaluate("window.__fightersQA.snapshot()");
-  if(!airKick.heroAirAttack||airKick.heroKickExtension<.5||airKick.heroJumpY<.2)
-    fail('Actual airborne leg kick did not extend '+JSON.stringify(airKick));
+  if(!airKick.heroAirAttack||airKick.heroKickExtension<.5||
+     Math.abs(airKick.heroKickPivot)<.07||airKick.heroJumpY<.2)
+    fail('Actual airborne leg kick did not extend and pivot '+JSON.stringify(airKick));
   await snap('night-street-air-kick-frozen');
   await evaluate('window.__fightersQA.freeze(false)');
   await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
@@ -261,6 +273,18 @@ try{
   if(afterCombat.score<=0||afterCombat.enemyHealth[0]>=35)
     fail('Real jab animation did not contact the enemy '+JSON.stringify(afterCombat));
   console.log('Beat em up PASS: movement, three dressed enemies, timed impact, score '+afterCombat.score);
+  // A real transition through enemy cleanup -> 1.5s round delay -> spawnWave().
+  await evaluate('window.__fightersQA.reset()');
+  await evaluate('window.__fightersQA.injureAndClearRound()');
+  const injured=await evaluate("({state:window.__fightersQA.snapshot(),bar:document.getElementById('life').style.width})");
+  if(injured.state.health!==27||injured.bar!=='27%')
+    fail('Round-clear setup did not show reduced health '+JSON.stringify(injured));
+  await evaluate('window.__fightersQA.poseAtAttack(1.0)');
+  await evaluate('window.__fightersQA.poseAtAttack(1.0)');
+  const healed=await evaluate("({state:window.__fightersQA.snapshot(),bar:document.getElementById('life').style.width})");
+  if(healed.state.wave!==2||healed.state.health!==100||healed.bar!=='100%'||healed.state.enemies!==4)
+    fail('Next round did not fully replenish health and HUD '+JSON.stringify(healed));
+  console.log('ROUND HEAL PASS: health 27 -> 100, HUD 27% -> 100%, wave 1 -> 2');
   await evaluate('window.__fightersQA.freeze(false)');
   await evaluate('window.__fightersQA.setEnemiesPassive(false)');
   for(const [w,h,label] of [[844,390,'landscape'],[390,844,'portrait']]){

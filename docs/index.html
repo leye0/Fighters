@@ -107,8 +107,8 @@ const ATTACKS = {
   hook: {name:'Melee_Hook',damage:17,range:1.45,recovery:.23,impact:.52},
   bodyLeft: {name:'Punch_Jab',damage:10,range:1.28,recovery:.13,impact:.38,stagger:.45},
   bodyRight: {name:'Punch_Cross',damage:15,range:1.38,recovery:.21,impact:.42,stagger:.5},
-  kickLeft: {name:null,damage:16,range:1.75,recovery:.26,impact:.43,duration:.75,stagger:.61},
-  kickRight: {name:null,damage:20,range:1.96,recovery:.35,impact:.48,duration:.8,stagger:.68}
+  kickLeft: {name:null,damage:16,range:1.75,recovery:.19,impact:.43,duration:.56,stagger:.61},
+  kickRight: {name:null,damage:20,range:1.96,recovery:.23,impact:.48,duration:.60,stagger:.68}
 };
 let ready=false,running=false,paused=false,gameOver=false;
 let female=null,male=null,clothingFemale=null,clothingMale=null,hairBuns=null,hairBuzzed=null,hairParted=null,hero=null,enemies=[],wave=1,ko=0,score=0,invuln=0,cameraX=0,shake=0,roundDelay=-1;
@@ -277,7 +277,7 @@ function spawnActor(gltf,kind,x,z,index=0){
     speed:kind==='hero'?3.8*HERO_PACE:random(1.3,1.8),label:null,
     legBones:{l:{thigh:visual.getObjectByName('thigh_l'),calf:visual.getObjectByName('calf_l')},
               r:{thigh:visual.getObjectByName('thigh_r'),calf:visual.getObjectByName('calf_r')}},
-    kickExtension:0,kickBase:null,outfitInfo,airActions:new Map(),airLayer:null
+    kickExtension:0,kickPivot:0,kickBase:null,outfitInfo,airActions:new Map(),airLayer:null
   };
   for(const clip of gltf.animations)if(!actor.actions.has(clip.name))actor.actions.set(clip.name,actor.mixer.clipAction(clip));
   if(kind==='hero'){
@@ -315,6 +315,8 @@ function setHUD(){
   $('wave').textContent=String(wave).padStart(2,'0');
 }
 function spawnWave(){
+  // Each new round begins with a full health bar, including round one.
+  hero.health=hero.maxHealth;
   const count=Math.min(2+wave,6);
   for(let i=0;i<count;i++){
     const side=i%2===0?1:-1;
@@ -361,9 +363,15 @@ function startSession(){
       renderer.render(scene,camera);
     },
     reset:()=>startSession(),
+    startKickPose:kind=>{qaPassive=true;attack(hero,kind);},
+    injureAndClearRound:()=>{
+      // Test the normal round-clear timer and spawnWave() healing branch.
+      hero.health=27;setHUD();qaPassive=false;
+      for(const enemy of enemies){enemy.dead=true;enemy.deadTime=0;}
+    },
     snapshot:()=>({
     ready,running,paused,wave,ko,score,health:hero.health,enemies:enemies.filter(e=>!e.dead).length,
-    heroMotion:hero.current,heroGuard:hero.guard,heroAirAttack:!!hero.attack?.air,heroAirLayer:!!hero.airLayer&&hero.airLayer.isRunning(),heroAirLayerTime:hero.airLayer?.time??0,heroSpeed:hero.speed,heroClipScale:hero.action?.getEffectiveTimeScale()??0,enemyClipScales:enemies.map(e=>e.action?.getEffectiveTimeScale()??0),heroAttack:hero.attack?.type||null,heroJumpY:hero.jumpY,heroKickExtension:hero.kickExtension,legBonesFound:{left:!!hero.legBones.l.thigh&&!!hero.legBones.l.calf,right:!!hero.legBones.r.thigh&&!!hero.legBones.r.calf},boneNames:hero.legBones.r.thigh?[]:Array.from(new Set(hero.visual.getObjectsByProperty('isBone',true).map(b=>b.name))).slice(0,80),lastRightGesture,lastRightAction,touchX:touchDirection.x,touchZ:touchDirection.z,
+    heroMotion:hero.current,heroGuard:hero.guard,heroAirAttack:!!hero.attack?.air,heroAirLayer:!!hero.airLayer&&hero.airLayer.isRunning(),heroAirLayerTime:hero.airLayer?.time??0,heroSpeed:hero.speed,heroClipScale:hero.action?.getEffectiveTimeScale()??0,enemyClipScales:enemies.map(e=>e.action?.getEffectiveTimeScale()??0),heroAttack:hero.attack?.type||null,heroJumpY:hero.jumpY,heroKickExtension:hero.kickExtension,heroKickPivot:hero.kickPivot,heroKickDuration:hero.attack?.type?.startsWith('kick')?hero.attack.duration:null,legBonesFound:{left:!!hero.legBones.l.thigh&&!!hero.legBones.l.calf,right:!!hero.legBones.r.thigh&&!!hero.legBones.r.calf},boneNames:hero.legBones.r.thigh?[]:Array.from(new Set(hero.visual.getObjectsByProperty('isBone',true).map(b=>b.name))).slice(0,80),lastRightGesture,lastRightAction,touchX:touchDirection.x,touchZ:touchDirection.z,
     heroX:hero.root.position.x,heroZ:hero.root.position.z,
     outfit:hero.outfitInfo,enemyOutfits:enemies.map(e=>e.outfitInfo),enemyMotions:enemies.map(e=>e.current),enemyHealth:enemies.map(e=>e.health)
   })};
@@ -618,7 +626,7 @@ function stepGame(dt){
 // Drive the existing rig's leg bones in world space, then convert the
 // correction into the hip parent's local space. This avoids assuming bone axes.
 function poseNativeKick(actor){
-  actor.kickExtension=0;
+  actor.kickExtension=0;actor.kickPivot=0;
   if(!actor.attack||!['kickLeft','kickRight'].includes(actor.attack.type))return;
   const a=actor.attack,leg=actor.legBones[a.type==='kickLeft'?'l':'r'];
   const thigh=leg.thigh,calf=leg.calf;
@@ -626,10 +634,19 @@ function poseNativeKick(actor){
   if(!actor.kickBase)actor.kickBase=thigh.quaternion.clone();
   thigh.quaternion.copy(actor.kickBase);
   const t=a.elapsed*HERO_PACE;
-  const lift=THREE.MathUtils.smoothstep(t,.04,.24);
-  const recover=1-THREE.MathUtils.smoothstep(t,.43,.72);
+  // Snap the foot out fast, hold through contact, and retract in one beat.
+  const lift=THREE.MathUtils.smoothstep(t,.015,.15);
+  const recover=1-THREE.MathUtils.smoothstep(t,.34,.56);
   const extension=Math.max(0,lift*recover);
   actor.kickExtension=extension;
+  if(actor.kind==='hero'){
+    // Subtle, short-lived whole-body yaw: the leg's world-space aim still
+    // follows the target instead of spinning away with the torso.
+    const pivot=THREE.MathUtils.smoothstep(t,.015,.13)*
+      (1-THREE.MathUtils.smoothstep(t,.32,.57));
+    actor.kickPivot=actor.facing*(a.type==='kickRight'?.20:-.17)*pivot;
+    actor.visual.rotation.y+=actor.kickPivot;
+  }
   thigh.updateWorldMatrix(true,true);
   const start=thigh.getWorldPosition(new THREE.Vector3());
   const end=calf.getWorldPosition(new THREE.Vector3());
