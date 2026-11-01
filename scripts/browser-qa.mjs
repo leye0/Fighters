@@ -132,7 +132,9 @@ try{
   const leftBefore=await evaluate("window.__fightersQA.snapshot().heroX");
   await delay(570);
   const leftAfter=await evaluate("window.__fightersQA.snapshot().heroX");
-  if(leftAfter<=leftBefore+.65)fail('Holding left finger did not sustain movement');
+  const gestureDiag=await evaluate("window.__fightersQA.snapshot()");
+  console.log('LEFT_HOLD_DIAG '+JSON.stringify({leftBefore,leftAfter,delta:leftAfter-leftBefore,state:gestureDiag}));
+  if(leftAfter<=leftBefore+.65){await snap('gesture-hold-diagnostic');fail('Holding left finger did not sustain movement');}
   await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   await delay(150);
   if((await evaluate("window.__fightersQA.snapshot().touchX"))!==0)fail('Left finger release did not stop movement');
