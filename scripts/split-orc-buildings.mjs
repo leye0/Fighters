@@ -18,6 +18,7 @@ const candidates=all.filter(node=>hasMesh(node)&&/^(?:orc_)?(?:barrack|hut|mine|
 // Reject mesh subnodes and prefer complete, named asset groups.
 console.log('Candidate building groups:',candidates.map(n=>n.getName()).join(', '));
 if(candidates.length<2)throw Error('Fewer than two complete named building groups found');
+console.log('Source animation audit:',JSON.stringify(source.getRoot().listAnimations().map(a=>({name:a.getName(),channels:a.listChannels().length,targets:a.listChannels().map(c=>c.getTargetNode()?.getName()).filter(Boolean).slice(0,30)}))));
 await fs.mkdir(output,{recursive:true});
 const manifest=[];
 let baselineTextureHashes=null;
@@ -31,6 +32,7 @@ for(let i=0;i<candidates.length;i++){
   const dstScene=doc.createScene('Building '+(i+1));
   dstScene.addChild(copy);
   const filename='building-'+String(i+1).padStart(2,'0')+'.glb';
+  console.log('Export animation audit',node.getName(),doc.getRoot().listAnimations().map(a=>({name:a.getName(),channels:a.listChannels().length})));
   await io.write(path.join(output,filename),doc);
   const textureStats=doc.getRoot().listTextures().map(t=>{
     const image=t.getImage();
