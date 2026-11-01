@@ -1,13 +1,20 @@
 # Fighters — Night Street
 
-Prototype de **beat ’em up 2,5D** inspiré des classiques d'arcade à la Double Dragon : une héroïne, Nova, contre des adversaires masculins. Le jeu utilise uniquement des animations qui existent déjà dans les GLB Quaternius, sans retargeting sur des modèles tiers.
+Prototype de **beat ’em up 2,5D** inspiré des classiques d'arcade à la Double Dragon : une héroïne, Nova, contre des adversaires masculins. Le jeu réutilise les animations intégrées aux GLB Quaternius. Pour le coup de pied absent du kit standard, il utilise un mouvement procédural appliqué directement aux os de la jambe du personnage, sans retargeting vers un modèle tiers.
 
 ## Jouer
 
 [Démo jouable sur le domaine du dépôt](https://www.streamlev.com/Fighters/)
 
 - **Mobile, main gauche :** glisser dans une direction, puis garder le doigt posé pour continuer à avancer; lever le doigt stoppe le déplacement. Pas de pavé directionnel affiché.
-- **Mobile, main droite :** tap = jab ; double/triple tap rapide = combo jab / cross / hook ; balayage horizontal = cross/hook ; balayage vers le bas = roulade ; vers le haut = saut ; appui long = garde tant que le doigt reste posé. Les combos se mettent en file pendant l'attaque courante.
+- **Mobile, main droite :** gestes de 8 directions, reconnus dès le mouvement (pas besoin de lever le doigt) :
+  - **↑** : saut immédiat.
+  - **↖ / ↗** : coups de poing hauts (jab rapide / cross puissant).
+  - **← / →** : coups de poing au corps (rapide / puissant, avec fenêtres de récupération différentes).
+  - **↙ / ↘** : coups de pied gauche / droit (plus de portée, mais plus de récupération).
+  - **↓ tenu** : garde qui absorbe environ 80 % des dégâts frontaux. **↓ bref** : roulade d'esquive.
+  - **Tap**, **double/triple tap** : combo automatique jab / cross / hook. **Appui long**, même sans glisser : garde tant que le doigt reste posé.
+- Les coups s'enchaînent via une courte file d'attente, mais chaque attaque crée une fenêtre de vulnérabilité : choix entre portée, vitesse et défense.
 - **Clavier : flèches ou WASD** : déplacement horizontal et profondeur de rue.
 - **J** : jab (Punch_Jab).
 - **K** : cross (Punch_Cross).
@@ -30,7 +37,7 @@ Le précédent Fighters était parti de Claudia, Carla et Realistic Man (trois r
 
 Ici, **les deux personnages et leurs 86 animations sont déjà assemblés** dans les GLB du projet [NafisRayan/Animate-Rigged-Humanoid-No-Blender](https://github.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender), fondé sur [Quaternius Universal Base Characters](https://quaternius.itch.io/universal-base-characters) et les bibliothèques [UAL1](https://quaternius.itch.io/universal-animation-library) et [UAL2](https://quaternius.itch.io/universal-animation-library-2). L'héroïne utilise le GLB féminin, les ennemis sont des clones du GLB masculin **avec le même rig interne**.
 
-Le kit contient des coups de poing et des gestes à l'épée, mais pas de vrai coup de pied sans retargeting. Le gameplay utilise donc jab, cross et hook; aucun « kick » factice.
+Le kit contient des poings et des gestes à l'épée, mais **aucun clip de coup de pied standard**. Pour répondre aux contrôles ↙ / ↘, le prototype produit un kick original avec rotation calculée des os `thigh_l/thigh_r` en coordonnées mondiales, convertie dans le repère local du squelette courant. C'est un mouvement **procédural sur le même rig**, et non une animation Quaternius préfabriquée; son apparence doit être jugée sur les captures QA et en jeu, sans promesse de perfection.
 
 - Source immuable : [commit 5821923](https://github.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/tree/5821923af517ac5fdc82505faa92a0d575fc1b1a/test).
 - Masculin, Git blob SHA-1 : `ad6e0e84b934007d2bc89acf2ebb947a79738333`.

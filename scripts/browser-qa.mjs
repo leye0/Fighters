@@ -112,6 +112,8 @@ try{
   await waitUntil("!!window.__fightersQA && window.__fightersQA.snapshot().ready===true",'game models',100000);
   const initial=await evaluate("window.__fightersQA.snapshot()");
   if(initial.enemies!==3||initial.health!==100)fail('Game initial state incorrect '+JSON.stringify(initial));
+  // Isolate input response from combat stuns, then re-enable real AI for fight QA.
+  await evaluate('window.__fightersQA.setEnemiesPassive(true)');
   await call('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:2});
   const area=await evaluate("(()=>{const x=document.getElementById('viewport').getBoundingClientRect();return {x:x.left,y:x.top,w:x.width,h:x.height};})()");
   const ry=area.y+area.h*.6;
@@ -124,6 +126,15 @@ try{
   await delay(130);
   const released=await evaluate("window.__fightersQA.snapshot().heroGuard");
   if(released)fail('Guard did not disengage when right finger lifted');
+  // South held is also a deliberate directional block; a short flick dodges.
+  await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:19,x:rightX,y:ry}]});
+  await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:19,x:rightX,y:ry+75}]});
+  await delay(400);
+  const south=await evaluate("window.__fightersQA.snapshot()");
+  if(!south.heroGuard||south.lastRightAction!=='guard')fail('South-hold guard failed '+JSON.stringify(south));
+  await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  await delay(130);
+  if(await evaluate("window.__fightersQA.snapshot().heroGuard"))fail('South-hold guard stuck after release');
   const leftX=area.x+area.w*.17;
   await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:12,x:leftX,y:ry}]});
   await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:12,x:leftX+85,y:ry}]});
@@ -139,7 +150,7 @@ try{
   await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   await delay(150);
   if((await evaluate("window.__fightersQA.snapshot().touchX"))!==0)fail('Left finger release did not stop movement');
-  console.log('Gesture QA PASS: left hold-to-move and right long-press block');
+  console.log('Gesture QA PASS: left hold-to-move, right long-press and south-hold blocks');
   const beforeX=await evaluate("window.__fightersQA.snapshot().heroX");
   await call('Input.dispatchKeyEvent',{type:'rawKeyDown',key:'ArrowRight',code:'ArrowRight',windowsVirtualKeyCode:39});
   await delay(500);
@@ -147,6 +158,42 @@ try{
   const afterX=await evaluate("window.__fightersQA.snapshot().heroX");
   if(afterX<=beforeX+.35)fail('Hero did not move right under keyboard input');
   await snap('night-street-start');
+  async function swipe(id,dx,dy,direction,expected){
+    await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id,x:rightX,y:ry}]});
+    await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id,x:rightX+dx,y:ry+dy}]});
+    await delay(160);
+    const result=await evaluate("window.__fightersQA.snapshot()");
+    if(result.lastRightGesture!==direction||result.lastRightAction!==expected)
+      fail(direction+' gesture mapped incorrectly '+JSON.stringify(result));
+    await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+    return result;
+  }
+  // Kick is on-rig procedural leg animation, so inspect its actual pose, too.
+  await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:20,x:rightX,y:ry}]});
+  await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:20,x:rightX+57,y:ry+57}]});
+  await waitUntil("window.__fightersQA.snapshot().heroKickExtension>.35",'native kick pose',8000);
+  const kick=await evaluate("window.__fightersQA.snapshot()");
+  if(kick.lastRightGesture!=='SE'||kick.heroAttack!=='kickRight')fail('SE kick failed '+JSON.stringify(kick));
+  await snap('night-street-native-kick');
+  await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  await waitUntil("!window.__fightersQA.snapshot().heroAttack",'kick recovery',10000);
+  const jx=rightX,jy=ry;
+  await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:21,x:jx,y:jy}]});
+  await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:21,x:jx,y:jy-72}]});
+  await delay(120);
+  const jumping=await evaluate("window.__fightersQA.snapshot()");
+  if(jumping.lastRightAction!=='jump'||jumping.heroJumpY<=0)fail('North swipe did not jump immediately '+JSON.stringify(jumping));
+  await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  for(const [direction,dx,dy,action,id] of [
+    ['NW',-59,-59,'jab',22],
+    ['NE',59,-59,'cross',23],
+    ['W',-72,0,'bodyLeft',24],
+    ['E',72,0,'bodyRight',25],
+    ['SW',-59,59,'kickLeft',26]
+  ])await swipe(id,dx,dy,direction,action);
+  console.log('8-DIRECTION QA PASS: jump, high punches, body punches, both kicks, guard and tap-combo route');
+  await evaluate('window.__fightersQA.reset()');
+  await evaluate('window.__fightersQA.setEnemiesPassive(false)');
   await delay(1800);
   for(let n=0;n<5;n++){
     await call('Input.dispatchKeyEvent',{type:'rawKeyDown',key:'j',code:'KeyJ',windowsVirtualKeyCode:74});

@@ -39,12 +39,12 @@
 <section class="arcade">
 <div class="hud"><div class="hero-hud"><div class="hud-kicker">1UP · HÉROÏNE</div><strong>NOVA</strong><div class="life-track"><div id="life"></div></div></div><div class="score"><div><small>ROUND</small><strong id="wave">01</strong></div><div><small>KO</small><strong id="ko">00</strong></div><div><small>SCORE</small><strong id="score">000000</strong></div></div></div>
 <div id="viewport" class="viewport" aria-label="Scène de jeu beat ’em up 3D"><div class="scanlines"></div><div id="hit-flash" class="hit-flash"></div><div id="banner" class="banner">ROUND 1</div>
-<div id="gesture-indicator" class="gesture-indicator" aria-hidden="true">→</div><div id="guard-indicator" class="guard-indicator">🛡 GARDE</div><div class="gesture-help">GAUCHE : GLISSER + TENIR · DROITE : TAP / BALAYER / TENIR</div>
-<div class="start-overlay" id="overlay"><div class="start-card"><div class="stamp">FIGHTERS · ARCADE EXPERIMENT 01</div><h2 id="overlay-title">NIGHT STREET</h2><p id="overlay-desc">Une héroïne contre des voyous. Mobile : glisse à gauche et garde le doigt posé pour avancer. À droite : tap pour jab, double/triple tap pour combo, balayage pour coups ou esquive, appui long pour bloquer. Même rig Quaternius pour chaque animation.</p><button class="primary" id="start" disabled>Chargement des combattants…</button><div class="load-progress"><div id="load-bar"></div></div></div></div>
+<div id="gesture-indicator" class="gesture-indicator" aria-hidden="true">→</div><div id="guard-indicator" class="guard-indicator">🛡 GARDE</div><div class="gesture-help">GAUCHE : GLISSER + TENIR · DROITE : 8 DIRECTIONS / TENIR</div>
+<div class="start-overlay" id="overlay"><div class="start-card"><div class="stamp">FIGHTERS · ARCADE EXPERIMENT 01</div><h2 id="overlay-title">NIGHT STREET</h2><p id="overlay-desc">Une héroïne contre des voyous. Mobile : main gauche, glisser et tenir pour avancer. Main droite : ↑ saut · ↖↗ poings hauts · ←→ poings au corps · ↙↘ pieds · ↓ tenu garde / ↓ bref esquive. Tap répété pour combos. Le pied est animé directement sur le rig Quaternius.</p><button class="primary" id="start" disabled>Chargement des combattants…</button><div class="load-progress"><div id="load-bar"></div></div></div></div>
 </div>
 </section>
 <div class="under">
-<section class="panel"><h3>COMMANDES · GESTES ET CLAVIER</h3><div class="controls-text"><span><b>MAIN G.</b> Glisser et maintenir = déplacement continu</span><span><b>MAIN D.</b> Tap, double/triple tap, swipe ou appui long pour bloquer</span><span><b>← ↑ ↓ →</b> Déplacer / profondeur</span><span><b>J</b> Jab</span><span><b>K</b> Cross</span><span><b>L</b> Hook</span><span><b>ESPACE</b> Saut</span><span><b>SHIFT</b> Esquive</span><span><b>Q</b> Garde</span></div></section>
+<section class="panel"><h3>COMMANDES · GESTES ET CLAVIER</h3><div class="controls-text"><span><b>MAIN G.</b> Glisser et maintenir = déplacement continu</span><span><b>MAIN D.</b> ↑ saut · ↖↗ poings · ←→ poings bas · ↙↘ pieds · ↓ tenu garde, bref esquive · tap = combo</span><span><b>← ↑ ↓ →</b> Déplacer / profondeur</span><span><b>J</b> Jab</span><span><b>K</b> Cross</span><span><b>L</b> Hook</span><span><b>ESPACE</b> Saut</span><span><b>SHIFT</b> Esquive</span><span><b>Q</b> Garde</span></div></section>
 <section class="panel"><h3>ÉTAT DE L'EXPÉRIENCE</h3><div class="status-panel"><strong id="status">Chargement des modèles…</strong><span class="detail" id="motion">Moteur 2,5D · caméra latérale · 3D animée</span><span class="detail" id="stats">Personnages : chargement · animations : chargement</span></div></section>
 </div>
 <p class="footer">Inspiration : beat 'em up arcade des années 1980. Modèles et 86 animations intégrées : Quaternius (CC0), assemblage : NafisRayan. Aucun transfert vers des rigs Sketchfab.</p>
@@ -80,12 +80,16 @@ const clock = new THREE.Clock();
 const inputs = new Set();
 const touchDirection = {x:0,z:0};
 const guardInputs = new Set();
-let leftGesture=null,rightGesture=null,lastTapAt=0,tapStage=0;
+let leftGesture=null,rightGesture=null,lastTapAt=0,tapStage=0,qaPassive=false,lastRightGesture='',lastRightAction='';
 const ENEMY_PALETTE = [0xe8d3e3,0xb1e2ff,0xd8e6a7,0xf5c5a5,0xc2b3e6];
 const ATTACKS = {
   jab: {name:'Punch_Jab',damage:9,range:1.4,recovery:.12,impact:.39},
   cross: {name:'Punch_Cross',damage:13,range:1.55,recovery:.17,impact:.45},
-  hook: {name:'Melee_Hook',damage:17,range:1.45,recovery:.23,impact:.52}
+  hook: {name:'Melee_Hook',damage:17,range:1.45,recovery:.23,impact:.52},
+  bodyLeft: {name:'Punch_Jab',damage:10,range:1.28,recovery:.13,impact:.38,stagger:.45},
+  bodyRight: {name:'Punch_Cross',damage:15,range:1.38,recovery:.21,impact:.42,stagger:.5},
+  kickLeft: {name:null,damage:16,range:1.75,recovery:.26,impact:.43,duration:.75,stagger:.61},
+  kickRight: {name:null,damage:20,range:1.96,recovery:.35,impact:.48,duration:.8,stagger:.68}
 };
 let ready=false,running=false,paused=false,gameOver=false;
 let female=null,male=null,hero=null,enemies=[],wave=1,ko=0,score=0,invuln=0,cameraX=0,shake=0,roundDelay=-1;
@@ -197,7 +201,10 @@ function spawnActor(gltf,kind,x,z,index=0){
     health:kind==='hero'?100:(30+wave*5),maxHealth:kind==='hero'?100:(30+wave*5),
     facing:kind==='hero'?1:(x<0?1:-1),attack:null,queue:[],guard:false,stun:0,cooldown:random(.65,1.65),
     jumpY:0,jumpV:0,baseY:visual.position.y,landing:0,dead:false,deadTime:0,roll:0,invulnerable:0,
-    speed:kind==='hero'?3.8:random(1.3,1.8),label:null
+    speed:kind==='hero'?3.8:random(1.3,1.8),label:null,
+    legBones:{l:{thigh:visual.getObjectByName('thigh_l'),calf:visual.getObjectByName('calf_l')},
+              r:{thigh:visual.getObjectByName('thigh_r'),calf:visual.getObjectByName('calf_r')}},
+    kickExtension:0,kickBase:null
   };
   for(const clip of gltf.animations)if(!actor.actions.has(clip.name))actor.actions.set(clip.name,actor.mixer.clipAction(clip));
   if(kind==='enemy'){
@@ -243,9 +250,12 @@ function startSession(){
   setHUD();
   $('pause').disabled=false;$('pause').textContent='Ⅱ Pause';
   $('overlay').hidden=true;
-  if(new URLSearchParams(location.search).has('qa'))window.__fightersQA={snapshot:()=>({
+  if(new URLSearchParams(location.search).has('qa'))window.__fightersQA={
+    setEnemiesPassive:value=>{qaPassive=!!value;},
+    reset:()=>startSession(),
+    snapshot:()=>({
     ready,running,paused,wave,ko,score,health:hero.health,enemies:enemies.filter(e=>!e.dead).length,
-    heroMotion:hero.current,heroGuard:hero.guard,touchX:touchDirection.x,touchZ:touchDirection.z,
+    heroMotion:hero.current,heroGuard:hero.guard,heroAttack:hero.attack?.type||null,heroJumpY:hero.jumpY,heroKickExtension:hero.kickExtension,lastRightGesture,lastRightAction,touchX:touchDirection.x,touchZ:touchDirection.z,
     heroX:hero.root.position.x,heroZ:hero.root.position.z,
     enemyMotions:enemies.map(e=>e.current),enemyHealth:enemies.map(e=>e.health)
   })};
@@ -265,10 +275,19 @@ function gameEnd(){
 function attack(actor,kind){
   if(!actor||actor.dead||actor.guard||actor.attack||actor.stun>0||actor.jumpY>.08||actor.roll>0||actor.landing>0)return;
   const a=ATTACKS[kind];
-  const clip=actor.actions.get(a.name)?.getClip();
-  if(!clip)return;
-  actor.attack={type:kind,elapsed:0,duration:clip.duration+a.recovery,struck:false,impact:clip.duration*a.impact};
-  animation(actor,a.name,true);
+  const clip=a.name?actor.actions.get(a.name)?.getClip():null;
+  if(a.name&&!clip)return;
+  const duration=clip?.duration??a.duration;
+  actor.attack={type:kind,elapsed:0,duration:duration+a.recovery,struck:false,impact:duration*a.impact};actor.kickBase=null;
+  if(a.name)animation(actor,a.name,true);
+  else {
+    // The kick uses this same GLB's thigh/calf hierarchy, no imported retargeting.
+    const leg=actor.legBones[kind==='kickLeft'?'l':'r'];
+    if(!leg.thigh||!leg.calf){actor.attack=null;return;}
+    animation(actor,'Idle_Loop',true);
+    actor.current=kind;
+    if(actor.kind==='hero')$('motion').textContent='Animation : '+(kind==='kickLeft'?'coup de pied gauche':'coup de pied droit')+' (rig natif)';
+  }
 }
 function jump(){
   if(!hero||hero.dead||hero.jumpY>.02||hero.attack||hero.stun>0||hero.roll>0)return;
@@ -329,6 +348,7 @@ function hit(actor){
     const dz=target.root.position.z-actor.root.position.z;
     if(dx*actor.facing<-.12 || Math.abs(dx)>profile.range || Math.abs(dz)>.85)continue;
     damage(target,profile.damage,actor);
+    if(!target.dead&&profile.stagger)target.stun=Math.max(target.stun,profile.stagger);
     if(++hitCount>=2)break;
   }
   if(actor.kind==='hero'&&hitCount)score+=15*hitCount;
@@ -341,7 +361,7 @@ function stepAttack(actor,dt){
     a.struck=true;hit(actor);
   }
   if(a.elapsed>=a.duration){
-    actor.attack=null;
+    actor.attack=null;actor.kickExtension=0;actor.kickBase=null;
     if(actor.kind==='hero'&&actor.queue.length)attack(actor,actor.queue.shift());
     else animation(actor,'Idle_Loop');
   }
@@ -378,6 +398,7 @@ function moveHero(dt){
   } else if(hero.jumpY===0)animation(hero,hero.guard?'Idle_FoldArms_Loop':'Idle_Loop');
 }
 function moveEnemies(dt){
+  if(qaPassive)return;
   const alive=enemies.filter(e=>!e.dead);
   for(const e of enemies){
     if(e.dead){e.deadTime-=dt;continue;}
@@ -443,7 +464,10 @@ const FIXED_DT=1/60;
 let accumulated=0;
 function stepGame(dt){
   if(ready&&running&&!paused){
-    if(rightGesture&&!rightGesture.moved&&performance.now()-rightGesture.at>260)setGuard('touch',true);
+    if(rightGesture&&!rightGesture.committed&&performance.now()-rightGesture.at>260){
+      lastRightGesture='HOLD';lastRightAction='guard';
+      setGuard('touch',true);
+    }
     else if(guardInputs.size)setGuard('keyboard',guardInputs.has('keyboard'));
     getPad();
     moveHero(dt);
@@ -451,10 +475,41 @@ function stepGame(dt){
     cameraX=THREE.MathUtils.damp(cameraX,hero.root.position.x,2.4,dt);
   }
   if(ready&&!paused){
-    if(hero){hero.visual.rotation.y=hero.facing>0?Math.PI/2:-Math.PI/2;hero.mixer.update(dt);}
+    if(hero){
+      hero.visual.rotation.y=hero.facing>0?Math.PI/2:-Math.PI/2;
+      hero.mixer.update(dt);
+      poseNativeKick(hero);
+    }
     for(const e of enemies){e.visual.rotation.y=e.facing>0?Math.PI/2:-Math.PI/2;e.mixer.update(dt);}
   }
   shake=Math.max(0,shake-dt);
+}
+// Drive the existing rig's leg bones in world space, then convert the
+// correction into the hip parent's local space. This avoids assuming bone axes.
+function poseNativeKick(actor){
+  actor.kickExtension=0;
+  if(!actor.attack||!['kickLeft','kickRight'].includes(actor.attack.type))return;
+  const a=actor.attack,leg=actor.legBones[a.type==='kickLeft'?'l':'r'];
+  const thigh=leg.thigh,calf=leg.calf;
+  if(!thigh||!calf)return;
+  if(!actor.kickBase)actor.kickBase=thigh.quaternion.clone();
+  thigh.quaternion.copy(actor.kickBase);
+  const t=a.elapsed;
+  const lift=THREE.MathUtils.smoothstep(t,.04,.24);
+  const recover=1-THREE.MathUtils.smoothstep(t,.43,.72);
+  const extension=Math.max(0,lift*recover);
+  actor.kickExtension=extension;
+  thigh.updateWorldMatrix(true,true);
+  const start=thigh.getWorldPosition(new THREE.Vector3());
+  const end=calf.getWorldPosition(new THREE.Vector3());
+  const from=end.sub(start).normalize();
+  const to=new THREE.Vector3(actor.facing*.98,-.18,0).normalize();
+  const worldCorrection=new THREE.Quaternion().setFromUnitVectors(from,to);
+  const parentWorld=thigh.parent.getWorldQuaternion(new THREE.Quaternion());
+  const localCorrection=parentWorld.clone().invert().multiply(worldCorrection).multiply(parentWorld);
+  const target=thigh.quaternion.clone().premultiply(localCorrection);
+  thigh.quaternion.slerp(target,extension);
+  thigh.updateMatrixWorld(true);
 }
 function frame(){
   requestAnimationFrame(frame);
@@ -509,14 +564,24 @@ function rightTap(){
   const now=performance.now();
   tapStage=now-lastTapAt<430?Math.min(3,tapStage+1):1;
   lastTapAt=now;
-  queueAttack(['jab','cross','hook'][tapStage-1]);
+  const action=['jab','cross','hook'][tapStage-1];
+  lastRightGesture='TAP';lastRightAction=action;
+  queueAttack(action);
 }
-function rightSwipe(dx,dy){
-  tapStage=0;
-  if(Math.abs(dy)>Math.abs(dx)*1.15){
-    if(dy>0)roll();else jump();
-  }else if(dx>0)queueAttack('cross');
-  else queueAttack('hook');
+function rightDirection(dx,dy){
+  // Eight 45-degree sectors: E, SE, S, SW, W, NW, N, NE.
+  const sectors=['E','SE','S','SW','W','NW','N','NE'];
+  const octant=(Math.round(Math.atan2(dy,dx)/(Math.PI/4))+8)%8;
+  return sectors[octant];
+}
+function rightSwipe(direction){
+  tapStage=0;lastRightGesture=direction;
+  const actions={N:'jump',NW:'jab',NE:'cross',W:'bodyLeft',E:'bodyRight',SW:'kickLeft',SE:'kickRight',S:'guard'};
+  const action=actions[direction];
+  lastRightAction=action;
+  if(action==='guard')setGuard('touch',true);
+  else if(action==='jump')jump();
+  else queueAttack(action);
 }
 function updateLeftDirection(x,y){
   if(!leftGesture)return;
@@ -546,7 +611,7 @@ viewport.addEventListener('pointerdown',event=>{
     leftGesture={id:event.pointerId,x,y,locked:false};
   }else{
     if(rightGesture)return;
-    rightGesture={id:event.pointerId,x,y,at:performance.now(),moved:false};
+    rightGesture={id:event.pointerId,x,y,at:performance.now(),committed:null};
   }
   viewport.setPointerCapture(event.pointerId);
 });
@@ -554,9 +619,11 @@ viewport.addEventListener('pointermove',event=>{
   const rect=viewport.getBoundingClientRect();
   const x=event.clientX-rect.left,y=event.clientY-rect.top;
   if(leftGesture?.id===event.pointerId)updateLeftDirection(x,y);
-  if(rightGesture?.id===event.pointerId&&Math.hypot(x-rightGesture.x,y-rightGesture.y)>24){
-    rightGesture.moved=true;
+  if(rightGesture?.id===event.pointerId&&!rightGesture.committed&&Math.hypot(x-rightGesture.x,y-rightGesture.y)>=34){
+    const direction=rightDirection(x-rightGesture.x,y-rightGesture.y);
+    rightGesture.committed=direction;
     setGuard('touch',false);
+    rightSwipe(direction);
   }
 });
 function releasePointer(event){
@@ -569,11 +636,15 @@ function releasePointer(event){
     const rect=viewport.getBoundingClientRect();
     const dx=event.clientX-rect.left-rightGesture.x,dy=event.clientY-rect.top-rightGesture.y;
     const duration=performance.now()-rightGesture.at;
+    const direction=rightGesture.committed;
     const held=guardInputs.has('touch');
     setGuard('touch',false);
     rightGesture=null;
-    if(!held&&running&&!paused){
-      if(Math.hypot(dx,dy)>=24)rightSwipe(dx,dy);
+    if(!running||paused)return;
+    if(direction==='S'&&duration<215){
+      lastRightAction='roll';roll(); // Down flick = quick evasive roll; down held = block.
+    } else if(!direction&&!held){
+      if(Math.hypot(dx,dy)>=34)rightSwipe(rightDirection(dx,dy));
       else if(duration<320)rightTap();
     }
   }
@@ -628,7 +699,7 @@ async function load(){
     }
     ready=true;$('load-bar').style.width='100%';
     $('start').disabled=false;$('start').textContent='▶ COMMENCER LE COMBAT';
-    $('overlay-desc').textContent='Nova contre les voyous. Mobile : à gauche, glisser et tenir pour se déplacer; à droite, taps et balayages pour combattre, tenir pour bloquer. Clavier : flèches, J/K/L, Q (garde), Espace et Shift.';
+    $('overlay-desc').textContent='Nova contre les voyous. Main gauche : glisser et tenir pour avancer. Main droite : ↑ saut · ↖↗ poings hauts · ←→ poings au corps · ↙↘ coups de pied · ↓ tenu garde / bref esquive. Tap répété pour combos. Clavier : flèches, J/K/L, Q, Espace et Shift.';
     status('Deux modèles 3D chargés · moteur prêt');
     $('stats').textContent='2 rigs d’origine · 86 animations par rig · ennemis clonés sur le squelette masculin';
     if(new URLSearchParams(location.search).has('qa'))startSession();
