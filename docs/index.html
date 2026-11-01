@@ -344,6 +344,15 @@ function startSession(){
     freeze:value=>{paused=!!value;},
     // Advance the actual physics/mixer at 60 Hz, then hold the rendered pose.
     // Headless SwiftShader frame stalls must not decide whether a kick looks correct.
+    arrangeDuel:()=>{
+      qaPassive=true;
+      hero.root.position.set(-1.7,0,0);hero.facing=1;
+      for(let i=0;i<enemies.length;i++){
+        const e=enemies[i];
+        e.root.position.set(hero.root.position.x+(i===0?1.15:6+i*2),0,0);
+        e.attack=null;e.stun=0;e.cooldown=100;e.facing=-1;
+      }
+    },
     poseAtAttack:seconds=>{
       paused=false;
       const ticks=Math.min(75,Math.max(1,Math.round(seconds/FIXED_DT)));

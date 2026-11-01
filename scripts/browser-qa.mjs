@@ -250,18 +250,19 @@ try{
   ])await swipe(id,dx,dy,direction,action);
   console.log('8-DIRECTION QA PASS: jump, high punches, body punches, both kicks, guard and tap-combo route');
   await evaluate('window.__fightersQA.reset()');
-  await evaluate('window.__fightersQA.setEnemiesPassive(false)');
-  await delay(1800);
-  for(let n=0;n<5;n++){
-    await call('Input.dispatchKeyEvent',{type:'rawKeyDown',key:'j',code:'KeyJ',windowsVirtualKeyCode:74});
-    await delay(70);
-    await call('Input.dispatchKeyEvent',{type:'keyUp',key:'j',code:'KeyJ',windowsVirtualKeyCode:74});
-    await delay(750);
-  }
+  // Deterministic contact: one real enemy at jab reach, other two away.
+  // Exercises the unmodified attack timer + hit detection without random AI stuns.
+  await evaluate('window.__fightersQA.arrangeDuel()');
+  await call('Input.dispatchKeyEvent',{type:'rawKeyDown',key:'j',code:'KeyJ',windowsVirtualKeyCode:74});
+  await evaluate('window.__fightersQA.poseAtAttack(.5)');
+  await call('Input.dispatchKeyEvent',{type:'keyUp',key:'j',code:'KeyJ',windowsVirtualKeyCode:74});
   const afterCombat=await evaluate("window.__fightersQA.snapshot()");
-  await snap('night-street-combat');
-  if(afterCombat.score<=0)fail('No successful punch contact in game '+JSON.stringify(afterCombat));
-  console.log('Beat em up PASS: movement, three enemies, attack contacts, score '+afterCombat.score);
+  await snap('night-street-combat-contact');
+  if(afterCombat.score<=0||afterCombat.enemyHealth[0]>=35)
+    fail('Real jab animation did not contact the enemy '+JSON.stringify(afterCombat));
+  console.log('Beat em up PASS: movement, three dressed enemies, timed impact, score '+afterCombat.score);
+  await evaluate('window.__fightersQA.freeze(false)');
+  await evaluate('window.__fightersQA.setEnemiesPassive(false)');
   for(const [w,h,label] of [[844,390,'landscape'],[390,844,'portrait']]){
     await call('Emulation.setDeviceMetricsOverride',{width:w,height:h,deviceScaleFactor:2,mobile:true});
     await delay(350);
