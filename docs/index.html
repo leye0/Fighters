@@ -235,18 +235,23 @@ async function loadOrcVillage(){
   if(!Array.isArray(manifest.buildings)||!manifest.buildings.length)
     throw Error('Orc building manifest is empty');
   const village=new THREE.Group();
+  scene.add(village);
   // Each file contains exactly one complete building and its dependencies.
   // Target a visible 3–5 world-unit footprint; never shrink an already
   // small model and never confuse a single roof or wall with a building.
   const entries=manifest.buildings.slice(0,ORC_VILLAGE.positions.length);
-  const results=await Promise.allSettled(entries.map(entry=>loader.loadAsync(entry.file)));
-  for(let i=0;i<results.length;i++){
-    const result=results[i];
-    if(result.status!=='fulfilled'){
-      console.warn('Orc building unavailable:',entries[i].name,result.reason);
+  // Never decode all 15 textured GLBs simultaneously. On mobile this can
+  // exhaust memory and freeze the main thread during the loading screen.
+  for(let i=0;i<entries.length;i++){
+    let model;
+    try{
+      model=(await loader.loadAsync(entries[i].file)).scene;
+    }catch(err){
+      console.warn('Orc building unavailable:',entries[i].name,err);
       continue;
     }
-    const model=result.value.scene;
+    // Let the renderer and input loop run between buildings.
+    await new Promise(resolve=>setTimeout(resolve,0));
     model.updateMatrixWorld(true);
     const bounds=new THREE.Box3().setFromObject(model);
     const size=bounds.getSize(new THREE.Vector3());
@@ -269,7 +274,6 @@ async function loadOrcVillage(){
       description:entries[i].description,originalFootprint:footprint,targetFootprint:target};
     village.add(anchor);
   }
-  scene.add(village);
   orcVillage=village;
   console.info('Orc village:',village.children.length,'/',entries.length,'individual buildings loaded');
 }
