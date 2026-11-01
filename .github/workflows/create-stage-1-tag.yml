@@ -1,0 +1,25 @@
+name: One-time tag stage-1
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/create-stage-1-tag.yml'
+permissions:
+  contents: write
+jobs:
+  stage-1:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create tag at the exact last playable commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST repos/leye0/Fighters/git/refs \
+            -f ref=refs/tags/stage-1 \
+            -f sha=e9be46bd7f7ae9745265a54c63a6e5d7dd572c04
+      - name: Verify the tag target
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(gh api repos/leye0/Fighters/git/ref/tags/stage-1 --jq '.object.sha')"
+          test "$sha" = "e9be46bd7f7ae9745265a54c63a6e5d7dd572c04"
