@@ -171,6 +171,9 @@ try{
   // Kick is on-rig procedural leg animation, so inspect its actual pose, too.
   await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:20,x:rightX,y:ry}]});
   await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:20,x:rightX+57,y:ry+57}]});
+  await delay(200);
+  const kickStart=await evaluate("window.__fightersQA.snapshot()");
+  console.log('KICK_START_DIAG '+JSON.stringify(kickStart));
   await waitUntil("window.__fightersQA.snapshot().heroKickExtension>.35",'native kick pose',8000);
   const kick=await evaluate("window.__fightersQA.snapshot()");
   if(kick.lastRightGesture!=='SE'||kick.heroAttack!=='kickRight')fail('SE kick failed '+JSON.stringify(kick));
