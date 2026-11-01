@@ -79,6 +79,9 @@ const CAMERA_OFFSET=new THREE.Vector3(18,18,18);
 const camera=new THREE.OrthographicCamera(-11,11,11,-11,.1,180);
 camera.position.copy(CAMERA_OFFSET);
 const ARENA_HALF=28,ARENA_SIZE=2*ARENA_HALF;
+const SPAWNS={hero:{x:-22,z:-22},enemies:{x:22,z:22}};
+const WITCH_HOUSE={x:-23.5,z:-17.5,maxFootprint:5.2,doorHeading:Math.PI/4};
+let witchHouse=null;
 const INV_SQRT2=Math.SQRT1_2;
 // Input stays in screen coordinates even though the world axes are diagonal.
 function screenToWorld(horizontal,vertical){
@@ -193,6 +196,24 @@ function buildStreet(){
   }
 }
 buildStreet();
+// House is a genuine GLB asset, not a procedural stand-in. Its local front
+// vector is configurable until visually calibrated against the Sketchfab mesh.
+async function loadWitchHouse(){
+  const gltf=await loader.loadAsync('./models/witch_house.glb');
+  const house=gltf.scene;
+  const bounds=new THREE.Box3().setFromObject(house);
+  const size=bounds.getSize(new THREE.Vector3());
+  const center=bounds.getCenter(new THREE.Vector3());
+  const scale=WITCH_HOUSE.maxFootprint/Math.max(size.x,size.z);
+  house.scale.setScalar(scale);
+  // Place the model's local -Z facade toward southeast (+X,+Z).
+  // Rotate -Z by -135° to point (+X,+Z).
+  house.rotation.y=-3*Math.PI/4;
+  house.position.set(WITCH_HOUSE.x-center.x*scale,
+    -bounds.min.y*scale,WITCH_HOUSE.z-center.z*scale);
+  scene.add(house);witchHouse=house;
+}
+loadWitchHouse().catch(err=>console.warn('Witch house GLB unavailable:',err));
 const cameraLook=new THREE.Vector3(0,1.15,0);
 function resize(){
   const w=viewport.clientWidth,h=viewport.clientHeight;
@@ -380,9 +401,9 @@ function spawnWave(){
   hero.health=hero.maxHealth;
   const count=Math.min(2+wave,6);
   for(let i=0;i<count;i++){
-    const angle=i*2*Math.PI/count+random(-.28,.28),radius=random(5.1,7.5);
-    const x=clamp(hero.root.position.x+Math.cos(angle)*radius,-ARENA_HALF+.7,ARENA_HALF-.7);
-    const z=clamp(hero.root.position.z+Math.sin(angle)*radius,-ARENA_HALF+.7,ARENA_HALF-.7);
+    const angle=i*2*Math.PI/count, radius=1.6+Math.floor(i/4)*1.1;
+    const x=clamp(SPAWNS.enemies.x+Math.cos(angle)*radius,-ARENA_HALF+.7,ARENA_HALF-.7);
+    const z=clamp(SPAWNS.enemies.z+Math.sin(angle)*radius,-ARENA_HALF+.7,ARENA_HALF-.7);
     enemies.push(spawnActor(male,'enemy',x,z,i+wave));
   }
   showBanner('ROUND '+wave);
@@ -392,11 +413,11 @@ function startSession(){
   if(!ready)return;
   if(hero)detach(hero);
   for(const e of enemies)detach(e);
-  enemies=[];wave=1;ko=0;score=0;paused=false;running=true;roundDelay=-1;cameraFollow.x=0;cameraFollow.z=0;
+  enemies=[];wave=1;ko=0;score=0;paused=false;running=true;roundDelay=-1;cameraFollow.x=SPAWNS.hero.x;cameraFollow.z=SPAWNS.hero.z;
   inputs.clear();guardInputs.clear();touchDirection.x=0;touchDirection.z=0;
   leftGesture=null;rightGesture=null;clearTimeout(rightGuardTimer);rightGuardTimer=null;$('gesture-indicator').style.display='none';$('guard-indicator').style.display='none';
-  hero=spawnActor(female,'hero',0,0);
-  hero.root.position.x=-1.7;
+  hero=spawnActor(female,'hero',SPAWNS.hero.x,SPAWNS.hero.z);
+  faceDirection(hero,1,1);
   spawnWave();
   setHUD();
   $('pause').disabled=false;$('pause').textContent='Ⅱ';$('pause').setAttribute('aria-label','Pause');
@@ -476,6 +497,7 @@ function startSession(){
     snapshot:()=>({
     ready,running,paused,wave,ko,score,health:hero.health,enemies:enemies.filter(e=>!e.dead).length,
     arenaWidth:ARENA_SIZE,arenaDepth:ARENA_SIZE,projection:camera.isOrthographicCamera?'orthographic':'perspective',
+    spawnPoints:SPAWNS,witchHouseLoaded:!!witchHouse,
     cameraX:cameraFollow.x,cameraZ:cameraFollow.z,
     heroMotion:hero.current,heroGuard:hero.guard,heroAirAttack:!!hero.attack?.air,heroAirLayer:!!hero.airLayer&&hero.airLayer.isRunning(),heroAirLayerTime:hero.airLayer?.time??0,heroSpeed:hero.speed,heroClipScale:hero.action?.getEffectiveTimeScale()??0,enemyClipScales:enemies.map(e=>e.action?.getEffectiveTimeScale()??0),heroAttack:hero.attack?.type||null,heroJumpY:hero.jumpY,heroKickExtension:hero.kickExtension,heroKickPivot:hero.kickPivot,heroKickDuration:hero.attack?.type?.startsWith('kick')?hero.attack.duration:null,legBonesFound:{left:!!hero.legBones.l.thigh&&!!hero.legBones.l.calf,right:!!hero.legBones.r.thigh&&!!hero.legBones.r.calf},boneNames:hero.legBones.r.thigh?[]:Array.from(new Set(hero.visual.getObjectsByProperty('isBone',true).map(b=>b.name))).slice(0,80),lastRightGesture,lastRightAction,touchX:touchDirection.x,touchZ:touchDirection.z,
     heroX:hero.root.position.x,heroZ:hero.root.position.z,
