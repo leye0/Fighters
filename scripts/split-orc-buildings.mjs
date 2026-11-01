@@ -9,30 +9,19 @@ const io=new NodeIO();
 const source=await io.read(input);
 const scene=source.getRoot().listScenes()[0];
 if(!scene)throw Error('GLB contains no scene');
-const children=scene.listChildren();
-const roots=children.length===1&&children[0].listChildren().length>1&&!children[0].getMesh()
-  ?children[0].listChildren():children;
+const all=[];
+const visit=node=>{all.push(node);node.listChildren().forEach(visit);};
+scene.listChildren().forEach(visit);
 const hasMesh=node=>!!node.getMesh()||node.listChildren().some(hasMesh);
-let candidates=roots.filter(hasMesh);
-const walk=(node,depth=0)=>{const mesh=node.getMesh();return {name:node.getName(),mesh:!!mesh,depth,children:node.listChildren().map(n=>walk(n,depth+1))};};
-console.log('Orc GLB hierarchy:',JSON.stringify(scene.listChildren().map(n=>walk(n)),null,2));
-if(candidates.length<2){
-  // Some packs are a single scene node with every object nested further down.
-  // Find the first hierarchy level that actually contains multiple subtrees.
-  let frontier=[...roots];
-  while(frontier.length&&candidates.length<2){
-    const next=frontier.flatMap(n=>n.listChildren()).filter(hasMesh);
-    if(next.length<2)break;
-    candidates=next;
-    frontier=next;
-  }
-}
-if(candidates.length<2)throw Error('Unable to isolate building roots; hierarchy logged above');
+const candidates=all.filter(node=>hasMesh(node)&&/^(orc_(?:barrack|hut|cabin|house|tower|factory|forge|mine|workshop|temple|town|main|storage|lumber|mill|tavern|altar|throne|smelt|oven)|.*(?:_Lv[123]|_level[123]))/i.test(node.getName())&&node.listChildren().length>0);
+// Reject mesh subnodes and prefer complete, named asset groups.
+console.log('Candidate building groups:',candidates.map(n=>n.getName()).join(', '));
+if(candidates.length<2)throw Error('Fewer than two complete named building groups found');
 await fs.mkdir(output,{recursive:true});
 const manifest=[];
 for(let i=0;i<candidates.length;i++){
   const node=candidates[i];
-  const doc=io.createDocument();
+  const doc=new (await import('@gltf-transform/core')).Document();
   const copy=copyToDocument(doc,source,[node])[0];
   const dstScene=doc.createScene('Building '+(i+1));
   dstScene.addChild(copy);
