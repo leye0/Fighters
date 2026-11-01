@@ -1,17 +1,19 @@
 {
-  "schemaVersion": 1,
-  "strategy": "quaternius-cc0-own-skin-v1",
+  "schemaVersion": 2,
+  "strategy": "fighters-quaternius-accad-own-skin-v2",
   "inputs": [
     "UAL1_Standard.glb",
-    "UAL2_Standard.glb"
+    "UAL2_Standard.glb",
+    "Male2_G2_FrontKick.bvh",
+    "Male2_G9_RoundhouseRight.bvh"
   ],
   "characters": [
     {
       "character": "claudia",
-      "clips": 86,
-      "smallestSkeleton": 53,
-      "outputBytes": 9853604,
-      "sha256": "d3d819319ef8f0d7a70cfcd96f87ec759dfc092d88dc90381f874d5bd267167d",
+      "clips": 88,
+      "smallestSkeleton": 21,
+      "outputBytes": 9886624,
+      "sha256": "fcfd472dfaa4d7a0e764b3ee01a9b03c94cb166fdcb481285bc8b38a63f75f22",
       "clipsInfo": [
         {
           "name": "UAL1_A_TPose",
@@ -528,15 +530,27 @@
           "frames": 41,
           "duration": 1.3333333730697632,
           "joints": 53
+        },
+        {
+          "name": "ACCAD_Front_Kick",
+          "frames": 35,
+          "duration": 1.1499989032745361,
+          "joints": 21
+        },
+        {
+          "name": "ACCAD_Roundhouse_Kick",
+          "frames": 28,
+          "duration": 0.8999990820884705,
+          "joints": 21
         }
       ]
     },
     {
       "character": "carla",
-      "clips": 86,
-      "smallestSkeleton": 53,
-      "outputBytes": 9935088,
-      "sha256": "2e63acc98ad9537180e59a807bf1c643dd369c4d13fe9de246f35d327559c989",
+      "clips": 88,
+      "smallestSkeleton": 21,
+      "outputBytes": 9968108,
+      "sha256": "79fd0df514441eccb7114f5328ce569ab0fc65c4e26678225ce3d81a8856f8ee",
       "clipsInfo": [
         {
           "name": "UAL1_A_TPose",
@@ -1053,15 +1067,27 @@
           "frames": 41,
           "duration": 1.3333333730697632,
           "joints": 53
+        },
+        {
+          "name": "ACCAD_Front_Kick",
+          "frames": 35,
+          "duration": 1.1499989032745361,
+          "joints": 21
+        },
+        {
+          "name": "ACCAD_Roundhouse_Kick",
+          "frames": 28,
+          "duration": 0.8999990820884705,
+          "joints": 21
         }
       ]
     },
     {
       "character": "realistic-man",
-      "clips": 86,
-      "smallestSkeleton": 22,
-      "outputBytes": 12993676,
-      "sha256": "cc9b196af2f72d7316c3dc5b6cf6ffb3a7b5af2e14e6056e595f8d09ba37ae66",
+      "clips": 88,
+      "smallestSkeleton": 21,
+      "outputBytes": 13026740,
+      "sha256": "f693b243682a8bf5ecb60cdbd2e48566032532f311e25a9ec1c94320b406f138",
       "clipsInfo": [
         {
           "name": "UAL1_A_TPose",
@@ -1578,6 +1604,18 @@
           "frames": 41,
           "duration": 1.3333333730697632,
           "joints": 22
+        },
+        {
+          "name": "ACCAD_Front_Kick",
+          "frames": 35,
+          "duration": 1.1499989032745361,
+          "joints": 21
+        },
+        {
+          "name": "ACCAD_Roundhouse_Kick",
+          "frames": 28,
+          "duration": 0.8999990820884705,
+          "joints": 21
         }
       ]
     }

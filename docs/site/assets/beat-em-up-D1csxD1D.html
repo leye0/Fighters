@@ -54,25 +54,22 @@
         <div class="beat-watermark">DÉMO JOUABLE · CONTACTS DE COMBAT EN RÉGLAGE</div>
         <pre id="beat-diagnostics" class="beat-diagnostics" aria-live="off" hidden></pre>
         <div class="beat-mobile-controls" aria-label="Commandes tactiles">
-          <div class="beat-direction-pad">
-            <button data-beat-key="ArrowUp" class="up" aria-label="Aller en profondeur">↑</button>
-            <button data-beat-key="ArrowLeft" class="left" aria-label="Aller à gauche">←</button>
-            <button data-beat-key="ArrowDown" class="down" aria-label="Revenir vers l’avant">↓</button>
-            <button data-beat-key="ArrowRight" class="right" aria-label="Aller à droite">→</button>
+          <div id="beat-steering-zone" class="beat-steering-zone" role="group" aria-label="Glisser le pouce gauche dans une direction pour se déplacer jusqu'au relâchement">
+            <div class="beat-touch-hint">GLISSE POUR BOUGER<br>RELÂCHE POUR STOPPER</div>
           </div>
-          <div class="beat-action-pad">
-            <button data-beat-key="KeyF" class="beat-punch" aria-label="Coup direct">JAB</button>
-            <button data-beat-key="KeyG" class="beat-punch" aria-label="Coup croisé">CROSS</button>
-            <button data-beat-key="KeyH" class="beat-punch" aria-label="Crochet">HOOK</button>
-            <button data-beat-key="KeyK" class="beat-drop" aria-label="Se laisser tomber à travers une plateforme adaptée">DESCENDRE</button>
-            <button data-beat-key="Space" class="beat-jump" aria-label="Sauter">SAUT</button>
+          <div id="beat-action-pad" class="beat-action-pad" role="group" aria-label="Deux coups de poing en haut, deux coups de pied en bas et saut au centre">
+            <button type="button" data-beat-attack="jab" class="beat-strike-zone" aria-label="Poing : jab">JAB</button>
+            <button type="button" data-beat-attack="cross" class="beat-strike-zone" aria-label="Poing : coup croisé">CROSS</button>
+            <button type="button" data-beat-attack="kickFront" class="beat-strike-zone" aria-label="Pied : coup de pied avant">FRONT KICK</button>
+            <button type="button" data-beat-attack="kickRound" class="beat-strike-zone" aria-label="Pied : coup de pied circulaire">ROUNDHOUSE</button>
+            <button type="button" id="beat-jump-button" class="beat-jump-center" aria-label="Sauter">SAUT</button>
           </div>
         </div>
       </section>
       <div class="beat-footer">
         <span id="beat-status" role="status">Initialisation WebGL…</span>
-        <span>WASD / flèches · Espace / J : saut · K : descendre · F / G / H : frapper · Manette : stick + A / B / X / Y / LB</span>
-        <span>86 animations CC0 par personnage · Quaternius</span>
+        <span>Mobile : glisse à gauche · Poings en haut, pieds en bas, SAUT au centre · Clavier : WASD + F/G/H/I · Manette : stick + X/Y/LB/RB</span>
+        <span>86 animations <a href="https://quaternius.itch.io/universal-animation-library" target="_blank" rel="noopener noreferrer">Quaternius CC0</a> + 2 coups de pied expérimentaux retargetés et accélérés ×2, <a href="https://accad.osu.edu/research/motion-lab/mocap-system-and-data" target="_blank" rel="noopener noreferrer">Open Motion Project by ACCAD / The Ohio State University</a> (<a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener noreferrer">CC BY 3.0</a>)</span>
       </div>
     </main>
     <script type="module" src="/src/beat-em-up.ts"></script>
