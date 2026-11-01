@@ -13,8 +13,21 @@ const children=scene.listChildren();
 const roots=children.length===1&&children[0].listChildren().length>1&&!children[0].getMesh()
   ?children[0].listChildren():children;
 const hasMesh=node=>!!node.getMesh()||node.listChildren().some(hasMesh);
-const candidates=roots.filter(hasMesh);
-if(candidates.length<2)throw Error('Cannot identify multiple top-level building roots; inspect asset hierarchy first');
+let candidates=roots.filter(hasMesh);
+const walk=(node,depth=0)=>{const mesh=node.getMesh();return {name:node.getName(),mesh:!!mesh,depth,children:node.listChildren().map(n=>walk(n,depth+1))};};
+console.log('Orc GLB hierarchy:',JSON.stringify(scene.listChildren().map(n=>walk(n)),null,2));
+if(candidates.length<2){
+  // Some packs are a single scene node with every object nested further down.
+  // Find the first hierarchy level that actually contains multiple subtrees.
+  let frontier=[...roots];
+  while(frontier.length&&candidates.length<2){
+    const next=frontier.flatMap(n=>n.listChildren()).filter(hasMesh);
+    if(next.length<2)break;
+    candidates=next;
+    frontier=next;
+  }
+}
+if(candidates.length<2)throw Error('Unable to isolate building roots; hierarchy logged above');
 await fs.mkdir(output,{recursive:true});
 const manifest=[];
 for(let i=0;i<candidates.length;i++){
