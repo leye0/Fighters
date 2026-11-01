@@ -11,7 +11,10 @@ const source=JSON.parse(readFileSync(file,'utf8'));
 if(!source.extensionsRequired?.includes('EXT_meshopt_compression'))
   throw Error('Input sword was not Meshopt-compressed; check pinned upstream version.');
 const buffers=source.buffers.map(b=>{
-  if(!b.uri||b.uri.startsWith('data:'))throw Error('Sword source buffers must use local binary URI');
+  // EXT_meshopt_compression allows a fallback buffer with no URI. The
+  // compressed views use the extension's buffer/offset instead of that dummy.
+  if(!b.uri)return Buffer.alloc(0);
+  if(b.uri.startsWith('data:'))throw Error('Sword source buffer must use a local binary URI');
   const fileName=resolve(dirname(file),b.uri);
   const bytes=readFileSync(fileName);
   if(bytes.length<b.byteLength)throw Error('Short source buffer '+fileName);
@@ -33,7 +36,11 @@ for(const view of source.bufferViews){
     if(Object.keys(view.extensions).length===0)delete view.extensions;
     decoded++;
   } else {
-    bytes=buffers[view.buffer].subarray(view.byteOffset??0,(view.byteOffset??0)+view.byteLength);
+    const sourceBytes=buffers[view.buffer];
+    const start=view.byteOffset??0;
+    if(start+view.byteLength>sourceBytes.length)
+      throw Error('Uncompressed bufferView references an absent fallback');
+    bytes=sourceBytes.subarray(start,start+view.byteLength);
   }
   const pad=(4-offset%4)%4;
   if(pad){parts.push(Buffer.alloc(pad));offset+=pad;}
