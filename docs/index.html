@@ -948,6 +948,10 @@ function frame(){
   positionCamera();
   updateLabels();
   renderer.render(scene,camera);
+  if(location.search.includes('mem=1') && Math.floor(performance.now()/5000)!==window.memTick){
+    window.memTick=Math.floor(performance.now()/5000);
+    console.log('Fighters memory',renderer.info.memory,renderer.info.render);
+  }
 }
 frame();
 function doAction(type){
