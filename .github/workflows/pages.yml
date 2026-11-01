@@ -1,0 +1,46 @@
+name: Fighters — verify and publish animation lab
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'index.html'
+      - 'scripts/verify-glb.mjs'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: fighters-motion-lab-pages
+  cancel-in-progress: true
+jobs:
+  pages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    environment:
+      name: github-pages
+      url: ${{ steps.publish.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Download and pin upstream models into the Pages artifact
+        run: |
+          mkdir -p docs/models
+          curl --fail --location --silent --show-error --retry 3 \
+            "https://raw.githubusercontent.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/5821923af517ac5fdc82505faa92a0d575fc1b1a/test/human_male.glb" \
+            --output docs/models/human_male.glb
+          curl --fail --location --silent --show-error --retry 3 \
+            "https://raw.githubusercontent.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/5821923af517ac5fdc82505faa92a0d575fc1b1a/test/human_female.glb" \
+            --output docs/models/human_female.glb
+          node scripts/verify-glb.mjs docs/models/human_male.glb docs/models/human_female.glb
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs
+      - name: Publish verified site
+        id: publish
+        uses: actions/deploy-pages@v4
