@@ -212,6 +212,7 @@ try{
   console.log('AIR_JAB_DIAG '+JSON.stringify(airJab));
   if(!airJab.heroAirAttack||!airJab.heroAirLayer||airJab.heroAttack!=='jab')
     fail('Jump + punch must blend a real upper-body punch over the leap '+JSON.stringify(airJab));
+  await waitUntil("(()=>{const s=window.__fightersQA.snapshot();return s.heroAirLayer&&s.heroAirLayerTime>.08&&s.heroJumpY>.25})()",'visible additive air-punch pose',8000);
   await evaluate('window.__fightersQA.freeze(true)');
   await snap('night-street-air-punch-frozen');
   await evaluate('window.__fightersQA.freeze(false)');
