@@ -351,11 +351,11 @@ function startSession(){
       renderer.render(scene,camera);
     },
     reset:()=>startSession(),
-    startKickPose:kind=>{qaPassive=true;attack(hero,kind);},
+    startKickPose:kind=>{qaPassive=true;attack(hero,kind);paused=true;},
     setupAirPunch:(facing,kind='jab')=>{
       startSession();qaPassive=true;
       hero.facing=facing;
-      jump();attack(hero,kind);
+      jump();attack(hero,kind);paused=true;
     },
     armPose:()=>{
       const point=name=>{
