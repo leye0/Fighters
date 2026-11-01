@@ -23,7 +23,7 @@ for(let i=0;i<candidates.length;i++){
   const node=candidates[i];
   const doc=new (await import('@gltf-transform/core')).Document();
   const copied=copyToDocument(doc,source,[node]);
-  const copy=copied.find(item=>item?.propertyType==='Node')||doc.getRoot().listNodes().find(n=>n.getName()===node.getName());
+  const copy=doc.getRoot().listNodes().find(n=>n.getName()===node.getName()) || (copied?.propertyType==='Node'?copied:null);
   if(!copy)throw Error('Failed to copy node '+node.getName());
   const dstScene=doc.createScene('Building '+(i+1));
   dstScene.addChild(copy);
