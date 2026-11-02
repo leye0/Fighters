@@ -117,7 +117,7 @@
    // Fire a raid only with a real group; do not feed troops one at a time.
    const unassigned=own.filter(u=>!u.attackOrder&&!(u.attack?.target));
    const threshold=this.raidNumber===0?4:5;
-   if(!threatened&&unassigned.length>=threshold&&this.clock-this.lastRaid>22){
+   if(!threatened&&this.clock>20&&unassigned.length>=threshold&&this.clock-this.lastRaid>22){
     const squad=unassigned.sort((a,b)=>(a.health/a.maxHealth)-(b.health/b.maxHealth))
       .slice(-Math.min(7,unassigned.length));
     orders.push({type:'raid',unitIds:squad.map(u=>u.id),reason:'squad_ready'});
