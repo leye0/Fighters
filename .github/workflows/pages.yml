@@ -7,6 +7,7 @@ on:
       - 'witch_house.glb'
       - 'orc_rts_building_set_-_proto_series.glb.part*'
       - 'scripts/verify-glb.mjs'
+      - 'scripts/compress-character-assets.sh'
       - 'scripts/split-orc-buildings.mjs'
       - 'scripts/verify-costumes.mjs'
       - 'scripts/download-costumes.sh'
@@ -48,6 +49,7 @@ jobs:
             "https://raw.githubusercontent.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/5821923af517ac5fdc82505faa92a0d575fc1b1a/test/human_female.glb" \
             --output docs/models/human_female.glb
           node scripts/verify-glb.mjs docs/models/human_male.glb docs/models/human_female.glb
+          bash scripts/compress-character-assets.sh docs/models
           bash scripts/download-costumes.sh
           bash scripts/download-sword.sh
           npm install --no-save --no-package-lock --no-audit --no-fund meshoptimizer@0.25.0
