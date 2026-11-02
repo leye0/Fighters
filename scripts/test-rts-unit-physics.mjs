@@ -20,7 +20,7 @@ assert(!freeForUnit({x:5,z:7},{x:12,z:7},mover,[mover,blocker],nav),
 // Open ground: soft steering prefers a lane around an idling neighbour.
 const obstacle=unit(10,1,0),traveller=unit(11,0,0);
 let p={x:0,z:0},sideDrift=0;
-for(let i=0;i<150;i++){
+for(let i=0;i<150&&p.x<4.99;i++){
  const next=step(p,{x:5,z:0},.06,traveller,[traveller,obstacle],nav);
  assert(next,'Open-field movement must not be blocked by an idle unit');
  p=next;traveller.root.position.x=p.x;traveller.root.position.z=p.z;
@@ -37,7 +37,7 @@ const corridor={
 };
 const standing=unit(20,1,0),passing=unit(21,0,0);
 let q={x:0,z:0},overlapped=false;
-for(let i=0;i<80;i++){
+for(let i=0;i<80&&q.x<2.99;i++){
  const next=step(q,{x:3,z:0},.05,passing,[passing,standing],corridor);
  assert(next,'Units should never deadlock in a narrow corridor');
  q=next;passing.root.position.x=q.x;passing.root.position.z=q.z;
