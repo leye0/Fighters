@@ -115,7 +115,7 @@
     if(target)orders.push({type:'upgrade',buildingId:target.id,reason:'development'});
    }
    // Fire a raid only with a real group; do not feed troops one at a time.
-   const unassigned=own.filter(u=>!u.attackOrder&&!(u.attack?.target));
+   const unassigned=own.filter(u=>!u.mining&&!u.attackOrder&&!(u.attack?.target));
    const threshold=this.raidNumber===0?4:5;
    if(!threatened&&this.clock>20&&unassigned.length>=threshold&&this.clock-this.lastRaid>22){
     const squad=unassigned.sort((a,b)=>(a.health/a.maxHealth)-(b.health/b.maxHealth))
