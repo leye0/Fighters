@@ -1152,7 +1152,9 @@ function tickUnit(actor,dt){
     return;
   }
   let destination=actor.destination,mode='order';
-  if(threat&&(!destination||actor.kind==='orc'||threat.distance<3.5)){
+  // An explicit player move order takes priority over distant autonomous aggro.
+  // Only a hostile inside the immediate defensive radius can interrupt it.
+  if(threat&&(!destination||threat.distance<2.7)){
     destination=threat.target.root.position;mode='pursuit';
   }
   if(destination){
