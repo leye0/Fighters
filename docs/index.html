@@ -1726,6 +1726,31 @@ function renderSelectionRectangle(start,x,y){
   box.style.width=Math.abs(x-start.x)+'px';
   box.style.height=Math.abs(y-start.y)+'px';
 }
+function beginOneFingerGesture(id,x,y){
+  cancelPointerGesture();
+  const gesture={id,x,y,lastX:x,lastY:y,shift:false,mode:'waiting',timer:null};
+  const rect=viewport.getBoundingClientRect(),cue=$('touch-hold-indicator');
+  cue.hidden=false;cue.style.left=x-rect.left+'px';cue.style.top=y-rect.top+'px';
+  cue.style.animation='none';void cue.offsetWidth;cue.style.animation='';
+  gesture.timer=setTimeout(()=>{
+    if(pointerStart!==gesture||activeTouches.size>1||pinch)return;
+    gesture.mode='select';gesture.timer=null;clearHoldCue();
+    renderSelectionRectangle(gesture,gesture.x,gesture.y);
+  },HOLD_TO_SELECT_MS);
+  pointerStart=gesture;
+}
+function updateOneFingerGesture(x,y){
+  const gesture=pointerStart;
+  if(!gesture)return;
+  const distance=Math.hypot(x-gesture.x,y-gesture.y);
+  if(gesture.mode==='waiting'&&distance>11){
+    if(gesture.timer)clearTimeout(gesture.timer);
+    gesture.timer=null;gesture.mode='pan';clearHoldCue();
+  }
+  if(gesture.mode==='pan')panCamera(x-gesture.lastX,y-gesture.lastY);
+  else if(gesture.mode==='select'&&distance>8)renderSelectionRectangle(gesture,x,y);
+  gesture.lastX=x;gesture.lastY=y;
+}
 function applyPinch(a,b){
   const center={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
   const distance=Math.max(1,Math.hypot(a.x-b.x,a.y-b.y));
@@ -1745,7 +1770,12 @@ function beginPinch(){
     center:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}};
 }
 viewport.addEventListener('touchstart',event=>{
-  if(event.touches.length<2)return;
+  if(event.touches.length===1){
+    if(!pointerStart&&running&&!paused&&!$('overlay').hidden){
+      const touch=event.touches[0];beginOneFingerGesture('touch-'+touch.identifier,touch.clientX,touch.clientY);
+    }
+    return;
+  }
   if(activeTouches.size<2)inputSuppressedByPinch=true;
   cancelPointerGesture();
   if(!pinch){
@@ -1755,14 +1785,33 @@ viewport.addEventListener('touchstart',event=>{
   }
 },{passive:false});
 viewport.addEventListener('touchmove',event=>{
-  if(event.touches.length<2||!running||paused)return;
-  event.preventDefault();
-  const a=event.touches[0],b=event.touches[1];
-  applyPinch({x:a.clientX,y:a.clientY},{x:b.clientX,y:b.clientY});
+  if(!running||paused)return;
+  if(event.touches.length>=2){
+    event.preventDefault();
+    const a=event.touches[0],b=event.touches[1];
+    applyPinch({x:a.clientX,y:a.clientY},{x:b.clientX,y:b.clientY});
+  }else if(event.touches.length===1&&!inputSuppressedByPinch&&pointerStart){
+    // Some browser/automation combinations send TouchEvents without matching
+    // pointermove, so the single-finger pan must have a native fallback.
+    event.preventDefault();
+    const a=event.touches[0];
+    updateOneFingerGesture(a.clientX,a.clientY);
+  }
 },{passive:false});
 viewport.addEventListener('touchend',event=>{
   if(event.touches.length<2)pinch=null;
-  if(event.touches.length===0)inputSuppressedByPinch=false;
+  if(event.touches.length===0){
+    if(pointerStart&&typeof pointerStart.id==='string'){
+      const g=pointerStart,at=event.changedTouches[0];
+      cancelPointerGesture();
+      if(!inputSuppressedByPinch&&g.mode==='select'&&at&&
+        Math.hypot(at.clientX-g.x,at.clientY-g.y)>15)
+        selectRectangle(g,{x:at.clientX,y:at.clientY},false);
+      else if(!inputSuppressedByPinch&&g.mode==='waiting'&&at)
+        touchAt(at.clientX,at.clientY);
+    }
+    inputSuppressedByPinch=false;
+  }
 },{passive:false});
 viewport.addEventListener('wheel',event=>{
   if(event.target.closest('.command-panel'))return;
@@ -1777,19 +1826,7 @@ viewport.addEventListener('pointerdown',event=>{
     if(activeTouches.size>=2){beginPinch();}
     else{
       inputSuppressedByPinch=false;
-      const id=event.pointerId;
-      const gesture={id,x:event.clientX,y:event.clientY,lastX:event.clientX,
-        lastY:event.clientY,shift:false,mode:'waiting',timer:null};
-      const rect=viewport.getBoundingClientRect(),cue=$('touch-hold-indicator');
-      cue.hidden=false;cue.style.left=event.clientX-rect.left+'px';
-      cue.style.top=event.clientY-rect.top+'px';
-      cue.style.animation='none';void cue.offsetWidth;cue.style.animation='';
-      gesture.timer=setTimeout(()=>{
-        if(pointerStart!==gesture||activeTouches.size!==1||pinch)return;
-        gesture.mode='select';gesture.timer=null;clearHoldCue();
-        renderSelectionRectangle(gesture,gesture.x,gesture.y);
-      },HOLD_TO_SELECT_MS);
-      pointerStart=gesture;
+      beginOneFingerGesture(event.pointerId,event.clientX,event.clientY);
     }
   }else if(event.button===1||event.button===2){
     cameraDrag={id:event.pointerId,x:event.clientX,y:event.clientY};
@@ -1815,19 +1852,11 @@ viewport.addEventListener('pointermove',event=>{
     cameraDrag.x=event.clientX;cameraDrag.y=event.clientY;return;
   }
   const gesture=pointerStart;
-  if(!gesture||gesture.id!==event.pointerId)return;
-  const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;
-  const distance=Math.hypot(dx,dy);
-  if(gesture.mode==='waiting'&&distance>11){
-    if(gesture.timer)clearTimeout(gesture.timer);
-    gesture.timer=null;gesture.mode='pan';clearHoldCue();
-  }
-  if(gesture.mode==='pan'){
-    panCamera(event.clientX-gesture.lastX,event.clientY-gesture.lastY);
-  }else if(gesture.mode==='select'&&distance>8){
-    renderSelectionRectangle(gesture,event.clientX,event.clientY);
-  }
-  gesture.lastX=event.clientX;gesture.lastY=event.clientY;
+  if(!gesture)return;
+  // A native touchstart may have created the gesture first. Native touchmove
+  // and pointermove both share the same last position, avoiding double panning.
+  if(gesture.id!==event.pointerId&&typeof gesture.id!=='string')return;
+  updateOneFingerGesture(event.clientX,event.clientY);
 });
 function releasePointer(event){
   const pinching=inputSuppressedByPinch||activeTouches.size>=2;
