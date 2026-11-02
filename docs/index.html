@@ -53,6 +53,25 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;padding:0;overf
 .zoom-controls span{font-size:10px;min-width:40px;text-align:center;color:#dcf6ed;font-weight:800}
 .zoom-controls button{background:#253c4f;border:0;width:30px;height:30px;color:#ebfcff}
 @media(max-width:700px){.zoom-controls span{display:none}.zoom-controls button{width:25px;height:27px}}
+.command-panel{left:calc(env(safe-area-inset-left,0px) + 10px);right:calc(env(safe-area-inset-right,0px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 10px);width:auto;max-width:none;min-height:158px;display:grid;grid-template-columns:minmax(225px,1fr) minmax(410px,1.4fr);gap:15px;padding:12px;background:#0c1423f1;border:2px solid #697c82;border-top:3px solid #bbc6a4;box-shadow:0 10px 35px #000b;backdrop-filter:blur(8px)}
+.command-identity{display:flex;align-items:center;gap:12px;min-width:0}
+.command-portrait{width:96px;height:96px;flex-shrink:0;border:3px ridge #acbf9b;border-radius:4px;background:radial-gradient(circle at 45% 30%,#526751,#152522 72%);display:grid;place-items:center;font-size:49px;box-shadow:inset 0 0 20px #091817}
+.command-description{min-width:0}.command-title{font:800 17px/1.2 Georgia,serif;color:#f1eac1;text-shadow:0 2px 2px #000;letter-spacing:.025em}
+.command-info{font-size:11px;color:#c6d1d4;line-height:1.55;margin:7px 0}.command-health{font-size:12px;color:#aec9b1}
+.hp-track{height:8px;background:#3f2726;border:1px solid #a28a70;margin-top:5px;width:100%;max-width:240px}
+.hp-fill{height:100%;background:linear-gradient(90deg,#428b65,#a4db7b)}
+.command-operations{display:flex;flex-direction:column;min-width:0;gap:6px}
+.command-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.command-grid button{min-height:55px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;background:linear-gradient(160deg,#324944,#1b3037);color:#f8f1d3;border:2px solid #738679;border-radius:5px;font-weight:700;box-shadow:inset 0 1px #afbd9b35;text-align:center;white-space:normal;padding:5px 4px;touch-action:manipulation}
+.command-grid button:hover:not(:disabled){border-color:#e8d88d;background:#395549}
+.command-grid button:disabled{opacity:.43}.action-symbol{font-size:23px;line-height:1.1}
+.action-name{font-size:11px;line-height:1.15}.action-cost{color:#f4d995;font-size:10px}
+.production-progress{font-size:11px;color:#d2d9b5;min-height:23px}
+.production-meter{height:6px;background:#2e3c45;border:1px solid #7c9289;margin:4px 0}
+.production-meter div{height:100%;background:#d4bd6a}
+.production-jobs{display:flex;gap:4px;flex-wrap:wrap}
+.production-jobs button{font-size:10px;background:#2a3b40;border:1px solid #7c8879;border-radius:3px;padding:2px 5px;color:#e5e2c6}
+@media(max-width:760px){.command-panel{grid-template-columns:1fr;gap:7px;min-height:0;padding:8px;max-height:41dvh;overflow-y:auto}.command-identity{gap:8px}.command-portrait{width:49px;height:49px;font-size:27px;border-width:2px}.command-title{font-size:14px}.command-info{font-size:10px;line-height:1.25;margin:3px 0}.command-health{font-size:10px}.command-grid button{min-height:48px;padding:3px 2px}.action-symbol{font-size:17px}.action-name{font-size:10px}.action-cost{font-size:9px}.production-progress{min-height:0}.hp-track{margin-top:2px;height:5px}}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
 <script src="./rts-navigation.js"></script>
@@ -65,7 +84,20 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;padding:0;overf
   <div class="utility"><div class="zoom-controls"><button id="zoom-out" title="Dézoomer" aria-label="Dézoomer">−</button><span id="zoom-label">100 %</span><button id="zoom-in" title="Zoomer" aria-label="Zoomer">+</button></div><button id="witch-faction" title="Contrôler les sorcières">🧙</button><button id="orc-faction" title="Contrôler les orcs">⚔</button><button id="pause" aria-label="Pause" disabled>Ⅱ</button></div>
 </div>
 <div id="viewport" class="viewport" aria-label="Carte de stratégie en temps réel"><div class="scanlines"></div><div id="banner" class="banner"></div><div id="selection-rectangle" hidden></div>
-<div class="command-panel" id="command-panel"><div id="command-title">Commandes RTS</div><div id="command-info">Sélectionnez la maison des sorcières pour entraîner des unités.</div><div id="command-buttons"></div><div id="training-progress"></div></div>
+<aside class="command-panel" id="command-panel" aria-label="Panneau de commandes RTS">
+  <div class="command-identity">
+    <div id="command-icon" class="command-portrait" aria-hidden="true">🏰</div>
+    <div class="command-description">
+      <div id="command-title" class="command-title">Commandes RTS</div>
+      <div id="command-info" class="command-info">Sélectionnez une maison ou une unité.</div>
+      <div id="command-health" class="command-health"></div>
+    </div>
+  </div>
+  <div class="command-operations">
+    <div id="command-buttons" class="command-grid"></div>
+    <div id="training-progress" class="production-progress" aria-live="off"></div>
+  </div>
+</aside>
 <div class="start-overlay" id="overlay"><div class="start-card"><div class="stamp">FIGHTERS · PROTOTYPE RTS</div><h2 id="overlay-title">SORCIÈRES CONTRE ORCS</h2><p id="overlay-desc">Sélectionnez une ou plusieurs sorcières puis touchez le terrain pour donner un ordre de déplacement. Les unités combattent automatiquement les ennemis proches. Touchez la maison pour entraîner d’autres sorcières; passez aux orcs pour construire.</p><button class="primary" id="start" disabled>Chargement des unités…</button><div class="load-progress"><div id="load-bar"></div></div></div></div>
 </div></section></div><script type="module">
 import * as THREE from 'three';
@@ -99,7 +131,7 @@ const witchBuilding={
   health:500,maxHealth:500,root:null,
   hitbox:{shape:'aabb',minX:WITCH_HOUSE.x-3.5,maxX:WITCH_HOUSE.x+3.5,
     minZ:WITCH_HOUSE.z-3.5,maxZ:WITCH_HOUSE.z+3.5,minY:0,maxY:6},
-  queue:[],progress:0,rally:{x:-18,z:-12}
+  queue:[],progress:0,rally:{x:-18,z:-12},rallyMarker:null
 };
 let buildingSelectionRing=null;
 const navigatorRTS=new window.FightersNavigation.Navigator({halfSize:ARENA_HALF,cellSize:1,radius:.36});
@@ -175,6 +207,8 @@ const units=[],selected=new Set();
 let female=null,male=null,swordModel=null,clothingFemale=null,clothingMale=null,hairBuns=null,hairBuzzed=null,hairParted=null;
 let ready=false,running=false,paused=false,activeFaction='witch',gold={witch:2000,orc:900},training=[],trainElapsed=0,buildMode=null;
 let selectedBuilding=null,nextUnitId=1,qaPassive=false,orcSpawned=false;
+let rallyMode=false,constructionTab=false,lastHudSignature='';
+const ORC_TRAIN_COST=100,ORC_TRAIN_DURATION=4.5,MAX_QUEUE=8;
 let cameraFollow={x:0,z:0};
 const cameraLook=new THREE.Vector3(0,1.15,0);
 const clock=new THREE.Clock();
@@ -322,7 +356,7 @@ function createBuildingInstance(entry,type,level,anchor,footprint){
     id,modelId:entry.id,sourceNode:entry.sourceNode||entry.name,
     type,level,clanId:'orcs',health:spec.maxHealth,maxHealth:spec.maxHealth,
     constructionCost:spec.constructionCost,requiredTechnology:spec.requiredTechnology,
-    hitbox:buildingBounds(anchor),queue:[],progress:0,rally:null,
+    hitbox:buildingBounds(anchor),queue:[],progress:0,rally:null,rallyMarker:null,
     root:anchor
   };
   const bar=new THREE.Group();
@@ -625,7 +659,8 @@ function selectUnits(actors,append=false){
   refreshHUD();
 }
 function selectBuilding(building){
-  clearSelection();selectedBuilding=building;drawBuildingSelection();refreshHUD();
+  clearSelection();selectedBuilding=building;buildMode=null;rallyMode=false;constructionTab=false;
+  drawBuildingSelection();refreshHUD();
 }
 function worldPoint(clientX,clientY){
   const rect=viewport.getBoundingClientRect();
@@ -689,7 +724,7 @@ function finishTraining(){
 }
 function beginBuild(type){
   if(!running||paused||activeFaction!=='orc'||!ORC_COSTS[type]||!buildingBlueprints.has(type)||gold.orc<ORC_COSTS[type])return false;
-  buildMode=type;refreshHUD();return true;
+  buildMode=type;rallyMode=false;constructionTab=false;refreshHUD();return true;
 }
 function validBuildPosition(x,z,type='hut'){
   if(!buildingBlueprints.has(type))return false;
@@ -772,7 +807,7 @@ function refreshHUD(){
 }
 function changeFaction(faction){
   if(faction!=='witch'&&faction!=='orc')return;
-  activeFaction=faction;buildMode=null;clearSelection();refreshHUD();
+  activeFaction=faction;buildMode=null;rallyMode=false;constructionTab=false;clearSelection();refreshHUD();
 }
 function showBanner(message){
   $('banner').textContent=message;$('banner').style.opacity=1;
@@ -783,6 +818,10 @@ function startSession(){
   for(const actor of units){actor.mixer.stopAllAction();scene.remove(actor.root);}
   units.length=0;selected.clear();selectedBuilding=null;nextUnitId=1;
   gold={witch:2000,orc:900};training=[];trainElapsed=0;buildMode=null;orcSpawned=false;
+  rallyMode=false;constructionTab=false;lastHudSignature='';
+  for(const b of liveBuildings()){b.queue=[];b.progress=0;b.level=1;
+    b.maxHealth=b.clanId==='witch'?500:BUILDING_TYPES[b.type].levels[1].maxHealth;
+    b.health=b.maxHealth;}
   activeFaction='witch';paused=false;running=true;cameraFollow={x:0,z:0};
   updateNavObstacles();
   spawnUnit('witch',-18,-13,0);spawnUnit('witch',-16.5,-15,1);spawnUnit('witch',-19,-16,2);
