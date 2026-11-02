@@ -1285,15 +1285,17 @@ function tickUnit(actor,dt){
   actor.approachAge+=dt;
   actor.stun=Math.max(0,actor.stun-dt);actor.cooldown=Math.max(0,actor.cooldown-dt);
   if(actor.attack){
-    actor.attack.elapsed+=dt;
-    if(!actor.attack.landed&&actor.attack.elapsed>=actor.attack.impact){
-      actor.attack.landed=true;
-      const target=actor.attack.target;
-      const range=actor.weapon?2.35:1.85;
+    // Killing a building invalidates every unit's current attack; keep a local
+    // action reference so an in-flight impact never dereferences a cleared slot.
+    const action=actor.attack;
+    action.elapsed+=dt;
+    if(!action.landed&&action.elapsed>=action.impact){
+      action.landed=true;
+      const target=action.target,range=actor.weapon?2.35:1.85;
       if(enemyOf(actor,target)&&targetDistance(actor,target)<range)
         dealDamage(target,actor.kind==='witch'?17:14,actor);
     }
-    if(actor.attack.elapsed>=actor.attack.duration){
+    if(actor.attack===action&&action.elapsed>=action.duration){
       actor.attack=null;animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop',true);
     }
     return;
