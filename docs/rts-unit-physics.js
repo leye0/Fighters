@@ -39,7 +39,7 @@
   const ux=dx/gap,uz=dz/gap;
   // The direct vector gets first priority, then gentle right/left sidesteps.
   // ±75° retain forward progress; no teleportation or backwards runaway.
-  const angles=[0,.32,-.32,.65,-.65,1.1,-1.1,1.4,-1.4];
+  const angles=[0,.32,-.32,.65,-.65,1.1,-1.1,1.4,-1.4,Math.PI/2,-Math.PI/2,1.9,-1.9];
   for(const angle of angles){
    const c=Math.cos(angle),v=Math.sin(angle);
    const end={x:from.x+length*(ux*c-uz*v),z:from.z+length*(ux*v+uz*c)};
