@@ -799,6 +799,10 @@ function removeOrderPing(el){
 function clearOrderPings(){
   for(const el of [...activeOrderPings])removeOrderPing(el);
 }
+function expireOrderPings(){
+  const now=performance.now();
+  for(const el of [...activeOrderPings])if(now-el.createdAt>=950)removeOrderPing(el);
+}
 function showOrderPing(position,type){
   // A bounded, non-interactive DOM overlay, released on animation completion.
   // Never attach a new Three.js material or mesh for each tactical order.
@@ -811,6 +815,7 @@ function showOrderPing(position,type){
   const el=document.createElement('div');
   el.className='order-ping '+(type==='attack'?'attack':'move');
   el.style.left=x+'px';el.style.top=y+'px';
+  el.createdAt=performance.now();
   $('order-pings').appendChild(el);activeOrderPings.add(el);
   uiStats.feedbackCreated++;uiStats.peakPings=Math.max(uiStats.peakPings,activeOrderPings.size);
   el.addEventListener('animationend',()=>removeOrderPing(el),{once:true});
@@ -1583,6 +1588,7 @@ function positionCamera(){
 }
 function frame(){
   requestAnimationFrame(frame);
+  expireOrderPings();
   const dt=Math.min(clock.getDelta(),.25);
   for(const mixer of orcAnimationMixers)if(!paused&&isSceneDescendant(mixer.getRoot()))mixer.update(dt);
   accumulator+=dt;

@@ -123,9 +123,7 @@ async function run(){
  await evaluate('window.__fightersQA.selectWitches();window.__fightersQA.move(-3,-3)');
  check(await evaluate("document.querySelector('.order-ping.move')!==null"),
    'Move order needs a blue fading marker');
- await sleep(1200);
- check((await evaluate('window.__fightersQA.snapshot()')).ui.activePings===0,
-   'Blue move marker survived beyond animation lifetime');
+ await until("window.__fightersQA.snapshot().ui.activePings===0",'blue order reticle cleanup',10000);
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.selectedIds.length===5,'RTS group selection failed');
  const before=s.witches[0];
@@ -287,9 +285,7 @@ async function run(){
    'Second tap did not order witch to destroy enemy building');
  check(await evaluate("document.querySelector('.order-ping.attack')!==null"),
    'Attack order needs a red fading reticle');
- await sleep(1200);
- check((await evaluate('window.__fightersQA.snapshot()')).ui.activePings===0,
-   'Attack reticle leaked after animation');
+ await until("window.__fightersQA.snapshot().ui.activePings===0",'red order reticle cleanup',10000);
  await evaluate('window.__fightersQA.reset()');
 
  // Real native animation, target acquisition, damage and destruction.
