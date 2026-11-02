@@ -266,6 +266,7 @@ const orcDirector=new window.FightersOrcStrategy.Director();
 const autonomousOrcs=!new URLSearchParams(location.search).has('qa');
 orcDirector.enabled=autonomousOrcs;
 let orcIncomeFraction=0,attackMode=false,strategyAccumulator=0;
+let completedMiningCycles=0,totalMinedGold=0;
 let qaPassiveKind=null;
 let cameraFollow={x:0,z:0};
 const cameraLook=new THREE.Vector3(0,1.15,0);
@@ -716,7 +717,8 @@ function spawnUnit(kind,x,z,index=0){
     health:kind==='witch'?85:110,maxHealth:kind==='witch'?85:110,
     heading:{x:kind==='witch'?1:-1,z:0},facing:1,attack:null,stun:0,cooldown:rand(.25,1),dead:false,deadTime:0,
     speed:kind==='witch'?3.3:2.75,destination:null,attackOrder:null,route:null,routeVersion:-1,
-    routeGoal:null,routeAge:0,approachCache:null,approachAge:0,weapon:null,selectionRing:marker,outfitInfo
+    routeGoal:null,routeAge:0,approachCache:null,approachAge:0,
+    mineJob:null,workAnimationClock:0,weapon:null,selectionRing:marker,outfitInfo
   };
   // Reuse the native grip routine without replacing the Quaternius skeleton.
   if(kind==='orc'&&index%2===0&&swordModel&&!actor.weapon){
@@ -1259,6 +1261,7 @@ function startSession(){
   cameraZoom=35;resize();refreshZoomLabel();
   gold={witch:2000,orc:900};buildMode=null;orcSpawned=false;
   orcDirector.reset();orcIncomeFraction=0;strategyAccumulator=0;attackMode=false;qaPassiveKind=null;
+  completedMiningCycles=0;totalMinedGold=0;
   rallyMode=false;constructionTab=false;lastHudSignature='';
   for(const b of liveBuildings()){b.queue=[];b.progress=0;b.level=1;
     b.maxHealth=b.clanId==='witch'?500:BUILDING_TYPES[b.type].levels[1].maxHealth;
@@ -1392,6 +1395,7 @@ function destroyBuilding(building){
     if(actor.attackOrder===building)actor.attackOrder=null;
     if(actor.attack?.target===building)actor.attack=null;
   }
+  for(const actor of units)if(actor.mineJob?.mineId===building.id)actor.mineJob=null;
   if(building.clanId==='orcs'&&!building.initial){
     releaseConstructedBuilding(building);
     buildingInstances.delete(building.id);
@@ -1474,6 +1478,61 @@ function navigateActor(actor,target,dt,mode){
   pos.set(next.x,0,next.z);animation(actor,'Walk_Loop');
   return 'moving';
 }
+const MINING_SECONDS=4.5,MINING_PAY=22;
+function assignMiners(){
+  if(!orcDirector.enabled||!running)return;
+  const mines=[...buildingInstances.values()].filter(b=>b.type==='mine'&&!b.destroyed);
+  const orcs=units.filter(u=>u.kind==='orc'&&!u.dead);
+  const limit=Math.min(mines.length,Math.max(1,Math.floor(orcs.length/3)));
+  let assigned=orcs.filter(u=>u.mineJob&&mines.some(b=>b.id===u.mineJob.mineId));
+  for(const orc of orcs){
+    if(orc.mineJob&&!mines.some(m=>m.id===orc.mineJob.mineId))orc.mineJob=null;
+  }
+  assigned=orcs.filter(u=>u.mineJob);
+  if(assigned.length>=limit)return;
+  const needed=mines.filter(m=>!assigned.some(u=>u.mineJob.mineId===m.id));
+  for(const mine of needed){
+    if(assigned.length>=limit)break;
+    const available=orcs.filter(u=>!u.mineJob&&!u.attackOrder&&!u.attack&&!u.destination);
+    available.sort((a,b)=>targetDistance(a,mine)-targetDistance(b,mine));
+    const miner=available[0];
+    if(!miner)continue;
+    miner.mineJob={mineId:mine.id,progress:0,cycles:0};
+    miner.route=null;miner.approachCache=null;
+    assigned.push(miner);
+  }
+}
+function tickMineWorker(actor,dt){
+  if(!actor.mineJob||actor.attackOrder)return false;
+  const mine=buildingInstances.get(actor.mineJob.mineId);
+  if(!mine||mine.destroyed){actor.mineJob=null;return false;}
+  const enemies=nearestHostile(actor,4.2);
+  if(enemies)return false; // Worker defends himself when threatened.
+  const reach=targetDistance(actor,mine);
+  if(reach>1.25){
+    const goal=approachBuilding(actor,mine);
+    if(!goal)return false;
+    const status=navigateActor(actor,goal,dt,'order');
+    if(status!=='moving')animation(actor,'Idle_Loop');
+    return true;
+  }
+  // Gold is earned ONLY here, while an actual orc stands beside a mine.
+  // A mine with no worker produces precisely zero gold.
+  actor.mineJob.progress+=dt;
+  actor.workAnimationClock+=dt;
+  if(actor.workAnimationClock>.85){
+    actor.workAnimationClock=0;
+    animation(actor,actor.clipCatalog.has('Punch_Jab')?'Punch_Jab':'Idle_Loop',true);
+  }
+  if(actor.mineJob.progress>=MINING_SECONDS){
+    actor.mineJob.progress-=MINING_SECONDS;
+    actor.mineJob.cycles++;
+    const amount=MINING_PAY*mine.level;
+    gold.orc+=amount;totalMinedGold+=amount;completedMiningCycles++;
+    refreshHUD();
+  }
+  return true;
+}
 function tickUnit(actor,dt){
   if(actor.dead){actor.deadTime-=dt;return;}
   if(qaPassiveKind===actor.kind)return;
@@ -1497,6 +1556,7 @@ function tickUnit(actor,dt){
   }
   if(actor.stun>0)return;
   if(actor.attackOrder&&!enemyOf(actor,actor.attackOrder))actor.attackOrder=null;
+  if(actor.kind==='orc'&&tickMineWorker(actor,dt))return;
   const nearby=nearestHostile(actor,actor.kind==='witch'?7.5:9);
   const explicit=actor.attackOrder;
   const target=explicit||(nearby&&(!actor.destination||nearby.distance<2.7)?nearby.target:null);
@@ -1535,14 +1595,9 @@ function stepOrcStrategy(dt){
   strategyAccumulator+=dt;
   if(strategyAccumulator<.25)return;
   dt=strategyAccumulator;strategyAccumulator=0;
-  const mines=[...buildingInstances.values()].filter(b=>!b.destroyed&&b.type==='mine');
-  // Provisional autonomous income: mine output is independent of user resources.
-  // Uses fractional accumulation so the fixed step is framerate-independent.
-  orcIncomeFraction+=mines.reduce((income,b)=>income+5*b.level,0)*dt;
-  if(orcIncomeFraction>=1){
-    const payout=Math.floor(orcIncomeFraction);
-    gold.orc+=payout;orcIncomeFraction-=payout;
-  }
+  // There is no passive mine income. Assign visible workers to real mines,
+  // then credit gold ONLY after a miner completes a physical work cycle.
+  assignMiners();
   const aliveOrcs=units.filter(a=>a.kind==='orc'&&!a.dead);
   const context={
     ready:true,running,paused,gold:gold.orc,
@@ -1551,7 +1606,8 @@ function stepOrcStrategy(dt){
       health:b.health,maxHealth:b.maxHealth,hitbox:b.hitbox,destroyed:b.destroyed
     })),
     orcs:aliveOrcs.map(u=>({id:u.id,x:u.root.position.x,z:u.root.position.z,
-      health:u.health,maxHealth:u.maxHealth,dead:u.dead,attackOrder:!!u.attackOrder})),
+      health:u.health,maxHealth:u.maxHealth,dead:u.dead,
+      attackOrder:!!u.attackOrder,mining:!!u.mineJob})),
     witches:units.filter(u=>u.kind==='witch'&&!u.dead).map(u=>({
       id:u.id,x:u.root.position.x,z:u.root.position.z,dead:u.dead
     })),
@@ -1901,6 +1957,9 @@ window.__fightersQA={
     loading:{...loadingProfile,characters:{...loadingProfile.characters}},
     ready,running,paused,activeFaction,cameraZoom,cameraCenter:{...cameraFollow},
     orcAI:orcDirector.snapshot(),qaPassiveKind,pinch:pinch?{...pinch}:null,
+    mining:{completedMiningCycles,totalMinedGold,workers:units.filter(u=>u.mineJob&&!u.dead).map(u=>({
+      id:u.id,mineId:u.mineJob.mineId,progress:u.mineJob.progress,
+      x:u.root.position.x,z:u.root.position.z}))},
     activeTouches:activeTouches.size,
     mixers:orcAnimationMixers.length,
     worldHealthBars:scene.children.filter(node=>node.name?.startsWith('healthbar-world-')).length,
