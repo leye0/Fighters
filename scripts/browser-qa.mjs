@@ -66,6 +66,15 @@ async function run(){
  await until('window.__fightersQA.snapshot().witchHouseLoaded','real witch house hitbox');
  let s=await evaluate('window.__fightersQA.snapshot()');
  check(s.witches.length===3&&s.orcs.length===4,'Starting troops');
+ check(s.loading.compressed,'Native characters should load from optimized gzip assets');
+ for(const [name,profile] of Object.entries(s.loading.characters)){
+  check(profile.transport==='gzip'&&profile.wireBytes>0&&
+    profile.wireBytes<profile.decodedBytes*.8,
+   'Lossless compressed rig not used: '+name+' '+JSON.stringify(profile));
+ }
+ check(s.loading.readyMs>0&&s.loading.downloadMs>0,'Missing startup measurements');
+ console.log('LOAD PROFILE (real Chrome):',JSON.stringify(s.loading));
+
  check(s.house.hitbox.maxX>s.house.hitbox.minX&&s.house.hitbox.maxZ>s.house.hitbox.minZ,
   'House requires actual 3D bounding volume');
  check(s.gold.witch===2000&&s.gold.orc===900,'Starting resources');
@@ -265,6 +274,13 @@ async function run(){
  await evaluate('window.__fightersQA.reset()');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.witches.length===3&&s.orcs.length===4,'Reset starting troops');
+ // A mine without a working orc must not grant passive gold, regardless of
+ // whether the mine GLB is already visible and animated.
+ const noWorkerGold=s.gold.orc;
+ await evaluate('window.__fightersQA.advance(13)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.gold.orc===noWorkerGold&&s.mining.totalMinedGold===0&&
+   s.mining.workers.length===0,'Mine generated gold without any worker');
  check(s.house.level===1&&s.buildings.length===5,'Reset starting buildings');
  check(await evaluate('window.__fightersQA.isClear(8,-10)'),
   'Reset must remove constructed building hitboxes');
@@ -304,6 +320,34 @@ async function run(){
   'Destroyed building must be removed from the navigation grid');
  await screenshot('rts-destroyed-orc-hut');
 
+ // Attack from different reachable directions; the issued order alone is
+ // NOT success. Assert the target actually loses HP and enters the melee range.
+ const sides=[
+  {x:12,z:24},{x:20,z:26},{x:26,z:24},{x:25,z:16},
+  {x:10,z:19},{x:26,z:19},{x:20,z:12},{x:14,z:26},
+  {x:-12,z:-13}
+ ];
+ let attempted=0;
+ for(const from of sides){
+  await evaluate("window.__fightersQA.reset();window.__fightersQA.passive('orc')");
+  const state=await evaluate('window.__fightersQA.snapshot()');
+  const target=state.buildings.find(b=>b.type==='hut'&&!b.destroyed);
+  if(!await evaluate("window.__fightersQA.isClear("+from.x+","+from.z+")"))continue;
+  await evaluate("window.__fightersQA.moveUnitTo('witch',0,"+from.x+","+from.z+");window.__fightersQA.selectUnit('witch',0)");
+  check(await evaluate("window.__fightersQA.attackBuilding("+JSON.stringify(target.id)+")"),
+    'Attack order failed for '+JSON.stringify(from));
+  await evaluate("window.__fightersQA.advance("+((from.x<0)?37:17)+")");
+  const after=await evaluate('window.__fightersQA.snapshot()');
+  const updated=after.buildings.find(b=>b.id===target.id);
+  check(updated.health<target.health,
+    'Witch remained idle outside enemy building attack range from '+JSON.stringify(from)+
+    ' before='+target.health+' after='+updated.health+
+    ' witch='+JSON.stringify(after.witches[0]));
+  attempted++;
+ }
+ check(attempted>=6,'Expected at least 6 distinct valid attack-angle trials, got '+attempted);
+ console.log('PASS multi-angle building attacks:',attempted);
+
  // The orc faction must also damage/destroy the main witch house.
  await evaluate("window.__fightersQA.reset();window.__fightersQA.passive('witch');window.__fightersQA.setFaction('orc')");
  await evaluate("window.__fightersQA.moveUnitTo('orc',0,-18.2,-17.5);window.__fightersQA.selectUnit('orc',0);window.__fightersQA.setBuildingHealth('witch-house-01',27)");
@@ -326,6 +370,9 @@ async function run(){
    await evaluate("document.querySelector('#command-buttons button')===window.__aiButtonBefore"),
    'Orc mine income triggered repeated HUD/button rebuilding');
  s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.mining.completedMiningCycles>=1&&s.mining.totalMinedGold>0,
+   'Orc gold never came from a physical mining work cycle: '+JSON.stringify(s.mining));
+ check(s.mining.workers.length>0,'AI must send actual workers to orc mines');
  check(s.orcAI.decisions.some(a=>a.type==='build'),
   'Orc director never planned a village expansion: '+JSON.stringify(s.orcAI));
  check(s.orcAI.decisions.some(a=>a.type==='train'),
@@ -335,6 +382,20 @@ async function run(){
  check(s.buildings.filter(b=>!b.destroyed).every(b=>b.healthbarParent==='scene'),
   'Autonomously built HP bars inherited building transforms');
  await screenshot('rts-orc-autonomous-village');
+
+ // Unit disks must separate even if a legacy spawn leaves identical positions.
+ await evaluate("window.__fightersQA.reset();window.__fightersQA.passive('orc')");
+ await evaluate("window.__fightersQA.moveUnitTo('witch',0,-8,-8);window.__fightersQA.moveUnitTo('witch',1,-8,-8);window.__fightersQA.advance(.25)");
+ s=await evaluate('window.__fightersQA.snapshot()');
+ const a=s.witches[0],b=s.witches[1];
+ check(Math.hypot(a.x-b.x,a.z-b.z)>=.89,
+   'Two idle witches remained superimposed: '+JSON.stringify([a,b]));
+ await evaluate('window.__fightersQA.selectWitches();window.__fightersQA.move(-5,-4);window.__fightersQA.advance(8)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ const living=s.witches;
+ for(let i=0;i<living.length;i++)for(let j=i+1;j<living.length;j++)
+  check(Math.hypot(living[i].x-living[j].x,living[i].z-living[j].z)>=.87,
+    'Moving witches overlapped physical footprint');
 
  await evaluate('window.__fightersQA.enableOrcAI(false);window.__fightersQA.reset()');
  s=await evaluate('window.__fightersQA.snapshot()');
