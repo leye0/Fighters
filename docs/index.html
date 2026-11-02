@@ -1567,6 +1567,7 @@ window.__fightersQA={
     ready,running,paused,activeFaction,cameraZoom,cameraCenter:{...cameraFollow},
     orcAI:orcDirector.snapshot(),qaPassiveKind,
     gold:{...gold},projection:camera.isOrthographicCamera?'orthographic':'perspective',
+    cameraQuaternion:camera.quaternion.toArray(),
     witches:units.filter(a=>a.kind==='witch'&&!a.dead).map(a=>({
       id:a.id,x:a.root.position.x,z:a.root.position.z,health:a.health,animation:a.current,
       destination:a.destination?{...a.destination}:null,pathLength:a.route?.waypoints.length??0
@@ -1588,7 +1589,9 @@ window.__fightersQA={
       queue:b.queue.map(j=>({...j})),initial:b.initial,destroyed:b.destroyed,
       health:b.health,maxHealth:b.maxHealth,
       healthbarParent:b.healthBar.root.parent===scene?'scene':'incorrect',
-      healthbarQuaternion:b.healthBar.root.quaternion.toArray()
+      healthbarQuaternion:b.healthBar.root.quaternion.toArray(),
+      healthbarPosition:b.healthBar.root.position.toArray(),
+      healthbarVisible:b.healthBar.root.visible
     })),
     blueprints:[...buildingBlueprints.keys()],witchHouseLoaded:!!witchHouse
   }),
