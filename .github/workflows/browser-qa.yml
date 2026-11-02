@@ -5,6 +5,8 @@ on:
     paths:
       - 'docs/index.html'
       - 'docs/rts-navigation.js'
+      - 'docs/orc-strategy.js'
+      - 'scripts/test-orc-strategy.mjs'
       - 'scripts/test-rts-navigation.mjs'
       - 'scripts/browser-qa.mjs'
       - 'scripts/verify-costumes.mjs'
@@ -27,8 +29,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Test deterministic RTS navigation and collision math
-        run: node scripts/test-rts-navigation.mjs
+      - name: Test deterministic navigation and orc strategic planning
+        run: |
+          node scripts/test-rts-navigation.mjs
+          node scripts/test-orc-strategy.mjs
       - name: Prepare complete RTS building assets and native character models
         run: |
           mkdir -p docs/models
