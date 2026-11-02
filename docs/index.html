@@ -943,6 +943,28 @@ function buildOrc(type,x,z,{byAI=false}={}){
   if(!byAI){buildMode=null;showBanner(ORC_NAMES[type]+' CONSTRUITE');}
   updateNavObstacles();refreshHUD();return instance;
 }
+const uiStats={commandRebuilds:0,feedbackCreated:0,feedbackRemoved:0,peakPings:0};
+function cancelTransientMode(){
+  attackMode=false;buildMode=null;rallyMode=false;constructionTab=false;refreshHUD();
+}
+function stopSelectedUnits(){
+  for(const unit of selected){unit.destination=null;unit.attackOrder=null;unit.route=null;}
+  refreshHUD();
+}
+function selectArmy(){
+  selectUnits(units.filter(u=>!u.dead&&u.kind===activeFaction));
+}
+$('quick-home').onclick=()=>{
+  if(activeFaction==='witch'){if(!witchBuilding.destroyed)selectBuilding(witchBuilding);}
+  else{
+    const building=[...buildingInstances.values()].find(b=>b.type==='barrack'&&!b.destroyed);
+    if(building)selectBuilding(building);
+  }
+};
+$('quick-army').onclick=selectArmy;
+$('quick-attack').onclick=()=>{if(selected.size){attackMode=!attackMode;refreshHUD();}};
+$('quick-stop').onclick=stopSelectedUnits;
+$('quick-cancel').onclick=cancelTransientMode;
 function refreshHUD(){
   $('witch-gold').textContent=gold.witch;
   $('orc-gold').textContent=gold.orc;
@@ -956,11 +978,11 @@ function refreshHUD(){
     title=$('command-title'),info=$('command-info'),health=$('command-health'),
     portrait=$('command-icon'),buttons=$('command-buttons'),queueUI=$('training-progress');
   const context=[activeFaction,b?.id||'',b?.level||0,b?.health||0,alive.map(u=>u.id).join(','),
-    buildMode||'',rallyMode,constructionTab,attackMode,gold.witch,gold.orc,buildingBlueprints.size,
-    b?.queue.map(j=>j.kind).join(',')||'',running,paused].join('|');
+    constructionTab,buildingBlueprints.size].join('|');
 
   if(context!==lastHudSignature){
     lastHudSignature=context;buttons.replaceChildren();health.replaceChildren();
+    uiStats.commandRebuilds++;
     const add=(symbol,name,cost,action,disabled=false,tooltip='')=>{
       const element=document.createElement('button');
       element.type='button';element.disabled=!!disabled;
@@ -975,19 +997,7 @@ function refreshHUD(){
       buttons.appendChild(element);
     };
     const stopConstruction=()=>{buildMode=null;rallyMode=false;constructionTab=false;attackMode=false;refreshHUD();};
-    if(attackMode){
-      portrait.textContent='⚔️';title.textContent='Cibler une attaque';
-      info.textContent='Touchez une unité ou un bâtiment ennemi.';
-      add('✖','Annuler','',stopConstruction);
-    }else if(buildMode){
-      portrait.textContent='🏗️';title.textContent='Construction · '+ORC_NAMES[buildMode];
-      info.textContent='Touchez une zone libre dans le territoire des orcs. Les hitboxes bloquent le chevauchement.';
-      add('✖','Annuler','',stopConstruction);
-    }else if(rallyMode){
-      portrait.textContent='🚩';title.textContent='Point de rassemblement';
-      info.textContent='Touchez le sol pour choisir où iront les nouvelles unités.';
-      add('✖','Annuler','',stopConstruction);
-    }else if(constructionTab&&activeFaction==='orc'){
+    if(constructionTab&&activeFaction==='orc'){
       portrait.textContent='🏗️';title.textContent='Construire · Village orc';
       info.textContent='Choisissez un plan. Positionnez le bâtiment en cliquant ensuite sur la carte.';
       for(const type of Object.keys(ORC_COSTS))
@@ -1024,7 +1034,7 @@ function refreshHUD(){
       if(friendly)add('🚩','Ralliement','',beginRally,paused,'Définir le point de rassemblement');
       if(friendly&&b.clanId==='orcs')
         add('🏗️','Construire','',()=>{constructionTab=true;refreshHUD();});
-      if(friendly&&b.queue.length)add('✖','Annuler prochain','',()=>cancelOrder(b,0));
+      if(friendly)add('✖','Annuler prochain','',()=>cancelOrder(b,0),b.queue.length===0);
     }else if(alive.length){
       portrait.textContent=activeFaction==='witch'?'🧙':'👹';
       title.textContent=alive.length+' '+(activeFaction==='witch'?'sorcière(s)':'orc(s)');
@@ -1057,6 +1067,55 @@ function refreshHUD(){
       rallyMode?'Choisir un point de rassemblement':b?
       (b.type==='witch-house'?'Maison des sorcières':ORC_NAMES[b.type])+' · niveau '+b.level:
       alive.length+' unité(s) sélectionnée(s)';
+  }
+  // Mutable health, gold and AI income never rebuild the command DOM.
+  // Reusing the exact buttons prevents flicker, focus loss, GC pressure and
+  // the ResizeObserver/render-layout feedback that slowed long battles.
+  if(b){
+    const hp=health.firstChild,fill=health.querySelector('.hp-fill');
+    const text='PV '+Math.ceil(b.health)+' / '+b.maxHealth;
+    if(hp?.nodeType===Node.TEXT_NODE&&hp.textContent!==text)hp.textContent=text;
+    if(fill)fill.style.width=(100*b.health/b.maxHealth)+'%';
+  }else if(alive.length){
+    const average=Math.round(alive.reduce((sum,u)=>sum+u.health/u.maxHealth,0)/alive.length*100);
+    const hp=health.firstChild,fill=health.querySelector('.hp-fill');
+    const text='Santé moyenne : '+average+' %';
+    if(hp?.nodeType===Node.TEXT_NODE&&hp.textContent!==text)hp.textContent=text;
+    if(fill)fill.style.width=average+'%';
+  }
+  for(const button of buttons.children){
+    const action=button.querySelector('.action-name')?.textContent;
+    let disabled=paused;
+    if(action==='Sorcière')disabled||=gold.witch<TRAIN_COST||b?.queue.length>=MAX_QUEUE;
+    else if(action==='Entraîner orc')disabled||=gold.orc<ORC_TRAIN_COST||b?.queue.length>=MAX_QUEUE;
+    else if(action==='Améliorer')disabled||=upgradeCost(b)===null||
+      b?.queue.some(item=>item.kind==='upgrade')||
+      gold[faction]<upgradeCost(b)||b?.queue.length>=MAX_QUEUE;
+    else if(action==='Annuler prochain')disabled=b?.queue.length===0;
+    else if(action&&Object.values(ORC_NAMES).includes(action)){
+      const type=Object.keys(ORC_NAMES).find(key=>ORC_NAMES[key]===action);
+      disabled||=gold.orc<ORC_COSTS[type]||!buildingBlueprints.has(type);
+    }else if(action==='Caserne')disabled||=![...buildingInstances.values()].some(v=>v.type==='barrack'&&!v.destroyed);
+    button.disabled=!!disabled;
+  }
+  $('quick-attack').disabled=selected.size===0||paused||!running;
+  $('quick-stop').disabled=selected.size===0||paused||!running;
+  $('quick-home').disabled=!running||(activeFaction==='witch'&&witchBuilding.destroyed);
+  $('quick-army').disabled=!running||!units.some(u=>!u.dead&&u.kind===activeFaction);
+  const modeActive=attackMode||!!buildMode||rallyMode||constructionTab;
+  $('quick-cancel').disabled=!modeActive;
+  $('quick-attack').setAttribute('aria-pressed',String(attackMode));
+  const prompt=$('order-prompt');
+  const hint=attackMode?'⚔ Touchez une unité ou un bâtiment ennemi.':
+    buildMode?'🏗 Touchez une zone libre pour construire · Annuler en bas.':
+    rallyMode?'🚩 Touchez le sol pour fixer le rassemblement.':
+    constructionTab?'Choisissez le bâtiment à construire.':'';
+  prompt.hidden=!hint;
+  if(hint&&prompt.textContent!==hint)prompt.textContent=hint;
+  const goldHome=$('quick-home').querySelector('span');
+  if(goldHome){
+    const label=activeFaction==='witch'?'Maison':'Caserne';
+    if(goldHome.textContent!==label)goldHome.textContent=label;
   }
   const orderSignature=b?b.id+'|'+b.queue.map(o=>o.kind+':'+o.duration).join(','):'none';
   if(queueUI.dataset.signature!==orderSignature){
