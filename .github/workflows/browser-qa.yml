@@ -5,6 +5,8 @@ on:
     paths:
       - 'docs/index.html'
       - 'docs/rts-navigation.js'
+      - 'docs/rts-unit-physics.js'
+      - 'scripts/test-rts-unit-physics.mjs'
       - 'docs/orc-strategy.js'
       - 'scripts/test-orc-strategy.mjs'
       - 'scripts/compress-character-assets.sh'
@@ -33,6 +35,7 @@ jobs:
       - name: Test deterministic navigation and orc strategic planning
         run: |
           node scripts/test-rts-navigation.mjs
+          node scripts/test-rts-unit-physics.mjs
           node scripts/test-orc-strategy.mjs
       - name: Prepare complete RTS building assets and native character models
         run: |
