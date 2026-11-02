@@ -234,6 +234,7 @@ const orcDirector=new window.FightersOrcStrategy.Director();
 const autonomousOrcs=!new URLSearchParams(location.search).has('qa');
 orcDirector.enabled=autonomousOrcs;
 let orcIncomeFraction=0,attackMode=false;
+let qaPassiveKind=null;
 let cameraFollow={x:0,z:0};
 const cameraLook=new THREE.Vector3(0,1.15,0);
 const clock=new THREE.Clock();
@@ -672,7 +673,7 @@ function spawnUnit(kind,x,z,index=0){
     health:kind==='witch'?85:110,maxHealth:kind==='witch'?85:110,
     heading:{x:kind==='witch'?1:-1,z:0},facing:1,attack:null,stun:0,cooldown:rand(.25,1),dead:false,deadTime:0,
     speed:kind==='witch'?3.3:2.75,destination:null,attackOrder:null,route:null,routeVersion:-1,
-    routeGoal:null,routeAge:0,weapon:null,selectionRing:marker,outfitInfo
+    routeGoal:null,routeAge:0,approachCache:null,approachAge:0,weapon:null,selectionRing:marker,outfitInfo
   };
   for(const clip of source.animations)if(!actor.actions.has(clip.name))actor.actions.set(clip.name,actor.mixer.clipAction(clip));
   // Reuse the native grip routine without replacing the Quaternius skeleton.
@@ -752,7 +753,7 @@ function issueMove(destination){
   actors.forEach((actor,i)=>{
     const dx=(i%cols-(cols-1)/2)*1.35,dz=(Math.floor(i/cols)-Math.floor((actors.length-1)/cols)/2)*1.35;
     actor.destination=navigatorRTS.findSafeGoal({x:destination.x+dx,z:destination.z+dz});
-    actor.attackOrder=null;
+    actor.attackOrder=null;actor.approachCache=null;
     actor.route=null;actor.routeVersion=-1;actor.routeAge=0;
   });
   refreshHUD();
@@ -1096,7 +1097,7 @@ function startSession(){
   }
   cameraZoom=35;resize();refreshZoomLabel();
   gold={witch:2000,orc:900};buildMode=null;orcSpawned=false;
-  orcDirector.reset();orcIncomeFraction=0;attackMode=false;
+  orcDirector.reset();orcIncomeFraction=0;attackMode=false;qaPassiveKind=null;
   rallyMode=false;constructionTab=false;lastHudSignature='';
   for(const b of liveBuildings()){b.queue=[];b.progress=0;b.level=1;
     b.maxHealth=b.clanId==='witch'?500:BUILDING_TYPES[b.type].levels[1].maxHealth;
@@ -1135,6 +1136,9 @@ function nearestHostile(actor,maxDistance=Infinity){
 }
 function approachBuilding(actor,building){
   const b=building.hitbox,p=actor.root.position,pad=1.05;
+  if(actor.approachCache?.id===building.id&&actor.approachCache.version===navigatorRTS.version&&
+    actor.approachAge<2.5&&navigatorRTS.pointClear(actor.approachCache.point))
+    return actor.approachCache.point;
   const mx=(b.minX+b.maxX)/2,mz=(b.minZ+b.maxZ)/2;
   const x=THREE.MathUtils.clamp(p.x,b.minX,b.maxX);
   const z=THREE.MathUtils.clamp(p.z,b.minZ,b.maxZ);
@@ -1155,9 +1159,14 @@ function approachBuilding(actor,building){
   candidates.sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z));
   for(const candidate of candidates){
     if(navigatorRTS.segmentClear({x:p.x,z:p.z},candidate)||
-      navigatorRTS.plan({x:p.x,z:p.z},candidate))return candidate;
+      navigatorRTS.plan({x:p.x,z:p.z},candidate)){
+      actor.approachCache={id:building.id,point:candidate,version:navigatorRTS.version};
+      actor.approachAge=0;return candidate;
+    }
   }
-  return navigatorRTS.findSafeGoal(preferred);
+  const fallback=navigatorRTS.findSafeGoal(preferred);
+  if(fallback){actor.approachCache={id:building.id,point:fallback,version:navigatorRTS.version};actor.approachAge=0;}
+  return fallback;
 }
 function orderAttack(actors,target){
   if(!target||target.destroyed||target.dead)return false;
@@ -1165,6 +1174,7 @@ function orderAttack(actors,target){
   for(const actor of actors){
     if(actor.dead||!enemyOf(actor,target))continue;
     actor.attackOrder=target;actor.destination=null;actor.route=null;actor.routeAge=0;
+    actor.approachCache=null;
     issued++;
   }
   if(issued){attackMode=false;refreshHUD();}
@@ -1271,6 +1281,8 @@ function navigateActor(actor,target,dt,mode){
 }
 function tickUnit(actor,dt){
   if(actor.dead){actor.deadTime-=dt;return;}
+  if(qaPassiveKind===actor.kind)return;
+  actor.approachAge+=dt;
   actor.stun=Math.max(0,actor.stun-dt);actor.cooldown=Math.max(0,actor.cooldown-dt);
   if(actor.attack){
     actor.attack.elapsed+=dt;
@@ -1553,6 +1565,7 @@ async function load(){
 window.__fightersQA={
   snapshot:()=>({
     ready,running,paused,activeFaction,cameraZoom,cameraCenter:{...cameraFollow},
+    orcAI:orcDirector.snapshot(),qaPassiveKind,
     gold:{...gold},projection:camera.isOrthographicCamera?'orthographic':'perspective',
     witches:units.filter(a=>a.kind==='witch'&&!a.dead).map(a=>({
       id:a.id,x:a.root.position.x,z:a.root.position.z,health:a.health,animation:a.current,
@@ -1567,16 +1580,31 @@ window.__fightersQA={
     trainingCount:witchBuilding.queue.filter(j=>j.kind==='witch').length,
     trainElapsed:witchBuilding.progress,house:{id:witchBuilding.id,level:witchBuilding.level,
       health:witchBuilding.health,maxHealth:witchBuilding.maxHealth,
-      hitbox:{...witchBuilding.hitbox},queue:witchBuilding.queue.map(j=>({...j}))},
+      hitbox:{...witchBuilding.hitbox},queue:witchBuilding.queue.map(j=>({...j})),destroyed:witchBuilding.destroyed},
     buildMode,rallyMode,constructionTab,navVersion:navigatorRTS.version,
     buildings:[...buildingInstances.values()].map(b=>({
       id:b.id,type:b.type,level:b.level,visualLevel:b.visualLevel,
       x:b.root.position.x,z:b.root.position.z,hitbox:{...b.hitbox},
-      queue:b.queue.map(j=>({...j})),initial:b.initial
+      queue:b.queue.map(j=>({...j})),initial:b.initial,destroyed:b.destroyed,
+      health:b.health,maxHealth:b.maxHealth,
+      healthbarParent:b.healthBar.root.parent===scene?'scene':'incorrect',
+      healthbarQuaternion:b.healthBar.root.quaternion.toArray()
     })),
     blueprints:[...buildingBlueprints.keys()],witchHouseLoaded:!!witchHouse
   }),
   train:issueTrain,trainOrc:()=>issueOrcTrain(selectedBuilding),
+  attackBuilding:id=>orderAttack([...selected],[witchBuilding,...buildingInstances.values()].find(b=>b.id===id)),
+  attackUnit:id=>orderAttack([...selected],units.find(u=>u.id===id)),
+  damageBuilding:(id,amount)=>{
+    const b=[witchBuilding,...buildingInstances.values()].find(v=>v.id===id);
+    if(b)damageBuilding(b,amount,null);
+  },
+  setBuildingHealth:(id,value)=>{
+    const b=[witchBuilding,...buildingInstances.values()].find(v=>v.id===id);
+    if(b&&!b.destroyed){b.health=Math.max(1,Math.min(b.maxHealth,value));updateHealthBar(b);}
+  },
+  passive:kind=>{qaPassiveKind=kind||null;},
+  enableOrcAI:value=>{orcDirector.enabled=!!value;orcDirector.reset();orcIncomeFraction=0;refreshHUD();},
   upgradeHouse:()=>issueUpgrade(witchBuilding),
   upgradeSelected:()=>issueUpgrade(selectedBuilding),
   cancel:(index=0)=>cancelOrder(selectedBuilding,index),
