@@ -55,4 +55,26 @@ const candidate=corner.plan({x:-3,z:-3},{x:3,z:3});
 assert(candidate,'A* should route around touching diagonal obstacles');
 let a={x:-3,z:-3};
 for(const b of candidate.waypoints){assert(corner.segmentClear(a,b),'No diagonal corner cutting');a=b;}
+// A melee fighter's exact stand-off point beside a building can be physically
+// legal while its coarse A* cell is conservatively marked blocked.
+const nearWall=new Navigator({halfSize:28,cellSize:1,radius:.45});
+nearWall.setObstacles([{id:'target',minX:7,maxX:11,minZ:8,maxZ:12}]);
+const standOffs=[
+ {from:{x:-8,z:0},goal:{x:5.9,z:10}},
+ {from:{x:20,z:18},goal:{x:12.1,z:10}},
+ {from:{x:5,z:22},goal:{x:9,z:13.1}},
+ {from:{x:20,z:3},goal:{x:9,z:6.9}}
+];
+for(const {from,goal} of standOffs){
+ assert(nearWall.pointClear(goal),'Approach position must fit physical unit radius');
+ const path=nearWall.plan(from,goal);
+ assert(path?.waypoints.length,'A* must reach valid building melee stand-off '+JSON.stringify({from,goal}));
+ assert(Math.hypot(path.waypoints.at(-1).x-goal.x,path.waypoints.at(-1).z-goal.z)<.01,
+  'A* may not snap a melee unit two metres outside attack range');
+ let previous=from;
+ for(const waypoint of path.waypoints){
+  assert(nearWall.segmentClear(previous,waypoint),'Melee path crosses the solid building');
+  previous=waypoint;
+ }
+}
 console.log('PASS RTS navigation: A* detours, safe clicked-building goals, swept-radius collisions, diagonal corners, real stepping, dynamic invalidation.');
