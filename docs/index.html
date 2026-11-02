@@ -87,16 +87,22 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;padding:0;overf
   .hud .hero-hud strong{font-size:14px}
   .hud .hero-hud small{font-size:10px}
 }
+.ai-status{opacity:.88;color:#eebf92!important}
+.pause-compact{position:relative;z-index:8;flex-shrink:0;margin-left:4px;pointer-events:auto;align-self:flex-start;background:#16243bd9;color:#e7e7de;border:1px solid #8a9d9e;border-radius:5px;width:29px;height:29px;padding:0;font-size:17px;touch-action:manipulation}
+.hud{padding-right:max(9px,env(safe-area-inset-right))}
+@media(max-width:760px){.hud{grid-template-columns:minmax(102px,1fr) auto 29px;grid-template-rows:1fr!important}.hud .hero-hud{grid-area:1/1/2/2}.hud .score{grid-area:1/2/2/3}.hud #pause{grid-area:1/3/2/4}.hud .score>div{min-width:32px}.hud .score{gap:7px}.hud .hero-hud strong{font-size:12px}.hud .hero-hud small{font-size:9px}}
+
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
 <script src="./rts-navigation.js"></script>
+<script src="./orc-strategy.js"></script>
 </head>
 <body>
 <div class="game-shell"><section class="arcade">
 <div class="hud">
-  <div class="hero-hud"><div class="hud-kicker">FIGHTERS · RTS</div><strong id="faction-title">SORCIÈRES</strong><small id="selection-summary">Touchez une unité ou la maison</small></div>
+  <div class="hero-hud"><div class="hud-kicker">FIGHTERS · RTS</div><strong id="faction-title">SORCIÈRES</strong><small id="selection-summary">Sélectionnez une unité ou la maison</small><small id="ai-status" class="ai-status">Village orc · en développement</small></div>
   <div class="score"><div><small>OR SORCIÈRES</small><strong id="witch-gold">2000</strong></div><div><small>OR ORCS</small><strong id="orc-gold">900</strong></div><div><small>UNITÉS</small><strong id="unit-count">0 : 0</strong></div></div>
-  <div class="utility"><div class="zoom-controls"><button id="zoom-out" title="Dézoomer" aria-label="Dézoomer">−</button><span id="zoom-label">100 %</span><button id="zoom-in" title="Zoomer" aria-label="Zoomer">+</button></div><button id="witch-faction" title="Contrôler les sorcières">🧙</button><button id="orc-faction" title="Contrôler les orcs">⚔</button><button id="pause" aria-label="Pause" disabled>Ⅱ</button></div>
+  <button id="pause" class="pause-compact" aria-label="Pause" title="Pause (P)" disabled>Ⅱ</button>
 </div>
 <div id="viewport" class="viewport" aria-label="Carte de stratégie en temps réel"><div class="scanlines"></div><div id="banner" class="banner"></div><div id="selection-rectangle" hidden></div>
 <aside class="command-panel" id="command-panel" aria-label="Panneau de commandes RTS">
@@ -224,6 +230,10 @@ let ready=false,running=false,paused=false,activeFaction='witch',gold={witch:200
 let selectedBuilding=null,nextUnitId=1,qaPassive=false,orcSpawned=false;
 let rallyMode=false,constructionTab=false,lastHudSignature='';
 const ORC_TRAIN_COST=100,ORC_TRAIN_DURATION=4.5,MAX_QUEUE=8;
+const orcDirector=new window.FightersOrcStrategy.Director();
+const autonomousOrcs=!new URLSearchParams(location.search).has('qa');
+orcDirector.enabled=autonomousOrcs;
+let orcIncomeFraction=0,attackMode=false;
 let cameraFollow={x:0,z:0};
 const cameraLook=new THREE.Vector3(0,1.15,0);
 const clock=new THREE.Clock();
@@ -246,8 +256,7 @@ function zoomCamera(factor,clientX,clientY){
   positionCamera();refreshZoomLabel();
 }
 function refreshZoomLabel(){
-  const el=$('zoom-label');
-  if(el)el.textContent=Math.round(35/cameraZoom*100)+' %';
+  // Zoom is gesture/keyboard driven; no intrusive toolbar.
 }
 function panCamera(dx,dy){
   const box=viewport.getBoundingClientRect(),cx=box.left+box.width/2,cy=box.top+box.height/2;
@@ -376,19 +385,28 @@ function createBuildingInstance(entry,type,level,anchor,footprint){
     root:anchor,visualLevel:1,initial:false
   };
   const bar=new THREE.Group();
-  bar.position.y=footprint*1.45;
+  bar.name='healthbar-world-'+id;
   const background=new THREE.Mesh(new THREE.PlaneGeometry(2.3,.24),
     new THREE.MeshBasicMaterial({color:0x292929,depthTest:false,side:THREE.DoubleSide}));
   const fill=new THREE.Mesh(new THREE.PlaneGeometry(2.2,.17),
     new THREE.MeshBasicMaterial({color:0x65c957,depthTest:false,side:THREE.DoubleSide}));
   fill.position.z=.01;
   bar.add(background,fill);
-  // Health is represented in data and visually, without enabling damage rules.
+  // World-space billboard: never inherit the rotated/scaled orc GLB transform.
   instance.healthBar={root:bar,fill};
-  anchor.add(bar);
+  scene.add(bar);
+  updateHealthBar(instance);
   buildingInstances.set(id,instance);
   updateNavObstacles();
   return instance;
+}
+function updateHealthBar(building){
+  if(!building.healthBar)return;
+  const bar=building.healthBar.root,b=building.hitbox;
+  bar.position.set((b.minX+b.maxX)/2,b.maxY+.85,(b.minZ+b.maxZ)/2);
+  bar.quaternion.copy(camera.quaternion);
+  bar.visible=!building.destroyed&&(building.health<building.maxHealth||selectedBuilding===building);
+  building.healthBar.fill.scale.x=THREE.MathUtils.clamp(building.health/building.maxHealth,0,1);
 }
 let orcVillage=null;
 const orcAnimationMixers=[];
@@ -903,15 +921,14 @@ function refreshHUD(){
   $('unit-count').textContent=units.filter(u=>u.kind==='witch'&&!u.dead).length+' : '+
     units.filter(u=>u.kind==='orc'&&!u.dead).length;
   $('faction-title').textContent=activeFaction==='witch'?'SORCIÈRES':'ORCS';
-  $('witch-faction').classList.toggle('active',activeFaction==='witch');
-  $('orc-faction').classList.toggle('active',activeFaction==='orc');
+  $('ai-status').textContent=orcDirector.enabled?'ORCS · '+({develop:'Expansion',defend:'Défense',attack:'Assaut',recover:'Regroupement'}[orcDirector.mode]||'Stratégie'):'ORCS · En attente';
 
   const b=selectedBuilding,alive=[...selected].filter(u=>!u.dead),
     faction=b?.clanId==='witch'?'witch':'orc',
     title=$('command-title'),info=$('command-info'),health=$('command-health'),
     portrait=$('command-icon'),buttons=$('command-buttons'),queueUI=$('training-progress');
   const context=[activeFaction,b?.id||'',b?.level||0,b?.health||0,alive.map(u=>u.id).join(','),
-    buildMode||'',rallyMode,constructionTab,gold.witch,gold.orc,buildingBlueprints.size,
+    buildMode||'',rallyMode,constructionTab,attackMode,gold.witch,gold.orc,buildingBlueprints.size,
     b?.queue.map(j=>j.kind).join(',')||'',running,paused].join('|');
 
   if(context!==lastHudSignature){
@@ -929,8 +946,12 @@ function refreshHUD(){
       element.onclick=event=>{event.stopPropagation();action();};
       buttons.appendChild(element);
     };
-    const stopConstruction=()=>{buildMode=null;rallyMode=false;constructionTab=false;refreshHUD();};
-    if(buildMode){
+    const stopConstruction=()=>{buildMode=null;rallyMode=false;constructionTab=false;attackMode=false;refreshHUD();};
+    if(attackMode){
+      portrait.textContent='⚔️';title.textContent='Cibler une attaque';
+      info.textContent='Touchez une unité ou un bâtiment ennemi.';
+      add('✖','Annuler','',stopConstruction);
+    }else if(buildMode){
       portrait.textContent='🏗️';title.textContent='Construction · '+ORC_NAMES[buildMode];
       info.textContent='Touchez une zone libre dans le territoire des orcs. Les hitboxes bloquent le chevauchement.';
       add('✖','Annuler','',stopConstruction);
@@ -984,7 +1005,8 @@ function refreshHUD(){
       const fill=document.createElement('div');fill.className='hp-fill';
       fill.style.width=average+'%';track.appendChild(fill);
       health.append(document.createTextNode('Santé moyenne : '+average+' %'),track);
-      add('✋','Arrêter','',()=>{alive.forEach(u=>{u.destination=null;u.route=null;});refreshHUD();});
+      add('⚔️','Attaquer','',()=>{attackMode=true;refreshHUD();});
+      add('✋','Arrêter','',()=>{alive.forEach(u=>{u.destination=null;u.attackOrder=null;u.route=null;});refreshHUD();});
       add('👥','Toutes les unités','',()=>selectUnits(units.filter(u=>u.kind===activeFaction&&!u.dead)));
     }else{
       portrait.textContent=activeFaction==='witch'?'🏡':'🏰';
@@ -1209,7 +1231,7 @@ function frame(){
   if(ticks===12)accumulator=0;
   if(!paused)for(const actor of units){applyFacing(actor);actor.mixer.update(dt);}
   positionCamera();
-  for(const instance of buildingInstances.values())instance.healthBar.root.quaternion.copy(camera.quaternion);
+  for(const building of buildingInstances.values())updateHealthBar(building);
   renderer.render(scene,camera);
 }
 frame();
@@ -1241,8 +1263,6 @@ viewport.addEventListener('wheel',event=>{
   event.preventDefault();
   zoomCamera(Math.exp(clamp(event.deltaY,-400,400)*.0015),event.clientX,event.clientY);
 },{passive:false});
-$('zoom-in').onclick=()=>zoomCamera(.8);
-$('zoom-out').onclick=()=>zoomCamera(1.25);
 viewport.addEventListener('pointerdown',event=>{
   if(event.target.closest('.command-panel')||event.target.closest('.hud'))return;
   if(!running||paused||!$('overlay').hidden)return;
@@ -1310,14 +1330,15 @@ for(const name of ['pointerup','pointercancel','lostpointercapture'])
 viewport.addEventListener('contextmenu',event=>event.preventDefault());
 
 document.addEventListener('keydown',event=>{
-  if(event.code==='Escape'){buildMode=null;rallyMode=false;constructionTab=false;clearSelection();refreshHUD();}
+  if(event.code==='Escape'){buildMode=null;rallyMode=false;constructionTab=false;attackMode=false;clearSelection();refreshHUD();}
   if(event.code==='KeyP'&&!event.repeat)pauseGame();
   if(event.code==='KeyA'&&(event.ctrlKey||event.metaKey)){event.preventDefault();selectUnits(units.filter(a=>a.kind===activeFaction&&!a.dead));}
-  if(event.code==='KeyW'&&event.altKey)changeFaction('witch');
-  if(event.code==='KeyO'&&event.altKey)changeFaction('orc');
+  if(event.code==='KeyW'&&event.altKey&&new URLSearchParams(location.search).has('qa'))changeFaction('witch');
+  if(event.code==='KeyO'&&event.altKey&&new URLSearchParams(location.search).has('qa'))changeFaction('orc');
+  if(event.code==='KeyF'&&selected.size){attackMode=true;refreshHUD();}
+  if(['Equal','NumpadAdd'].includes(event.code))zoomCamera(.82);
+  if(['Minus','NumpadSubtract'].includes(event.code))zoomCamera(1.22);
 });
-$('witch-faction').onclick=()=>changeFaction('witch');
-$('orc-faction').onclick=()=>changeFaction('orc');
 function pauseGame(){
   if(!running)return;
   paused=!paused;$('pause').textContent=paused?'▶':'Ⅱ';
