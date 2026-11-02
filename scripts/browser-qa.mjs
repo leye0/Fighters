@@ -221,11 +221,58 @@ async function run(){
 
  await evaluate('window.__fightersQA.reset()');
  s=await evaluate('window.__fightersQA.snapshot()');
- check(s.witches.length===3&&s.orcs.length===4,'Reset initial army');
- check(s.house.level===1&&s.buildings.length===5,'Reset must remove constructed hut and restore levels');
+ check(s.witches.length===3&&s.orcs.length===4,'Reset starting troops');
+ check(s.house.level===1&&s.buildings.length===5,'Reset starting buildings');
  check(await evaluate('window.__fightersQA.isClear(8,-10)'),
-  'Reset must remove constructed hut collider');
- check(!errors.length,'Browser JS errors: '+errors.join(' | '));
- console.log('PASS RTS: WebGL, zoom buttons/wheel, Warcraft command grid, both faction queues, real level-2 GLB, hitboxes, A* detours, collision-free travel, mobile UI, full reset.');
+  'Reset must remove constructed building hitboxes');
+
+ // Real native animation, target acquisition, damage and destruction.
+ await evaluate("window.__fightersQA.passive('orc');window.__fightersQA.selectUnit('witch',0)");
+ const hutId=(await evaluate('window.__fightersQA.snapshot()')).buildings.find(b=>b.type==='hut').id;
+ await evaluate("window.__fightersQA.moveUnitTo('witch',0,18.5,21)");
+ check(await evaluate("window.__fightersQA.attackBuilding("+JSON.stringify(hutId)+")"),
+  'Attack-building order was rejected');
+ await evaluate('window.__fightersQA.advance(17)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ const destroyed=s.buildings.find(b=>b.id===hutId);
+ check(destroyed?.destroyed&&destroyed.health===0,
+  'Witch attacks did not destroy the orc hut: '+JSON.stringify(destroyed));
+ check(await evaluate('window.__fightersQA.isClear(22,21)'),
+  'Destroyed building must be removed from the navigation grid');
+ await screenshot('rts-destroyed-orc-hut');
+
+ // The orc faction must also damage/destroy the main witch house.
+ await evaluate("window.__fightersQA.reset();window.__fightersQA.passive('witch');window.__fightersQA.setFaction('orc')");
+ await evaluate("window.__fightersQA.moveUnitTo('orc',0,-18.2,-17.5);window.__fightersQA.selectUnit('orc',0);window.__fightersQA.setBuildingHealth('witch-house-01',27)");
+ check(await evaluate("window.__fightersQA.attackBuilding('witch-house-01')"),
+   'Orc attack-building order was rejected');
+ await evaluate('window.__fightersQA.advance(16)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.house.destroyed&&s.house.health===0&&!s.running,
+  'Orc must destroy witch house and end the match: '+JSON.stringify(s.house));
+ check(await evaluate("document.querySelector('#overlay-title').textContent==='DÉFAITE'"),
+  'Destruction of player HQ must announce defeat');
+
+ // Enable real orc director, accelerate physics, inspect real built models.
+ await evaluate("window.__fightersQA.reset();window.__fightersQA.enableOrcAI(true)");
+ await evaluate('window.__fightersQA.advance(41)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.orcAI.decisions.some(a=>a.type==='build'),
+  'Orc director never planned a village expansion: '+JSON.stringify(s.orcAI));
+ check(s.orcAI.decisions.some(a=>a.type==='train'),
+  'Orc director never recruited troops');
+ check(s.buildings.filter(b=>!b.destroyed).length>=6,
+  'Orc village did not grow: '+JSON.stringify(s.buildings.map(b=>b.type)));
+ check(s.buildings.filter(b=>!b.destroyed).every(b=>b.healthbarParent==='scene'),
+  'Autonomously built HP bars inherited building transforms');
+ await screenshot('rts-orc-autonomous-village');
+
+ await evaluate('window.__fightersQA.enableOrcAI(false);window.__fightersQA.reset()');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.witches.length===3&&s.orcs.length===4&&
+  s.buildings.filter(b=>!b.destroyed).length===5,'Reset after AI restores starting match');
+ check(!errors.length,'Browser JavaScript exceptions: '+errors.join(' | '));
+ console.log('PASS RTS: HUD removal, real Chrome zoom/pinch, native combat building destruction both ways, fixed world-space healthbars, autonomous orc village, upgrades, A* pathfinding, mobile layout.');
+
 }
 try{await run();}finally{try{socket?.close();}catch{}chrome.kill();try{rmSync(profile,{recursive:true,force:true,maxRetries:8,retryDelay:350});}catch(error){console.warn('Chrome profile cleanup only:',error.message);}}
