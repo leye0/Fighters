@@ -1364,6 +1364,22 @@ window.__fightersQA={
     if(building)selectBuilding(building);
   },
   move:(x,z)=>issueMove({x,z}),
+  selectUnit:(kind,index)=>{
+    const a=units.filter(u=>u.kind===kind&&!u.dead)[index];
+    if(a)selectUnits([a]);
+  },
+  tap:(x,y)=>touchAt(x,y),
+  auditTravel:(kind,index,seconds)=>{
+    const a=units.filter(u=>u.kind===kind&&!u.dead)[index];
+    if(!a)throw Error('Missing audit actor');
+    const first={x:a.root.position.x,z:a.root.position.z};
+    let blocked=0,steps=0;
+    for(let i=0;i<Math.ceil(seconds/FIXED_DT);i++){
+      stepGame(FIXED_DT);steps++;
+      if(!navigatorRTS.pointClear(a.root.position))blocked++;
+    }
+    return {start:first,end:{x:a.root.position.x,z:a.root.position.z},blocked,steps};
+  },
   moveUnitTo:(kind,index,x,z)=>{
     const u=units.filter(a=>a.kind===kind&&!a.dead)[index];
     if(!u)throw Error('QA unit not found');
