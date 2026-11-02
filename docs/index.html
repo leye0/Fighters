@@ -62,9 +62,9 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;padding:0;overf
 .hp-fill{height:100%;background:linear-gradient(90deg,#428b65,#a4db7b)}
 .command-operations{display:flex;flex-direction:column;min-width:0;gap:6px}
 .command-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
-.command-grid button{min-height:55px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;background:linear-gradient(160deg,#324944,#1b3037);color:#f8f1d3;border:2px solid #738679;border-radius:5px;font-weight:700;box-shadow:inset 0 1px #afbd9b35;text-align:center;white-space:normal;padding:5px 4px;touch-action:manipulation}
-.command-grid button:hover:not(:disabled){border-color:#e8d88d;background:#395549}
-.command-grid button:disabled{opacity:.43}.action-symbol{font-size:23px;line-height:1.1}
+#command-buttons.command-grid button{min-height:55px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;background:linear-gradient(160deg,#324944,#1b3037);color:#f8f1d3;border:2px solid #738679;border-radius:5px;font-weight:700;box-shadow:inset 0 1px #afbd9b35;text-align:center;white-space:normal;padding:5px 4px;touch-action:manipulation}
+#command-buttons.command-grid button:hover:not(:disabled){border-color:#e8d88d;background:#395549}
+#command-buttons.command-grid button:disabled{opacity:.43}.action-symbol{font-size:23px;line-height:1.1}
 .action-name{font-size:11px;line-height:1.15}.action-cost{color:#f4d995;font-size:10px}
 .production-progress{font-size:11px;color:#d2d9b5;min-height:23px}
 .production-meter{height:6px;background:#2e3c45;border:1px solid #7c9289;margin:4px 0}
@@ -205,7 +205,7 @@ const ORC_COSTS={barrack:180,hut:120,mine:140,cauldron:200,factory:250};
 const ORC_NAMES={barrack:'Caserne',hut:'Hutte',mine:'Mine',cauldron:'Chaudron',factory:'Atelier'};
 const units=[],selected=new Set();
 let female=null,male=null,swordModel=null,clothingFemale=null,clothingMale=null,hairBuns=null,hairBuzzed=null,hairParted=null;
-let ready=false,running=false,paused=false,activeFaction='witch',gold={witch:2000,orc:900},training=[],trainElapsed=0,buildMode=null;
+let ready=false,running=false,paused=false,activeFaction='witch',gold={witch:2000,orc:900},buildMode=null;
 let selectedBuilding=null,nextUnitId=1,qaPassive=false,orcSpawned=false;
 let rallyMode=false,constructionTab=false,lastHudSignature='';
 const ORC_TRAIN_COST=100,ORC_TRAIN_DURATION=4.5,MAX_QUEUE=8;
@@ -1031,7 +1031,22 @@ function startSession(){
   if(!ready)return;
   for(const actor of units){actor.mixer.stopAllAction();scene.remove(actor.root);}
   units.length=0;selected.clear();selectedBuilding=null;nextUnitId=1;
-  gold={witch:2000,orc:900};training=[];trainElapsed=0;buildMode=null;orcSpawned=false;
+  // Match reset removes constructed buildings while retaining the initial village.
+  for(const [id,building] of buildingInstances){
+    if(building.initial)continue;
+    building.root.parent?.remove(building.root);
+    if(building.rallyMarker)scene.remove(building.rallyMarker);
+    buildingInstances.delete(id);
+  }
+  for(const building of liveBuildings()){
+    if(building.rallyMarker){scene.remove(building.rallyMarker);building.rallyMarker=null;}
+    if(building.clanId==='orcs'&&building.level!==1){
+      building.level=1;
+      useOrcLevelModel(building,1).catch(err=>console.warn('Reset model:',err));
+    }
+  }
+  cameraZoom=30;resize();refreshZoomLabel();
+  gold={witch:2000,orc:900};buildMode=null;orcSpawned=false;
   rallyMode=false;constructionTab=false;lastHudSignature='';
   for(const b of liveBuildings()){b.queue=[];b.progress=0;b.level=1;
     b.maxHealth=b.clanId==='witch'?500:BUILDING_TYPES[b.type].levels[1].maxHealth;
@@ -1312,11 +1327,71 @@ async function load(){
   }
 }
 window.__fightersQA={
-  snapshot:()=>({ready,running,paused,activeFaction,gold:{...gold},witches:units.filter(a=>a.kind==='witch'&&!a.dead).map(a=>({id:a.id,x:a.root.position.x,z:a.root.position.z,health:a.health,animation:a.current})),orcs:units.filter(a=>a.kind==='orc'&&!a.dead).map(a=>({id:a.id,x:a.root.position.x,z:a.root.position.z,health:a.health,animation:a.current})),selectedIds:[...selected].map(a=>a.id),selectedBuilding:selectedBuilding?.kind||selectedBuilding?.type||null,trainingCount:training.length,trainElapsed,buildMode,buildings:[...buildingInstances.values()].map(b=>({id:b.id,type:b.type,level:b.level,x:b.root.position.x,z:b.root.position.z})),blueprints:[...buildingBlueprints.keys()],witchHouseLoaded:!!witchHouse,projection:camera.isOrthographicCamera?'orthographic':'perspective'}),
-  train:issueTrain,selectHouse:()=>selectBuilding({kind:'witch-house',root:witchHouse}),
-  selectWitches:()=>selectUnits(units.filter(a=>a.kind==='witch'&&!a.dead)),move:(x,z)=>issueMove({x,z}),
-  setFaction:changeFaction,beginBuild,build:(type,x,z)=>buildOrc(type,x,z),advance:(seconds)=>{
-    const n=Math.ceil(seconds/FIXED_DT);for(let i=0;i<n;i++){stepGame(FIXED_DT);for(const actor of units)actor.mixer.update(FIXED_DT);}
+  snapshot:()=>({
+    ready,running,paused,activeFaction,cameraZoom,cameraCenter:{...cameraFollow},
+    gold:{...gold},projection:camera.isOrthographicCamera?'orthographic':'perspective',
+    witches:units.filter(a=>a.kind==='witch'&&!a.dead).map(a=>({
+      id:a.id,x:a.root.position.x,z:a.root.position.z,health:a.health,animation:a.current,
+      destination:a.destination?{...a.destination}:null,pathLength:a.route?.waypoints.length??0
+    })),
+    orcs:units.filter(a=>a.kind==='orc'&&!a.dead).map(a=>({
+      id:a.id,x:a.root.position.x,z:a.root.position.z,health:a.health,animation:a.current,
+      destination:a.destination?{...a.destination}:null,pathLength:a.route?.waypoints.length??0
+    })),
+    selectedIds:[...selected].map(a=>a.id),selectedBuilding:selectedBuilding?.kind||selectedBuilding?.type||null,
+    selectedBuildingId:selectedBuilding?.id||null,
+    trainingCount:witchBuilding.queue.filter(j=>j.kind==='witch').length,
+    trainElapsed:witchBuilding.progress,house:{id:witchBuilding.id,level:witchBuilding.level,
+      health:witchBuilding.health,maxHealth:witchBuilding.maxHealth,
+      hitbox:{...witchBuilding.hitbox},queue:witchBuilding.queue.map(j=>({...j}))},
+    buildMode,rallyMode,constructionTab,navVersion:navigatorRTS.version,
+    buildings:[...buildingInstances.values()].map(b=>({
+      id:b.id,type:b.type,level:b.level,visualLevel:b.visualLevel,
+      x:b.root.position.x,z:b.root.position.z,hitbox:{...b.hitbox},
+      queue:b.queue.map(j=>({...j})),initial:b.initial
+    })),
+    blueprints:[...buildingBlueprints.keys()],witchHouseLoaded:!!witchHouse
+  }),
+  train:issueTrain,trainOrc:()=>issueOrcTrain(selectedBuilding),
+  upgradeHouse:()=>issueUpgrade(witchBuilding),
+  upgradeSelected:()=>issueUpgrade(selectedBuilding),
+  cancel:(index=0)=>cancelOrder(selectedBuilding,index),
+  selectHouse:()=>selectBuilding(witchBuilding),
+  selectWitches:()=>selectUnits(units.filter(a=>a.kind==='witch'&&!a.dead)),
+  selectOrcs:()=>selectUnits(units.filter(a=>a.kind==='orc'&&!a.dead)),
+  selectOrcBarrack:()=>{
+    const building=[...buildingInstances.values()].find(b=>b.type==='barrack');
+    if(building)selectBuilding(building);
+  },
+  move:(x,z)=>issueMove({x,z}),
+  moveUnitTo:(kind,index,x,z)=>{
+    const u=units.filter(a=>a.kind===kind&&!a.dead)[index];
+    if(!u)throw Error('QA unit not found');
+    const point={x,z};
+    if(!navigatorRTS.pointClear(point))throw Error('QA position blocked');
+    u.root.position.set(x,0,z);u.destination=null;u.route=null;return u.id;
+  },
+  isClear:(x,z)=>navigatorRTS.pointClear({x,z}),
+  route:(from,to)=>navigatorRTS.plan(from,to),
+  setFaction:changeFaction,beginBuild,build:(type,x,z)=>buildOrc(type,x,z),
+  setRally:(x,z)=>setRally(selectedBuilding,{x,z}),
+  zoom:(factor,x,y)=>zoomCamera(factor,x,y),
+  pan:(x,y)=>panCamera(x,y),
+  buildingScreenPoint:(id)=>{
+    const b=liveBuildings().find(v=>v.id===id);
+    if(!b)return null;
+    const h=b.hitbox,p=new THREE.Vector3((h.minX+h.maxX)/2,(h.minY+h.maxY)/2,(h.minZ+h.maxZ)/2);
+    p.project(camera);
+    const rect=viewport.getBoundingClientRect();
+    return {x:rect.left+(p.x+1)*rect.width/2,
+      y:rect.top+(1-p.y)*rect.height/2};
+  },
+  advance:(seconds)=>{
+    const n=Math.ceil(seconds/FIXED_DT);
+    for(let i=0;i<n;i++){
+      stepGame(FIXED_DT);
+      for(const actor of units)actor.mixer.update(FIXED_DT);
+    }
   },
   pause:pauseGame,reset:startSession
 };
