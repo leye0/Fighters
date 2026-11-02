@@ -353,9 +353,9 @@ async function loadOrcVillage(limit=3){
   orcVillage=village;
   console.info('Orc village:',village.children.length,'/',entries.length,'individual buildings loaded; textures reused:',deduplicatedTextures,'verified:',manifest.sharedTexturesVerified);
 }
-// Opt-in diagnostic only: no building assets are fetched on normal startup.
-// ?orcDebug=1 loads a single building, ?orcDebug=3 loads three.
-const orcDebugCount=Math.min(5,Math.max(0,Math.floor(Number(new URLSearchParams(location.search).get('orcDebug'))||0)));
+// Five level-one buildings load by default; ?orcDebug=0 disables them for profiling.
+const orcCountParam=new URLSearchParams(location.search).get('orcDebug');
+const orcDebugCount=orcCountParam===null?5:Math.min(5,Math.max(0,Math.floor(Number(orcCountParam)||0)));
 if(orcDebugCount){
   window.addEventListener('load',()=>{
     setTimeout(()=>loadOrcVillage(orcDebugCount).catch(err=>console.warn('Orc village loading failed:',err)),1500);
