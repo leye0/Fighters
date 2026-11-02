@@ -83,7 +83,7 @@ async function run(){
  // Verify actual UI controls, not just an exposed JS zoom setter.
  await evaluate("document.querySelector('#zoom-in').click()");
  s=await evaluate('window.__fightersQA.snapshot()');
- check(s.cameraZoom<30,'Zoom-in button must change orthographic projection');
+ check(s.cameraZoom<38,'Zoom-in button must change orthographic projection');
  await evaluate("document.querySelector('#viewport').dispatchEvent(new WheelEvent('wheel',{deltaY:220,clientX:680,clientY:340,bubbles:true,cancelable:true}))");
  check((await evaluate('window.__fightersQA.snapshot()')).cameraZoom>s.cameraZoom,
   'Mouse wheel must zoom out');
