@@ -228,6 +228,7 @@ const ORC_VILLAGE={
   ]
 };
 let orcVillage=null;
+const orcAnimationMixers=[];
 async function loadOrcVillage(limit=3){
   const response=await fetch('./models/orc-buildings/manifest.json');
   if(!response.ok)throw Error('Orc manifest HTTP '+response.status);
@@ -276,6 +277,13 @@ async function loadOrcVillage(limit=3){
           }
         }
       });
+    }
+    if(model.animations?.length){
+      const mixer=new THREE.AnimationMixer(model);
+      for(const clip of model.animations){
+        if(clip.tracks.length)mixer.clipAction(clip).play();
+      }
+      orcAnimationMixers.push(mixer);
     }
     // Let the renderer and input loop run between buildings.
     await new Promise(resolve=>setTimeout(resolve,0));
@@ -964,7 +972,9 @@ function frame(){
   requestAnimationFrame(frame);
   // A fixed simulation step keeps travel speed and hit timing real-time on slow GPUs.
   // 16 catch-up ticks cap work after an inactive tab / device stall.
-  accumulated+=Math.min(clock.getDelta(),.3);
+  const frameDelta=Math.min(clock.getDelta(),.3);
+  for(const mixer of orcAnimationMixers)mixer.update(frameDelta);
+  accumulated+=frameDelta;
   let iterations=0;
   while(accumulated>=FIXED_DT&&iterations<16){
     stepGame(FIXED_DT);
