@@ -7,6 +7,7 @@ on:
       - 'docs/rts-navigation.js'
       - 'docs/orc-strategy.js'
       - 'scripts/test-orc-strategy.mjs'
+      - 'scripts/compress-character-assets.sh'
       - 'scripts/test-rts-navigation.mjs'
       - 'scripts/browser-qa.mjs'
       - 'scripts/verify-costumes.mjs'
@@ -43,6 +44,7 @@ jobs:
           curl -fLsS --retry 3 https://raw.githubusercontent.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/5821923af517ac5fdc82505faa92a0d575fc1b1a/test/human_male.glb -o docs/models/human_male.glb
           curl -fLsS --retry 3 https://raw.githubusercontent.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/5821923af517ac5fdc82505faa92a0d575fc1b1a/test/human_female.glb -o docs/models/human_female.glb
           node scripts/verify-glb.mjs docs/models/human_male.glb docs/models/human_female.glb
+          bash scripts/compress-character-assets.sh docs/models
           bash scripts/download-costumes.sh
           bash scripts/download-sword.sh
           npm install --no-save --no-package-lock --no-audit --no-fund meshoptimizer@0.25.0
