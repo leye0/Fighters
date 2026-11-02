@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - 'docs/index.html'
+      - 'docs/rts-navigation.js'
+      - 'scripts/test-rts-navigation.mjs'
       - 'scripts/browser-qa.mjs'
       - 'scripts/verify-costumes.mjs'
       - 'witch_house.glb'
@@ -25,6 +27,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Test deterministic RTS navigation and collision math
+        run: node scripts/test-rts-navigation.mjs
       - name: Prepare complete RTS building assets and native character models
         run: |
           mkdir -p docs/models
