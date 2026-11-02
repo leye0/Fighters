@@ -51,13 +51,13 @@ Le fichier `docs/rts-navigation.js` adapte les principes utiles de `leye0/WarCon
 - destination praticable lorsque l'utilisateur désigne un endroit occupé;
 - recalcul de chemin après construction **ou destruction** de bâtiments.
 
-Les hitboxes des bâtiments sont calculées à partir du véritable volume 3D mondial du GLB, et servent à la sélection par rayon, aux conflits de construction et à la navigation. Les obstacles sont statiques; la séparation avancée des grandes foules entre unités n'est **pas encore** traitée.
+Les hitboxes des bâtiments sont calculées à partir du véritable volume 3D mondial du GLB, et servent à la sélection par rayon, aux conflits de construction et à la navigation. Les bâtiments sont des **obstacles rigides**. Les personnages utilisent maintenant `docs/rts-unit-physics.js` : **évitement local souple**, anticipation des zones encombrées, légère dispersion des unités immobiles et destinations de groupe espacées. Une unité ne bloque pas rigidement les autres : si un passage n'offre aucune alternative, elles peuvent temporairement se chevaucher plutôt que de se coincer. La séparation de très grandes armées peut encore être améliorée.
 
 ## IA orc autonome
 
 `docs/orc-strategy.js` implémente un **directeur stratégique déterministe**, indépendant de Three.js. Il analyse périodiquement la composition du village, la trésorerie, les files de production, les unités, la pression ennemie et le temps écoulé :
 
-1. **Économie :** les mines produisent un revenu d'or progressif, au rythme de la simulation. L'IA maintient une réserve de trésorerie et réinvestit dans des mines.
+1. **Économie :** des mineurs orcs doivent rejoindre physiquement une mine et terminer un cycle de travail avant que l'or soit crédité. **Aucun revenu passif** n'est généré par une mine vide. L'IA maintient une réserve de trésorerie et réinvestit dans des mines.
 2. **Urbanisme :** un planificateur propose des emplacements candidats dans des secteurs du territoire orc, avec marges autour des bâtiments, espacement et préférence pour les regroupements fonctionnels. La validation utilise les vraies hitboxes.
 3. **Production :** les casernes entraînent régulièrement des orcs dans leur file, avec une limite de population. Un ordonnanceur réserve des tours aux constructions et aux améliorations pour éviter que la production militaire ne monopolise les dépenses.
 4. **Défense :** lorsque des sorcières s'approchent du village, les orcs à portée reçoivent des objectifs de défense.
@@ -67,13 +67,14 @@ Cette IA est **un moteur de décisions tactiques et économiques par règles**, 
 
 ## Modèles et déploiement
 
-Les personnages conservent leurs **86 animations Quaternius natives**, leur squelette de **65 os**, leurs costumes et coiffures adaptés au squelette original et leurs épées montées sur l'os de la main, sans retargeting. `witch_house.glb` est un véritable modèle 3D. Les cinq types orcs (caserne, hutte, mine, chaudron et atelier) sont extraits du GLB fourni pendant la préparation du déploiement Pages, sans remplacement procédural des modèles.
+Les personnages conservent leurs **86 animations Quaternius natives**, leur squelette de **65 os**, leurs costumes et coiffures adaptés au squelette original et leurs épées montées sur l'os de la main, sans retargeting. Le serveur publie des copies **gzip sans perte** des deux GLB, téléchargées en parallèle et vérifiées octet pour octet au déploiement; les clips ne sont reliés au mixer que lorsqu'ils sont joués. Le chargement du village orc est différé jusqu'à ce que les personnages soient prêts. `witch_house.glb` est un véritable modèle 3D. Les cinq types orcs (caserne, hutte, mine, chaudron et atelier) sont extraits du GLB fourni pendant la préparation du déploiement Pages, sans remplacement procédural des modèles.
 
 ## Tests
 
 Le workflow `.github/workflows/browser-qa.yml` exécute :
 
 - `node scripts/test-rts-navigation.mjs` : A*, collisions élargies, coins diagonaux, détours et obstacles dynamiques.
+- `node scripts/test-rts-unit-physics.mjs` : préférence de séparation en terrain libre, **passage temporairement superposé** dans un corridor, dispersion progressive à l'arrêt et murs toujours solides.
 - `node scripts/test-orc-strategy.mjs` : construction cohérente, stratégie économique, recrutement, défense, raiders et réinitialisation.
 - `node scripts/browser-qa.mjs` : vraie scène **Chrome WebGL SwiftShader**, zoom/pincement, **glisser à un doigt pour déplacer**, **appui long d'une seconde puis sélection rectangulaire**, séquence de **deux touches pour attaquer**, mires bleues et rouges à durée de vie limitée, stabilité des menus, production et améliorations avec vrais GLB, collisions, **destruction des bâtiments par les deux factions** et **village orc bâti automatiquement**. Le test enregistre également des captures desktop et mobile.
 
