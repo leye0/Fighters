@@ -92,6 +92,25 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;padding:0;overf
 .hud{padding-right:max(9px,env(safe-area-inset-right))}
 @media(max-width:760px){.hud{grid-template-columns:minmax(102px,1fr) auto 29px;grid-template-rows:1fr!important}.hud .hero-hud{grid-area:1/1/2/2}.hud .score{grid-area:1/2/2/3}.hud #pause{grid-area:1/3/2/4}.hud .score>div{min-width:32px}.hud .score{gap:7px}.hud .hero-hud strong{font-size:12px}.hud .hero-hud small{font-size:9px}}
 
+/* Permanent shortcut row never gets replaced by contextual commands. */
+.command-operations{min-width:0}
+.quick-commands{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;padding-bottom:7px;border-bottom:1px solid #546b68}
+.quick-commands button{min-height:40px;border:1px solid #748983;background:#1b343a;color:#e5f1da;border-radius:5px;font-weight:750;display:flex;align-items:center;justify-content:center;gap:5px;font-size:16px;white-space:nowrap;padding:4px}
+.quick-commands button span{font-size:11px}.quick-commands button:disabled{opacity:.4;cursor:default}
+.quick-commands button[aria-pressed="true"]{border-color:#ffd47c;background:#4f4430}
+#command-buttons{min-height:52px}
+#order-pings{position:absolute;inset:0;z-index:6;pointer-events:none;overflow:hidden}
+.order-ping{position:absolute;width:54px;height:54px;transform:translate(-50%,-50%);pointer-events:none;border:3px solid #55b7ff;border-radius:50%;box-shadow:0 0 10px #1b86ee88,0 0 0 3px #042c4644;animation:order-ping .85s ease-out forwards}
+.order-ping::before,.order-ping::after{content:"";position:absolute;background:currentColor}
+.order-ping::before{left:50%;top:-11px;width:2px;height:70px;transform:translateX(-50%);opacity:.75}
+.order-ping::after{left:-11px;top:50%;width:70px;height:2px;transform:translateY(-50%);opacity:.75}
+.order-ping.move{color:#55b7ff;border-color:#55b7ff}.order-ping.attack{color:#ff6464;border-color:#ff6464;box-shadow:0 0 12px #ff454595}
+@keyframes order-ping{0%{opacity:1;scale:.7}20%{scale:1.08}100%{opacity:0;scale:1.55}}
+#order-prompt{position:absolute;bottom:clamp(170px,27vh,245px);left:50%;transform:translateX(-50%);z-index:7;
+background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px solid #a69872;font-size:12px;font-weight:750;white-space:nowrap;pointer-events:none}
+#order-prompt[hidden]{display:none}
+@media(max-width:760px){.quick-commands{gap:3px;padding-bottom:5px}.quick-commands button{min-height:39px;font-size:17px;flex-direction:column;gap:1px;padding:3px 0}.quick-commands button span{font-size:9px}
+.command-panel{max-height:39dvh}.command-grid{grid-template-columns:repeat(4,minmax(0,1fr))}#order-prompt{bottom:clamp(175px,40vh,360px);max-width:94vw;white-space:normal;text-align:center}}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
 <script src="./rts-navigation.js"></script>
@@ -104,7 +123,7 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;padding:0;overf
   <div class="score"><div><small>OR SORCIÈRES</small><strong id="witch-gold">2000</strong></div><div><small>OR ORCS</small><strong id="orc-gold">900</strong></div><div><small>UNITÉS</small><strong id="unit-count">0 : 0</strong></div></div>
   <button id="pause" class="pause-compact" aria-label="Pause" title="Pause (P)" disabled>Ⅱ</button>
 </div>
-<div id="viewport" class="viewport" aria-label="Carte de stratégie en temps réel"><div class="scanlines"></div><div id="banner" class="banner"></div><div id="selection-rectangle" hidden></div>
+<div id="viewport" class="viewport" aria-label="Carte de stratégie en temps réel"><div class="scanlines"></div><div id="banner" class="banner"></div><div id="selection-rectangle" hidden></div><div id="order-pings" aria-hidden="true"></div><div id="order-prompt" role="status" aria-live="polite" hidden></div>
 <aside class="command-panel" id="command-panel" aria-label="Panneau de commandes RTS">
   <div class="command-identity">
     <div id="command-icon" class="command-portrait" aria-hidden="true">🏰</div>
@@ -115,6 +134,13 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;padding:0;overf
     </div>
   </div>
   <div class="command-operations">
+    <nav id="quick-commands" class="quick-commands" aria-label="Commandes permanentes">
+      <button id="quick-home" type="button" title="Maison des sorcières">🏡 <span>Maison</span></button>
+      <button id="quick-army" type="button" title="Sélectionner toutes les sorcières">👥 <span>Armée</span></button>
+      <button id="quick-attack" type="button" title="Cibler un ennemi">⚔️ <span>Attaquer</span></button>
+      <button id="quick-stop" type="button" title="Arrêter les unités sélectionnées">✋ <span>Stop</span></button>
+      <button id="quick-cancel" type="button" title="Annuler le mode actif">✕ <span>Annuler</span></button>
+    </nav>
     <div id="command-buttons" class="command-grid"></div>
     <div id="training-progress" class="production-progress" aria-live="off"></div>
   </div>
