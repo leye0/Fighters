@@ -118,6 +118,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
 <script src="./rts-navigation.js"></script>
+<script src="./rts-unit-physics.js"></script>
 <script src="./orc-strategy.js"></script>
 </head>
 <body>
@@ -185,7 +186,8 @@ const witchBuilding={
   queue:[],progress:0,rally:{x:-18,z:-12},rallyMarker:null
 };
 let buildingSelectionRing=null;
-const navigatorRTS=new window.FightersNavigation.Navigator({halfSize:ARENA_HALF,cellSize:1,radius:.36});
+const UNIT_RADIUS=window.FightersUnitPhysics.RADIUS;
+const navigatorRTS=new window.FightersNavigation.Navigator({halfSize:ARENA_HALF,cellSize:1,radius:UNIT_RADIUS});
 function buildingBounds(root){
   root.updateMatrixWorld(true);
   const b=new THREE.Box3().setFromObject(root);
@@ -709,7 +711,7 @@ function spawnUnit(kind,x,z,index=0){
   const marker=new THREE.Mesh(new THREE.RingGeometry(.62,.72,28),new THREE.MeshBasicMaterial({color:kind==='witch'?0xb4ed91:0xf18d66,side:THREE.DoubleSide,depthWrite:false}));
   marker.rotation.x=-Math.PI/2;marker.position.y=.035;marker.visible=false;root.add(marker);
   const actor={
-    id:nextUnitId++,kind,root,visual,mixer:new THREE.AnimationMixer(visual),actions:new Map(),
+    id:nextUnitId++,kind,root,visual,radius:UNIT_RADIUS,mixer:new THREE.AnimationMixer(visual),actions:new Map(),
     clipCatalog:new Map(source.animations.map(clip=>[clip.name,clip])),current:'',action:null,
     health:kind==='witch'?85:110,maxHealth:kind==='witch'?85:110,
     heading:{x:kind==='witch'?1:-1,z:0},facing:1,attack:null,stun:0,cooldown:rand(.25,1),dead:false,deadTime:0,
@@ -1461,7 +1463,7 @@ function navigateActor(actor,target,dt,mode){
   if(gap<.03)return 'arrived';
   const speed=actor.speed*dt;
   const budget=Math.max(0,Math.min(gap-(actor.route?0:arrival),speed));
-  const next=navigatorRTS.advance(from,waypoint,budget);
+  const next=window.FightersUnitPhysics.step(from,waypoint,budget,actor,units,navigatorRTS,UNIT_RADIUS);
   if(!next){
     actor.route=null;actor.routeVersion=-1;
     return 'blocked';
@@ -1587,6 +1589,7 @@ function stepGame(dt){
   stepProduction(dt);
   stepOrcStrategy(dt);
   for(const actor of units)tickUnit(actor,dt);
+  window.FightersUnitPhysics.separate(units,navigatorRTS,UNIT_RADIUS);
   for(let i=units.length-1;i>=0;i--)if(units[i].dead&&units[i].deadTime<=0){
     releaseActor(units[i]);units.splice(i,1);
   }
@@ -1910,7 +1913,7 @@ window.__fightersQA={
     gold:{...gold},projection:camera.isOrthographicCamera?'orthographic':'perspective',
     cameraQuaternion:camera.quaternion.toArray(),
     witches:units.filter(a=>a.kind==='witch'&&!a.dead).map(a=>({
-      id:a.id,x:a.root.position.x,z:a.root.position.z,health:a.health,animation:a.current,
+      id:a.id,x:a.root.position.x,z:a.root.position.z,radius:a.radius,health:a.health,animation:a.current,
       destination:a.destination?{...a.destination}:null,pathLength:a.route?.waypoints.length??0,
       attackTargetId:a.attackOrder?.id||null
     })),
