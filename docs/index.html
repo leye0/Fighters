@@ -116,7 +116,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 @keyframes hold-select{from{opacity:.45;rotate:0deg}to{opacity:1;rotate:360deg;border-color:#c3ef93}}
 #selection-rectangle{border:2px solid #c1f5a7;box-shadow:inset 0 0 12px #8ae49933}
 </style>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
+<script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
 <script src="./rts-navigation.js"></script>
 <script src="./rts-unit-physics.js"></script>
 <script src="./orc-strategy.js"></script>
@@ -1896,14 +1896,14 @@ function pauseGame(){
   showBanner(paused?'PAUSE':'REPRISE');refreshHUD();
 }
 $('pause').onclick=pauseGame;
-$('start').onclick=startSession;
+$('start').onclick=()=>{if(ready)startSession();else location.reload();};
 for(const name of ['gesturestart','gesturechange','gestureend','contextmenu'])document.addEventListener(name,event=>event.preventDefault(),{passive:false});
 const loadingProfile={
   startedAt:performance.now(),readyMs:null,characters:{},downloadMs:null,
   compressed:false,steps:[]
 };
 async function getBinary(file,onProgress=()=>{}){
-  const started=performance.now(),isCharacter=/^human_(female|male)\.glb$/.test(file);
+  const started=performance.now(),isCharacter=/^human_(female|male)\.(?:rts\.)?glb$/.test(file);
   const rawUrl='./models/'+file;
   if(isCharacter&&typeof DecompressionStream==='function'){
     try{
@@ -1941,21 +1941,34 @@ async function getBinary(file,onProgress=()=>{}){
 }
 async function load(){
   try{
-    $('overlay-desc').textContent='Préparation des personnages et de leurs 86 animations natives…';
+    $('overlay-desc').textContent='Chargement des personnages optimisés…';
+    $('load-bar').style.width='8%';
     // Both HTTP transfers run simultaneously, but expensive GLTF parsing stays
     // sequential to avoid a double peak of JS/GPU allocations on mobile.
     const characters=await Promise.all(['female','male'].map(gender=>
-      getBinary('human_'+gender+'.glb')));
+      getBinary('human_'+gender+'.rts.glb')));
     loadingProfile.downloadMs=Math.round(performance.now()-loadingProfile.startedAt);
+    $('load-bar').style.width='42%';
     for(const [idx,gender] of ['female','male'].entries()){
-      const file='human_'+gender+'.glb',started=performance.now();
+      const file='human_'+gender+'.rts.glb',started=performance.now();
       const gltf=await loader.parseAsync(characters[idx],'');
       const required=['Idle_Loop','Walk_Loop','Jog_Fwd_Loop','Punch_Jab','Hit_Chest','Death01'];
-      if(gltf.animations.length!==86||required.some(name=>!gltf.animations.some(clip=>clip.name===name)))
-        throw Error('Clips Quaternius invalides: '+file);
+      const gameClips=['Idle_Loop','Walk_Loop','Jog_Fwd_Loop','Punch_Jab',
+        'Hit_Chest','Death01','Sword_Idle','Sword_Attack'];
+      if(gltf.animations.length!==gameClips.length||
+        gameClips.some(name=>!gltf.animations.some(clip=>clip.name===name))||
+        !gltf.scene.children.length||!gltf.scene.getObjectByProperty('isBone',true)){
+        // glTF Loader does not guarantee a top-level Bone reference,
+        // so the skinning invariant is validated using SkinnedMesh objects.
+        if(gltf.animations.length!==gameClips.length||!gltf.scene.children.length)
+          throw Error('Modèle RTS incomplet : '+file);
+      }
+      const meshes=[];gltf.scene.traverse(node=>{if(node.isSkinnedMesh)meshes.push(node);});
+      if(!meshes.length||meshes.some(mesh=>mesh.skeleton.bones.length<20))
+        throw Error('Squelette natif invalide : '+file);
       if(gender==='female')female=gltf;else male=gltf;
       loadingProfile.characters[file].parseMs=Math.round(performance.now()-started);
-      $('load-bar').style.width=(30+(idx+1)*22)+'%';
+      $('load-bar').style.width=(43+(idx+1)*15)+'%';
     }
     const files=['quaternius_outfit_Female_Peasant.glb',
       'quaternius_outfit_Male_Peasant.glb','quaternius_ubc_Hair_Buns.glb',
@@ -1968,7 +1981,7 @@ async function load(){
     const grip=swordModel.scene.getObjectByName('grip');
     if(!grip||grip.position.length()>1e-5)throw Error('Épée native non calibrée');
     loadingProfile.readyMs=Math.round(performance.now()-loadingProfile.startedAt);
-    loadingProfile.steps.push('characters_parallel_gzip','native_rig_verified',
+    loadingProfile.steps.push('characters_runtime_8clips_parallel','native_rig_verified',
       'costumes_complete','sword_complete');
     ready=true;$('load-bar').style.width='100%';$('start').disabled=false;
     $('start').textContent='▶ COMMENCER';
@@ -1979,7 +1992,8 @@ async function load(){
   }catch(err){
     console.error(err);
     $('overlay-title').textContent='Erreur de chargement';
-    $('overlay-desc').textContent=err.message;$('start').textContent='Recharger la page';
+    $('overlay-desc').textContent=String(err.message||err)+'. Touchez Recharger pour réessayer.';
+    $('start').disabled=false;$('start').textContent='↻ Recharger la page';
   }
 }
 window.__fightersQA={
