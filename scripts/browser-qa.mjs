@@ -202,12 +202,14 @@ async function run(){
   'Two-finger zoom did not change orthographic camera: '+JSON.stringify({
     before:beforePinch.cameraZoom,after:afterPinch.cameraZoom}));
  await call('Input.dispatchTouchEvent',{type:'touchMove',
-  touchPoints:[touch(1,135,325),touch(2,305,325)]});
+  touchPoints:[touch(1,160,350),touch(2,330,350)]});
  await sleep(100);
  const afterPan=await evaluate('window.__fightersQA.snapshot()');
  check(Math.hypot(afterPan.cameraCenter.x-afterPinch.cameraCenter.x,
    afterPan.cameraCenter.z-afterPinch.cameraCenter.z)>.1,
-   'Two-finger camera pan did not move the map');
+   'Two-finger camera pan did not move the map: '+JSON.stringify({
+     before:afterPinch.cameraCenter,after:afterPan.cameraCenter,
+     zoomBefore:afterPinch.cameraZoom,zoomAfter:afterPan.cameraZoom}));
  await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
  await call('Emulation.setTouchEmulationEnabled',{enabled:false});
  await screenshot('rts-mobile-pinch-zoom');
