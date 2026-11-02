@@ -111,6 +111,10 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 #order-prompt[hidden]{display:none}
 @media(max-width:760px){.quick-commands{gap:3px;padding-bottom:5px}.quick-commands button{min-height:39px;font-size:17px;flex-direction:column;gap:1px;padding:3px 0}.quick-commands button span{font-size:9px}
 .command-panel{max-height:39dvh}.command-grid{grid-template-columns:repeat(4,minmax(0,1fr))}#order-prompt{bottom:clamp(175px,40vh,360px);max-width:94vw;white-space:normal;text-align:center}}
+#touch-hold-indicator{position:absolute;pointer-events:none;z-index:6;width:46px;height:46px;border:3px solid #7a9ab18c;border-top-color:#d7f5a3;border-radius:50%;transform:translate(-50%,-50%);animation:hold-select 1s linear forwards;box-shadow:0 0 10px #0008}
+#touch-hold-indicator[hidden]{display:none}
+@keyframes hold-select{from{opacity:.45;rotate:0deg}to{opacity:1;rotate:360deg;border-color:#c3ef93}}
+#selection-rectangle{border:2px solid #c1f5a7;box-shadow:inset 0 0 12px #8ae49933}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
 <script src="./rts-navigation.js"></script>
@@ -123,7 +127,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
   <div class="score"><div><small>OR SORCIÈRES</small><strong id="witch-gold">2000</strong></div><div><small>OR ORCS</small><strong id="orc-gold">900</strong></div><div><small>UNITÉS</small><strong id="unit-count">0 : 0</strong></div></div>
   <button id="pause" class="pause-compact" aria-label="Pause" title="Pause (P)" disabled>Ⅱ</button>
 </div>
-<div id="viewport" class="viewport" aria-label="Carte de stratégie en temps réel"><div class="scanlines"></div><div id="banner" class="banner"></div><div id="selection-rectangle" hidden></div><div id="order-pings" aria-hidden="true"></div><div id="order-prompt" role="status" aria-live="polite" hidden></div>
+<div id="viewport" class="viewport" aria-label="Carte de stratégie en temps réel"><div class="scanlines"></div><div id="banner" class="banner"></div><div id="selection-rectangle" hidden></div><div id="touch-hold-indicator" hidden></div><div id="order-pings" aria-hidden="true"></div><div id="order-prompt" role="status" aria-live="polite" hidden></div>
 <aside class="command-panel" id="command-panel" aria-label="Panneau de commandes RTS">
   <div class="command-identity">
     <div id="command-icon" class="command-portrait" aria-hidden="true">🏰</div>
@@ -1595,29 +1599,51 @@ function selectRectangle(a,b,append=false){
   selectUnits(actors,append);
 }
 let pointerStart=null;
+let inputSuppressedByPinch=false;
+const HOLD_TO_SELECT_MS=1000;
+function clearHoldCue(){
+  const cue=$('touch-hold-indicator');
+  cue.hidden=true;
+}
+function cancelPointerGesture(){
+  if(pointerStart?.timer)clearTimeout(pointerStart.timer);
+  pointerStart=null;
+  $('selection-rectangle').hidden=true;clearHoldCue();
+}
+function renderSelectionRectangle(start,x,y){
+  const box=$('selection-rectangle'),rect=viewport.getBoundingClientRect();
+  box.hidden=false;box.style.left=Math.min(start.x,x)-rect.left+'px';
+  box.style.top=Math.min(start.y,y)-rect.top+'px';
+  box.style.width=Math.abs(x-start.x)+'px';
+  box.style.height=Math.abs(y-start.y)+'px';
+}
 function applyPinch(a,b){
   const center={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
   const distance=Math.max(1,Math.hypot(a.x-b.x,a.y-b.y));
   if(pinch){
-    const anchor=worldPoint(pinch.center.x,pinch.center.y);
+    // Two fingers are reserved for zoom alone; parallel translation does NOT
+    // pan the map. The player pans with one finger instead.
     zoomCamera(clamp(pinch.distance/distance,.65,1.55),center.x,center.y);
-    const shifted=worldPoint(center.x,center.y);
-    if(anchor&&shifted){
-      cameraFollow.x=clamp(cameraFollow.x+anchor.x-shifted.x,-26,26);
-      cameraFollow.z=clamp(cameraFollow.z+anchor.z-shifted.z,-26,26);
-      positionCamera();
-    }
   }
   pinch={distance,center};
 }
-// Some mobile browsers dispatch native touchmove without pointermove for both
-// fingers; process the native event as a fallback with the same pinch state.
+function beginPinch(){
+  const points=[...activeTouches.values()];
+  if(points.length<2)return;
+  inputSuppressedByPinch=true;cancelPointerGesture();
+  const [a,b]=points;
+  pinch={distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),
+    center:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}};
+}
 viewport.addEventListener('touchstart',event=>{
   if(event.touches.length<2)return;
-  const a=event.touches[0],b=event.touches[1];
-  pointerStart=null;$('selection-rectangle').hidden=true;
-  if(!pinch)pinch={distance:Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY),
-    center:{x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2}};
+  if(activeTouches.size<2)inputSuppressedByPinch=true;
+  cancelPointerGesture();
+  if(!pinch){
+    const a=event.touches[0],b=event.touches[1];
+    pinch={distance:Math.max(1,Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)),
+      center:{x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2}};
+  }
 },{passive:false});
 viewport.addEventListener('touchmove',event=>{
   if(event.touches.length<2||!running||paused)return;
@@ -1627,6 +1653,7 @@ viewport.addEventListener('touchmove',event=>{
 },{passive:false});
 viewport.addEventListener('touchend',event=>{
   if(event.touches.length<2)pinch=null;
+  if(event.touches.length===0)inputSuppressedByPinch=false;
 },{passive:false});
 viewport.addEventListener('wheel',event=>{
   if(event.target.closest('.command-panel'))return;
@@ -1636,50 +1663,79 @@ viewport.addEventListener('wheel',event=>{
 viewport.addEventListener('pointerdown',event=>{
   if(event.target.closest('.command-panel')||event.target.closest('.hud'))return;
   if(!running||paused||!$('overlay').hidden)return;
-  if(event.pointerType==='touch')activeTouches.set(event.pointerId,{x:event.clientX,y:event.clientY});
-  if(activeTouches.size>=2){
-    const [a,b]=[...activeTouches.values()];
-    pinch={distance:Math.hypot(a.x-b.x,a.y-b.y),
-      center:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}};
-    pointerStart=null;$('selection-rectangle').hidden=true;
+  if(event.pointerType==='touch'){
+    activeTouches.set(event.pointerId,{x:event.clientX,y:event.clientY});
+    if(activeTouches.size>=2){beginPinch();}
+    else{
+      inputSuppressedByPinch=false;
+      const id=event.pointerId;
+      const gesture={id,x:event.clientX,y:event.clientY,lastX:event.clientX,
+        lastY:event.clientY,shift:false,mode:'waiting',timer:null};
+      const rect=viewport.getBoundingClientRect(),cue=$('touch-hold-indicator');
+      cue.hidden=false;cue.style.left=event.clientX-rect.left+'px';
+      cue.style.top=event.clientY-rect.top+'px';
+      cue.style.animation='none';void cue.offsetWidth;cue.style.animation='';
+      gesture.timer=setTimeout(()=>{
+        if(pointerStart!==gesture||activeTouches.size!==1||pinch)return;
+        gesture.mode='select';gesture.timer=null;clearHoldCue();
+        renderSelectionRectangle(gesture,gesture.x,gesture.y);
+      },HOLD_TO_SELECT_MS);
+      pointerStart=gesture;
+    }
   }else if(event.button===1||event.button===2){
     cameraDrag={id:event.pointerId,x:event.clientX,y:event.clientY};
   }else if(event.button===0){
-    pointerStart={id:event.pointerId,x:event.clientX,y:event.clientY,shift:event.shiftKey};
+    pointerStart={id:event.pointerId,x:event.clientX,y:event.clientY,
+      lastX:event.clientX,lastY:event.clientY,shift:event.shiftKey,mode:'select',timer:null};
   }else return;
   event.preventDefault();viewport.setPointerCapture(event.pointerId);
 });
 viewport.addEventListener('pointermove',event=>{
-  if(activeTouches.has(event.pointerId))activeTouches.set(event.pointerId,{x:event.clientX,y:event.clientY});
+  if(activeTouches.has(event.pointerId))
+    activeTouches.set(event.pointerId,{x:event.clientX,y:event.clientY});
   if(activeTouches.size>=2){
-    const [a,b]=[...activeTouches.values()];
-    applyPinch(a,b);return;
+    // Prefer touchmove for actual touch devices; this also supports pointer
+    // event implementations without native TouchEvents.
+    if(event.pointerType!=='touch'){
+      const [a,b]=[...activeTouches.values()];applyPinch(a,b);
+    }
+    return;
   }
   if(cameraDrag?.id===event.pointerId){
     panCamera(event.clientX-cameraDrag.x,event.clientY-cameraDrag.y);
     cameraDrag.x=event.clientX;cameraDrag.y=event.clientY;return;
   }
-  if(!pointerStart||pointerStart.id!==event.pointerId)return;
-  const distance=Math.hypot(event.clientX-pointerStart.x,event.clientY-pointerStart.y);
-  if(distance<15)return;
-  const box=$('selection-rectangle'),rect=viewport.getBoundingClientRect();
-  box.hidden=false;box.style.left=Math.min(pointerStart.x,event.clientX)-rect.left+'px';
-  box.style.top=Math.min(pointerStart.y,event.clientY)-rect.top+'px';
-  box.style.width=Math.abs(event.clientX-pointerStart.x)+'px';
-  box.style.height=Math.abs(event.clientY-pointerStart.y)+'px';
+  const gesture=pointerStart;
+  if(!gesture||gesture.id!==event.pointerId)return;
+  const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;
+  const distance=Math.hypot(dx,dy);
+  if(gesture.mode==='waiting'&&distance>11){
+    if(gesture.timer)clearTimeout(gesture.timer);
+    gesture.timer=null;gesture.mode='pan';clearHoldCue();
+  }
+  if(gesture.mode==='pan'){
+    panCamera(event.clientX-gesture.lastX,event.clientY-gesture.lastY);
+  }else if(gesture.mode==='select'&&distance>8){
+    renderSelectionRectangle(gesture,event.clientX,event.clientY);
+  }
+  gesture.lastX=event.clientX;gesture.lastY=event.clientY;
 });
 function releasePointer(event){
-  const hadPinch=!!pinch||activeTouches.size>=2;
+  const pinching=inputSuppressedByPinch||activeTouches.size>=2;
   activeTouches.delete(event.pointerId);
   if(activeTouches.size<2)pinch=null;
+  if(activeTouches.size===0&&event.pointerType==='touch')inputSuppressedByPinch=false;
   if(cameraDrag?.id===event.pointerId){cameraDrag=null;return;}
-  if(!pointerStart||pointerStart.id!==event.pointerId)return;
-  const start=pointerStart;pointerStart=null;
-  $('selection-rectangle').hidden=true;
-  if(hadPinch||event.type==='pointercancel'||event.type==='lostpointercapture')return;
+  const gesture=pointerStart;
+  if(!gesture||gesture.id!==event.pointerId)return;
+  cancelPointerGesture();
+  if(pinching||event.type!=='pointerup')return;
   const end={x:event.clientX,y:event.clientY};
-  if(Math.hypot(end.x-start.x,end.y-start.y)>20&&!buildMode)selectRectangle(start,end,start.shift);
-  else touchAt(event.clientX,event.clientY,start.shift);
+  const distance=Math.hypot(end.x-gesture.x,end.y-gesture.y);
+  if(gesture.mode==='pan')return;
+  if(gesture.mode==='select'&&distance>15&&!buildMode&&!attackMode){
+    selectRectangle(gesture,end,gesture.shift);
+  }else if(distance<16)touchAt(event.clientX,event.clientY,gesture.shift);
 }
 for(const name of ['pointerup','pointercancel','lostpointercapture'])
   viewport.addEventListener(name,releasePointer);
