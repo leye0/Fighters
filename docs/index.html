@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#080c17">
-<meta name="description" content="Fighters — un beat ’em up 2,5D inspiré des classiques d'arcade, avec des animations Quaternius intégrées.">
-<title>Fighters — Night Street</title>
+<meta name="description" content="Fighters RTS — sorcières et orcs, sélection, production et construction.">
+<title>Fighters — RTS</title>
 <style>
 :root{background:#080c17;color:#edf3ff;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:dark}
 *{box-sizing:border-box}body{margin:0;overflow-x:hidden}button{font:inherit;cursor:pointer}button:disabled{cursor:wait;opacity:.5}a{color:#baf6f0;text-decoration:none}
@@ -41,21 +41,28 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;padding:0;overf
 .start-card .primary{margin-top:7px}
 @media(max-width:720px){.game-shell{padding:0}.viewport{height:100%;min-height:0}.hud{padding:calc(env(safe-area-inset-top,0px) + 10px) calc(env(safe-area-inset-right,0px) + 9px) 10px calc(env(safe-area-inset-left,0px) + 9px)}.hero-hud{min-width:112px;max-width:168px}.hero-hud strong{font-size:15px}.hud-kicker{font-size:8px}.life-track{height:9px}.score{gap:9px}.score strong{font-size:17px}.utility button{width:28px;height:28px;font-size:15px}.start-card{padding:14px}}
 @media(max-height:460px){.start-card .stamp{font-size:9px}.start-card h2{font-size:27px;margin:5px}.start-card p{font-size:11px;line-height:1.28}.start-card .primary{padding:8px 23px}.load-progress{margin-top:8px}}
+
+.hud{align-items:flex-start}.hero-hud{max-width:240px}.hero-hud small{display:block;font-size:11px;color:#c5d6e6;margin-top:4px}.score strong{font-size:20px}.utility button.active{background:#487867;border-color:#b8f5bf}
+.command-panel{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);left:calc(env(safe-area-inset-left,0px) + 12px);z-index:7;pointer-events:auto;max-width:min(470px,calc(100% - 24px));background:#0c1729e8;border:1px solid #688294;border-radius:12px;padding:11px 13px;color:#e5f6ff;box-shadow:0 8px 24px #0008}
+#command-title{font-weight:800;font-size:15px}#command-info{font-size:12px;line-height:1.4;color:#b4c5db;margin:5px 0}#command-buttons{display:flex;flex-wrap:wrap;gap:6px}
+#command-buttons button{border:1px solid #678693;border-radius:8px;background:#223c4c;color:#e7f8ff;padding:7px 10px;font-size:12px;font-weight:700;touch-action:manipulation}#command-buttons button:disabled{opacity:.4}
+#training-progress{font-size:11px;color:#e4d88e;margin-top:5px}#selection-rectangle{position:absolute;z-index:6;pointer-events:none;border:1px solid #b4f69c;background:#93f4ba2a}
+#selection-rectangle[hidden]{display:none}
+@media(max-width:720px){.score{gap:6px}.score strong{font-size:14px}.score small{font-size:7px}.hero-hud{min-width:90px;width:auto}.hero-hud strong{font-size:12px}.hero-hud small{font-size:9px}.hud{gap:5px}.command-panel{padding:8px 10px;max-width:min(360px,calc(100% - 18px))}#command-buttons button{padding:6px 8px}}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
 </head>
 <body>
-<div class="game-shell">
-
-<section class="arcade">
-<div class="hud"><div class="hero-hud"><div class="hud-kicker">1UP · HÉROÏNE</div><strong>NOVA</strong><div class="life-track"><div id="life"></div></div></div><div class="score"><div><small>ROUND</small><strong id="wave">01</strong></div><div><small>KO</small><strong id="ko">00</strong></div><div><small>SCORE</small><strong id="score">000000</strong></div></div><div class="utility"><button id="pause" aria-label="Pause" disabled>Ⅱ</button></div></div>
-<div id="viewport" class="viewport" aria-label="Scène de jeu beat ’em up 3D"><div class="scanlines"></div><div id="hit-flash" class="hit-flash"></div><div id="banner" class="banner">ROUND 1</div>
-<div id="gesture-indicator" class="gesture-indicator" aria-hidden="true">→</div><div id="guard-indicator" class="guard-indicator">🛡 GARDE</div>
-<div class="start-overlay" id="overlay"><div class="start-card"><div class="stamp">FIGHTERS · NIGHT STREET</div><h2 id="overlay-title">NIGHT STREET</h2><p id="overlay-desc">Une héroïne avec coiffure et tenue de paysanne, contre des voyous en vêtements civils. À droite : ↑ saute avec un petit geste; ↖↗ poings et ↙↘ coups de pied, même en l’air; ↓ tenu protège, ↓ bref esquive. Aucun équipement d’armure.</p><button class="primary" id="start" disabled>Chargement des combattants…</button><div class="load-progress"><div id="load-bar"></div></div></div></div>
+<div class="game-shell"><section class="arcade">
+<div class="hud">
+  <div class="hero-hud"><div class="hud-kicker">FIGHTERS · RTS</div><strong id="faction-title">SORCIÈRES</strong><small id="selection-summary">Touchez une unité ou la maison</small></div>
+  <div class="score"><div><small>OR SORCIÈRES</small><strong id="witch-gold">2000</strong></div><div><small>OR ORCS</small><strong id="orc-gold">900</strong></div><div><small>UNITÉS</small><strong id="unit-count">0 : 0</strong></div></div>
+  <div class="utility"><button id="witch-faction" title="Contrôler les sorcières">🧙</button><button id="orc-faction" title="Contrôler les orcs">⚔</button><button id="pause" aria-label="Pause" disabled>Ⅱ</button></div>
 </div>
-</section>
-</div>
-<script type="module">
+<div id="viewport" class="viewport" aria-label="Carte de stratégie en temps réel"><div class="scanlines"></div><div id="banner" class="banner"></div><div id="selection-rectangle" hidden></div>
+<div class="command-panel" id="command-panel"><div id="command-title">Commandes RTS</div><div id="command-info">Sélectionnez la maison des sorcières pour entraîner des unités.</div><div id="command-buttons"></div><div id="training-progress"></div></div>
+<div class="start-overlay" id="overlay"><div class="start-card"><div class="stamp">FIGHTERS · PROTOTYPE RTS</div><h2 id="overlay-title">SORCIÈRES CONTRE ORCS</h2><p id="overlay-desc">Sélectionnez une ou plusieurs sorcières puis touchez le terrain pour donner un ordre de déplacement. Les unités combattent automatiquement les ennemis proches. Touchez la maison pour entraîner d’autres sorcières; passez aux orcs pour construire.</p><button class="primary" id="start" disabled>Chargement des unités…</button><div class="load-progress"><div id="load-bar"></div></div></div></div>
+</div></section></div><script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
@@ -110,29 +117,22 @@ const loader = new GLTFLoader();
 // The authored CC0 sword uses EXT_meshopt_compression, unlike the two character GLBs.
 // Register decoder before parsing ANY GLTF so equipping a sword cannot abort startup.
 loader.setMeshoptDecoder(MeshoptDecoder);
-const random = (low,high) => low+Math.random()*(high-low);
-const clamp = THREE.MathUtils.clamp;
-const clock = new THREE.Clock();
-const HERO_PACE=1.45; // Only Nova: locomotion, clip playback, attack windows, jump and dodge.
-const inputs = new Set();
-const touchDirection = {x:0,z:0};
-const guardInputs = new Set();
-let leftGesture=null,rightGesture=null,rightGuardTimer=null,lastTapAt=0,tapStage=0,qaPassive=false,lastRightGesture='',lastRightAction='';
-const ENEMY_PALETTE = [0xe8d3e3,0xb1e2ff,0xd8e6a7,0xf5c5a5,0xc2b3e6];
-const ATTACKS = {
-  jab: {name:'Punch_Jab',damage:9,range:1.4,recovery:.12,impact:.39},
-  cross: {name:'Punch_Cross',damage:13,range:1.55,recovery:.17,impact:.45},
-  hook: {name:'Melee_Hook',damage:17,range:1.45,recovery:.23,impact:.52},
-  bodyLeft: {name:'Punch_Jab',damage:10,range:1.28,recovery:.13,impact:.38,stagger:.45},
-  bodyRight: {name:'Punch_Cross',damage:15,range:1.38,recovery:.21,impact:.42,stagger:.5},
-  kickLeft: {name:null,damage:16,range:1.75,recovery:.19,impact:.43,duration:.56,stagger:.61},
-  kickRight: {name:null,damage:20,range:1.96,recovery:.23,impact:.48,duration:.60,stagger:.68},
-  swordAttack: {name:'Sword_Attack',damage:19,range:2.15,recovery:.35,impact:.43,stagger:.6,enemyOnly:true}
-};
-let ready=false,running=false,paused=false;
-let female=null,male=null,swordModel=null,clothingFemale,clothingMale=null,hairBuns=null,hairBuzzed=null,hairParted=null,hero=null,enemies=[],wave=1,ko=0,score=0,cameraFollow={x:0,z:0},shake=0,roundDelay=-1;
-let gamepadLast={jab:false,cross:false,hook:false,jump:false,roll:false};
-const gamepadKeys=new Set();
+
+
+
+
+const clamp=THREE.MathUtils.clamp;
+const TRAIN_COST=120, TRAIN_DURATION=3.5;
+const ORC_COSTS={barrack:180,hut:120,mine:140,cauldron:200,factory:250};
+const ORC_NAMES={barrack:'Caserne',hut:'Hutte',mine:'Mine',cauldron:'Chaudron',factory:'Atelier'};
+const units=[],selected=new Set();
+let female=null,male=null,swordModel=null,clothingFemale=null,clothingMale=null,hairBuns=null,hairBuzzed=null,hairParted=null;
+let ready=false,running=false,paused=false,activeFaction='witch',gold={witch:2000,orc:900},training=[],trainElapsed=0,buildMode=null;
+let selectedBuilding=null,nextUnitId=1,qaPassive=false,orcSpawned=false;
+let cameraFollow={x:0,z:0};
+const cameraLook=new THREE.Vector3(0,1.15,0);
+const clock=new THREE.Clock();
+const rand=(min,max)=>min+Math.random()*(max-min);
 function createSign(label,color,width=4){
   const c=document.createElement('canvas');c.width=512;c.height=160;
   const ctx=c.getContext('2d');
@@ -222,11 +222,11 @@ loadWitchHouse().catch(err=>console.warn('Witch house GLB unavailable:',err));
 // Declarative building catalog. Economic/technology values are intentionally unset
 // until RTS balancing is designed; no construction or combat rules are enabled.
 const BUILDING_TYPES=Object.freeze({
-  barrack:{name:'Barracks',levels:{1:{maxHealth:100,constructionCost:null,requiredTechnology:null},2:{maxHealth:150,constructionCost:null,requiredTechnology:null},3:{maxHealth:200,constructionCost:null,requiredTechnology:null}}},
-  hut:{name:'Hut',levels:{1:{maxHealth:100,constructionCost:null,requiredTechnology:null},2:{maxHealth:150,constructionCost:null,requiredTechnology:null},3:{maxHealth:200,constructionCost:null,requiredTechnology:null}}},
-  mine:{name:'Mine',levels:{1:{maxHealth:100,constructionCost:null,requiredTechnology:null},2:{maxHealth:150,constructionCost:null,requiredTechnology:null},3:{maxHealth:200,constructionCost:null,requiredTechnology:null}}},
-  cauldron:{name:'Cauldron',levels:{1:{maxHealth:100,constructionCost:null,requiredTechnology:null},2:{maxHealth:150,constructionCost:null,requiredTechnology:null},3:{maxHealth:200,constructionCost:null,requiredTechnology:null}}},
-  factory:{name:'Factory',levels:{1:{maxHealth:100,constructionCost:null,requiredTechnology:null},2:{maxHealth:150,constructionCost:null,requiredTechnology:null},3:{maxHealth:200,constructionCost:null,requiredTechnology:null}}}
+  barrack:{name:'Barracks',levels:{1:{maxHealth:100,constructionCost:180,requiredTechnology:null},2:{maxHealth:150,constructionCost:240,requiredTechnology:null},3:{maxHealth:200,constructionCost:240,requiredTechnology:null}}},
+  hut:{name:'Hut',levels:{1:{maxHealth:100,constructionCost:240,requiredTechnology:null},2:{maxHealth:150,constructionCost:240,requiredTechnology:null},3:{maxHealth:200,constructionCost:240,requiredTechnology:null}}},
+  mine:{name:'Mine',levels:{1:{maxHealth:100,constructionCost:240,requiredTechnology:null},2:{maxHealth:150,constructionCost:240,requiredTechnology:null},3:{maxHealth:200,constructionCost:240,requiredTechnology:null}}},
+  cauldron:{name:'Cauldron',levels:{1:{maxHealth:100,constructionCost:240,requiredTechnology:null},2:{maxHealth:150,constructionCost:240,requiredTechnology:null},3:{maxHealth:200,constructionCost:240,requiredTechnology:null}}},
+  factory:{name:'Factory',levels:{1:{maxHealth:100,constructionCost:240,requiredTechnology:null},2:{maxHealth:150,constructionCost:240,requiredTechnology:null},3:{maxHealth:200,constructionCost:240,requiredTechnology:null}}}
 });
 const ORC_VILLAGE={
   positions:{
@@ -235,9 +235,10 @@ const ORC_VILLAGE={
   }
 };
 const buildingInstances=new Map();
+const buildingBlueprints=new Map();
 function createBuildingInstance(entry,type,level,anchor,footprint){
   const spec=BUILDING_TYPES[type].levels[level];
-  const id='orc-'+type+'-01';
+  const id='orc-'+type+'-'+String([...buildingInstances.keys()].filter(key=>key.startsWith('orc-'+type+'-')).length+1).padStart(2,'0');
   const instance={
     id,modelId:entry.id,sourceNode:entry.sourceNode||entry.name,
     type,level,clanId:'orcs',health:spec.maxHealth,maxHealth:spec.maxHealth,
@@ -340,6 +341,7 @@ async function loadOrcVillage(limit=3){
     anchor.add(offset);
     const type=(entries[i].sourceNode||entries[i].name).match(/(?:orc_)?(barrack|hut|mine|cauldron|factory)_Lv1$/i)?.[1]?.toLowerCase();
     if(!type)continue;
+    buildingBlueprints.set(type,{entry:entries[i],source:model.clone(true),clips:buildingClips,footprint});
     const target=3.9;
     anchor.scale.setScalar(target/footprint);
     const p=ORC_VILLAGE.positions[type];
@@ -361,10 +363,10 @@ if(orcDebugCount){
     setTimeout(()=>loadOrcVillage(orcDebugCount).catch(err=>console.warn('Orc village loading failed:',err)),1500);
   },{once:true});
 }
-const cameraLook=new THREE.Vector3(0,1.15,0);
+
 function resize(){
   const w=viewport.clientWidth,h=viewport.clientHeight;
-  const aspect=w/Math.max(1,h),halfHeight=10.5;
+  const aspect=w/Math.max(1,h),halfHeight=Math.max(30,30/Math.max(.32,aspect));
   camera.left=-halfHeight*aspect;camera.right=halfHeight*aspect;
   camera.top=halfHeight;camera.bottom=-halfHeight;
   camera.updateProjectionMatrix();
@@ -378,7 +380,7 @@ function animation(actor,name,force=false){
   if(!next)return;
   const last=actor.action;
   if(last&&last!==next)last.fadeOut(.13);
-  next.reset().stopFading().setEffectiveWeight(1).setEffectiveTimeScale(actor.kind==='hero'?HERO_PACE:1);
+  next.reset().stopFading().setEffectiveWeight(1).setEffectiveTimeScale(1);
   const oneshot=!name.includes('Loop')&&!name.includes('Idle');
   next.setLoop(oneshot?THREE.LoopOnce:THREE.LoopRepeat,oneshot?1:Infinity);
   next.clampWhenFinished=oneshot;
@@ -487,719 +489,369 @@ function mountNativeSword(actor){
   socket.add(sword);
   actor.weapon={socket,mesh:sword,hand};
 }
-function spawnActor(gltf,kind,x,z,index=0){
-  const root=new THREE.Group();
-  const visual=cloneSkeleton(gltf.scene);
-  const outfitInfo=costumeLayers(visual,kind,index);
-  const bbox=new THREE.Box3().setFromObject(visual);
-  const center=bbox.getCenter(new THREE.Vector3());
-  visual.position.set(-center.x,-bbox.min.y,-center.z);
-  root.add(visual);
-  root.position.set(x,0,z);
-  scene.add(root);
-  if(kind==='enemy'){
-    const tint=new THREE.Color(ENEMY_PALETTE[index%ENEMY_PALETTE.length]);
-    visual.traverse(o=>{
-      if(o.isMesh&&o.material&&o.userData.costumeLayer==='garment'){
-        const mats=Array.isArray(o.material)?o.material:[o.material];
-        const replacements=mats.map(mat=>{const m=mat.clone();if(m.color)m.color.multiply(tint);return m;});
-        o.material=Array.isArray(o.material)?replacements:replacements[0];
-      }
+
+function spawnUnit(kind,x,z,index=0){
+  const source=kind==='witch'?female:male;
+  if(!source)throw Error('Source GLB absente pour '+kind);
+  const root=new THREE.Group(),visual=cloneSkeleton(source.scene);
+  const outfitInfo=costumeLayers(visual,kind==='witch'?'hero':'enemy',index);
+  const bounds=new THREE.Box3().setFromObject(visual);
+  const center=bounds.getCenter(new THREE.Vector3());
+  visual.position.set(-center.x,-bounds.min.y,-center.z);
+  root.add(visual);root.position.set(x,0,z);scene.add(root);
+  if(kind==='orc'){
+    visual.traverse(object=>{
+      if(!object.isMesh||object.userData.costumeLayer!=='garment')return;
+      const mats=Array.isArray(object.material)?object.material:[object.material];
+      const colored=mats.map(base=>{const m=base.clone();m.color?.multiply(new THREE.Color([0xb2a27b,0xb0bfa0,0xada0a3][index%3]));return m;});
+      object.material=Array.isArray(object.material)?colored:colored[0];
     });
   }
-  if(kind==='enemy'){
-    // Darker hair and weathered earth-tone clothing distinguish the orcs,
-    // without altering the skinned meshes or the animation hierarchy.
-    visual.traverse(o=>{
-      if(!o.isMesh||o.userData.costumeLayer!=='hair')return;
-      const mats=Array.isArray(o.material)?o.material:[o.material];
-      o.material=Array.isArray(o.material)?mats.map(m=>{const c=m.clone();if(c.color)c.color.setHex(0x29291f);return c;}):(()=>{const c=mats[0].clone();if(c.color)c.color.setHex(0x29291f);return c;})();
-    });
-  }
-  const shadow=new THREE.Mesh(new THREE.CircleGeometry(.56,22),new THREE.MeshBasicMaterial({color:0x050711,transparent:true,opacity:.28,depthWrite:false}));
-  shadow.rotation.x=-Math.PI/2;shadow.position.y=.014;root.add(shadow);
+  const marker=new THREE.Mesh(new THREE.RingGeometry(.62,.72,28),new THREE.MeshBasicMaterial({color:kind==='witch'?0xb4ed91:0xf18d66,side:THREE.DoubleSide,depthWrite:false}));
+  marker.rotation.x=-Math.PI/2;marker.position.y=.035;marker.visible=false;root.add(marker);
   const actor={
-    kind,root,visual,mixer:new THREE.AnimationMixer(visual),actions:new Map(),action:null,current:'',
-    health:kind==='hero'?100:(30+wave*5),maxHealth:kind==='hero'?100:(30+wave*5),
-    facing:kind==='hero'?1:(x<0?1:-1),heading:{x:kind==='hero'||x<0?1:-1,z:0},attack:null,queue:[],guard:false,stun:0,cooldown:random(.65,1.65),
-    jumpY:0,jumpV:0,baseY:visual.position.y,landing:0,dead:false,deadTime:0,roll:0,invulnerable:0,
-    speed:kind==='hero'?3.8*HERO_PACE:random(1.3,1.8),label:null,
-    legBones:{l:{thigh:visual.getObjectByName('thigh_l'),calf:visual.getObjectByName('calf_l')},
-              r:{thigh:visual.getObjectByName('thigh_r'),calf:visual.getObjectByName('calf_r')}},
-    kickExtension:0,kickPivot:0,kickBase:null,outfitInfo,airActions:new Map(),airLayer:null,weapon:null
+    id:nextUnitId++,kind,root,visual,mixer:new THREE.AnimationMixer(visual),actions:new Map(),current:'',action:null,
+    health:kind==='witch'?85:110,maxHealth:kind==='witch'?85:110,
+    heading:{x:kind==='witch'?1:-1,z:0},facing:1,attack:null,stun:0,cooldown:rand(.25,1),dead:false,deadTime:0,
+    speed:kind==='witch'?3.3:2.75,destination:null,weapon:null,selectionRing:marker,outfitInfo
   };
-  for(const clip of gltf.animations)if(!actor.actions.has(clip.name))actor.actions.set(clip.name,actor.mixer.clipAction(clip));
-  if(kind==='hero'){
-    for(const profile of Object.values(ATTACKS)){
-      if(!profile.name||profile.enemyOnly||actor.airActions.has(profile.name))continue;
-      const original=actor.actions.get(profile.name)?.getClip();
-      if(!original)continue;
-      const upper=original.tracks.filter(track=>{
-        const bone=track.name.split('.')[0].split('/').pop();
-        return /^(spine_|neck_|Head$|clavicle_|upperarm_|lowerarm_|hand_|thumb_|index_|middle_|ring_|pinky_)/.test(bone);
-      });
-      if(!upper.length)throw Error('Aucune piste de bras pour le combat aérien : '+profile.name);
-      const airClip=new THREE.AnimationClip('Air_'+profile.name,original.duration,upper.map(t=>t.clone()));
-      const reference=new THREE.AnimationClip('Reference_'+profile.name,original.duration,upper.map(t=>t.clone()));
-      THREE.AnimationUtils.makeClipAdditive(airClip,0,reference,30);
-      actor.airActions.set(profile.name,actor.mixer.clipAction(airClip));
-    }
+  for(const clip of source.animations)if(!actor.actions.has(clip.name))actor.actions.set(clip.name,actor.mixer.clipAction(clip));
+  // Reuse the native grip routine without replacing the Quaternius skeleton.
+  if(kind==='orc'&&index%2===0&&swordModel&&!actor.weapon){
+    const socketActor={...actor,kind:'enemy'};
+    mountNativeSword(socketActor);actor.weapon=socketActor.weapon;
   }
-  if(kind==='enemy'&&Math.random()<.40)mountNativeSword(actor);
-  if(kind==='enemy'){
-    const label=document.createElement('div');label.className='enemy-label';
-    label.innerHTML='<div></div>';viewport.appendChild(label);actor.label=label;
-    if(actor.weapon)label.classList.add('swordsman');
-  }
-  animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop',true);
-  applyFacing(actor);
+  animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop',true);applyFacing(actor);
+  units.push(actor);refreshHUD();
   return actor;
 }
-function detach(actor){
-  actor.mixer.stopAllAction();scene.remove(actor.root);
-  if(actor.label)actor.label.remove();
+function spawnOrcDefenders(){
+  if(orcSpawned||!male)return;
+  orcSpawned=true;
+  [[15,17],[21,17],[19,23],[12,22]].forEach(([x,z],i)=>spawnUnit('orc',x,z,i));
 }
-function setHUD(){
-  if(hero)$('life').style.width=clamp(hero.health/hero.maxHealth*100,0,100)+'%';
-  $('score').textContent=String(score).padStart(6,'0');
-  $('ko').textContent=String(ko).padStart(2,'0');
-  $('wave').textContent=String(wave).padStart(2,'0');
+function clearSelection(){
+  for(const actor of selected)actor.selectionRing.visible=false;
+  selected.clear();selectedBuilding=null;refreshHUD();
 }
-function spawnWave(){
-  // Each new round begins with a full health bar, including round one.
-  hero.health=hero.maxHealth;
-  const count=Math.min(2+wave,6);
-  for(let i=0;i<count;i++){
-    const angle=i*2*Math.PI/count, radius=1.6+Math.floor(i/4)*1.1;
-    const x=clamp(SPAWNS.enemies.x+Math.cos(angle)*radius,-ARENA_HALF+.7,ARENA_HALF-.7);
-    const z=clamp(SPAWNS.enemies.z+Math.sin(angle)*radius,-ARENA_HALF+.7,ARENA_HALF-.7);
-    enemies.push(spawnActor(male,'enemy',x,z,i+wave));
+function selectUnits(actors,append=false){
+  if(!append)clearSelection();
+  for(const actor of actors){
+    if(actor.dead||actor.kind!==activeFaction)continue;
+    if(append&&selected.has(actor)){selected.delete(actor);actor.selectionRing.visible=false;}
+    else{selected.add(actor);actor.selectionRing.visible=true;}
   }
-  showBanner('ROUND '+wave);
-  setHUD();
+  refreshHUD();
+}
+function selectBuilding(building){
+  clearSelection();selectedBuilding=building;refreshHUD();
+}
+function worldPoint(clientX,clientY){
+  const rect=viewport.getBoundingClientRect();
+  const ndc=new THREE.Vector2((clientX-rect.left)/rect.width*2-1,-(clientY-rect.top)/rect.height*2+1);
+  const ray=new THREE.Raycaster();ray.setFromCamera(ndc,camera);
+  const point=new THREE.Vector3();
+  return ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),0),point)?{x:point.x,z:point.z}:null;
+}
+function screenPoint(actor){
+  const point=actor.root.position.clone();point.y=1;point.project(camera);
+  const rect=viewport.getBoundingClientRect();
+  return {x:rect.left+(point.x+1)*rect.width/2,y:rect.top+(1-point.y)*rect.height/2};
+}
+function pickUnit(x,y){
+  let found=null,distance=Infinity;
+  for(const actor of units){
+    if(actor.dead||actor.kind!==activeFaction)continue;
+    const p=screenPoint(actor),d=Math.hypot(p.x-x,p.y-y);
+    if(d<Math.max(23,viewport.clientWidth*.024)&&d<distance){found=actor;distance=d;}
+  }
+  return found;
+}
+function pickBuilding(pos){
+  if(activeFaction==='witch'){
+    return Math.hypot(pos.x-WITCH_HOUSE.x,pos.z-WITCH_HOUSE.z)<4.3?{kind:'witch-house',root:witchHouse}:null;
+  }
+  for(const instance of buildingInstances.values())
+    if(Math.hypot(pos.x-instance.root.position.x,pos.z-instance.root.position.z)<instance.hitbox.width*.7)
+      return instance;
+  return null;
+}
+function issueMove(destination){
+  const actors=[...selected].filter(actor=>!actor.dead&&actor.kind===activeFaction);
+  const cols=Math.max(1,Math.ceil(Math.sqrt(actors.length)));
+  actors.forEach((actor,i)=>{
+    const dx=(i%cols-(cols-1)/2)*1.35,dz=(Math.floor(i/cols)-Math.floor((actors.length-1)/cols)/2)*1.35;
+    actor.destination={x:clamp(destination.x+dx,-27,27),z:clamp(destination.z+dz,-27,27)};
+  });
+  refreshHUD();
+}
+function issueTrain(){
+  if(!running||paused||gold.witch<TRAIN_COST)return false;
+  gold.witch-=TRAIN_COST;training.push({kind:'witch',duration:TRAIN_DURATION});refreshHUD();return true;
+}
+function finishTraining(){
+  const i=units.filter(a=>a.kind==='witch').length;
+  const x=WITCH_HOUSE.x+4.1+(i%3)*1.2,z=WITCH_HOUSE.z+3.9+Math.floor(i%9/3)*1.2;
+  spawnUnit('witch',clamp(x,-27,27),clamp(z,-27,27),i);
+  showBanner('SORCIÈRE CRÉÉE');
+}
+function beginBuild(type){
+  if(!running||paused||activeFaction!=='orc'||!ORC_COSTS[type]||!buildingBlueprints.has(type)||gold.orc<ORC_COSTS[type])return false;
+  buildMode=type;refreshHUD();return true;
+}
+function validBuildPosition(x,z){
+  if(x<3||x>ARENA_HALF-3||z<-ARENA_HALF+3||z>ARENA_HALF-3)return false;
+  if(Math.hypot(x-WITCH_HOUSE.x,z-WITCH_HOUSE.z)<7)return false;
+  return [...buildingInstances.values()].every(b=>Math.hypot(x-b.root.position.x,z-b.root.position.z)>5.1);
+}
+function buildOrc(type,x,z){
+  if(!ORC_COSTS[type]||!buildingBlueprints.has(type)||gold.orc<ORC_COSTS[type]||!validBuildPosition(x,z))return false;
+  const template=buildingBlueprints.get(type),model=template.source.clone(true);
+  model.updateMatrixWorld(true);
+  const bounds=new THREE.Box3().setFromObject(model),center=bounds.getCenter(new THREE.Vector3());
+  const anchor=new THREE.Group(),offset=new THREE.Group();
+  offset.position.set(-center.x,-bounds.min.y,-center.z);offset.add(model);anchor.add(offset);
+  anchor.scale.setScalar(3.9/template.footprint);anchor.position.set(x,0,z);
+  if(template.clips.length){
+    const mixer=new THREE.AnimationMixer(model);
+    for(const clip of template.clips)if(clip.tracks.length)mixer.clipAction(clip).play();
+    orcAnimationMixers.push(mixer);
+  }
+  const instance=createBuildingInstance(template.entry,type,1,anchor,3.9);
+  if(!orcVillage){orcVillage=new THREE.Group();scene.add(orcVillage);}
+  orcVillage.add(anchor);gold.orc-=ORC_COSTS[type];buildMode=null;
+  showBanner(ORC_NAMES[type]+' CONSTRUITE');refreshHUD();return instance;
+}
+function refreshHUD(){
+  $('witch-gold').textContent=gold.witch;
+  $('orc-gold').textContent=gold.orc;
+  $('unit-count').textContent=units.filter(x=>x.kind==='witch'&&!x.dead).length+' : '+units.filter(x=>x.kind==='orc'&&!x.dead).length;
+  $('faction-title').textContent=activeFaction==='witch'?'SORCIÈRES':'ORCS';
+  $('witch-faction').classList.toggle('active',activeFaction==='witch');
+  $('orc-faction').classList.toggle('active',activeFaction==='orc');
+  const title=$('command-title'),info=$('command-info'),buttons=$('command-buttons');
+  buttons.replaceChildren();
+  const addButton=(label,action,disabled=false)=>{
+    const b=document.createElement('button');b.type='button';b.textContent=label;b.disabled=disabled;
+    b.onclick=event=>{event.stopPropagation();action();};buttons.appendChild(b);
+  };
+  const alive=[...selected].filter(a=>!a.dead);
+  if(buildMode){
+    title.textContent='Construction : '+ORC_NAMES[buildMode];
+    info.textContent='Touchez une zone libre du territoire orc (moitié droite).';
+    addButton('Annuler',()=>{buildMode=null;refreshHUD();});
+  }else if(selectedBuilding?.kind==='witch-house'&&activeFaction==='witch'){
+    title.textContent='Maison des sorcières';
+    info.textContent='Entraîner une sorcière : '+TRAIN_COST+' or · '+TRAIN_DURATION+' secondes.';
+    addButton('Entraîner une sorcière',issueTrain,gold.witch<TRAIN_COST||!running||paused);
+  }else if(activeFaction==='orc'&&selectedBuilding){
+    title.textContent=ORC_NAMES[selectedBuilding.type]+' · niveau '+selectedBuilding.level;
+    info.textContent='PV '+Math.ceil(selectedBuilding.health)+' / '+selectedBuilding.maxHealth+'. Construisez sur votre territoire.';
+    for(const type of Object.keys(ORC_COSTS))
+      addButton(ORC_NAMES[type]+' · '+ORC_COSTS[type],()=>beginBuild(type),!buildingBlueprints.has(type)||gold.orc<ORC_COSTS[type]);
+  }else if(alive.length){
+    title.textContent=alive.length+' '+(activeFaction==='witch'?'sorcière(s)':'orc(s)')+' sélectionné(s)';
+    info.textContent='Touchez le terrain pour vous déplacer. Combat automatique à proximité.';
+    addButton('Arrêter',()=>{alive.forEach(a=>a.destination=null);refreshHUD();});
+  }else{
+    title.textContent=activeFaction==='witch'?'Armée des sorcières':'Village orc';
+    info.textContent=activeFaction==='witch'?'Touchez une sorcière, puis le terrain. Touchez la maison pour entraîner.':'Touchez un bâtiment pour construire, ou choisissez un type ci-dessous.';
+    if(activeFaction==='witch'){
+      addButton('Sélectionner toutes les sorcières',()=>selectUnits(units.filter(a=>a.kind==='witch'&&!a.dead)));
+      addButton('Maison',()=>selectBuilding({kind:'witch-house',root:witchHouse}));
+    }else for(const type of Object.keys(ORC_COSTS))
+      addButton(ORC_NAMES[type]+' · '+ORC_COSTS[type],()=>beginBuild(type),!buildingBlueprints.has(type)||gold.orc<ORC_COSTS[type]);
+  }
+  $('selection-summary').textContent=buildMode?'Placer '+ORC_NAMES[buildMode]:alive.length?'Unités sélectionnées : '+alive.length:selectedBuilding?'Bâtiment sélectionné':'Sélection et ordres tactiques';
+  if(training.length){
+    const progress=Math.round(100*trainElapsed/training[0].duration);
+    $('training-progress').textContent='Production : '+training.length+' en file · '+progress+' %';
+  }else $('training-progress').textContent='Production : aucune unité en file';
+}
+function changeFaction(faction){
+  if(faction!=='witch'&&faction!=='orc')return;
+  activeFaction=faction;buildMode=null;clearSelection();refreshHUD();
+}
+function showBanner(message){
+  $('banner').textContent=message;$('banner').style.opacity=1;
+  clearTimeout(showBanner.timer);showBanner.timer=setTimeout(()=>$('banner').style.opacity=0,1300);
 }
 function startSession(){
   if(!ready)return;
-  if(hero)detach(hero);
-  for(const e of enemies)detach(e);
-  enemies=[];wave=1;ko=0;score=0;paused=false;running=true;roundDelay=-1;cameraFollow.x=SPAWNS.hero.x;cameraFollow.z=SPAWNS.hero.z;
-  inputs.clear();guardInputs.clear();touchDirection.x=0;touchDirection.z=0;
-  leftGesture=null;rightGesture=null;clearTimeout(rightGuardTimer);rightGuardTimer=null;$('gesture-indicator').style.display='none';$('guard-indicator').style.display='none';
-  hero=spawnActor(female,'hero',SPAWNS.hero.x,SPAWNS.hero.z);
-  faceDirection(hero,1,1);applyFacing(hero);
-  spawnWave();
-  setHUD();
-  $('pause').disabled=false;$('pause').textContent='Ⅱ';$('pause').setAttribute('aria-label','Pause');
-  $('overlay').hidden=true;
-  if(new URLSearchParams(location.search).has('qa'))window.__fightersQA={
-    setEnemiesPassive:value=>{qaPassive=!!value;},
-    moveHeroTo:(x,z)=>{
-      qaPassive=true;inputs.clear();touchDirection.x=0;touchDirection.z=0;
-      hero.root.position.set(clamp(x,-ARENA_HALF,ARENA_HALF),0,clamp(z,-ARENA_HALF,ARENA_HALF));
-    },
-    setMoveDirection:(x,z)=>{
-      qaPassive=true;inputs.clear();touchDirection.x=x;touchDirection.z=z;
-    },
-    setEnemyApproach:(x,z)=>{
-      startSession();hero.root.position.set(0,0,0);
-      const enemy=enemies[0];enemy.root.position.set(x,0,z);
-      enemy.cooldown=100;enemy.stun=0;enemy.attack=null;
-      for(const other of enemies.slice(1)){other.root.position.set(22,0,22);other.cooldown=100;}
-      qaPassive=false;
-    },
-    freeze:value=>{paused=!!value;},
-    // Advance the actual physics/mixer at 60 Hz, then hold the rendered pose.
-    // Headless SwiftShader frame stalls must not decide whether a kick looks correct.
-    setupSwordDuel:()=>{
-      // Exercise a real native Sword_Attack with a provably socketed mesh.
-      qaPassive=false;hero.root.position.set(-1.7,0,0);faceDirection(hero,1,0);
-      hero.health=100;hero.stun=0;hero.invulnerable=0;hero.attack=null;setHUD();
-      const enemy=enemies[0];if(!enemy.weapon)mountNativeSword(enemy);
-      enemy.label?.classList.add('swordsman');
-      enemy.root.position.set(hero.root.position.x+1.6,0,hero.root.position.z);
-      faceDirection(enemy,-1,0);enemy.cooldown=100;enemy.stun=0;enemy.attack=null;
-      for(const other of enemies.slice(1)){other.root.position.set(20,0,0);other.cooldown=100;other.attack=null;}
-      attack(enemy,'swordAttack');
-      paused=true;
-    },
-    arrangeDuel:()=>{
-      qaPassive=true;
-      hero.root.position.set(-1.7,0,0);faceDirection(hero,1,0);
-      for(let i=0;i<enemies.length;i++){
-        const e=enemies[i];
-        e.root.position.set(hero.root.position.x+(i===0?1.15:6+i*2),0,0);
-        e.attack=null;e.stun=0;e.cooldown=100;faceDirection(e,-1,0);
-      }
-    },
-    poseAtAttack:seconds=>{
-      paused=false;
-      const ticks=Math.min(75,Math.max(1,Math.round(seconds/FIXED_DT)));
-      for(let i=0;i<ticks;i++)stepGame(FIXED_DT);
-      paused=true;
-      positionCamera();renderer.render(scene,camera);
-    },
-    reset:()=>startSession(),
-    startKickPose:kind=>{qaPassive=true;attack(hero,kind);paused=true;},
-    setupAirPunch:(facing,kind='jab')=>{
-      startSession();qaPassive=true;
-      faceDirection(hero,facing,0);
-      jump();attack(hero,kind);paused=true;
-    },
-    armPose:()=>{
-      const point=name=>{
-        const bone=hero.visual.getObjectByName(name);
-        return bone?bone.getWorldPosition(new THREE.Vector3()).toArray():null;
-      };
-      const hands={left:point('hand_l'),right:point('hand_r')};
-      const shoulders={left:point('upperarm_l'),right:point('upperarm_r')};
-      return {facing:hero.facing,heading:{...hero.heading},rootX:hero.root.position.x,hands,shoulders,
-        armX:{
-          left:hands.left&&shoulders.left?hands.left[0]-shoulders.left[0]:null,
-          right:hands.right&&shoulders.right?hands.right[0]-shoulders.right[0]:null
-        }};
-    },
-    injureAndClearRound:()=>{
-      // Test the normal round-clear timer and spawnWave() healing branch.
-      hero.health=27;setHUD();qaPassive=false;
-      for(const enemy of enemies){enemy.dead=true;enemy.deadTime=0;}
-    },
-    snapshot:()=>({
-    ready,running,paused,wave,ko,score,health:hero.health,enemies:enemies.filter(e=>!e.dead).length,
-    arenaWidth:ARENA_SIZE,arenaDepth:ARENA_SIZE,projection:camera.isOrthographicCamera?'orthographic':'perspective',
-    spawnPoints:SPAWNS,witchHouseLoaded:!!witchHouse,
-    cameraX:cameraFollow.x,cameraZ:cameraFollow.z,
-    heroMotion:hero.current,heroGuard:hero.guard,heroAirAttack:!!hero.attack?.air,heroAirLayer:!!hero.airLayer&&hero.airLayer.isRunning(),heroAirLayerTime:hero.airLayer?.time??0,heroSpeed:hero.speed,heroClipScale:hero.action?.getEffectiveTimeScale()??0,enemyClipScales:enemies.map(e=>e.action?.getEffectiveTimeScale()??0),heroAttack:hero.attack?.type||null,heroJumpY:hero.jumpY,heroKickExtension:hero.kickExtension,heroKickPivot:hero.kickPivot,heroKickDuration:hero.attack?.type?.startsWith('kick')?hero.attack.duration:null,legBonesFound:{left:!!hero.legBones.l.thigh&&!!hero.legBones.l.calf,right:!!hero.legBones.r.thigh&&!!hero.legBones.r.calf},boneNames:hero.legBones.r.thigh?[]:Array.from(new Set(hero.visual.getObjectsByProperty('isBone',true).map(b=>b.name))).slice(0,80),lastRightGesture,lastRightAction,touchX:touchDirection.x,touchZ:touchDirection.z,
-    heroX:hero.root.position.x,heroZ:hero.root.position.z,
-    heroHeading:{...hero.heading},heroYaw:hero.visual.rotation.y,
-    enemyHeadings:enemies.map(e=>({...e.heading})),enemyYaws:enemies.map(e=>e.visual.rotation.y),
-    enemyPositions:enemies.map(e=>({x:e.root.position.x,z:e.root.position.z})),
-    outfit:hero.outfitInfo,enemyOutfits:enemies.map(e=>e.outfitInfo),enemyMotions:enemies.map(e=>e.current),enemyHealth:enemies.map(e=>e.health),
-    enemyWeapons:enemies.map(e=>!!e.weapon),enemySwordGrips:enemies.map(e=>e.weapon?e.weapon.socket.getWorldPosition(new THREE.Vector3()).distanceTo(e.weapon.hand.getWorldPosition(new THREE.Vector3())):null)
-  })};
+  for(const actor of units){actor.mixer.stopAllAction();scene.remove(actor.root);}
+  units.length=0;selected.clear();selectedBuilding=null;nextUnitId=1;
+  gold={witch:2000,orc:900};training=[];trainElapsed=0;buildMode=null;orcSpawned=false;
+  activeFaction='witch';paused=false;running=true;cameraFollow={x:0,z:0};
+  spawnUnit('witch',-18,-13,0);spawnUnit('witch',-16.5,-15,1);spawnUnit('witch',-19,-16,2);
+  spawnOrcDefenders();selectBuilding({kind:'witch-house',root:witchHouse});
+  $('pause').disabled=false;$('pause').textContent='Ⅱ';$('overlay').hidden=true;
+  showBanner('DÉBUT DE LA PARTIE');refreshHUD();
 }
-function showBanner(text){
-  $('banner').textContent=text;$('banner').style.opacity=1;
-  clearTimeout(showBanner.timer);
-  showBanner.timer=setTimeout(()=>$('banner').style.opacity=0,1350);
-}
-function gameEnd(){
-  running=false;
-  $('overlay-title').textContent='GAME OVER';
-  $('overlay-desc').textContent='Score : '+score+' · K.-O. : '+ko+' · Vague : '+wave+'. Recommence pour tenter de battre ton record.';
-  $('start').textContent='Rejouer';$('overlay').hidden=false;
-  $('pause').disabled=true;
-}
-function attack(actor,kind){
-  if(!actor||actor.dead||actor.guard||actor.attack||actor.stun>0||actor.roll>0)return;
-  const airborne=actor.kind==='hero'&&actor.jumpY>.02;
-  if((actor.jumpY>.08&&!airborne)||(actor.landing>0&&!airborne))return;
-  const a=ATTACKS[kind];
-  if(a.enemyOnly&&(actor.kind!=='enemy'||!actor.weapon))return;
-  const clip=a.name?actor.actions.get(a.name)?.getClip():null;
-  if(a.name&&!clip)return;
-  const pace=actor.kind==='hero'?HERO_PACE:1;
-  const duration=(clip?.duration??a.duration)/pace;
-  actor.attack={type:kind,elapsed:0,duration:duration+a.recovery/pace,struck:false,impact:duration*a.impact,air:airborne};actor.kickBase=null;
-  if(a.name&&airborne){
-    // Lower body stays in the airborne clip; an additive, upper-body-only
-    // punch overlays the leap without stomping the leg tracks.
-    animation(actor,'Jump_Loop',true);
-    const layer=actor.airActions.get(a.name);
-    if(!layer)throw Error('Calque aérien introuvable : '+a.name);
-    layer.reset().stopFading().setEffectiveWeight(1).setEffectiveTimeScale(pace);
-    layer.setLoop(THREE.LoopOnce,1);layer.clampWhenFinished=true;
-    layer.fadeIn(.07).play();actor.airLayer=layer;actor.current='Air_'+kind;
-  } else if(a.name)animation(actor,a.name,true);
-  else {
-    // The kick uses this same GLB's thigh/calf hierarchy, no imported retargeting.
-    const leg=actor.legBones[kind==='kickLeft'?'l':'r'];
-    if(!leg.thigh||!leg.calf){actor.attack=null;return;}
-    animation(actor,airborne?'Jump_Loop':'Idle_Loop',true);
-    actor.current=airborne?'Air_'+kind:kind;
+function nearestHostile(actor,maxDistance=Infinity){
+  let closest=null,best=maxDistance;
+  for(const candidate of units){
+    if(candidate.dead||candidate.kind===actor.kind)continue;
+    const distance=Math.hypot(candidate.root.position.x-actor.root.position.x,candidate.root.position.z-actor.root.position.z);
+    if(distance<best){closest=candidate;best=distance;}
   }
+  return closest?{target:closest,distance:best}:null;
 }
-function jump(){
-  if(!hero||hero.dead||hero.jumpY>.02||hero.stun>0||hero.roll>0||hero.landing>0)return;
-  // Jump-cancel after an attack starts: an upward flick should feel instant.
-  if(hero.attack){
-    hero.attack=null;hero.queue=[];hero.kickBase=null;hero.kickExtension=0;
-    if(hero.airLayer){hero.airLayer.fadeOut(.08);hero.airLayer=null;}
-  }
-  hero.jumpV=6.2;hero.jumpY=.08;hero.visual.position.y=hero.baseY+.08;animation(hero,'Jump_Start',true);
+function dealDamage(target,amount){
+  if(target.dead)return;
+  target.health=Math.max(0,target.health-amount);target.stun=.24;
+  if(!target.health){
+    target.dead=true;target.deadTime=1.4;target.destination=null;selected.delete(target);target.selectionRing.visible=false;
+    animation(target,'Death01',true);refreshHUD();
+  }else animation(target,'Hit_Chest',true);
 }
-function roll(){
-  if(!hero||hero.dead||hero.attack||hero.stun>0||hero.jumpY>.02||hero.roll>0)return;
-  hero.roll=.85/HERO_PACE;hero.invulnerable=.85/HERO_PACE;animation(hero,'Roll',true);
-}
-function floatDamage(actor,amount,good){
-  const p=new THREE.Vector3();actor.root.getWorldPosition(p);p.y+=2.1;p.project(camera);
-  const rect=viewport.getBoundingClientRect();
-  const el=document.createElement('div');el.className='impact'+(good?' good':'');
-  el.textContent=good?'+ '+amount:'− '+amount;
-  el.style.left=((p.x+1)*rect.width/2)+'px';
-  el.style.top=((-p.y+1)*rect.height/2)+'px';
-  viewport.appendChild(el);
-  setTimeout(()=>el.remove(),800);
-}
-function damage(target,amount,attacker){
-  if(target.dead||target.invulnerable>0)return;
-  if(target.kind==='hero'&&target.guard&&
-     ((attacker.root.position.x-target.root.position.x)*target.heading.x+
-       (attacker.root.position.z-target.root.position.z)*target.heading.z)>=-.1){
-    const reduced=Math.max(1,Math.round(amount*.2));
-    target.health=Math.max(0,target.health-reduced);
-    floatDamage(target,reduced,false);
-    if(target.health===0){target.guard=false;target.dead=true;animation(target,'Death01',true);gameEnd();}
-    setHUD();return;
-  }
-  target.health=Math.max(0,target.health-amount);
-  floatDamage(target,amount,attacker.kind==='hero');
-  if(target.attack)target.attack=null;
-  target.queue=[];
-  target.stun=target.kind==='hero'?.37/HERO_PACE:.37;
-  target.root.position.x=clamp(target.root.position.x+attacker.heading.x*.22,-ARENA_HALF,ARENA_HALF);
-  target.root.position.z=clamp(target.root.position.z+attacker.heading.z*.22,-ARENA_HALF,ARENA_HALF);
-  if(target.health===0){
-    target.dead=true;target.deadTime=1.7;target.stun=0;
-    animation(target,'Death01',true);
-    if(target.kind==='enemy'){ko++;score+=125;showBanner('K.O.');}
-    else gameEnd();
-  } else {
-    animation(target,'Hit_Chest',true);
-    if(target.kind==='hero'){
-      shake=.24;$('hit-flash').style.opacity=.25;
-      setTimeout(()=>$('hit-flash').style.opacity=0,130);
+function tickUnit(actor,dt){
+  if(actor.dead){actor.deadTime-=dt;return;}
+  actor.stun=Math.max(0,actor.stun-dt);actor.cooldown=Math.max(0,actor.cooldown-dt);
+  if(actor.attack){
+    actor.attack.elapsed+=dt;
+    if(!actor.attack.landed&&actor.attack.elapsed>=actor.attack.impact){
+      actor.attack.landed=true;
+      const target=actor.attack.target;
+      const distance=Math.hypot(target.root.position.x-actor.root.position.x,target.root.position.z-actor.root.position.z);
+      if(!target.dead&&distance<(actor.weapon?2.4:1.9))dealDamage(target,actor.kind==='witch'?17:14);
     }
-  }
-  setHUD();
-}
-function hit(actor){
-  const profile=ATTACKS[actor.attack.type];
-  const targets=actor.kind==='hero'?enemies:[hero];
-  let hitCount=0;
-  for(const target of targets){
-    if(!target||target.dead)continue;
-    const dx=target.root.position.x-actor.root.position.x;
-    const dz=target.root.position.z-actor.root.position.z;
-    const forward=dx*actor.heading.x+dz*actor.heading.z;
-    const sideways=dx*actor.heading.z-dz*actor.heading.x;
-    if(forward<-.12||forward>profile.range+(actor.attack.air?.18:0)||Math.abs(sideways)>.85)continue;
-    damage(target,profile.damage+(actor.attack.air?3:0),actor);
-    if(!target.dead&&profile.stagger)target.stun=Math.max(target.stun,profile.stagger);
-    if(++hitCount>=2)break;
-  }
-  if(actor.kind==='hero'&&hitCount)score+=15*hitCount;
-  setHUD();
-}
-function stepAttack(actor,dt){
-  if(!actor.attack)return false;
-  const a=actor.attack;a.elapsed+=dt;
-  if(!a.struck&&a.elapsed>=a.impact){
-    a.struck=true;hit(actor);
-  }
-  if(a.elapsed>=a.duration){
-    actor.attack=null;actor.kickExtension=0;actor.kickBase=null;
-    if(actor.airLayer){actor.airLayer.fadeOut(.1);actor.airLayer=null;}
-    if(actor.kind==='hero'&&actor.queue.length)attack(actor,actor.queue.shift());
-    else animation(actor,actor.jumpY>.02?'Jump_Loop':actor.landing>0?'Jump_Land':actor.weapon?'Sword_Idle':'Idle_Loop');
-  }
-  return true;
-}
-function moveHero(dt){
-  if(hero.dead)return;
-  // Air combos can change facing with the left thumb even while an attack
-  // temporarily suspends horizontal locomotion.
-  const airSteerX=Number(inputs.has('ArrowRight')||inputs.has('KeyD'))-
-    Number(inputs.has('ArrowLeft')||inputs.has('KeyA'))+touchDirection.x;
-  const airSteerZ=Number(inputs.has('ArrowDown')||inputs.has('KeyS'))-
-    Number(inputs.has('ArrowUp')||inputs.has('KeyW'))+touchDirection.z;
-  if(hero.jumpY>0&&Math.hypot(airSteerX,airSteerZ)>.2){
-    const direction=screenToWorld(airSteerX,airSteerZ);
-    faceDirection(hero,direction.x,direction.z);
-  }
-  hero.stun=Math.max(0,hero.stun-dt);
-  hero.invulnerable=Math.max(0,hero.invulnerable-dt);
-  if(hero.jumpY>0){
-    hero.jumpV-=12.4*dt;
-    hero.jumpY=Math.max(0,hero.jumpY+hero.jumpV*dt);
-    hero.visual.position.y=hero.baseY+hero.jumpY;
-    if(hero.jumpY===0){hero.jumpV=0;hero.landing=.32/HERO_PACE;animation(hero,'Jump_Land',true);}
-    else if(hero.jumpV<2.2&&!hero.attack)animation(hero,'Jump_Loop');
-  }
-  if(hero.landing>0){
-    hero.landing=Math.max(0,hero.landing-dt);
-    if(hero.landing===0&&!hero.attack)animation(hero,'Idle_Loop');
-    if(!hero.attack)return;
-  }
-  if(hero.roll>0){
-    hero.roll=Math.max(0,hero.roll-dt);
-    hero.root.position.x=clamp(hero.root.position.x+hero.heading.x*5.5*HERO_PACE*dt,-ARENA_HALF,ARENA_HALF);
-    hero.root.position.z=clamp(hero.root.position.z+hero.heading.z*5.5*HERO_PACE*dt,-ARENA_HALF,ARENA_HALF);
-    if(hero.roll===0)animation(hero,'Idle_Loop');
+    if(actor.attack.elapsed>=actor.attack.duration){actor.attack=null;animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop',true);}
     return;
   }
-  if(stepAttack(hero,dt)||hero.stun>0)return;
-  let dx=Number(inputs.has('ArrowRight')||inputs.has('KeyD'))-Number(inputs.has('ArrowLeft')||inputs.has('KeyA'))+touchDirection.x;
-  let dz=Number(inputs.has('ArrowDown')||inputs.has('KeyS'))-Number(inputs.has('ArrowUp')||inputs.has('KeyW'))+touchDirection.z;
-  if(dx||dz){
-    const direction=screenToWorld(dx,dz),length=Math.hypot(direction.x,direction.z);
-    const mx=direction.x/length,mz=direction.z/length;
-    const moveSpeed=hero.speed*(hero.guard?.37:1);
-    hero.root.position.x=clamp(hero.root.position.x+mx*moveSpeed*dt,-ARENA_HALF,ARENA_HALF);
-    hero.root.position.z=clamp(hero.root.position.z+mz*moveSpeed*dt,-ARENA_HALF,ARENA_HALF);
-    faceDirection(hero,mx,mz);
-    if(hero.jumpY===0)animation(hero,hero.guard?'Idle_FoldArms_Loop':'Jog_Fwd_Loop');
-  } else if(hero.jumpY===0)animation(hero,hero.guard?'Idle_FoldArms_Loop':'Idle_Loop');
-}
-function moveEnemies(dt){
-  if(qaPassive)return;
-  const alive=enemies.filter(e=>!e.dead);
-  for(const e of enemies){
-    if(e.dead){e.deadTime-=dt;continue;}
-    e.stun=Math.max(0,e.stun-dt);
-    e.cooldown-=dt;
-    if(!hero.dead)faceTarget(e,hero);
-    if(stepAttack(e,dt)||e.stun>0)continue;
-    const dx=hero.root.position.x-e.root.position.x;
-    const dz=hero.root.position.z-e.root.position.z;
-    const distance=Math.hypot(dx,dz);
-    if(!hero.dead&&distance<(e.weapon?2.03:1.45)&&e.cooldown<=0&&
-       alive.filter(v=>v.attack).length<2){
-      attack(e,e.weapon?'swordAttack':Math.random()<.68?'jab':'cross');
-      e.cooldown=random(1.65,2.6);
-      continue;
+  if(actor.stun>0)return;
+  const threat=nearestHostile(actor,actor.kind==='witch'?6.8:9.5);
+  if(threat&&threat.distance<(actor.weapon?2.1:1.6)&&actor.cooldown<=0){
+    faceTarget(actor,threat.target);
+    const clipName=actor.weapon&&actor.actions.has('Sword_Attack')?'Sword_Attack':'Punch_Jab';
+    const clip=actor.actions.get(clipName)?.getClip();
+    if(clip){
+      const duration=clip.duration;
+      actor.attack={target:threat.target,elapsed:0,impact:duration*.4,duration:duration+.13,landed:false};
+      actor.cooldown=duration+rand(.6,1.1);animation(actor,clipName,true);
     }
-    const gapX=Math.abs(dx),gapZ=Math.abs(dz);
-    if(distance>(e.weapon?1.72:1.1)){
-      let vx=dx, vz=dz;
-      const len=Math.max(.001,Math.hypot(vx,vz));vx/=len;vz/=len;
-      e.root.position.x=clamp(e.root.position.x+vx*e.speed*dt,-ARENA_HALF,ARENA_HALF);
-      e.root.position.z=clamp(e.root.position.z+vz*e.speed*dt,-ARENA_HALF,ARENA_HALF);
-      animation(e,'Walk_Loop');
-    } else animation(e,e.weapon?'Sword_Idle':'Idle_Loop');
+    return;
   }
-  const cleared=enemies.filter(e=>e.dead&&e.deadTime<=0);
-  for(const e of cleared){detach(e);enemies.splice(enemies.indexOf(e),1);}
-  if(enemies.length===0&&running&&roundDelay<0){
-    roundDelay=1.5;showBanner('RUE NETTOYÉE');
-  }
-  if(roundDelay>=0){
-    roundDelay-=dt;
-    if(roundDelay<0){wave++;spawnWave();}
-  }
-}
-function updateLabels(){
-  const box=viewport.getBoundingClientRect();
-  for(const e of enemies)if(e.label){
-    if(e.dead){e.label.style.display='none';continue;}
-    const p=new THREE.Vector3();
-    e.root.getWorldPosition(p);p.y+=2.15;p.project(camera);
-    e.label.style.display=p.z>1?'none':'';
-    e.label.style.left=(p.x+1)*box.width/2+'px';
-    e.label.style.top=(-p.y+1)*box.height/2+'px';
-    e.label.firstElementChild.style.width=100*e.health/e.maxHealth+'%';
-  }
-}
-function getPad(){
-  const pads=navigator.getGamepads?.()||[];
-  const pad=Array.from(pads).find(Boolean);
-  for(const key of gamepadKeys)inputs.delete(key);
-  gamepadKeys.clear();
-  if(!pad)return;
-  const axes=pad.axes;
-  for(const [pressed,key] of [[axes[0]<-.2,'ArrowLeft'],[axes[0]>.2,'ArrowRight'],[axes[1]<-.2,'ArrowUp'],[axes[1]>.2,'ArrowDown']])if(pressed){inputs.add(key);gamepadKeys.add(key);}
-  const map={jab:0,cross:1,hook:2,jump:3,roll:5};
-  for(const [action,index] of Object.entries(map)){
-    const pressed=!!pad.buttons[index]?.pressed;
-    if(pressed&&!gamepadLast[action])doAction(action);
-    gamepadLast[action]=pressed;
-  }
+  let dest=actor.destination;
+  // Autonomous orcs defend their territory and pursue nearby enemies.
+  if(threat&&(!dest||actor.kind==='orc'||threat.distance<3.5))dest=threat.target.root.position;
+  if(dest){
+    const dx=dest.x-actor.root.position.x,dz=dest.z-actor.root.position.z,distance=Math.hypot(dx,dz);
+    if(distance>.45){
+      const nx=dx/distance,nz=dz/distance;
+      const step=Math.min(distance-.38,actor.speed*dt);
+      actor.root.position.x=clamp(actor.root.position.x+nx*step,-27.4,27.4);
+      actor.root.position.z=clamp(actor.root.position.z+nz*step,-27.4,27.4);
+      faceDirection(actor,nx,nz);animation(actor,'Walk_Loop');
+    }else{if(actor.destination===dest)actor.destination=null;animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop');}
+  }else animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop');
 }
 const FIXED_DT=1/60;
-let accumulated=0;
+let accumulator=0,uiElapsed=0;
 function stepGame(dt){
-  if(ready&&running&&!paused){
-    if(rightGesture&&!rightGesture.committed&&performance.now()-rightGesture.at>260){
-      lastRightGesture='HOLD';lastRightAction='guard';
-      setGuard('touch',true);
-    }
-    else if(guardInputs.size)setGuard('keyboard',guardInputs.has('keyboard'));
-    getPad();
-    moveHero(dt);
-    moveEnemies(dt);
-    cameraFollow.x=THREE.MathUtils.damp(cameraFollow.x,hero.root.position.x,2.4,dt);
-    cameraFollow.z=THREE.MathUtils.damp(cameraFollow.z,hero.root.position.z,2.4,dt);
+  if(!ready||!running||paused)return;
+  if(training.length){
+    trainElapsed+=dt;
+    if(trainElapsed>=training[0].duration){trainElapsed-=training[0].duration;training.shift();finishTraining();}
+  }else trainElapsed=0;
+  for(const actor of units)tickUnit(actor,dt);
+  for(let i=units.length-1;i>=0;i--)if(units[i].dead&&units[i].deadTime<=0){
+    units[i].mixer.stopAllAction();scene.remove(units[i].root);units.splice(i,1);
   }
-  if(ready&&!paused){
-    if(hero){
-      applyFacing(hero);
-      hero.mixer.update(dt);
-      poseNativeKick(hero);
-      poseAirPunch(hero);
-    }
-    for(const e of enemies){applyFacing(e);e.mixer.update(dt);}
-  }
-  shake=Math.max(0,shake-dt);
-}
-// Quaternius' airborne punch clips move the fist backward relative to the
-// gameplay facing axis. Keep the clip's upper-body blend and correct only the
-// striking arm in world space: left-facing and right-facing punches both reach
-// ahead, without flipping the character's entire torso or rig.
-function poseAirPunch(actor){
-  const a=actor.attack;
-  if(!a?.air||!ATTACKS[a.type]?.name)return;
-  const side=(a.type==='cross'||a.type==='bodyRight')?'l':'r';
-  const upper=actor.visual.getObjectByName('upperarm_'+side);
-  const fist=actor.visual.getObjectByName('hand_'+side);
-  if(!upper||!fist)return;
-  upper.updateWorldMatrix(true,true);
-  const shoulder=upper.getWorldPosition(new THREE.Vector3());
-  const from=fist.getWorldPosition(new THREE.Vector3()).sub(shoulder);
-  if(from.lengthSq()<.001)return;
-  const forward=new THREE.Vector3(actor.heading.x,-.025,actor.heading.z).normalize();
-  const worldCorrection=new THREE.Quaternion().setFromUnitVectors(from.normalize(),forward);
-  const parentWorld=upper.parent.getWorldQuaternion(new THREE.Quaternion());
-  const localCorrection=parentWorld.clone().invert().multiply(worldCorrection).multiply(parentWorld);
-  const target=upper.quaternion.clone().premultiply(localCorrection);
-  const reach=THREE.MathUtils.smoothstep(a.elapsed,.015,a.impact*.9)*
-    (1-THREE.MathUtils.smoothstep(a.elapsed,a.impact*1.16,a.duration*.85));
-  upper.quaternion.slerp(target,Math.max(0,reach));
-  upper.updateMatrixWorld(true);
-}
-// Drive the existing rig's leg bones in world space, then convert the
-// correction into the hip parent's local space. This avoids assuming bone axes.
-function poseNativeKick(actor){
-  actor.kickExtension=0;actor.kickPivot=0;
-  if(!actor.attack||!['kickLeft','kickRight'].includes(actor.attack.type))return;
-  const a=actor.attack,leg=actor.legBones[a.type==='kickLeft'?'l':'r'];
-  const thigh=leg.thigh,calf=leg.calf;
-  if(!thigh||!calf)return;
-  if(!actor.kickBase)actor.kickBase=thigh.quaternion.clone();
-  thigh.quaternion.copy(actor.kickBase);
-  const t=a.elapsed*HERO_PACE;
-  // Snap the foot out fast, hold through contact, and retract in one beat.
-  const lift=THREE.MathUtils.smoothstep(t,.015,.15);
-  const recover=1-THREE.MathUtils.smoothstep(t,.34,.56);
-  const extension=Math.max(0,lift*recover);
-  actor.kickExtension=extension;
-  if(actor.kind==='hero'){
-    // Subtle, short-lived whole-body yaw: the leg's world-space aim still
-    // follows the target instead of spinning away with the torso.
-    const pivot=THREE.MathUtils.smoothstep(t,.015,.13)*
-      (1-THREE.MathUtils.smoothstep(t,.32,.57));
-    actor.kickPivot=actor.facing*(a.type==='kickRight'?.20:-.17)*pivot;
-    actor.visual.rotation.y+=actor.kickPivot;
-  }
-  thigh.updateWorldMatrix(true,true);
-  const start=thigh.getWorldPosition(new THREE.Vector3());
-  const end=calf.getWorldPosition(new THREE.Vector3());
-  const from=end.sub(start).normalize();
-  const to=new THREE.Vector3(actor.heading.x*.98,-.18,actor.heading.z*.98).normalize();
-  const worldCorrection=new THREE.Quaternion().setFromUnitVectors(from,to);
-  const parentWorld=thigh.parent.getWorldQuaternion(new THREE.Quaternion());
-  const localCorrection=parentWorld.clone().invert().multiply(worldCorrection).multiply(parentWorld);
-  const target=thigh.quaternion.clone().premultiply(localCorrection);
-  thigh.quaternion.slerp(target,extension);
-  thigh.updateMatrixWorld(true);
+  uiElapsed+=dt;
+  if(uiElapsed>.25){uiElapsed=0;refreshHUD();}
 }
 function positionCamera(){
   cameraLook.set(cameraFollow.x,1.15,cameraFollow.z);
-  camera.position.copy(cameraLook).add(CAMERA_OFFSET);
-  camera.position.x+=(Math.random()-.5)*shake;
-  camera.position.z+=(Math.random()-.5)*shake;
-  camera.lookAt(cameraLook);
+  camera.position.copy(cameraLook).add(CAMERA_OFFSET);camera.lookAt(cameraLook);
 }
 function frame(){
   requestAnimationFrame(frame);
-  // A fixed simulation step keeps travel speed and hit timing real-time on slow GPUs.
-  // 16 catch-up ticks cap work after an inactive tab / device stall.
-  const frameDelta=Math.min(clock.getDelta(),.3);
-  for(const mixer of orcAnimationMixers)mixer.update(frameDelta);
-  accumulated+=frameDelta;
-  let iterations=0;
-  while(accumulated>=FIXED_DT&&iterations<16){
-    stepGame(FIXED_DT);
-    accumulated-=FIXED_DT;
-    iterations++;
-  }
-  if(iterations===16)accumulated=0;
+  const dt=Math.min(clock.getDelta(),.25);
+  for(const mixer of orcAnimationMixers)if(!paused)mixer.update(dt);
+  accumulator+=dt;
+  let ticks=0;
+  while(accumulator>=FIXED_DT&&ticks<12){stepGame(FIXED_DT);accumulator-=FIXED_DT;ticks++;}
+  if(ticks===12)accumulator=0;
+  if(!paused)for(const actor of units){applyFacing(actor);actor.mixer.update(dt);}
   positionCamera();
   for(const instance of buildingInstances.values())instance.healthBar.root.quaternion.copy(camera.quaternion);
-  updateLabels();
   renderer.render(scene,camera);
-  if(location.search.includes('mem=1') && Math.floor(performance.now()/5000)!==window.memTick){
-    window.memTick=Math.floor(performance.now()/5000);
-    console.log('Fighters memory',renderer.info.memory,renderer.info.render);
-  }
 }
 frame();
-function doAction(type){
-  if(type==='pause'){pauseGame();return;}
-  if(!running||paused||!hero)return;
-  if(type==='jump')jump();
-  else if(type==='roll')roll();
-  else if(ATTACKS[type])queueAttack(type);
-}
-function pauseGame(){
-  if(!running)return;
-  paused=!paused;$('pause').textContent=paused?'▶':'Ⅱ';$('pause').setAttribute('aria-label',paused?'Reprendre':'Pause');
-  showBanner(paused?'PAUSE':'GO !');
-}
-function queueAttack(kind){
-  if(!hero||!running||paused||hero.dead||hero.guard)return;
-  if(hero.attack){
-    if(hero.queue.length<2)hero.queue.push(kind);
-  }else attack(hero,kind);
-}
-function setGuard(source,enabled){
-  if(enabled)guardInputs.add(source);else guardInputs.delete(source);
-  if(!hero)return;
-  const should=running&&!paused&&!hero.dead&&guardInputs.size>0&&
-    !hero.attack&&hero.jumpY<=0&&hero.roll<=0&&hero.stun<=0;
-  if(hero.guard!==should){
-    hero.guard=should;
-    $('guard-indicator').style.display=should?'block':'none';
-    if(should)animation(hero,'Idle_FoldArms_Loop',true);
-    else if(!hero.attack&&!hero.dead)animation(hero,'Idle_Loop',true);
+let pointerStart=null;
+function touchAt(x,y,append=false){
+  if(!running||paused)return;
+  const unit=pickUnit(x,y);
+  if(unit){selectUnits([unit],append);return;}
+  const pos=worldPoint(x,y);
+  if(!pos)return;
+  if(buildMode){
+    if(!buildOrc(buildMode,pos.x,pos.z))showBanner('EMPLACEMENT INVALIDE / OR INSUFFISANT');
+    return;
   }
+  const building=pickBuilding(pos);
+  if(building){selectBuilding(building);return;}
+  if(selected.size){issueMove(pos);return;}
+  clearSelection();
 }
-function rightTap(){
-  const now=performance.now();
-  tapStage=now-lastTapAt<430?Math.min(3,tapStage+1):1;
-  lastTapAt=now;
-  const action=['jab','cross','hook'][tapStage-1];
-  lastRightGesture='TAP';lastRightAction=action;
-  queueAttack(action);
-}
-function rightDirection(dx,dy){
-  // Eight 45-degree sectors: E, SE, S, SW, W, NW, N, NE.
-  const sectors=['E','SE','S','SW','W','NW','N','NE'];
-  const octant=(Math.round(Math.atan2(dy,dx)/(Math.PI/4))+8)%8;
-  return sectors[octant];
-}
-function rightSwipe(direction){
-  tapStage=0;lastRightGesture=direction;
-  const actions={N:'jump',NW:'jab',NE:'cross',W:'bodyLeft',E:'bodyRight',SW:'kickLeft',SE:'kickRight',S:'guard'};
-  const action=actions[direction];
-  lastRightAction=action;
-  if(action==='guard')setGuard('touch',true);
-  else if(action==='jump')jump();
-  else queueAttack(action);
-}
-function updateLeftDirection(x,y){
-  if(!leftGesture)return;
-  const dx=x-leftGesture.x,dy=y-leftGesture.y;
-  const length=Math.hypot(dx,dy);
-  if(length<18&&!leftGesture.locked)return;
-  if(length<12)return;
-  leftGesture.locked=true;
-  touchDirection.x=dx/length;
-  touchDirection.z=dy/length;
-  const arrow=Math.abs(dx)>Math.abs(dy)*1.5?(dx>0?'→':'←'):
-    Math.abs(dy)>Math.abs(dx)*1.5?(dy>0?'↓':'↑'):
-    dx>0?(dy>0?'↘':'↗'):(dy>0?'↙':'↖');
-  const indicator=$('gesture-indicator');
-  indicator.textContent=arrow;
-  indicator.style.display='grid';
-  indicator.style.left=(leftGesture.x+dx*.56)+'px';
-  indicator.style.top=(leftGesture.y+dy*.56)+'px';
+function selectRectangle(a,b,append=false){
+  if(!append)clearSelection();
+  const left=Math.min(a.x,b.x),right=Math.max(a.x,b.x),top=Math.min(a.y,b.y),bottom=Math.max(a.y,b.y);
+  const actors=units.filter(actor=>!actor.dead&&actor.kind===activeFaction).filter(actor=>{
+    const p=screenPoint(actor);return p.x>=left&&p.x<=right&&p.y>=top&&p.y<=bottom;
+  });
+  selectUnits(actors,true);
 }
 viewport.addEventListener('pointerdown',event=>{
-  if(!['touch','pen'].includes(event.pointerType)||!running||paused||!$('overlay').hidden)return;
-  event.preventDefault();
-  const rect=viewport.getBoundingClientRect();
-  const x=event.clientX-rect.left,y=event.clientY-rect.top;
-  if(x<rect.width*.5){
-    if(leftGesture)return;
-    leftGesture={id:event.pointerId,x,y,locked:false};
-  }else{
-    if(rightGesture)return;
-    rightGesture={id:event.pointerId,x,y,at:performance.now(),committed:null};
-    clearTimeout(rightGuardTimer);
-    const pressedId=event.pointerId;
-    rightGuardTimer=setTimeout(()=>{
-      if(rightGesture?.id!==pressedId||rightGesture.committed||!running||paused)return;
-      lastRightGesture='HOLD';lastRightAction='guard';setGuard('touch',true);
-    },260);
-  }
+  if(!running||paused||!$('overlay').hidden||event.button>0)return;
+  event.preventDefault();pointerStart={id:event.pointerId,x:event.clientX,y:event.clientY,shift:event.shiftKey};
   viewport.setPointerCapture(event.pointerId);
 });
 viewport.addEventListener('pointermove',event=>{
-  const rect=viewport.getBoundingClientRect();
-  const x=event.clientX-rect.left,y=event.clientY-rect.top;
-  if(leftGesture?.id===event.pointerId)updateLeftDirection(x,y);
-  if(rightGesture?.id===event.pointerId&&!rightGesture.committed){
-    const dx=x-rightGesture.x,dy=y-rightGesture.y;
-    const quickUp=dy<=-20&&Math.abs(dx)<Math.abs(dy)*.45;
-    if(!quickUp&&Math.hypot(dx,dy)<34)return;
-    const direction=quickUp?'N':rightDirection(dx,dy);
-    rightGesture.committed=direction;
-    clearTimeout(rightGuardTimer);rightGuardTimer=null;
-    setGuard('touch',false);
-    rightSwipe(direction);
-  }
+  if(!pointerStart||pointerStart.id!==event.pointerId)return;
+  const distance=Math.hypot(event.clientX-pointerStart.x,event.clientY-pointerStart.y);
+  if(distance<15)return;
+  const box=$('selection-rectangle');
+  box.hidden=false;box.style.left=Math.min(pointerStart.x,event.clientX)-viewport.getBoundingClientRect().left+'px';
+  box.style.top=Math.min(pointerStart.y,event.clientY)-viewport.getBoundingClientRect().top+'px';
+  box.style.width=Math.abs(event.clientX-pointerStart.x)+'px';
+  box.style.height=Math.abs(event.clientY-pointerStart.y)+'px';
 });
 function releasePointer(event){
-  if(leftGesture?.id===event.pointerId){
-    leftGesture=null;
-    touchDirection.x=0;touchDirection.z=0;
-    $('gesture-indicator').style.display='none';
-  }
-  if(rightGesture?.id===event.pointerId){
-    const rect=viewport.getBoundingClientRect();
-    const dx=event.clientX-rect.left-rightGesture.x,dy=event.clientY-rect.top-rightGesture.y;
-    const duration=performance.now()-rightGesture.at;
-    const direction=rightGesture.committed;
-    const held=guardInputs.has('touch');
-    clearTimeout(rightGuardTimer);rightGuardTimer=null;
-    setGuard('touch',false);
-    rightGesture=null;
-    if(!running||paused)return;
-    if(direction==='S'&&duration<215){
-      lastRightAction='roll';roll(); // Down flick = quick evasive roll; down held = block.
-    } else if(!direction&&!held){
-      if(Math.hypot(dx,dy)>=34)rightSwipe(rightDirection(dx,dy));
-      else if(duration<320)rightTap();
-    }
-  }
+  if(!pointerStart||pointerStart.id!==event.pointerId)return;
+  const start=pointerStart;pointerStart=null;
+  $('selection-rectangle').hidden=true;
+  if(event.type==='pointercancel'||event.type==='lostpointercapture')return;
+  const end={x:event.clientX,y:event.clientY};
+  if(Math.hypot(end.x-start.x,end.y-start.y)>20&&!buildMode)selectRectangle(start,end,start.shift);
+  else touchAt(event.clientX,event.clientY,start.shift);
 }
-for(const name of ['pointerup','pointercancel','lostpointercapture'])viewport.addEventListener(name,releasePointer);
-const keyActions={KeyJ:'jab',KeyK:'cross',KeyL:'hook',Space:'jump',ShiftLeft:'roll',ShiftRight:'roll'};
+viewport.addEventListener('pointerup',releasePointer);
+viewport.addEventListener('pointercancel',releasePointer);
+viewport.addEventListener('lostpointercapture',releasePointer);
 document.addEventListener('keydown',event=>{
-  if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(event.code))event.preventDefault();
-  inputs.add(event.code);
-  if(event.code==='KeyQ')setGuard('keyboard',true);
-  else if(!event.repeat&&keyActions[event.code])doAction(keyActions[event.code]);
-  if(!event.repeat&&event.code==='KeyP')pauseGame();
+  if(event.code==='Escape'){buildMode=null;clearSelection();refreshHUD();}
+  if(event.code==='KeyP'&&!event.repeat)pauseGame();
+  if(event.code==='KeyA'&&(event.ctrlKey||event.metaKey)){event.preventDefault();selectUnits(units.filter(a=>a.kind===activeFaction&&!a.dead));}
+  if(event.code==='KeyW'&&event.altKey)changeFaction('witch');
+  if(event.code==='KeyO'&&event.altKey)changeFaction('orc');
 });
-document.addEventListener('keyup',event=>{
-  inputs.delete(event.code);
-  if(event.code==='KeyQ')setGuard('keyboard',false);
-});
-window.addEventListener('blur',()=>{
-  inputs.clear();touchDirection.x=0;touchDirection.z=0;guardInputs.clear();setGuard('keyboard',false);
-});
+$('witch-faction').onclick=()=>changeFaction('witch');
+$('orc-faction').onclick=()=>changeFaction('orc');
+function pauseGame(){
+  if(!running)return;
+  paused=!paused;$('pause').textContent=paused?'▶':'Ⅱ';
+  showBanner(paused?'PAUSE':'REPRISE');refreshHUD();
+}
 $('pause').onclick=pauseGame;
-for(const name of ['gesturestart','gesturechange','gestureend','contextmenu'])document.addEventListener(name,event=>event.preventDefault(),{passive:false});
-document.addEventListener('touchmove',event=>event.preventDefault(),{passive:false});
-document.addEventListener('wheel',event=>event.preventDefault(),{passive:false});
 $('start').onclick=startSession;
-async function getBinary(file,onProgress){
-  let response=await fetch('./models/'+file);
-  if(!response.ok)response=await fetch(file.startsWith('human_')?gltfRoot+file:'https://www.pixeltriks.com/characters/humans/'+(file.includes('Peasant')?'outfits/':'hair/')+file);
-  if(!response.ok)throw Error(file+' HTTP '+response.status);
-  const length=Number(response.headers.get('content-length'))||0;
-  if(!response.body)return response.arrayBuffer();
-  const reader=response.body.getReader(),chunks=[];
-  let n=0;
-  while(true){
-    const result=await reader.read();if(result.done)break;
-    chunks.push(result.value);n+=result.value.length;
-    if(length)onProgress(Math.round(n/length*100));
-  }
-  const out=new Uint8Array(n);let offset=0;
-  for(const b of chunks){out.set(b,offset);offset+=b.length;}
-  return out.buffer;
+for(const name of ['gesturestart','gesturechange','gestureend','contextmenu'])document.addEventListener(name,event=>event.preventDefault(),{passive:false});
+function getBinary(file,onProgress){
+  return fetch('./models/'+file).then(async response=>{
+    if(!response.ok)response=await fetch(file.startsWith('human_')?gltfRoot+file:'https://www.pixeltriks.com/characters/humans/'+(file.includes('Peasant')?'outfits/':'hair/')+file);
+    if(!response.ok)throw Error(file+' HTTP '+response.status);
+    onProgress(100);return response.arrayBuffer();
+  });
 }
 async function load(){
   try{
@@ -1207,38 +859,32 @@ async function load(){
       const file='human_'+gender+'.glb';
       const data=await getBinary(file,pct=>$('load-bar').style.width=((idx+pct/100)/2*100).toFixed(0)+'%');
       const gltf=await loader.parseAsync(data,'');
-      const need=['Idle_Loop','Walk_Loop','Jog_Fwd_Loop','Punch_Jab','Punch_Cross','Melee_Hook','Hit_Chest','Death01','Roll','Jump_Start'];
-      if(gltf.animations.length!==86||need.some(n=>!gltf.animations.some(c=>c.name===n)))
-        throw Error(file+' n’a pas les animations Quaternius attendues.');
+      const required=['Idle_Loop','Walk_Loop','Jog_Fwd_Loop','Punch_Jab','Hit_Chest','Death01'];
+      if(gltf.animations.length!==86||required.some(name=>!gltf.animations.some(clip=>clip.name===name)))throw Error('Clips Quaternius invalides: '+file);
       if(gender==='female')female=gltf;else male=gltf;
     }
-    const garmentFiles=[
-      'quaternius_outfit_Female_Peasant.glb',
-      'quaternius_outfit_Male_Peasant.glb',
-      'quaternius_ubc_Hair_Buns.glb',
-      'quaternius_ubc_Hair_Buzzed.glb',
-      'quaternius_ubc_Hair_SimpleParted.glb'
-    ];
-    // Same rig, native garment skinning. Files are integrity-pinned in Pages CI.
-    const garments=await Promise.all(garmentFiles.map(async file=>{
-      const data=await getBinary(file,()=>{});
-      return loader.parseAsync(data,'');
-    }));
+    const files=['quaternius_outfit_Female_Peasant.glb','quaternius_outfit_Male_Peasant.glb','quaternius_ubc_Hair_Buns.glb','quaternius_ubc_Hair_Buzzed.glb','quaternius_ubc_Hair_SimpleParted.glb'];
+    const garments=await Promise.all(files.map(async file=>loader.parseAsync(await getBinary(file,()=>{}),'')));
     [clothingFemale,clothingMale,hairBuns,hairBuzzed,hairParted]=garments;
     swordModel=await loader.loadAsync('./models/equipment.sword.arming.default.gltf?v=uncompressed-20261101');
     const grip=swordModel.scene.getObjectByName('grip');
-    if(!grip||grip.position.length()>1e-5||!swordModel.scene.getObjectByProperty('isMesh',true))
-      throw Error('GLTF de l’épée sans poignée calibrée');
-    ready=true;$('load-bar').style.width='100%';
-    $('start').disabled=false;$('start').textContent='▶ COMMENCER LE COMBAT';
-    $('overlay-desc').textContent='Arène isométrique carrée : déplace Nova sur les deux axes avec la main gauche. La caméra suit dans toutes les directions. Main droite : ↑ saut, ↖↗ poings, ←→ coups au corps, ↙↘ coups de pied, ↓ garde ou esquive. Tap répété pour combos.';
+    if(!grip||grip.position.length()>1e-5)throw Error('Épée native non calibrée');
+    ready=true;$('load-bar').style.width='100%';$('start').disabled=false;$('start').textContent='▶ COMMENCER';
+    refreshHUD();
     if(new URLSearchParams(location.search).has('qa'))startSession();
   }catch(err){
-    console.error(err);$('overlay-title').textContent='Erreur de chargement';
-    $('overlay-desc').textContent=err.message;
-    $('start').textContent='Recharge la page';
+    console.error(err);$('overlay-title').textContent='Erreur de chargement';$('overlay-desc').textContent=err.message;$('start').textContent='Recharger la page';
   }
 }
+window.__fightersQA={
+  snapshot:()=>({ready,running,paused,activeFaction,gold:{...gold},witches:units.filter(a=>a.kind==='witch'&&!a.dead).map(a=>({id:a.id,x:a.root.position.x,z:a.root.position.z,health:a.health,animation:a.current})),orcs:units.filter(a=>a.kind==='orc'&&!a.dead).map(a=>({id:a.id,x:a.root.position.x,z:a.root.position.z,health:a.health,animation:a.current})),selectedIds:[...selected].map(a=>a.id),selectedBuilding:selectedBuilding?.kind||selectedBuilding?.type||null,trainingCount:training.length,trainElapsed,buildMode,buildings:[...buildingInstances.values()].map(b=>({id:b.id,type:b.type,level:b.level,x:b.root.position.x,z:b.root.position.z})),blueprints:[...buildingBlueprints.keys()],witchHouseLoaded:!!witchHouse,projection:camera.isOrthographicCamera?'orthographic':'perspective'}),
+  train:issueTrain,selectHouse:()=>selectBuilding({kind:'witch-house',root:witchHouse}),
+  selectWitches:()=>selectUnits(units.filter(a=>a.kind==='witch'&&!a.dead)),move:(x,z)=>issueMove({x,z}),
+  setFaction:changeFaction,beginBuild,build:(type,x,z)=>buildOrc(type,x,z),advance:(seconds)=>{
+    const n=Math.ceil(seconds/FIXED_DT);for(let i=0;i<n;i++){stepGame(FIXED_DT);for(const actor of units)actor.mixer.update(FIXED_DT);}
+  },
+  pause:pauseGame,reset:startSession
+};
 load();
 </script>
 </body>
