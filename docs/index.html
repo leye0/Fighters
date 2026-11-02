@@ -1770,6 +1770,7 @@ function beginPinch(){
     center:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}};
 }
 viewport.addEventListener('touchstart',event=>{
+  if(event.target.closest('.command-panel')||event.target.closest('.hud'))return;
   if(event.touches.length===1){
     if(!pointerStart&&running&&!paused&&!$('overlay').hidden){
       const touch=event.touches[0];beginOneFingerGesture('touch-'+touch.identifier,touch.clientX,touch.clientY);
@@ -1801,7 +1802,7 @@ viewport.addEventListener('touchmove',event=>{
 viewport.addEventListener('touchend',event=>{
   if(event.touches.length<2)pinch=null;
   if(event.touches.length===0){
-    if(pointerStart&&typeof pointerStart.id==='string'){
+    if(pointerStart){
       const g=pointerStart,at=event.changedTouches[0];
       cancelPointerGesture();
       if(!inputSuppressedByPinch&&g.mode==='select'&&at&&
