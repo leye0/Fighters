@@ -29,6 +29,7 @@ for(let i=0;i<candidates.length;i++){
   const descendants=new Set();
   const collect=n=>{descendants.add(n);n.listChildren().forEach(collect);};
   collect(node);
+  const targetNames=new Set([...descendants].map(n=>n.getName()).filter(Boolean));
   const animations=source.getRoot().listAnimations().filter(a=>a.listChannels().some(c=>descendants.has(c.getTargetNode())));
   const copied=copyToDocument(doc,source,[node,...animations]);
   const copy=doc.getRoot().listNodes().find(n=>n.getName()===node.getName()) || (copied?.propertyType==='Node'?copied:null);
@@ -40,7 +41,7 @@ for(let i=0;i<candidates.length;i++){
   for(const animation of doc.getRoot().listAnimations()){
     const copiedNodes=new Set(doc.getRoot().listNodes());
     for(const channel of [...animation.listChannels()]){
-      if(!copiedNodes.has(channel.getTargetNode()))channel.dispose();
+      if(!copiedNodes.has(channel.getTargetNode()) || !targetNames.has(channel.getTargetNode()?.getName()))channel.dispose();
     }
     if(!animation.listChannels().length)animation.dispose();
   }
