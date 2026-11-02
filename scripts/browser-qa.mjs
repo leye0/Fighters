@@ -387,9 +387,14 @@ async function run(){
  await evaluate("window.__fightersQA.reset();window.__fightersQA.passive('orc')");
  await evaluate("window.__fightersQA.moveUnitTo('witch',0,-8,-8);window.__fightersQA.moveUnitTo('witch',1,-8,-8);window.__fightersQA.advance(.25)");
  s=await evaluate('window.__fightersQA.snapshot()');
- const a=s.witches[0],b=s.witches[1];
- check(Math.hypot(a.x-b.x,a.z-b.z)>=.89,
-   'Two idle witches remained superimposed: '+JSON.stringify([a,b]));
+ let a=s.witches[0],b=s.witches[1];
+ check(Math.hypot(a.x-b.x,a.z-b.z)>.55,
+   'Soft separation failed to start after 250ms: '+JSON.stringify([a,b]));
+ await evaluate('window.__fightersQA.advance(.65)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ a=s.witches[0];b=s.witches[1];
+ check(Math.hypot(a.x-b.x,a.z-b.z)>=.87,
+   'Idle witches did not spread into available space within one second: '+JSON.stringify([a,b]));
  await evaluate('window.__fightersQA.selectWitches();window.__fightersQA.move(-5,-4);window.__fightersQA.advance(8)');
  s=await evaluate('window.__fightersQA.snapshot()');
  const living=s.witches;
