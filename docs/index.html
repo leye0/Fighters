@@ -894,7 +894,7 @@ async function useOrcLevelModel(building,level){
   if(!entry)throw Error('GLB de niveau manquant : '+key);
   if(!orcLevelCache.has(key))orcLevelCache.set(key,loader.loadAsync(entry.file));
   const gltf=await orcLevelCache.get(key);
-  if(building.level!==level)return;
+  if(building.level!==level||building.destroyed)return;
   const model=gltf.scene.clone(true),bounds=new THREE.Box3().setFromObject(model);
   const size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3());
   const footprint=Math.max(size.x,size.z);
@@ -1218,13 +1218,12 @@ function showBanner(message){
 function startSession(){
   if(!ready)return;
   clearOrderPings();
-  for(const actor of units){actor.mixer.stopAllAction();scene.remove(actor.root);}
+  for(const actor of units)releaseActor(actor);
   units.length=0;selected.clear();selectedBuilding=null;nextUnitId=1;
   // Match reset removes constructed buildings while retaining the initial village.
   for(const [id,building] of buildingInstances){
     if(building.initial)continue;
-    building.root.parent?.remove(building.root);
-    if(building.rallyMarker)scene.remove(building.rallyMarker);
+    releaseConstructedBuilding(building);
     buildingInstances.delete(id);
   }
   for(const building of [witchBuilding,...buildingInstances.values()]){
@@ -1233,7 +1232,7 @@ function startSession(){
       else (orcVillage||scene).add(building.root);
     }
     if(building.healthBar)building.healthBar.root.visible=false;
-    if(building.rallyMarker){scene.remove(building.rallyMarker);building.rallyMarker=null;}
+    if(building.rallyMarker)removeRallyMarker(building);
     if(building.clanId==='orcs'&&building.level!==1){
       building.level=1;
       useOrcLevelModel(building,1).catch(err=>console.warn('Reset model:',err));
@@ -1329,6 +1328,40 @@ function removeRallyMarker(b){
   scene.remove(b.rallyMarker);b.rallyMarker.geometry.dispose();
   b.rallyMarker.material.dispose();b.rallyMarker=null;
 }
+function releaseActor(actor){
+  selected.delete(actor);
+  actor.mixer.stopAllAction();actor.mixer.uncacheRoot(actor.visual);
+  scene.remove(actor.root);
+  actor.selectionRing.geometry.dispose();actor.selectionRing.material.dispose();
+}
+function buildingMixerAttached(mixer,building){
+  let node=mixer.getRoot();
+  while(node){if(node===building.root)return true;node=node.parent;}
+  return false;
+}
+function releaseConstructedBuilding(building){
+  if(building.initial)return;
+  for(let i=orcAnimationMixers.length-1;i>=0;i--){
+    if(!buildingMixerAttached(orcAnimationMixers[i],building))continue;
+    orcAnimationMixers[i].stopAllAction();orcAnimationMixers.splice(i,1);
+  }
+  building.root.parent?.remove(building.root);
+  if(building.healthBar){
+    const bar=building.healthBar.root;
+    scene.remove(bar);
+    bar.traverse(node=>{
+      if(!node.isMesh)return;
+      node.geometry?.dispose();
+      const materials=Array.isArray(node.material)?node.material:[node.material];
+      for(const material of materials)material?.dispose();
+    });
+  }
+  removeRallyMarker(building);
+}
+function isSceneDescendant(node){
+  for(let n=node;n;n=n.parent)if(n===scene)return true;
+  return false;
+}
 function destroyBuilding(building){
   if(building.destroyed)return;
   building.destroyed=true;building.health=0;building.queue.length=0;
@@ -1342,8 +1375,8 @@ function destroyBuilding(building){
     if(actor.attack?.target===building)actor.attack=null;
   }
   if(building.clanId==='orcs'&&!building.initial){
+    releaseConstructedBuilding(building);
     buildingInstances.delete(building.id);
-    if(building.healthBar)scene.remove(building.healthBar.root);
   }
   updateNavObstacles();lastHudSignature='';refreshHUD();
   if(building.clanId==='witch')endBattle(false);
@@ -1539,7 +1572,7 @@ function stepGame(dt){
   stepOrcStrategy(dt);
   for(const actor of units)tickUnit(actor,dt);
   for(let i=units.length-1;i>=0;i--)if(units[i].dead&&units[i].deadTime<=0){
-    units[i].mixer.stopAllAction();scene.remove(units[i].root);units.splice(i,1);
+    releaseActor(units[i]);units.splice(i,1);
   }
   uiElapsed+=dt;
   if(uiElapsed>.25){uiElapsed=0;refreshHUD();}
@@ -1551,7 +1584,7 @@ function positionCamera(){
 function frame(){
   requestAnimationFrame(frame);
   const dt=Math.min(clock.getDelta(),.25);
-  for(const mixer of orcAnimationMixers)if(!paused)mixer.update(dt);
+  for(const mixer of orcAnimationMixers)if(!paused&&isSceneDescendant(mixer.getRoot()))mixer.update(dt);
   accumulator+=dt;
   let ticks=0;
   while(accumulator>=FIXED_DT&&ticks<12){stepGame(FIXED_DT);accumulator-=FIXED_DT;ticks++;}
@@ -1794,6 +1827,8 @@ window.__fightersQA={
     ready,running,paused,activeFaction,cameraZoom,cameraCenter:{...cameraFollow},
     orcAI:orcDirector.snapshot(),qaPassiveKind,pinch:pinch?{...pinch}:null,
     activeTouches:activeTouches.size,
+    mixers:orcAnimationMixers.length,
+    worldHealthBars:scene.children.filter(node=>node.name?.startsWith('healthbar-world-')).length,
     touchGesture:pointerStart?.mode||null,
     ui:{...uiStats,activePings:activeOrderPings.size,
       commandButtonCount:$('command-buttons').children.length,
