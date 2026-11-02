@@ -807,6 +807,51 @@ function dealDamage(target,amount){
     animation(target,'Death01',true);refreshHUD();
   }else animation(target,'Hit_Chest',true);
 }
+function navigateActor(actor,target,dt,mode){
+  const pos=actor.root.position,from={x:pos.x,z:pos.z};
+  const distance=Math.hypot(target.x-pos.x,target.z-pos.z);
+  const arrival=mode==='pursuit'?1.35:.36;
+  if(distance<=arrival)return 'arrived';
+  const goalChanged=!actor.routeGoal||
+    Math.hypot(target.x-actor.routeGoal.x,target.z-actor.routeGoal.z)>(mode==='pursuit'?1.1:.4);
+  actor.routeAge+=dt;
+  const directClear=navigatorRTS.segmentClear(from,target);
+  if(directClear){
+    actor.route=null;actor.routeGoal={x:target.x,z:target.z};
+    actor.routeVersion=navigatorRTS.version;
+  }else if(!actor.route||actor.routeVersion!==navigatorRTS.version||
+    goalChanged||actor.routeAge>2.3){
+    actor.route=navigatorRTS.plan(from,target);
+    actor.routeGoal={x:target.x,z:target.z};
+    actor.routeVersion=navigatorRTS.version;actor.routeAge=0;
+  }
+  let waypoint=actor.route?.waypoints[0]||target;
+  if(actor.route){
+    while(actor.route.waypoints.length>1&&Math.hypot(waypoint.x-pos.x,waypoint.z-pos.z)<.45){
+      actor.route.waypoints.shift();waypoint=actor.route.waypoints[0];
+    }
+    // As in WarConquer, simplify waypoints using an authoritative swept circle.
+    for(let i=actor.route.waypoints.length-1;i>0;i--){
+      if(navigatorRTS.segmentClear(from,actor.route.waypoints[i])){
+        actor.route.waypoints.splice(0,i);waypoint=actor.route.waypoints[0];break;
+      }
+    }
+  }
+  const gap=Math.hypot(waypoint.x-pos.x,waypoint.z-pos.z);
+  if(gap<.03)return 'arrived';
+  const speed=actor.speed*dt;
+  const budget=Math.max(0,Math.min(gap-(actor.route?0:arrival),speed));
+  const next=navigatorRTS.advance(from,waypoint,budget);
+  if(!next){
+    actor.route=null;actor.routeVersion=-1;
+    return 'blocked';
+  }
+  const step=Math.hypot(next.x-pos.x,next.z-pos.z);
+  if(step<.00001)return 'arrived';
+  faceDirection(actor,next.x-pos.x,next.z-pos.z);
+  pos.set(next.x,0,next.z);animation(actor,'Walk_Loop');
+  return 'moving';
+}
 function tickUnit(actor,dt){
   if(actor.dead){actor.deadTime-=dt;return;}
   actor.stun=Math.max(0,actor.stun-dt);actor.cooldown=Math.max(0,actor.cooldown-dt);
@@ -815,10 +860,14 @@ function tickUnit(actor,dt){
     if(!actor.attack.landed&&actor.attack.elapsed>=actor.attack.impact){
       actor.attack.landed=true;
       const target=actor.attack.target;
-      const distance=Math.hypot(target.root.position.x-actor.root.position.x,target.root.position.z-actor.root.position.z);
-      if(!target.dead&&distance<(actor.weapon?2.4:1.9))dealDamage(target,actor.kind==='witch'?17:14);
+      const range=actor.weapon?2.4:1.9;
+      const distance=Math.hypot(target.root.position.x-actor.root.position.x,
+        target.root.position.z-actor.root.position.z);
+      if(!target.dead&&distance<range)dealDamage(target,actor.kind==='witch'?17:14);
     }
-    if(actor.attack.elapsed>=actor.attack.duration){actor.attack=null;animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop',true);}
+    if(actor.attack.elapsed>=actor.attack.duration){
+      actor.attack=null;animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop',true);
+    }
     return;
   }
   if(actor.stun>0)return;
@@ -834,18 +883,14 @@ function tickUnit(actor,dt){
     }
     return;
   }
-  let dest=actor.destination;
-  // Autonomous orcs defend their territory and pursue nearby enemies.
-  if(threat&&(!dest||actor.kind==='orc'||threat.distance<3.5))dest=threat.target.root.position;
-  if(dest){
-    const dx=dest.x-actor.root.position.x,dz=dest.z-actor.root.position.z,distance=Math.hypot(dx,dz);
-    if(distance>.45){
-      const nx=dx/distance,nz=dz/distance;
-      const step=Math.min(distance-.38,actor.speed*dt);
-      actor.root.position.x=clamp(actor.root.position.x+nx*step,-27.4,27.4);
-      actor.root.position.z=clamp(actor.root.position.z+nz*step,-27.4,27.4);
-      faceDirection(actor,nx,nz);animation(actor,'Walk_Loop');
-    }else{if(actor.destination===dest)actor.destination=null;animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop');}
+  let destination=actor.destination,mode='order';
+  if(threat&&(!destination||actor.kind==='orc'||threat.distance<3.5)){
+    destination=threat.target.root.position;mode='pursuit';
+  }
+  if(destination){
+    const result=navigateActor(actor,destination,dt,mode);
+    if(result==='arrived'&&mode==='order'){actor.destination=null;actor.route=null;}
+    if(result!=='moving')animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop');
   }else animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop');
 }
 const FIXED_DT=1/60;
@@ -882,56 +927,71 @@ function frame(){
 }
 frame();
 let pointerStart=null;
-function touchAt(x,y,append=false){
-  if(!running||paused)return;
-  const unit=pickUnit(x,y);
-  if(unit){selectUnits([unit],append);return;}
-  const pos=worldPoint(x,y);
-  if(!pos)return;
-  if(buildMode){
-    if(!buildOrc(buildMode,pos.x,pos.z))showBanner('EMPLACEMENT INVALIDE / OR INSUFFISANT');
-    return;
-  }
-  const building=pickBuilding(x,y);
-  if(building){selectBuilding(building);return;}
-  if(selected.size){issueMove(pos);return;}
-  clearSelection();
-}
-function selectRectangle(a,b,append=false){
-  if(!append)clearSelection();
-  const left=Math.min(a.x,b.x),right=Math.max(a.x,b.x),top=Math.min(a.y,b.y),bottom=Math.max(a.y,b.y);
-  const actors=units.filter(actor=>!actor.dead&&actor.kind===activeFaction).filter(actor=>{
-    const p=screenPoint(actor);return p.x>=left&&p.x<=right&&p.y>=top&&p.y<=bottom;
-  });
-  selectUnits(actors,true);
-}
+viewport.addEventListener('wheel',event=>{
+  if(event.target.closest('.command-panel'))return;
+  event.preventDefault();
+  zoomCamera(Math.exp(clamp(event.deltaY,-400,400)*.0015),event.clientX,event.clientY);
+},{passive:false});
+$('zoom-in').onclick=()=>zoomCamera(.8);
+$('zoom-out').onclick=()=>zoomCamera(1.25);
 viewport.addEventListener('pointerdown',event=>{
-  if(!running||paused||!$('overlay').hidden||event.button>0)return;
-  event.preventDefault();pointerStart={id:event.pointerId,x:event.clientX,y:event.clientY,shift:event.shiftKey};
-  viewport.setPointerCapture(event.pointerId);
+  if(event.target.closest('.command-panel')||event.target.closest('.hud'))return;
+  if(!running||paused||!$('overlay').hidden)return;
+  if(event.pointerType==='touch')activeTouches.set(event.pointerId,{x:event.clientX,y:event.clientY});
+  if(activeTouches.size>=2){
+    const [a,b]=[...activeTouches.values()];
+    pinch={distance:Math.hypot(a.x-b.x,a.y-b.y),
+      center:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}};
+    pointerStart=null;$('selection-rectangle').hidden=true;
+  }else if(event.button===1||event.button===2){
+    cameraDrag={id:event.pointerId,x:event.clientX,y:event.clientY};
+  }else if(event.button===0){
+    pointerStart={id:event.pointerId,x:event.clientX,y:event.clientY,shift:event.shiftKey};
+  }else return;
+  event.preventDefault();viewport.setPointerCapture(event.pointerId);
 });
 viewport.addEventListener('pointermove',event=>{
+  if(activeTouches.has(event.pointerId))activeTouches.set(event.pointerId,{x:event.clientX,y:event.clientY});
+  if(activeTouches.size>=2){
+    const [a,b]=[...activeTouches.values()];
+    const center={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+    const distance=Math.max(1,Math.hypot(a.x-b.x,a.y-b.y));
+    if(pinch){
+      zoomCamera(clamp(pinch.distance/distance,.65,1.55),center.x,center.y);
+      panCamera(center.x-pinch.center.x,center.y-pinch.center.y);
+    }
+    pinch={distance,center};return;
+  }
+  if(cameraDrag?.id===event.pointerId){
+    panCamera(event.clientX-cameraDrag.x,event.clientY-cameraDrag.y);
+    cameraDrag.x=event.clientX;cameraDrag.y=event.clientY;return;
+  }
   if(!pointerStart||pointerStart.id!==event.pointerId)return;
   const distance=Math.hypot(event.clientX-pointerStart.x,event.clientY-pointerStart.y);
   if(distance<15)return;
-  const box=$('selection-rectangle');
-  box.hidden=false;box.style.left=Math.min(pointerStart.x,event.clientX)-viewport.getBoundingClientRect().left+'px';
-  box.style.top=Math.min(pointerStart.y,event.clientY)-viewport.getBoundingClientRect().top+'px';
+  const box=$('selection-rectangle'),rect=viewport.getBoundingClientRect();
+  box.hidden=false;box.style.left=Math.min(pointerStart.x,event.clientX)-rect.left+'px';
+  box.style.top=Math.min(pointerStart.y,event.clientY)-rect.top+'px';
   box.style.width=Math.abs(event.clientX-pointerStart.x)+'px';
   box.style.height=Math.abs(event.clientY-pointerStart.y)+'px';
 });
 function releasePointer(event){
+  const hadPinch=!!pinch||activeTouches.size>=2;
+  activeTouches.delete(event.pointerId);
+  if(activeTouches.size<2)pinch=null;
+  if(cameraDrag?.id===event.pointerId){cameraDrag=null;return;}
   if(!pointerStart||pointerStart.id!==event.pointerId)return;
   const start=pointerStart;pointerStart=null;
   $('selection-rectangle').hidden=true;
-  if(event.type==='pointercancel'||event.type==='lostpointercapture')return;
+  if(hadPinch||event.type==='pointercancel'||event.type==='lostpointercapture')return;
   const end={x:event.clientX,y:event.clientY};
   if(Math.hypot(end.x-start.x,end.y-start.y)>20&&!buildMode)selectRectangle(start,end,start.shift);
   else touchAt(event.clientX,event.clientY,start.shift);
 }
-viewport.addEventListener('pointerup',releasePointer);
-viewport.addEventListener('pointercancel',releasePointer);
-viewport.addEventListener('lostpointercapture',releasePointer);
+for(const name of ['pointerup','pointercancel','lostpointercapture'])
+  viewport.addEventListener(name,releasePointer);
+viewport.addEventListener('contextmenu',event=>event.preventDefault());
+
 document.addEventListener('keydown',event=>{
   if(event.code==='Escape'){buildMode=null;clearSelection();refreshHUD();}
   if(event.code==='KeyP'&&!event.repeat)pauseGame();
