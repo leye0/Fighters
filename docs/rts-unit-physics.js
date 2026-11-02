@@ -62,8 +62,16 @@
    const end={x:from.x+length*(ux*c-uz*v),z:from.z+length*(ux*v+uz*c)};
    if(!nav.segmentClear(from,end))continue;
    const progress=(gap-distance(end,destination))/length;
-   const congestion=crowdPenalty(end,from,agent,units,radius);
-   const score=progress*1.65-congestion-Math.abs(angle)*.09;
+   // A look-ahead sample sees the nearby queue BEFORE the one-frame
+   // displacement touches it. This is steering, not a swept hard collision.
+   const previewDistance=Math.min(gap,Math.max(length,radius*2.9));
+   const preview={x:from.x+previewDistance*(ux*c-uz*v),
+     z:from.z+previewDistance*(ux*v+uz*c)};
+   const crowdNow=crowdPenalty(end,from,agent,units,radius);
+   const crowdAhead=nav.segmentClear(from,preview)?
+     crowdPenalty(preview,from,agent,units,radius):0;
+   const congestion=crowdNow*.55+crowdAhead*1.25;
+   const score=progress*1.5-congestion-Math.abs(angle)*.10;
    if(score>bestScore){best=end;bestScore=score;}
   }
   // null is returned ONLY if terrain/buildings block all candidate steps.
