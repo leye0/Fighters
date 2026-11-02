@@ -205,16 +205,44 @@ async function run(){
  check(afterPinch.cameraZoom<beforePinch.cameraZoom-1,
   'Two-finger zoom did not change orthographic camera: '+JSON.stringify({
     before:beforePinch.cameraZoom,after:afterPinch.cameraZoom}));
+ // Two-finger parallel translation should NOT pan: reserved for zoom.
  await call('Input.dispatchTouchEvent',{type:'touchMove',
   touchPoints:[touch(1,160,350),touch(2,330,350)]});
  await sleep(100);
- const afterPan=await evaluate('window.__fightersQA.snapshot()');
- check(Math.hypot(afterPan.cameraCenter.x-afterPinch.cameraCenter.x,
-   afterPan.cameraCenter.z-afterPinch.cameraCenter.z)>.1,
-   'Two-finger camera pan did not move the map: '+JSON.stringify({
-     before:afterPinch.cameraCenter,after:afterPan.cameraCenter,
-     zoomBefore:afterPinch.cameraZoom,zoomAfter:afterPan.cameraZoom}));
+ const parallel=await evaluate('window.__fightersQA.snapshot()');
+ check(Math.hypot(parallel.cameraCenter.x-afterPinch.cameraCenter.x,
+   parallel.cameraCenter.z-afterPinch.cameraCenter.z)<.08,
+   'Two-finger drag must not pan the camera');
  await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+
+ const beforeSinglePan=await evaluate('window.__fightersQA.snapshot()');
+ await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[touch(4,155,310)]});
+ await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[touch(4,220,355)]});
+ await sleep(80);
+ const afterSinglePan=await evaluate('window.__fightersQA.snapshot()');
+ check(Math.hypot(afterSinglePan.cameraCenter.x-beforeSinglePan.cameraCenter.x,
+   afterSinglePan.cameraCenter.z-beforeSinglePan.cameraCenter.z)>.2,
+   'One-finger drag must pan the camera');
+ check(afterSinglePan.selectedIds.join(',')===beforeSinglePan.selectedIds.join(','),
+   'One-finger drag inadvertently selected units');
+ await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+
+ // Hold one full second before dragging to activate selection, without panning.
+ await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[touch(5,200,260)]});
+ await sleep(1120);
+ check((await evaluate('window.__fightersQA.snapshot()')).touchGesture==='select',
+   'One-second long press did not enable box selection');
+ const beforeHoldDrag=await evaluate('window.__fightersQA.snapshot()');
+ await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[touch(5,280,355)]});
+ check(await evaluate("document.querySelector('#selection-rectangle').hidden===false"),
+   'Long-press drag must reveal selection rectangle');
+ const afterHoldDrag=await evaluate('window.__fightersQA.snapshot()');
+ check(Math.hypot(afterHoldDrag.cameraCenter.x-beforeHoldDrag.cameraCenter.x,
+   afterHoldDrag.cameraCenter.z-beforeHoldDrag.cameraCenter.z)<.05,
+   'Long-press box selection must not pan camera');
+ await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ check(await evaluate("document.querySelector('#selection-rectangle').hidden"),
+   'Selection rectangle not cleared on finger release');
  await call('Emulation.setTouchEmulationEnabled',{enabled:false});
  await screenshot('rts-mobile-pinch-zoom');
  await call('Emulation.clearDeviceMetricsOverride');
