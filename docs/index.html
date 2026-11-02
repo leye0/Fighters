@@ -1839,7 +1839,8 @@ window.__fightersQA={
     cameraQuaternion:camera.quaternion.toArray(),
     witches:units.filter(a=>a.kind==='witch'&&!a.dead).map(a=>({
       id:a.id,x:a.root.position.x,z:a.root.position.z,health:a.health,animation:a.current,
-      destination:a.destination?{...a.destination}:null,pathLength:a.route?.waypoints.length??0
+      destination:a.destination?{...a.destination}:null,pathLength:a.route?.waypoints.length??0,
+      attackTargetId:a.attackOrder?.id||null
     })),
     orcs:units.filter(a=>a.kind==='orc'&&!a.dead).map(a=>({
       id:a.id,x:a.root.position.x,z:a.root.position.z,health:a.health,animation:a.current,
