@@ -259,7 +259,7 @@ const ORC_TRAIN_COST=100,ORC_TRAIN_DURATION=4.5,MAX_QUEUE=8;
 const orcDirector=new window.FightersOrcStrategy.Director();
 const autonomousOrcs=!new URLSearchParams(location.search).has('qa');
 orcDirector.enabled=autonomousOrcs;
-let orcIncomeFraction=0,attackMode=false;
+let orcIncomeFraction=0,attackMode=false,strategyAccumulator=0;
 let qaPassiveKind=null;
 let cameraFollow={x:0,z:0};
 const cameraLook=new THREE.Vector3(0,1.15,0);
@@ -944,6 +944,10 @@ function buildOrc(type,x,z,{byAI=false}={}){
   updateNavObstacles();refreshHUD();return instance;
 }
 const uiStats={commandRebuilds:0,feedbackCreated:0,feedbackRemoved:0,peakPings:0};
+function setText(id,value){
+  const el=$(id),display=String(value);
+  if(el.textContent!==display)el.textContent=display;
+}
 function cancelTransientMode(){
   attackMode=false;buildMode=null;rallyMode=false;constructionTab=false;refreshHUD();
 }
@@ -966,18 +970,20 @@ $('quick-attack').onclick=()=>{if(selected.size){attackMode=!attackMode;refreshH
 $('quick-stop').onclick=stopSelectedUnits;
 $('quick-cancel').onclick=cancelTransientMode;
 function refreshHUD(){
-  $('witch-gold').textContent=gold.witch;
-  $('orc-gold').textContent=gold.orc;
-  $('unit-count').textContent=units.filter(u=>u.kind==='witch'&&!u.dead).length+' : '+
-    units.filter(u=>u.kind==='orc'&&!u.dead).length;
-  $('faction-title').textContent=activeFaction==='witch'?'SORCIÈRES':'ORCS';
-  $('ai-status').textContent=orcDirector.enabled?'ORCS · '+({develop:'Expansion',defend:'Défense',attack:'Assaut',recover:'Regroupement'}[orcDirector.mode]||'Stratégie'):'ORCS · En attente';
+  setText('witch-gold',gold.witch);
+  setText('orc-gold',gold.orc);
+  setText('unit-count',units.filter(u=>u.kind==='witch'&&!u.dead).length+' : '+
+    units.filter(u=>u.kind==='orc'&&!u.dead).length);
+  setText('faction-title',activeFaction==='witch'?'SORCIÈRES':'ORCS');
+  setText('ai-status',orcDirector.enabled?'ORCS · '+({
+    develop:'Expansion',defend:'Défense',attack:'Assaut',recover:'Regroupement'
+  }[orcDirector.mode]||'Stratégie'):'ORCS · En attente');
 
   const b=selectedBuilding,alive=[...selected].filter(u=>!u.dead),
     faction=b?.clanId==='witch'?'witch':'orc',
     title=$('command-title'),info=$('command-info'),health=$('command-health'),
     portrait=$('command-icon'),buttons=$('command-buttons'),queueUI=$('training-progress');
-  const context=[activeFaction,b?.id||'',b?.level||0,b?.health||0,alive.map(u=>u.id).join(','),
+  const context=[activeFaction,b?.id||'',b?.level||0,alive.map(u=>u.id).join(','),
     constructionTab,buildingBlueprints.size].join('|');
 
   if(context!==lastHudSignature){
@@ -1110,7 +1116,7 @@ function refreshHUD(){
     buildMode?'🏗 Touchez une zone libre pour construire · Annuler en bas.':
     rallyMode?'🚩 Touchez le sol pour fixer le rassemblement.':
     constructionTab?'Choisissez le bâtiment à construire.':'';
-  prompt.hidden=!hint;
+  if(prompt.hidden===!!hint)prompt.hidden=!hint;
   if(hint&&prompt.textContent!==hint)prompt.textContent=hint;
   const goldHome=$('quick-home').querySelector('span');
   if(goldHome){
@@ -1182,7 +1188,7 @@ function startSession(){
   }
   cameraZoom=35;resize();refreshZoomLabel();
   gold={witch:2000,orc:900};buildMode=null;orcSpawned=false;
-  orcDirector.reset();orcIncomeFraction=0;attackMode=false;qaPassiveKind=null;
+  orcDirector.reset();orcIncomeFraction=0;strategyAccumulator=0;attackMode=false;qaPassiveKind=null;
   rallyMode=false;constructionTab=false;lastHudSignature='';
   for(const b of liveBuildings()){b.queue=[];b.progress=0;b.level=1;
     b.maxHealth=b.clanId==='witch'?500:BUILDING_TYPES[b.type].levels[1].maxHealth;
@@ -1422,6 +1428,9 @@ function tickUnit(actor,dt){
 function stepOrcStrategy(dt){
   if(!orcDirector.enabled||!running||paused)return;
   if(buildingBlueprints.size<5||!witchHouse||witchBuilding.destroyed)return;
+  strategyAccumulator+=dt;
+  if(strategyAccumulator<.25)return;
+  dt=strategyAccumulator;strategyAccumulator=0;
   const mines=[...buildingInstances.values()].filter(b=>!b.destroyed&&b.type==='mine');
   // Provisional autonomous income: mine output is independent of user resources.
   // Uses fractional accumulation so the fixed step is framerate-independent.
