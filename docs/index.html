@@ -1443,6 +1443,39 @@ function selectRectangle(a,b,append=false){
   selectUnits(actors,append);
 }
 let pointerStart=null;
+function applyPinch(a,b){
+  const center={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+  const distance=Math.max(1,Math.hypot(a.x-b.x,a.y-b.y));
+  if(pinch){
+    const anchor=worldPoint(pinch.center.x,pinch.center.y);
+    zoomCamera(clamp(pinch.distance/distance,.65,1.55),center.x,center.y);
+    const shifted=worldPoint(center.x,center.y);
+    if(anchor&&shifted){
+      cameraFollow.x=clamp(cameraFollow.x+anchor.x-shifted.x,-26,26);
+      cameraFollow.z=clamp(cameraFollow.z+anchor.z-shifted.z,-26,26);
+      positionCamera();
+    }
+  }
+  pinch={distance,center};
+}
+// Some mobile browsers dispatch native touchmove without pointermove for both
+// fingers; process the native event as a fallback with the same pinch state.
+viewport.addEventListener('touchstart',event=>{
+  if(event.touches.length<2)return;
+  const a=event.touches[0],b=event.touches[1];
+  pointerStart=null;$('selection-rectangle').hidden=true;
+  if(!pinch)pinch={distance:Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY),
+    center:{x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2}};
+},{passive:false});
+viewport.addEventListener('touchmove',event=>{
+  if(event.touches.length<2||!running||paused)return;
+  event.preventDefault();
+  const a=event.touches[0],b=event.touches[1];
+  applyPinch({x:a.clientX,y:a.clientY},{x:b.clientX,y:b.clientY});
+},{passive:false});
+viewport.addEventListener('touchend',event=>{
+  if(event.touches.length<2)pinch=null;
+},{passive:false});
 viewport.addEventListener('wheel',event=>{
   if(event.target.closest('.command-panel'))return;
   event.preventDefault();
@@ -1468,21 +1501,7 @@ viewport.addEventListener('pointermove',event=>{
   if(activeTouches.has(event.pointerId))activeTouches.set(event.pointerId,{x:event.clientX,y:event.clientY});
   if(activeTouches.size>=2){
     const [a,b]=[...activeTouches.values()];
-    const center={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
-    const distance=Math.max(1,Math.hypot(a.x-b.x,a.y-b.y));
-    if(pinch){
-      // Preserve the terrain point previously under the fingers while zooming
-      // and translating the touch centroid (same world-anchor technique as RTS cameras).
-      const anchor=worldPoint(pinch.center.x,pinch.center.y);
-      zoomCamera(clamp(pinch.distance/distance,.65,1.55),center.x,center.y);
-      const moved=worldPoint(center.x,center.y);
-      if(anchor&&moved){
-        cameraFollow.x=clamp(cameraFollow.x+anchor.x-moved.x,-26,26);
-        cameraFollow.z=clamp(cameraFollow.z+anchor.z-moved.z,-26,26);
-        positionCamera();
-      }
-    }
-    pinch={distance,center};return;
+    applyPinch(a,b);return;
   }
   if(cameraDrag?.id===event.pointerId){
     panCamera(event.clientX-cameraDrag.x,event.clientY-cameraDrag.y);
@@ -1565,7 +1584,8 @@ async function load(){
 window.__fightersQA={
   snapshot:()=>({
     ready,running,paused,activeFaction,cameraZoom,cameraCenter:{...cameraFollow},
-    orcAI:orcDirector.snapshot(),qaPassiveKind,
+    orcAI:orcDirector.snapshot(),qaPassiveKind,pinch:pinch?{...pinch}:null,
+    activeTouches:activeTouches.size,
     gold:{...gold},projection:camera.isOrthographicCamera?'orthographic':'perspective',
     cameraQuaternion:camera.quaternion.toArray(),
     witches:units.filter(a=>a.kind==='witch'&&!a.dead).map(a=>({
