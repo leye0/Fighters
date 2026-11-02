@@ -270,6 +270,7 @@ async function run(){
   'Reset must remove constructed building hitboxes');
 
  // First tap selects a witch, second tap directly attacks the enemy building.
+ const hutId=(await evaluate('window.__fightersQA.snapshot()')).buildings.find(b=>b.type==='hut').id;
  await evaluate("window.__fightersQA.reset();window.__fightersQA.centerCamera(-18,-14)");
  const witchPoint=await evaluate("window.__fightersQA.unitScreenPoint('witch',0)");
  check(witchPoint&&Number.isFinite(witchPoint.x),'Cannot project witch');
@@ -290,7 +291,7 @@ async function run(){
 
  // Real native animation, target acquisition, damage and destruction.
  await evaluate("window.__fightersQA.passive('orc');window.__fightersQA.selectUnit('witch',0)");
- const hutId=(await evaluate('window.__fightersQA.snapshot()')).buildings.find(b=>b.type==='hut').id;
+
  await evaluate("window.__fightersQA.moveUnitTo('witch',0,18.5,21)");
  check(await evaluate("window.__fightersQA.attackBuilding("+JSON.stringify(hutId)+")"),
   'Attack-building order was rejected');
