@@ -1,6 +1,8 @@
-/* Continuous circular unit collision and local sidestepping for Fighters RTS.
- * Small, deterministic, dependency-free physics shared by Node regression
- * tests and the browser. Units never tunnel through another stationary unit.
+/* Soft crowd steering for Fighters RTS.
+ * Buildings and map borders are hard collision. Other units are NOT walls:
+ * prefer free space, adjust locally, and pass through crowded units if needed.
+ * This mirrors RTS-style local avoidance + dispersion instead of rigid bodies.
+ * Dependency-free: used by browser and Node regression tests.
  */
 (function(root,factory){
  const api=factory();
@@ -10,75 +12,99 @@
  'use strict';
  const RADIUS=.45;
  const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
+ const location=actor=>actor.root?.position||actor;
+ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+ const MIN_SPACING=2*RADIUS+.14;
+ // Retained as a geometric *query* for QA; unlike buildings, agents
+ // do not make a candidate impassable.
  function sweptCircleHit(start,end,obstacle,radius=RADIUS){
   const dx=end.x-start.x,dz=end.z-start.z;
   const length2=dx*dx+dz*dz;
-  const t=length2>1e-12?
-   Math.max(0,Math.min(1,((obstacle.x-start.x)*dx+(obstacle.z-start.z)*dz)/length2)):0;
-  const x=start.x+dx*t,z=start.z+dz*t;
-  return Math.hypot(x-obstacle.x,z-obstacle.z)<radius*2-.015;
+  const t=length2>1e-12?clamp(
+   ((obstacle.x-start.x)*dx+(obstacle.z-start.z)*dz)/length2,0,1):0;
+  return Math.hypot(start.x+dx*t-obstacle.x,start.z+dz*t-obstacle.z)<radius*2-.015;
  }
- function freeForUnit(start,end,agent,units,nav,radius=RADIUS){
-  if(!nav.segmentClear(start,end))return false;
+ function freeForUnit(start,end,agent,units,nav){
+  // This function deliberately answers only HARD clearance; overlapping
+  // agents are resolved by steering preference rather than an absolute veto.
+  return nav.segmentClear(start,end);
+ }
+ function crowdPenalty(end,from,agent,units,radius=RADIUS){
+  const preferred=Math.max(radius*2+.14,MIN_SPACING);
+  let penalty=0;
   for(const other of units){
    if(other===agent||other.dead)continue;
-   const p=other.root?.position||other;
-   const currentDist=distance(start,p),nextDist=distance(end,p);
-   if(currentDist<radius*2-.015){
-    // Resolve legacy overlap by allowing only motion that opens the gap.
-    if(nextDist<currentDist+.001)return false;
-   }else if(sweptCircleHit(start,end,p,radius))return false;
+   const p=location(other);
+   const d=distance(end,p);
+   if(d>=preferred*1.7)continue;
+   // Smooth short-range repulsion, larger when predicted centers overlap.
+   const shortfall=clamp((preferred-d)/preferred,0,1);
+   penalty+=shortfall*shortfall*2.8;
+   // Anticipate head-on contacts without treating the body as solid.
+   if(d>preferred*.7&&sweptCircleHit(from,end,p,radius))
+     penalty+=.3;
   }
-  return true;
+  return penalty;
  }
  function step(from,destination,budget,agent,units,nav,radius=RADIUS){
   const dx=destination.x-from.x,dz=destination.z-from.z;
   const gap=Math.hypot(dx,dz);
   if(gap<1e-8||budget<=0)return null;
-  const length=Math.min(budget,gap);
-  const ux=dx/gap,uz=dz/gap;
-  // The direct vector gets first priority, then gentle right/left sidesteps.
-  // ±75° retain forward progress; no teleportation or backwards runaway.
-  const angles=[0,.32,-.32,.65,-.65,1.1,-1.1,1.4,-1.4,Math.PI/2,-Math.PI/2,1.9,-1.9];
+  const length=Math.min(budget,gap),ux=dx/gap,uz=dz/gap;
+  // Candidate velocities retain forward progress; local crowd pressure
+  // chooses a lane when available. Forward remains a legal fallback.
+  const side=(agent?.id||0)%2===0?1:-1;
+  const angles=[0,.22*side,-.22*side,.43*side,-.43*side,
+   .68*side,-.68*side,1.02*side,-1.02*side];
+  let best=null,bestScore=-Infinity;
   for(const angle of angles){
    const c=Math.cos(angle),v=Math.sin(angle);
    const end={x:from.x+length*(ux*c-uz*v),z:from.z+length*(ux*v+uz*c)};
-   if(freeForUnit(from,end,agent,units,nav,radius))return end;
+   if(!nav.segmentClear(from,end))continue;
+   const progress=(gap-distance(end,destination))/length;
+   const congestion=crowdPenalty(end,from,agent,units,radius);
+   const score=progress*1.65-congestion-Math.abs(angle)*.09;
+   if(score>bestScore){best=end;bestScore=score;}
   }
-  return null;
+  // null is returned ONLY if terrain/buildings block all candidate steps.
+  // In a corridor the best permitted step can pass through another unit.
+  return best;
  }
- function separate(units,nav,radius=RADIUS){
+ function separate(units,nav,radius=RADIUS,dt=1/60){
+  // Gentle post-movement relaxation: use short capped nudges and do NOT
+  // enforce a hard minimum distance when no free surrounding space exists.
+  const alive=units.filter(a=>!a.dead),minDistance=2*radius+.06;
+  const maxShift=clamp(dt*2.8,0,.09);
   let corrections=0;
-  const alive=units.filter(a=>!a.dead);
-  for(let pass=0;pass<3;pass++){
-   let changed=false;
-   for(let i=0;i<alive.length;i++)for(let j=i+1;j<alive.length;j++){
-    const a=alive[i],b=alive[j],ap=a.root?.position||a,bp=b.root?.position||b;
-    let dx=bp.x-ap.x,dz=bp.z-ap.z,d=Math.hypot(dx,dz);
-    const minimum=2*radius+.02;
-    if(d>=minimum)continue;
-    if(d<.0001){
-     // Fixed tie-breaker avoids random jitter for identical spawn positions.
-     const angle=((a.id||i)*23+(b.id||j)*11)*2.399963229728653;
-     dx=Math.cos(angle);dz=Math.sin(angle);d=1;
-    }
-    const nx=dx/d,nz=dz/d,move=(minimum-d)/2+.0005;
-    const left={x:ap.x-nx*move,z:ap.z-nz*move};
-    const right={x:bp.x+nx*move,z:bp.z+nz*move};
-    const canA=nav.pointClear(left),canB=nav.pointClear(right);
-    if(canA&&canB){
-      ap.x=left.x;ap.z=left.z;bp.x=right.x;bp.z=right.z;changed=true;corrections++;
-    }else if(canA){
-      const extra={x:ap.x-nx*move*2,z:ap.z-nz*move*2};
-      if(nav.pointClear(extra)){ap.x=extra.x;ap.z=extra.z;changed=true;corrections++;}
-    }else if(canB){
-      const extra={x:bp.x+nx*move*2,z:bp.z+nz*move*2};
-      if(nav.pointClear(extra)){bp.x=extra.x;bp.z=extra.z;changed=true;corrections++;}
-    }
+  const forces=new Map();
+  for(let i=0;i<alive.length;i++)for(let j=i+1;j<alive.length;j++){
+   const a=alive[i],b=alive[j],ap=location(a),bp=location(b);
+   let dx=bp.x-ap.x,dz=bp.z-ap.z,d=Math.hypot(dx,dz);
+   if(d>=minDistance)continue;
+   if(d<.00001){
+    const angle=((a.id||i+1)*23+(b.id||j+1)*11)*2.399963229728653;
+    dx=Math.cos(angle);dz=Math.sin(angle);d=1; // deterministic tie-break
    }
-   if(!changed)break;
+   const pressure=(minDistance-Math.hypot(bp.x-ap.x,bp.z-ap.z))/minDistance;
+   const nx=dx/d,nz=dz/d;
+   const fa=forces.get(a)||{x:0,z:0},fb=forces.get(b)||{x:0,z:0};
+   fa.x-=nx*pressure;fa.z-=nz*pressure;
+   fb.x+=nx*pressure;fb.z+=nz*pressure;
+   forces.set(a,fa);forces.set(b,fb);
+  }
+  for(const [actor,force] of forces){
+   const current=location(actor),magnitude=Math.hypot(force.x,force.z);
+   if(magnitude<1e-8)continue;
+   const shift=Math.min(maxShift,magnitude*maxShift);
+   const next={x:current.x+force.x/magnitude*shift,z:current.z+force.z/magnitude*shift};
+   if(nav.segmentClear(current,next)){
+    current.x=next.x;current.z=next.z;corrections++;
+   }
+   // If a building blocks this correction, leave agents temporarily
+   // overlapping; never push anyone through a solid structure.
   }
   return corrections;
  }
- return {RADIUS,distance,sweptCircleHit,freeForUnit,step,separate};
+ return {RADIUS,MIN_SPACING,distance,sweptCircleHit,freeForUnit,
+  crowdPenalty,step,separate};
 });
