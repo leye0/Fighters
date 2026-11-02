@@ -349,6 +349,7 @@ const ORC_VILLAGE={
 };
 const buildingInstances=new Map();
 const buildingBlueprints=new Map();
+const orcLevelEntries=new Map(),orcLevelCache=new Map();
 function createBuildingInstance(entry,type,level,anchor,footprint){
   const spec=BUILDING_TYPES[type].levels[level];
   const id='orc-'+type+'-'+String([...buildingInstances.keys()].filter(key=>key.startsWith('orc-'+type+'-')).length+1).padStart(2,'0');
@@ -357,7 +358,7 @@ function createBuildingInstance(entry,type,level,anchor,footprint){
     type,level,clanId:'orcs',health:spec.maxHealth,maxHealth:spec.maxHealth,
     constructionCost:spec.constructionCost,requiredTechnology:spec.requiredTechnology,
     hitbox:buildingBounds(anchor),queue:[],progress:0,rally:null,rallyMarker:null,
-    root:anchor
+    root:anchor,visualLevel:1,initial:false
   };
   const bar=new THREE.Group();
   bar.position.y=footprint*1.45;
@@ -384,6 +385,10 @@ async function loadOrcVillage(limit=3){
     throw Error('Orc building manifest is empty');
   const village=new THREE.Group();
   scene.add(village);
+  for(const entry of manifest.buildings){
+    const match=(entry.sourceNode||entry.name).match(/(?:orc_)?(barrack|hut|mine|cauldron|factory)_Lv([123])$/i);
+    if(match)orcLevelEntries.set(match[1].toLowerCase()+':'+match[2],entry);
+  }
   const sharedTextureSlots=new Map();
   let deduplicatedTextures=0;
   // Each file contains exactly one complete building and its dependencies.
@@ -461,6 +466,7 @@ async function loadOrcVillage(limit=3){
     anchor.position.set(p.x,0,p.z);
     anchor.rotation.y=(i%4)*Math.PI/2;
     const instance=createBuildingInstance(entries[i],type,1,anchor,target);
+    instance.initial=true;
     anchor.userData={instanceId:instance.id,buildingId:entries[i].id,buildingName:entries[i].name,
       description:entries[i].description,originalFootprint:footprint,targetFootprint:target};
     village.add(anchor);
@@ -712,16 +718,128 @@ function issueMove(destination){
   });
   refreshHUD();
 }
-function issueTrain(){
-  if(!running||paused||gold.witch<TRAIN_COST)return false;
-  gold.witch-=TRAIN_COST;training.push({kind:'witch',duration:TRAIN_DURATION});refreshHUD();return true;
+function trainingDuration(building,kind){
+  return (kind==='orc'?ORC_TRAIN_DURATION:TRAIN_DURATION)*(1-.2*(building.level-1));
 }
-function finishTraining(){
-  const i=units.filter(a=>a.kind==='witch').length;
-  const x=WITCH_HOUSE.x+4.1+(i%3)*1.2,z=WITCH_HOUSE.z+3.9+Math.floor(i%9/3)*1.2;
-  spawnUnit('witch',clamp(x,-27,27),clamp(z,-27,27),i);
-  showBanner('SORCIÈRE CRÉÉE');
+function upgradeCost(building){
+  return building.level>=3?null:(building.clanId==='witch'?230:160)+building.level*100;
 }
+function queueOrder(building,kind){
+  if(!running||paused||!building||building.queue.length>=MAX_QUEUE)return false;
+  const faction=building.clanId==='witch'?'witch':'orc';
+  if(kind==='witch'&&faction!=='witch'||kind==='orc'&&
+    (faction!=='orc'||building.type!=='barrack'))return false;
+  let cost,duration;
+  if(kind==='upgrade'){
+    if(building.level+building.queue.filter(j=>j.kind==='upgrade').length>=3)return false;
+    cost=upgradeCost(building);duration=6+building.level*2;
+  }else{
+    cost=kind==='witch'?TRAIN_COST:ORC_TRAIN_COST;
+    duration=trainingDuration(building,kind);
+  }
+  if(cost===null||gold[faction]<cost)return false;
+  gold[faction]-=cost;building.queue.push({kind,cost,duration});
+  refreshHUD();return true;
+}
+function issueTrain(){return queueOrder(witchBuilding,'witch');}
+function issueOrcTrain(building=selectedBuilding){return queueOrder(building,'orc');}
+function issueUpgrade(building=selectedBuilding){return queueOrder(building,'upgrade');}
+function cancelOrder(building,index){
+  if(!building?.queue[index])return false;
+  const [order]=building.queue.splice(index,1);
+  gold[building.clanId==='witch'?'witch':'orc']+=order.cost;
+  if(index===0)building.progress=0;
+  refreshHUD();return true;
+}
+function safeSpawnNear(building){
+  const box=building.hitbox,cx=(box.minX+box.maxX)/2,cz=(box.minZ+box.maxZ)/2;
+  const radius=Math.max(box.maxX-box.minX,box.maxZ-box.minZ)/2+1.4;
+  for(let ring=0;ring<7;ring++)for(let i=0;i<16;i++){
+    const a=i*Math.PI/8,point={x:cx+Math.cos(a)*(radius+ring*.7),
+      z:cz+Math.sin(a)*(radius+ring*.7)};
+    if(!navigatorRTS.pointClear(point))continue;
+    if(units.some(u=>!u.dead&&Math.hypot(u.root.position.x-point.x,
+      u.root.position.z-point.z)<.95))continue;
+    return point;
+  }
+  return navigatorRTS.findSafeSpawn(building.rally||{x:cx+radius,z:cz+radius});
+}
+function finishTraining(building,kind){
+  const position=safeSpawnNear(building);
+  if(!position){showBanner('SORTIE BLOQUÉE');return;}
+  const actor=spawnUnit(kind,position.x,position.z,units.filter(u=>u.kind===kind).length);
+  if(building.rally)actor.destination=navigatorRTS.findSafeGoal(building.rally);
+  showBanner(kind==='witch'?'SORCIÈRE FORMÉE':'ORC FORMÉ');
+}
+async function useOrcLevelModel(building,level){
+  const key=building.type+':'+level,entry=orcLevelEntries.get(key);
+  if(!entry)throw Error('GLB de niveau manquant : '+key);
+  if(!orcLevelCache.has(key))orcLevelCache.set(key,loader.loadAsync(entry.file));
+  const gltf=await orcLevelCache.get(key);
+  if(building.level!==level)return;
+  const model=gltf.scene.clone(true),bounds=new THREE.Box3().setFromObject(model);
+  const size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3());
+  const footprint=Math.max(size.x,size.z);
+  if(!Number.isFinite(footprint)||footprint<=0)throw Error('GLB de niveau invalide');
+  const anchor=building.root,old=anchor.children.find(n=>n!==building.healthBar.root);
+  if(old){
+    const previous=old.children[0];
+    for(let i=orcAnimationMixers.length-1;i>=0;i--){
+      const mixer=orcAnimationMixers[i];
+      if(mixer.getRoot()===previous){mixer.stopAllAction();orcAnimationMixers.splice(i,1);}
+    }
+    anchor.remove(old);
+  }
+  const offset=new THREE.Group();
+  offset.position.set(-center.x,-bounds.min.y,-center.z);offset.add(model);
+  anchor.add(offset);anchor.scale.setScalar(3.9/footprint);
+  const mixer=new THREE.AnimationMixer(model);
+  for(const clip of gltf.animations||[])if(clip.tracks.length)mixer.clipAction(clip).play();
+  orcAnimationMixers.push(mixer);
+  building.hitbox=buildingBounds(offset);building.visualLevel=level;
+  updateNavObstacles();drawBuildingSelection();refreshHUD();
+}
+function finishUpgrade(building){
+  if(building.level>=3)return;
+  const prev=building.maxHealth;building.level++;
+  building.maxHealth=building.clanId==='witch'?500+250*(building.level-1):
+    BUILDING_TYPES[building.type].levels[building.level].maxHealth;
+  building.health=Math.min(building.maxHealth,building.health+(building.maxHealth-prev));
+  if(building.healthBar)building.healthBar.fill.scale.x=building.health/building.maxHealth;
+  if(building.clanId==='orcs')
+    useOrcLevelModel(building,building.level).catch(err=>console.warn('Upgrade GLB:',err));
+  showBanner('AMÉLIORATION NIVEAU '+building.level);refreshHUD();
+}
+function stepProduction(dt){
+  for(const building of liveBuildings()){
+    if(!building.queue.length){building.progress=0;continue;}
+    building.progress+=dt;
+    const order=building.queue[0];
+    if(building.progress+1e-9<order.duration)continue;
+    building.progress=Math.max(0,building.progress-order.duration);building.queue.shift();
+    if(order.kind==='upgrade')finishUpgrade(building);
+    else finishTraining(building,order.kind);
+  }
+}
+function setRally(building,location){
+  if(!building)return false;
+  const point=navigatorRTS.findSafeGoal(location);if(!point)return false;
+  building.rally=point;rallyMode=false;
+  if(building.rallyMarker){
+    scene.remove(building.rallyMarker);building.rallyMarker.geometry.dispose();
+    building.rallyMarker.material.dispose();
+  }
+  const ring=new THREE.Mesh(new THREE.RingGeometry(.45,.57,24),
+    new THREE.MeshBasicMaterial({color:0xf4d46a,side:THREE.DoubleSide,depthTest:false}));
+  ring.rotation.x=-Math.PI/2;ring.position.set(point.x,.045,point.z);
+  scene.add(ring);building.rallyMarker=ring;showBanner('POINT DE RASSEMBLEMENT');
+  refreshHUD();return true;
+}
+function beginRally(){
+  if(!selectedBuilding)return false;
+  rallyMode=true;buildMode=null;constructionTab=false;refreshHUD();return true;
+}
+
 function beginBuild(type){
   if(!running||paused||activeFaction!=='orc'||!ORC_COSTS[type]||!buildingBlueprints.has(type)||gold.orc<ORC_COSTS[type])return false;
   buildMode=type;rallyMode=false;constructionTab=false;refreshHUD();return true;
@@ -936,10 +1054,7 @@ const FIXED_DT=1/60;
 let accumulator=0,uiElapsed=0;
 function stepGame(dt){
   if(!ready||!running||paused)return;
-  if(training.length){
-    trainElapsed+=dt;
-    if(trainElapsed>=training[0].duration){trainElapsed-=training[0].duration;training.shift();finishTraining();}
-  }else trainElapsed=0;
+  stepProduction(dt);
   for(const actor of units)tickUnit(actor,dt);
   for(let i=units.length-1;i>=0;i--)if(units[i].dead&&units[i].deadTime<=0){
     units[i].mixer.stopAllAction();scene.remove(units[i].root);units.splice(i,1);
@@ -965,6 +1080,28 @@ function frame(){
   renderer.render(scene,camera);
 }
 frame();
+function touchAt(x,y,append=false){
+  if(!running||paused||!$('overlay').hidden)return;
+  const pos=worldPoint(x,y);
+  if(!pos)return;
+  if(rallyMode){if(!setRally(selectedBuilding,pos))showBanner('EMPLACEMENT INVALIDE');return;}
+  if(buildMode){if(!buildOrc(buildMode,pos.x,pos.z))
+    showBanner('EMPLACEMENT INVALIDE / OR INSUFFISANT');return;}
+  const unit=pickUnit(x,y);
+  if(unit){selectUnits([unit],append);return;}
+  const building=pickBuilding(x,y);
+  if(building){selectBuilding(building);return;}
+  if(selected.size){issueMove(pos);return;}
+  clearSelection();
+}
+function selectRectangle(a,b,append=false){
+  const left=Math.min(a.x,b.x),right=Math.max(a.x,b.x),
+    top=Math.min(a.y,b.y),bottom=Math.max(a.y,b.y);
+  const actors=units.filter(u=>!u.dead&&u.kind===activeFaction).filter(u=>{
+    const p=screenPoint(u);return p.x>=left&&p.x<=right&&p.y>=top&&p.y<=bottom;
+  });
+  selectUnits(actors,append);
+}
 let pointerStart=null;
 viewport.addEventListener('wheel',event=>{
   if(event.target.closest('.command-panel'))return;
@@ -1032,7 +1169,7 @@ for(const name of ['pointerup','pointercancel','lostpointercapture'])
 viewport.addEventListener('contextmenu',event=>event.preventDefault());
 
 document.addEventListener('keydown',event=>{
-  if(event.code==='Escape'){buildMode=null;clearSelection();refreshHUD();}
+  if(event.code==='Escape'){buildMode=null;rallyMode=false;constructionTab=false;clearSelection();refreshHUD();}
   if(event.code==='KeyP'&&!event.repeat)pauseGame();
   if(event.code==='KeyA'&&(event.ctrlKey||event.metaKey)){event.preventDefault();selectUnits(units.filter(a=>a.kind===activeFaction&&!a.dead));}
   if(event.code==='KeyW'&&event.altKey)changeFaction('witch');
