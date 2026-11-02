@@ -247,8 +247,11 @@ async function loadOrcVillage(limit=3){
   // exhaust memory and freeze the main thread during the loading screen.
   for(let i=0;i<entries.length;i++){
     let model;
+    let buildingClips=[];
     try{
-      model=(await loader.loadAsync(entries[i].file)).scene;
+      const gltf=await loader.loadAsync(entries[i].file);
+      model=gltf.scene;
+      buildingClips=gltf.animations||[];
     }catch(err){
       console.warn('Orc building unavailable:',entries[i].name,err);
       continue;
@@ -278,12 +281,13 @@ async function loadOrcVillage(limit=3){
         }
       });
     }
-    if(model.animations?.length){
+    if(buildingClips.length){
       const mixer=new THREE.AnimationMixer(model);
-      for(const clip of model.animations){
+      for(const clip of buildingClips){
         if(clip.tracks.length)mixer.clipAction(clip).play();
       }
       orcAnimationMixers.push(mixer);
+      console.info('Orc animation started:',entries[i].name,buildingClips.map(clip=>({name:clip.name,tracks:clip.tracks.length,duration:clip.duration})));
     }
     // Let the renderer and input loop run between buildings.
     await new Promise(resolve=>setTimeout(resolve,0));
