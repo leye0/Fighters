@@ -228,7 +228,7 @@ let cameraFollow={x:0,z:0};
 const cameraLook=new THREE.Vector3(0,1.15,0);
 const clock=new THREE.Clock();
 const rand=(min,max)=>min+Math.random()*(max-min);
-let cameraZoom=38,pinch=null,cameraDrag=null;
+let cameraZoom=35,pinch=null,cameraDrag=null;
 const activeTouches=new Map();
 function zoomCamera(factor,clientX,clientY){
   const rect=viewport.getBoundingClientRect();
@@ -247,7 +247,7 @@ function zoomCamera(factor,clientX,clientY){
 }
 function refreshZoomLabel(){
   const el=$('zoom-label');
-  if(el)el.textContent=Math.round(38/cameraZoom*100)+' %';
+  if(el)el.textContent=Math.round(35/cameraZoom*100)+' %';
 }
 function panCamera(dx,dy){
   const box=viewport.getBoundingClientRect(),cx=box.left+box.width/2,cy=box.top+box.height/2;
@@ -1065,7 +1065,7 @@ function startSession(){
       useOrcLevelModel(building,1).catch(err=>console.warn('Reset model:',err));
     }
   }
-  cameraZoom=38;resize();refreshZoomLabel();
+  cameraZoom=35;resize();refreshZoomLabel();
   gold={witch:2000,orc:900};buildMode=null;orcSpawned=false;
   rallyMode=false;constructionTab=false;lastHudSignature='';
   for(const b of liveBuildings()){b.queue=[];b.progress=0;b.level=1;

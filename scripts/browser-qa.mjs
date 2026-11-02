@@ -83,7 +83,7 @@ async function run(){
  // Verify actual UI controls, not just an exposed JS zoom setter.
  await evaluate("document.querySelector('#zoom-in').click()");
  s=await evaluate('window.__fightersQA.snapshot()');
- check(s.cameraZoom<38,'Zoom-in button must change orthographic projection');
+ check(s.cameraZoom<35,'Zoom-in button must change orthographic projection');
  await evaluate("document.querySelector('#viewport').dispatchEvent(new WheelEvent('wheel',{deltaY:220,clientX:680,clientY:340,bubbles:true,cancelable:true}))");
  check((await evaluate('window.__fightersQA.snapshot()')).cameraZoom>s.cameraZoom,
   'Mouse wheel must zoom out');
@@ -184,6 +184,33 @@ async function run(){
   'Mobile command panel exceeds viewport');
  check(mobile.zoom.width>0,'Mobile zoom button missing');
  await screenshot('rts-mobile-command-panel');
+ const framing=await evaluate("(()=>{const hero=document.querySelector('.hero-hud').getBoundingClientRect();const score=document.querySelector('.score').getBoundingClientRect();const utility=document.querySelector('.utility').getBoundingClientRect();return {hero:{left:hero.left,right:hero.right,bottom:hero.bottom},score:{left:score.left},utility:{top:utility.top,right:utility.right}}})()");
+ check(framing.hero.right<=framing.score.left+3&&
+  framing.utility.top>=framing.hero.bottom-3&&framing.utility.right<=mobile.width+1,
+  'Mobile HUD overlaps faction/resource/zoom controls: '+JSON.stringify(framing));
+ // Real multi-touch input through Chrome DevTools, not a programmatic zoom setter.
+ await call('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:2});
+ const touch=(id,x,y)=>({id,x,y,force:1,radiusX:4,radiusY:4});
+ const beforePinch=await evaluate('window.__fightersQA.snapshot()');
+ await call('Input.dispatchTouchEvent',{type:'touchStart',
+  touchPoints:[touch(1,135,290),touch(2,255,290)]});
+ await call('Input.dispatchTouchEvent',{type:'touchMove',
+  touchPoints:[touch(1,110,290),touch(2,280,290)]});
+ await sleep(100);
+ const afterPinch=await evaluate('window.__fightersQA.snapshot()');
+ check(afterPinch.cameraZoom<beforePinch.cameraZoom-1,
+  'Two-finger zoom did not change orthographic camera: '+JSON.stringify({
+    before:beforePinch.cameraZoom,after:afterPinch.cameraZoom}));
+ await call('Input.dispatchTouchEvent',{type:'touchMove',
+  touchPoints:[touch(1,135,325),touch(2,305,325)]});
+ await sleep(100);
+ const afterPan=await evaluate('window.__fightersQA.snapshot()');
+ check(Math.hypot(afterPan.cameraCenter.x-afterPinch.cameraCenter.x,
+   afterPan.cameraCenter.z-afterPinch.cameraCenter.z)>.1,
+   'Two-finger camera pan did not move the map');
+ await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ await call('Emulation.setTouchEmulationEnabled',{enabled:false});
+ await screenshot('rts-mobile-pinch-zoom');
  await call('Emulation.clearDeviceMetricsOverride');
 
  await evaluate('window.__fightersQA.reset()');
