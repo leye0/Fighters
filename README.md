@@ -9,23 +9,29 @@ Fighters est un prototype de **stratégie en temps réel** en 3D isométrique. L
 | Action | Ordinateur | Téléphone/tablette |
 |---|---|---|
 | Sélectionner une sorcière ou un bâtiment | Clic gauche | Toucher |
-| Sélection multiple | Glisser sur la carte, Ctrl/Cmd+A | Glisser sur la carte |
+| Sélection multiple | Glisser sur la carte, Ctrl/Cmd+A | **Appui long d'une seconde**, puis glisser avec un doigt pour dessiner un rectangle |
 | Déplacement / formation | Sélectionner puis cliquer au sol | Sélectionner puis toucher le terrain |
-| Attaquer une unité ou un bâtiment ennemi | Sélectionner des sorcières puis cliquer la cible; touche **F** pour cibler | Sélectionner les sorcières, bouton **Attaquer**, toucher la cible |
+| Attaquer une unité ou un bâtiment ennemi | **Deux clics :** sélectionner une sorcière puis cliquer directement le bâtiment ou l'unité ennemie | **Deux touches :** sorcière puis bâtiment ennemi, sans passer par un mode supplémentaire |
 | Zoom | Molette, touches **+ / −** | Pincement à deux doigts |
-| Déplacer la caméra | Glisser avec bouton central ou droit | Glisser avec deux doigts |
+| Déplacer la caméra | Glisser avec bouton central ou droit | **Glisser avec un doigt sans appui long** |
 | Pause | Touche **P** ou bouton Ⅱ discret | Bouton Ⅱ discret |
+
+**Deux doigts sont réservés au zoom :** déplacer les deux doigts en parallèle ne déplace pas la carte. Un anneau bleu apparaît brièvement après un ordre de déplacement; une mire rouge confirme un ordre d'attaque. Les marqueurs disparaissent automatiquement et leur nombre simultané est plafonné.
 
 Le groupe **🧙 / ⚔ / + / −** qui occupait la barre supérieure a été retiré. La carte conserve seulement les ressources, un état résumé de l'IA orc et un petit bouton pause. Les véritables commandes sont dans la barre inférieure contextuelle, inspirée des RTS classiques.
 
 ## Interface RTS
 
-La **barre inférieure** affiche le portrait, le nom et le niveau du bâtiment sélectionné, les points de vie, une barre de santé et une grille de commandes. Selon le contexte, elle propose **entraînement, amélioration, point de rassemblement et annulation/remboursement des commandes**.
+La **barre inférieure** est divisée en **deux zones séparées**. La première contient cinq **raccourcis permanents** (Maison, Armée, Attaquer, Stop, Annuler) qui restent en place même lorsqu'un mode d'attaque, une construction ou un bâtiment est sélectionné. La seconde affiche le portrait, le nom et le niveau du bâtiment sélectionné, les points de vie, une barre de santé et une grille de commandes contextuelles (**entraînement, amélioration, point de rassemblement et annulation/remboursement**). Un indicateur flottant donne les instructions de placement ou de ciblage **sans masquer les raccourcis**.
 
 - La maison des sorcières entraîne une sorcière pour **120 pièces d’or** en **3,5 s** au niveau 1. Les améliorations augmentent ses PV et accélèrent la formation. La file contient jusqu'à huit commandes.
 - La caserne orc forme des soldats pour **100 pièces d’or** en **4,5 s** au niveau 1; toutes les structures peuvent être améliorées jusqu'au niveau 3. Les niveaux 2 et 3 utilisent les véritables GLB existants du kit de bâtiments.
 - Le point de rassemblement fait marcher les nouvelles unités vers une destination spécifiée.
 - Les sorcières commencent avec **2 000 pièces d’or**, sans gisement de ressources sur leur territoire. L'économie est encore provisoire.
+
+## Performance et gestion des ressources
+
+Le panneau contextuel n'est plus reconstruit à chaque mise à jour d'or ou de points de vie : les boutons restent les mêmes objets DOM et seules les valeurs dynamiques changent. Les statistiques de développement exposent le nombre de reconstructions. La planification de l'IA orc est évaluée à cadence réduite plutôt que de recréer les mêmes tableaux soixante fois par seconde. Les unités mortes libèrent leurs marqueurs et leurs actions, tandis que les constructions retirées libèrent les animations et barres de vie dont elles sont propriétaires. Les mires bleues/rouges ont une durée de vie limitée et un plafond simultané. Les tests de régression contrôlent la stabilité des menus sur une partie simulée prolongée.
 
 ## Combat contre les bâtiments
 
@@ -69,7 +75,7 @@ Le workflow `.github/workflows/browser-qa.yml` exécute :
 
 - `node scripts/test-rts-navigation.mjs` : A*, collisions élargies, coins diagonaux, détours et obstacles dynamiques.
 - `node scripts/test-orc-strategy.mjs` : construction cohérente, stratégie économique, recrutement, défense, raiders et réinitialisation.
-- `node scripts/browser-qa.mjs` : vraie scène **Chrome WebGL SwiftShader**, zoom/pincement, sélection, production et améliorations avec vrais GLB, barres de vie en repère mondial, construction, collisions, **destruction effective par les deux factions**, défaite et **village orc bâti automatiquement**. Le test enregistre également des captures desktop et mobile.
+- `node scripts/browser-qa.mjs` : vraie scène **Chrome WebGL SwiftShader**, zoom/pincement, **glisser à un doigt pour déplacer**, **appui long d'une seconde puis sélection rectangulaire**, séquence de **deux touches pour attaquer**, mires bleues et rouges à durée de vie limitée, stabilité des menus, production et améliorations avec vrais GLB, collisions, **destruction des bâtiments par les deux factions** et **village orc bâti automatiquement**. Le test enregistre également des captures desktop et mobile.
 
 Un paramètre `?qa=1` active les contrôles d'injection de test `window.__fightersQA` et désactive l'IA autonome initialement pour des essais reproductibles; la partie normale active l'IA.
 
