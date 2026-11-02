@@ -80,10 +80,11 @@ async function run(){
  check(await evaluate("document.querySelector('#command-icon').textContent.length>0"),
   'Contextual building portrait missing');
 
- // Verify actual UI controls, not just an exposed JS zoom setter.
- await evaluate("document.querySelector('#zoom-in').click()");
+ check(await evaluate("document.querySelector('#witch-faction,#orc-faction,#zoom-in,#zoom-out')===null"),
+  'Unused faction/zoom toolbar remains on screen');
+ await evaluate("document.dispatchEvent(new KeyboardEvent('keydown',{code:'Equal',bubbles:true}))");
  s=await evaluate('window.__fightersQA.snapshot()');
- check(s.cameraZoom<35,'Zoom-in button must change orthographic projection');
+ check(s.cameraZoom<35,'Keyboard zoom must change camera projection');
  await evaluate("document.querySelector('#viewport').dispatchEvent(new WheelEvent('wheel',{deltaY:220,clientX:680,clientY:340,bubbles:true,cancelable:true}))");
  check((await evaluate('window.__fightersQA.snapshot()')).cameraZoom>s.cameraZoom,
   'Mouse wheel must zoom out');
@@ -122,6 +123,10 @@ async function run(){
  check(s.buildings.length===5,'Five default orc buildings');
  check(s.buildings.every(b=>b.hitbox.maxX>b.hitbox.minX&&b.hitbox.maxZ>b.hitbox.minZ),
   'Every orc structure must have a real 3D collider');
+ check(s.buildings.every(b=>b.healthbarParent==='scene'),
+   'Orc HP bars must not inherit a building rotation/scale');
+ check(s.buildings.every(b=>b.healthbarPosition[1]>b.hitbox.maxY),
+   'Orc HP bars must be above building top');
 
  await evaluate("window.__fightersQA.setFaction('orc');window.__fightersQA.selectOrcBarrack()");
  s=await evaluate('window.__fightersQA.snapshot()');
@@ -179,15 +184,14 @@ async function run(){
   width:390,height:844,deviceScaleFactor:1,mobile:true
  });
  await sleep(450);
- const mobile=await evaluate("(()=>{const p=document.querySelector('#command-panel').getBoundingClientRect();const q=document.querySelector('#zoom-in').getBoundingClientRect();return {width:innerWidth,height:innerHeight,panel:p.toJSON(),zoom:q.toJSON(),scrollWidth:document.documentElement.scrollWidth}})()");
+ const mobile=await evaluate("(()=>{const p=document.querySelector('#command-panel').getBoundingClientRect();const q=document.querySelector('#pause').getBoundingClientRect();return {width:innerWidth,height:innerHeight,panel:p.toJSON(),pause:q.toJSON(),scrollWidth:document.documentElement.scrollWidth}})()");
  check(mobile.panel.width<=mobile.width&&mobile.panel.bottom<=mobile.height+1,
   'Mobile command panel exceeds viewport');
- check(mobile.zoom.width>0,'Mobile zoom button missing');
+ check(mobile.pause.width>0,'Compact pause button missing');
  await screenshot('rts-mobile-command-panel');
- const framing=await evaluate("(()=>{const hero=document.querySelector('.hero-hud').getBoundingClientRect();const score=document.querySelector('.score').getBoundingClientRect();const utility=document.querySelector('.utility').getBoundingClientRect();return {hero:{left:hero.left,right:hero.right,bottom:hero.bottom},score:{left:score.left},utility:{top:utility.top,right:utility.right}}})()");
- check(framing.hero.right<=framing.score.left+3&&
-  framing.utility.top>=framing.hero.bottom-3&&framing.utility.right<=mobile.width+1,
-  'Mobile HUD overlaps faction/resource/zoom controls: '+JSON.stringify(framing));
+ const framing=await evaluate("(()=>{const hero=document.querySelector('.hero-hud').getBoundingClientRect();const score=document.querySelector('.score').getBoundingClientRect();const pause=document.querySelector('#pause').getBoundingClientRect();return {hero:{right:hero.right,bottom:hero.bottom},score:{left:score.left,right:score.right},pause:{left:pause.left,right:pause.right}}})()");
+ check(framing.hero.right<=framing.score.left+3&&framing.score.right<=framing.pause.left+4&&
+  framing.pause.right<=mobile.width+1,'Compact mobile HUD overlaps: '+JSON.stringify(framing));
  // Real multi-touch input through Chrome DevTools, not a programmatic zoom setter.
  await call('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:2});
  const touch=(id,x,y)=>({id,x,y,force:1,radiusX:4,radiusY:4});
