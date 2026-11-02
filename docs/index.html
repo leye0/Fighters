@@ -734,7 +734,7 @@ function selectUnits(actors,append=false){
   refreshHUD();
 }
 function selectBuilding(building){
-  clearSelection();selectedBuilding=building;buildMode=null;rallyMode=false;constructionTab=false;
+  clearSelection();selectedBuilding=building;buildMode=null;rallyMode=false;constructionTab=false;attackMode=false;
   drawBuildingSelection();refreshHUD();
 }
 function worldPoint(clientX,clientY){
@@ -1009,6 +1009,7 @@ function cancelTransientMode(){
   attackMode=false;buildMode=null;rallyMode=false;constructionTab=false;refreshHUD();
 }
 function stopSelectedUnits(){
+  attackMode=false;
   for(const unit of selected){unit.destination=null;unit.attackOrder=null;unit.route=null;}
   refreshHUD();
 }
@@ -1155,7 +1156,7 @@ function refreshHUD(){
       b?.queue.some(item=>item.kind==='upgrade')||
       gold[faction]<upgradeCost(b)||b?.queue.length>=MAX_QUEUE;
     else if(action==='Annuler prochain')disabled=b?.queue.length===0;
-    else if(action&&Object.values(ORC_NAMES).includes(action)){
+    else if(constructionTab&&action&&Object.values(ORC_NAMES).includes(action)){
       const type=Object.keys(ORC_NAMES).find(key=>ORC_NAMES[key]===action);
       disabled||=gold.orc<ORC_COSTS[type]||!buildingBlueprints.has(type);
     }else if(action==='Caserne')disabled||=![...buildingInstances.values()].some(v=>v.type==='barrack'&&!v.destroyed);
