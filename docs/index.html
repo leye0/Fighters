@@ -764,7 +764,7 @@ function upgradeCost(building){
   return building.level>=3?null:(building.clanId==='witch'?230:160)+building.level*100;
 }
 function queueOrder(building,kind){
-  if(!running||paused||!building||building.queue.length>=MAX_QUEUE)return false;
+  if(!running||paused||!building||building.destroyed||building.queue.length>=MAX_QUEUE)return false;
   const faction=building.clanId==='witch'?'witch':'orc';
   if(kind==='witch'&&faction!=='witch'||kind==='orc'&&
     (faction!=='orc'||building.type!=='barrack'))return false;
@@ -1187,7 +1187,10 @@ function destroyBuilding(building){
     if(actor.attackOrder===building)actor.attackOrder=null;
     if(actor.attack?.target===building)actor.attack=null;
   }
-  if(building.clanId==='orcs'&&!building.initial)buildingInstances.delete(building.id);
+  if(building.clanId==='orcs'&&!building.initial){
+    buildingInstances.delete(building.id);
+    if(building.healthBar)scene.remove(building.healthBar.root);
+  }
   updateNavObstacles();lastHudSignature='';refreshHUD();
   if(building.clanId==='witch')endBattle(false);
   else if(![...buildingInstances.values()].some(b=>!b.destroyed))endBattle(true);
@@ -1354,7 +1357,7 @@ function stepOrcStrategy(dt){
       if(b&&!b.destroyed)queueOrder(b,'upgrade');
     }else if(action.type==='raid'&&!witchBuilding.destroyed){
       const squad=aliveOrcs.filter(u=>action.unitIds.includes(u.id));
-      orderAttack(squad,witchBuilding);
+      for(const actor of squad){actor.attackOrder=witchBuilding;actor.destination=null;actor.route=null;}
     }else if(action.type==='defend'){
       const attackers=units.filter(u=>u.kind==='witch'&&!u.dead);
       for(const orc of aliveOrcs){
