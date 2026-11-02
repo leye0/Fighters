@@ -149,7 +149,7 @@ const WITCH_HOUSE={x:-23.5,z:-17.5,maxFootprint:5.2,doorHeading:Math.PI/4};
 let witchHouse=null;
 const witchBuilding={
   id:'witch-house-01',kind:'witch-house',type:'witch-house',clanId:'witch',level:1,
-  health:500,maxHealth:500,root:null,
+  health:500,maxHealth:500,root:null,destroyed:false,
   hitbox:{shape:'aabb',minX:WITCH_HOUSE.x-3.5,maxX:WITCH_HOUSE.x+3.5,
     minZ:WITCH_HOUSE.z-3.5,maxZ:WITCH_HOUSE.z+3.5,minY:0,maxY:6},
   queue:[],progress:0,rally:{x:-18,z:-12},rallyMarker:null
@@ -163,7 +163,7 @@ function buildingBounds(root){
   return {shape:'aabb',minX:b.min.x,maxX:b.max.x,minZ:b.min.z,maxZ:b.max.z,
     minY:b.min.y,maxY:b.max.y};
 }
-function liveBuildings(){return [witchBuilding,...buildingInstances.values()];}
+function liveBuildings(){return [witchBuilding,...buildingInstances.values()].filter(b=>!b.destroyed);}
 function updateNavObstacles(){
   navigatorRTS.setObstacles(liveBuildings().map(b=>({id:b.id,...b.hitbox})));
   for(const actor of units){actor.route=null;actor.routeVersion=-1;}
@@ -382,7 +382,7 @@ function createBuildingInstance(entry,type,level,anchor,footprint){
     type,level,clanId:'orcs',health:spec.maxHealth,maxHealth:spec.maxHealth,
     constructionCost:spec.constructionCost,requiredTechnology:spec.requiredTechnology,
     hitbox:buildingBounds(anchor),queue:[],progress:0,rally:null,rallyMarker:null,
-    root:anchor,visualLevel:1,initial:false
+    root:anchor,visualLevel:1,initial:false,destroyed:false
   };
   const bar=new THREE.Group();
   bar.name='healthbar-world-'+id;
@@ -671,7 +671,7 @@ function spawnUnit(kind,x,z,index=0){
     id:nextUnitId++,kind,root,visual,mixer:new THREE.AnimationMixer(visual),actions:new Map(),current:'',action:null,
     health:kind==='witch'?85:110,maxHealth:kind==='witch'?85:110,
     heading:{x:kind==='witch'?1:-1,z:0},facing:1,attack:null,stun:0,cooldown:rand(.25,1),dead:false,deadTime:0,
-    speed:kind==='witch'?3.3:2.75,destination:null,route:null,routeVersion:-1,
+    speed:kind==='witch'?3.3:2.75,destination:null,attackOrder:null,route:null,routeVersion:-1,
     routeGoal:null,routeAge:0,weapon:null,selectionRing:marker,outfitInfo
   };
   for(const clip of source.animations)if(!actor.actions.has(clip.name))actor.actions.set(clip.name,actor.mixer.clipAction(clip));
@@ -752,6 +752,7 @@ function issueMove(destination){
   actors.forEach((actor,i)=>{
     const dx=(i%cols-(cols-1)/2)*1.35,dz=(Math.floor(i/cols)-Math.floor((actors.length-1)/cols)/2)*1.35;
     actor.destination=navigatorRTS.findSafeGoal({x:destination.x+dx,z:destination.z+dz});
+    actor.attackOrder=null;
     actor.route=null;actor.routeVersion=-1;actor.routeAge=0;
   });
   refreshHUD();
@@ -1080,7 +1081,12 @@ function startSession(){
     if(building.rallyMarker)scene.remove(building.rallyMarker);
     buildingInstances.delete(id);
   }
-  for(const building of liveBuildings()){
+  for(const building of [witchBuilding,...buildingInstances.values()]){
+    if(building.destroyed){building.destroyed=false;
+      if(building.clanId==='witch')scene.add(building.root);
+      else (orcVillage||scene).add(building.root);
+    }
+    if(building.healthBar)building.healthBar.root.visible=false;
     if(building.rallyMarker){scene.remove(building.rallyMarker);building.rallyMarker=null;}
     if(building.clanId==='orcs'&&building.level!==1){
       building.level=1;
@@ -1089,6 +1095,7 @@ function startSession(){
   }
   cameraZoom=35;resize();refreshZoomLabel();
   gold={witch:2000,orc:900};buildMode=null;orcSpawned=false;
+  orcDirector.reset();orcIncomeFraction=0;attackMode=false;
   rallyMode=false;constructionTab=false;lastHudSignature='';
   for(const b of liveBuildings()){b.queue=[];b.progress=0;b.level=1;
     b.maxHealth=b.clanId==='witch'?500:BUILDING_TYPES[b.type].levels[1].maxHealth;
@@ -1100,23 +1107,119 @@ function startSession(){
   $('pause').disabled=false;$('pause').textContent='Ⅱ';$('overlay').hidden=true;
   showBanner('DÉBUT DE LA PARTIE');refreshHUD();
 }
-function nearestHostile(actor,maxDistance=Infinity){
-  let closest=null,best=maxDistance;
-  for(const candidate of units){
-    if(candidate.dead||candidate.kind===actor.kind)continue;
-    const distance=Math.hypot(candidate.root.position.x-actor.root.position.x,candidate.root.position.z-actor.root.position.z);
-    if(distance<best){closest=candidate;best=distance;}
-  }
-  return closest?{target:closest,distance:best}:null;
+function unitFaction(actor){return actor.kind==='witch'?'witch':'orcs';}
+function targetFaction(target){return target.clanId||unitFaction(target);}
+function isBuilding(target){return !!target?.hitbox;}
+function enemyOf(actor,target){
+  return target&&!target.dead&&!target.destroyed&&unitFaction(actor)!==targetFaction(target);
 }
-function dealDamage(target,amount){
+function targetDistance(actor,target){
+  const p=actor.root.position;
+  if(!isBuilding(target))return Math.hypot(target.root.position.x-p.x,target.root.position.z-p.z);
+  const b=target.hitbox;
+  return Math.hypot(Math.max(b.minX-p.x,0,p.x-b.maxX),Math.max(b.minZ-p.z,0,p.z-b.maxZ));
+}
+function nearestHostile(actor,maxDistance=Infinity){
+  let nearest=null,distance=maxDistance,priority=Infinity;
+  const candidates=[...units,...liveBuildings()];
+  for(const target of candidates){
+    if(!enemyOf(actor,target))continue;
+    const d=targetDistance(actor,target);
+    const typePriority=isBuilding(target)?1:0;
+    if(d<distance-.5||(Math.abs(d-distance)<=.5&&typePriority<priority)){
+      nearest=target;distance=d;priority=typePriority;
+    }
+  }
+  return nearest?{target:nearest,distance}:null;
+}
+function approachBuilding(actor,building){
+  const b=building.hitbox,p=actor.root.position,pad=1.05;
+  const mx=(b.minX+b.maxX)/2,mz=(b.minZ+b.maxZ)/2;
+  const x=THREE.MathUtils.clamp(p.x,b.minX,b.maxX);
+  const z=THREE.MathUtils.clamp(p.z,b.minZ,b.maxZ);
+  const outward={x:p.x-x,z:p.z-z};
+  const len=Math.hypot(outward.x,outward.z);
+  const preferred=len>.1?{x:x+pad*outward.x/len,z:z+pad*outward.z/len}:
+    {x:mx-pad,z:mz};
+  const candidates=[
+    preferred,{x:b.minX-pad,z:THREE.MathUtils.clamp(p.z,b.minZ,b.maxZ)},
+    {x:b.maxX+pad,z:THREE.MathUtils.clamp(p.z,b.minZ,b.maxZ)},
+    {x:THREE.MathUtils.clamp(p.x,b.minX,b.maxX),z:b.minZ-pad},
+    {x:THREE.MathUtils.clamp(p.x,b.minX,b.maxX),z:b.maxZ+pad},
+    ...[-1,1].flatMap(sx=>[-1,1].map(sz=>({
+      x:(sx<0?b.minX:b.maxX)+sx*pad,z:(sz<0?b.minZ:b.maxZ)+sz*pad
+    })))
+  ].filter(point=>navigatorRTS.pointClear(point));
+  // Search alternatives only when necessary; route smoothing preserves efficiency.
+  candidates.sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z));
+  for(const candidate of candidates){
+    if(navigatorRTS.segmentClear({x:p.x,z:p.z},candidate)||
+      navigatorRTS.plan({x:p.x,z:p.z},candidate))return candidate;
+  }
+  return navigatorRTS.findSafeGoal(preferred);
+}
+function orderAttack(actors,target){
+  if(!target||target.destroyed||target.dead)return false;
+  let issued=0;
+  for(const actor of actors){
+    if(actor.dead||!enemyOf(actor,target))continue;
+    actor.attackOrder=target;actor.destination=null;actor.route=null;actor.routeAge=0;
+    issued++;
+  }
+  if(issued){attackMode=false;refreshHUD();}
+  return issued>0;
+}
+function removeRallyMarker(b){
+  if(!b.rallyMarker)return;
+  scene.remove(b.rallyMarker);b.rallyMarker.geometry.dispose();
+  b.rallyMarker.material.dispose();b.rallyMarker=null;
+}
+function destroyBuilding(building){
+  if(building.destroyed)return;
+  building.destroyed=true;building.health=0;building.queue.length=0;
+  building.progress=0;
+  building.root.parent?.remove(building.root);
+  if(building.healthBar)building.healthBar.root.visible=false;
+  removeRallyMarker(building);
+  if(selectedBuilding===building){selectedBuilding=null;drawBuildingSelection();}
+  for(const actor of units){
+    if(actor.attackOrder===building)actor.attackOrder=null;
+    if(actor.attack?.target===building)actor.attack=null;
+  }
+  if(building.clanId==='orcs'&&!building.initial)buildingInstances.delete(building.id);
+  updateNavObstacles();lastHudSignature='';refreshHUD();
+  if(building.clanId==='witch')endBattle(false);
+  else if(![...buildingInstances.values()].some(b=>!b.destroyed))endBattle(true);
+}
+function damageBuilding(building,amount,attacker){
+  if(building.destroyed)return;
+  building.health=Math.max(0,building.health-amount);
+  if(building.healthBar){
+    building.healthBar.fill.material.color.setHex(0x72cb6a);
+    updateHealthBar(building);
+  }
+  if(building.health===0){showBanner('BÂTIMENT DÉTRUIT');destroyBuilding(building);}
+  else if(selectedBuilding===building)refreshHUD();
+}
+function endBattle(victory){
+  running=false;
+  $('overlay-title').textContent=victory?'VICTOIRE':'DÉFAITE';
+  $('overlay-desc').textContent=victory?'Le village orc a été détruit.':
+    'La maison des sorcières a été détruite.';
+  $('start').textContent='Nouvelle partie';$('start').disabled=false;
+  $('overlay').hidden=false;$('pause').disabled=true;
+}
+function dealDamage(target,amount,attacker){
+  if(isBuilding(target)){damageBuilding(target,amount,attacker);return;}
   if(target.dead)return;
   target.health=Math.max(0,target.health-amount);target.stun=.24;
   if(!target.health){
-    target.dead=true;target.deadTime=1.4;target.destination=null;selected.delete(target);target.selectionRing.visible=false;
+    target.dead=true;target.deadTime=1.4;target.destination=null;target.attackOrder=null;
+    selected.delete(target);target.selectionRing.visible=false;
     animation(target,'Death01',true);refreshHUD();
   }else animation(target,'Hit_Chest',true);
 }
+
 function navigateActor(actor,target,dt,mode){
   const pos=actor.root.position,from={x:pos.x,z:pos.z};
   const distance=Math.hypot(target.x-pos.x,target.z-pos.z);
@@ -1170,10 +1273,9 @@ function tickUnit(actor,dt){
     if(!actor.attack.landed&&actor.attack.elapsed>=actor.attack.impact){
       actor.attack.landed=true;
       const target=actor.attack.target;
-      const range=actor.weapon?2.4:1.9;
-      const distance=Math.hypot(target.root.position.x-actor.root.position.x,
-        target.root.position.z-actor.root.position.z);
-      if(!target.dead&&distance<range)dealDamage(target,actor.kind==='witch'?17:14);
+      const range=actor.weapon?2.35:1.85;
+      if(enemyOf(actor,target)&&targetDistance(actor,target)<range)
+        dealDamage(target,actor.kind==='witch'?17:14,actor);
     }
     if(actor.attack.elapsed>=actor.attack.duration){
       actor.attack=null;animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop',true);
@@ -1181,27 +1283,36 @@ function tickUnit(actor,dt){
     return;
   }
   if(actor.stun>0)return;
-  const threat=nearestHostile(actor,actor.kind==='witch'?6.8:9.5);
-  if(threat&&threat.distance<(actor.weapon?2.1:1.6)&&actor.cooldown<=0){
-    faceTarget(actor,threat.target);
-    const clipName=actor.weapon&&actor.actions.has('Sword_Attack')?'Sword_Attack':'Punch_Jab';
-    const clip=actor.actions.get(clipName)?.getClip();
-    if(clip){
-      const duration=clip.duration;
-      actor.attack={target:threat.target,elapsed:0,impact:duration*.4,duration:duration+.13,landed:false};
-      actor.cooldown=duration+rand(.6,1.1);animation(actor,clipName,true);
+  if(actor.attackOrder&&!enemyOf(actor,actor.attackOrder))actor.attackOrder=null;
+  const nearby=nearestHostile(actor,actor.kind==='witch'?7.5:9);
+  const explicit=actor.attackOrder;
+  const target=explicit||(nearby&&(!actor.destination||nearby.distance<2.7)?nearby.target:null);
+  if(target){
+    const distance=targetDistance(actor,target),range=actor.weapon?2.1:1.65;
+    if(distance<=range&&actor.cooldown<=0){
+      if(isBuilding(target)){
+        const goal=approachBuilding(actor,target);
+        if(goal)faceDirection(actor,goal.x-actor.root.position.x,goal.z-actor.root.position.z);
+      }else faceTarget(actor,target);
+      const clipName=actor.weapon&&actor.actions.has('Sword_Attack')?'Sword_Attack':'Punch_Jab';
+      const clip=actor.actions.get(clipName)?.getClip();
+      if(clip){
+        const duration=clip.duration;
+        actor.attack={target,elapsed:0,impact:duration*.4,duration:duration+.13,landed:false};
+        actor.cooldown=duration+rand(.45,.85);animation(actor,clipName,true);
+      }
+      return;
     }
-    return;
+    const location=isBuilding(target)?approachBuilding(actor,target):target.root.position;
+    if(location){
+      const result=navigateActor(actor,location,dt,isBuilding(target)?'order':'pursuit');
+      if(result!=='moving')animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop');
+      return;
+    }
   }
-  let destination=actor.destination,mode='order';
-  // An explicit player move order takes priority over distant autonomous aggro.
-  // Only a hostile inside the immediate defensive radius can interrupt it.
-  if(threat&&(!destination||threat.distance<2.7)){
-    destination=threat.target.root.position;mode='pursuit';
-  }
-  if(destination){
-    const result=navigateActor(actor,destination,dt,mode);
-    if(result==='arrived'&&mode==='order'){actor.destination=null;actor.route=null;}
+  if(actor.destination){
+    const result=navigateActor(actor,actor.destination,dt,'order');
+    if(result==='arrived'){actor.destination=null;actor.route=null;}
     if(result!=='moving')animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop');
   }else animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop');
 }
