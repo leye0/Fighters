@@ -134,7 +134,17 @@
    // Only one economic transaction per tick, but tactical orders may coexist.
    const economic=decisions.filter(o=>['build','train','upgrade'].includes(o.type));
    const tactical=decisions.filter(o=>!['build','train','upgrade'].includes(o.type));
-   const actions=[...tactical,...economic.slice(0,1)];
+   // Reserve cycles for infrastructure and tech. A persistent training demand
+   // must NEVER starve expansion; the city needs mines to fund future units.
+   const build=economic.find(o=>o.type==='build');
+   const train=economic.find(o=>o.type==='train');
+   const upgrade=economic.find(o=>o.type==='upgrade');
+   const priorityBuild=build?.reason==='restore_recruitment'||build?.reason==='income';
+   const choice=priorityBuild?build:
+     upgrade&&this.tickCount%5===0?upgrade:
+     build&&this.tickCount%3===0?build:
+     train||build||upgrade;
+   const actions=choice?[...tactical,choice]:tactical;
    for(const action of actions){
     this.history.push({t:Math.round(this.clock*10)/10,...action});
    }
