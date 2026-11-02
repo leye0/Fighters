@@ -87,7 +87,10 @@
    }
    findSafeGoal(request){
      const goal=this.clamp(request),raw=this.cell(goal);
-     if(this.pointClear(goal)&&!this.cellBlocked(raw))return goal;
+     // The physical circle may fit beside a wall even when its 1m grid
+     // cell conservatively intersects the wall. Preserve that exact attack
+     // standoff point; planning connects from a clear neighbour cell.
+     if(this.pointClear(goal))return goal;
      // As in WarConquer's approachGoal, do not navigate to an occupied centre.
      // Pick an actually navigable interaction cell nearest to the requested point.
      let best=null,score=Infinity;
@@ -144,7 +147,28 @@
      if(!goal)return null;
      if(distance(from,goal)<.12)return {goal,waypoints:[],version:this.version};
      if(this.segmentClear(from,goal))return {goal,waypoints:[goal],version:this.version};
-     const cells=this.findPath(from,goal);if(!cells)return null;
+     let cells=null;
+     const endpoint=this.cell(goal);
+     if(!this.cellBlocked(endpoint)){
+       cells=this.findPath(from,goal);
+     }else{
+       // A* uses inflated occupancy for safe diagonal edges. A legal melee
+       // endpoint immediately outside a building can share a BLOCKED cell
+       // without being physically obstructed. Reach it from a free cell.
+       const candidates=[];
+       for(let dz=-5;dz<=5;dz++)for(let dx=-5;dx<=5;dx++){
+         const c={x:endpoint.x+dx,z:endpoint.z+dz};
+         if(this.cellBlocked(c))continue;
+         const p=this.center(c);
+         if(this.segmentClear(p,goal))candidates.push({p,d:distance(p,goal)});
+       }
+       candidates.sort((a,b)=>a.d-b.d);
+       for(const {p} of candidates.slice(0,18)){
+         const route=this.findPath(from,p);
+         if(route){cells=route;break;}
+       }
+     }
+     if(!cells)return null;
      const candidates=[...cells,goal],waypoints=[];let current=from,index=0;
      while(index<candidates.length){
        let furthest=index;
