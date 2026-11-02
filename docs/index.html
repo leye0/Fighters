@@ -1509,7 +1509,7 @@ function tickMineWorker(actor,dt){
   const enemies=nearestHostile(actor,4.2);
   if(enemies)return false; // Worker defends himself when threatened.
   const reach=targetDistance(actor,mine);
-  if(reach>1.25){
+  if(reach>1.65){
     const goal=approachBuilding(actor,mine);
     if(!goal)return false;
     const status=navigateActor(actor,goal,dt,'order');
