@@ -6,6 +6,9 @@ on:
       - 'docs/index.html'
       - 'scripts/browser-qa.mjs'
       - 'scripts/verify-costumes.mjs'
+      - 'witch_house.glb'
+      - 'orc_rts_building_set_-_proto_series.glb.part*'
+      - 'scripts/split-orc-buildings.mjs'
       - 'scripts/download-costumes.sh'
       - 'scripts/download-sword.sh'
       - 'scripts/decompress-sword.mjs'
@@ -22,9 +25,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Prepare exact two source models
+      - name: Prepare complete RTS building assets and native character models
         run: |
           mkdir -p docs/models
+          cp witch_house.glb docs/models/witch_house.glb
+          cat orc_rts_building_set_-_proto_series.glb.part1 orc_rts_building_set_-_proto_series.glb.part2 > docs/models/orc_rts_building_set_-_proto_series.glb
+          npm install --no-save --no-package-lock --no-audit --no-fund @gltf-transform/core@4.2.1 @gltf-transform/functions@4.2.1
+          node scripts/split-orc-buildings.mjs docs/models/orc_rts_building_set_-_proto_series.glb docs/models/orc-buildings
           curl -fLsS --retry 3 https://raw.githubusercontent.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/5821923af517ac5fdc82505faa92a0d575fc1b1a/test/human_male.glb -o docs/models/human_male.glb
           curl -fLsS --retry 3 https://raw.githubusercontent.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/5821923af517ac5fdc82505faa92a0d575fc1b1a/test/human_female.glb -o docs/models/human_female.glb
           node scripts/verify-glb.mjs docs/models/human_male.glb docs/models/human_female.glb
@@ -40,16 +47,16 @@ jobs:
             sleep 0.25
           done
           exit 1
-      - name: Exercise real rigs and beat em up in Chrome SwiftShader
+      - name: Exercise RTS factions, queues, selection and construction in Chrome SwiftShader
         env:
-          FIGHTERS_URL: http://127.0.0.1:8000/motion-lab.html
+          FIGHTERS_URL: http://127.0.0.1:8000/
         run: |
           google-chrome --version
           node scripts/browser-qa.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: fighters-real-webgl-motion-qa
+          name: fighters-real-webgl-rts-qa
           path: captures/
           retention-days: 3
           if-no-files-found: ignore
