@@ -49,15 +49,20 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;padding:0;overf
 #training-progress{font-size:11px;color:#e4d88e;margin-top:5px}#selection-rectangle{position:absolute;z-index:6;pointer-events:none;border:1px solid #b4f69c;background:#93f4ba2a}
 #selection-rectangle[hidden]{display:none}
 @media(max-width:720px){.score{gap:6px}.score strong{font-size:14px}.score small{font-size:7px}.hero-hud{min-width:90px;width:auto}.hero-hud strong{font-size:12px}.hero-hud small{font-size:9px}.hud{gap:5px}.command-panel{padding:8px 10px;max-width:min(360px,calc(100% - 18px))}#command-buttons button{padding:6px 8px}}
+.zoom-controls{display:flex;align-items:center;background:#0c1930d9;border:1px solid #68859e;border-radius:10px;padding:2px;gap:2px;pointer-events:auto}
+.zoom-controls span{font-size:10px;min-width:40px;text-align:center;color:#dcf6ed;font-weight:800}
+.zoom-controls button{background:#253c4f;border:0;width:30px;height:30px;color:#ebfcff}
+@media(max-width:700px){.zoom-controls span{display:none}.zoom-controls button{width:25px;height:27px}}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
+<script src="./rts-navigation.js"></script>
 </head>
 <body>
 <div class="game-shell"><section class="arcade">
 <div class="hud">
   <div class="hero-hud"><div class="hud-kicker">FIGHTERS · RTS</div><strong id="faction-title">SORCIÈRES</strong><small id="selection-summary">Touchez une unité ou la maison</small></div>
   <div class="score"><div><small>OR SORCIÈRES</small><strong id="witch-gold">2000</strong></div><div><small>OR ORCS</small><strong id="orc-gold">900</strong></div><div><small>UNITÉS</small><strong id="unit-count">0 : 0</strong></div></div>
-  <div class="utility"><button id="witch-faction" title="Contrôler les sorcières">🧙</button><button id="orc-faction" title="Contrôler les orcs">⚔</button><button id="pause" aria-label="Pause" disabled>Ⅱ</button></div>
+  <div class="utility"><div class="zoom-controls"><button id="zoom-out" title="Dézoomer" aria-label="Dézoomer">−</button><span id="zoom-label">100 %</span><button id="zoom-in" title="Zoomer" aria-label="Zoomer">+</button></div><button id="witch-faction" title="Contrôler les sorcières">🧙</button><button id="orc-faction" title="Contrôler les orcs">⚔</button><button id="pause" aria-label="Pause" disabled>Ⅱ</button></div>
 </div>
 <div id="viewport" class="viewport" aria-label="Carte de stratégie en temps réel"><div class="scanlines"></div><div id="banner" class="banner"></div><div id="selection-rectangle" hidden></div>
 <div class="command-panel" id="command-panel"><div id="command-title">Commandes RTS</div><div id="command-info">Sélectionnez la maison des sorcières pour entraîner des unités.</div><div id="command-buttons"></div><div id="training-progress"></div></div>
@@ -89,6 +94,47 @@ const ARENA_HALF=28,ARENA_SIZE=2*ARENA_HALF;
 const SPAWNS={hero:{x:-22,z:-22},enemies:{x:22,z:22}};
 const WITCH_HOUSE={x:-23.5,z:-17.5,maxFootprint:5.2,doorHeading:Math.PI/4};
 let witchHouse=null;
+const witchBuilding={
+  id:'witch-house-01',kind:'witch-house',type:'witch-house',clanId:'witch',level:1,
+  health:500,maxHealth:500,root:null,
+  hitbox:{shape:'aabb',minX:WITCH_HOUSE.x-3.5,maxX:WITCH_HOUSE.x+3.5,
+    minZ:WITCH_HOUSE.z-3.5,maxZ:WITCH_HOUSE.z+3.5,minY:0,maxY:6},
+  queue:[],progress:0,rally:{x:-18,z:-12}
+};
+let buildingSelectionRing=null;
+const navigatorRTS=new window.FightersNavigation.Navigator({halfSize:ARENA_HALF,cellSize:1,radius:.36});
+function buildingBounds(root){
+  root.updateMatrixWorld(true);
+  const b=new THREE.Box3().setFromObject(root);
+  if(b.isEmpty())throw Error('Bâtiment sans volume de collision');
+  return {shape:'aabb',minX:b.min.x,maxX:b.max.x,minZ:b.min.z,maxZ:b.max.z,
+    minY:b.min.y,maxY:b.max.y};
+}
+function liveBuildings(){return [witchBuilding,...buildingInstances.values()];}
+function updateNavObstacles(){
+  navigatorRTS.setObstacles(liveBuildings().map(b=>({id:b.id,...b.hitbox})));
+  for(const actor of units){actor.route=null;actor.routeVersion=-1;}
+}
+function drawBuildingSelection(){
+  if(buildingSelectionRing){
+    scene.remove(buildingSelectionRing);buildingSelectionRing.geometry.dispose();
+    buildingSelectionRing.material.dispose();buildingSelectionRing=null;
+  }
+  if(!selectedBuilding?.hitbox)return;
+  const b=selectedBuilding.hitbox,width=b.maxX-b.minX+.36,depth=b.maxZ-b.minZ+.36;
+  const geometry=new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(-width/2,0,-depth/2),new THREE.Vector3(width/2,0,-depth/2),
+    new THREE.Vector3(width/2,0,depth/2),new THREE.Vector3(-width/2,0,depth/2),
+    new THREE.Vector3(-width/2,0,-depth/2)
+  ]);
+  const material=new THREE.LineBasicMaterial({
+    color:selectedBuilding.clanId==='witch'?0xc2f5a3:0xf8c47f,depthTest:false
+  });
+  buildingSelectionRing=new THREE.Line(geometry,material);
+  buildingSelectionRing.position.set((b.minX+b.maxX)/2,.08,(b.minZ+b.maxZ)/2);
+  buildingSelectionRing.renderOrder=10;scene.add(buildingSelectionRing);
+}
+
 const INV_SQRT2=Math.SQRT1_2;
 // Input stays in screen coordinates even though the world axes are diagonal.
 function screenToWorld(horizontal,vertical){
@@ -133,6 +179,37 @@ let cameraFollow={x:0,z:0};
 const cameraLook=new THREE.Vector3(0,1.15,0);
 const clock=new THREE.Clock();
 const rand=(min,max)=>min+Math.random()*(max-min);
+let cameraZoom=30,pinch=null,cameraDrag=null;
+const activeTouches=new Map();
+function zoomCamera(factor,clientX,clientY){
+  const rect=viewport.getBoundingClientRect();
+  const x=clientX??rect.left+rect.width/2,y=clientY??rect.top+rect.height/2;
+  positionCamera();
+  const before=worldPoint(x,y);
+  const next=clamp(cameraZoom*factor,9,48);
+  if(Math.abs(next-cameraZoom)<1e-5)return;
+  cameraZoom=next;resize();positionCamera();
+  const after=worldPoint(x,y);
+  if(before&&after){
+    cameraFollow.x=clamp(cameraFollow.x+before.x-after.x,-26,26);
+    cameraFollow.z=clamp(cameraFollow.z+before.z-after.z,-26,26);
+  }
+  positionCamera();refreshZoomLabel();
+}
+function refreshZoomLabel(){
+  const el=$('zoom-label');
+  if(el)el.textContent=Math.round(30/cameraZoom*100)+' %';
+}
+function panCamera(dx,dy){
+  const box=viewport.getBoundingClientRect(),cx=box.left+box.width/2,cy=box.top+box.height/2;
+  const before=worldPoint(cx,cy),after=worldPoint(cx+dx,cy+dy);
+  if(before&&after){
+    cameraFollow.x=clamp(cameraFollow.x+before.x-after.x,-26,26);
+    cameraFollow.z=clamp(cameraFollow.z+before.z-after.z,-26,26);
+    positionCamera();
+  }
+}
+
 function createSign(label,color,width=4){
   const c=document.createElement('canvas');c.width=512;c.height=160;
   const ctx=c.getContext('2d');
@@ -215,7 +292,9 @@ async function loadWitchHouse(){
   anchor.rotation.y=-Math.PI/4;
   anchor.position.set(WITCH_HOUSE.x,0,WITCH_HOUSE.z);
   anchor.add(house);
-  scene.add(anchor);witchHouse=anchor;
+  scene.add(anchor);witchHouse=anchor;witchBuilding.root=anchor;
+  witchBuilding.hitbox=buildingBounds(anchor);
+  updateNavObstacles();drawBuildingSelection();refreshHUD();
 }
 loadWitchHouse().catch(err=>console.warn('Witch house GLB unavailable:',err));
 
@@ -243,8 +322,7 @@ function createBuildingInstance(entry,type,level,anchor,footprint){
     id,modelId:entry.id,sourceNode:entry.sourceNode||entry.name,
     type,level,clanId:'orcs',health:spec.maxHealth,maxHealth:spec.maxHealth,
     constructionCost:spec.constructionCost,requiredTechnology:spec.requiredTechnology,
-    hitbox:{shape:'box',width:footprint,depth:footprint,height:footprint,
-      center:{x:anchor.position.x,y:footprint/2,z:anchor.position.z}},
+    hitbox:buildingBounds(anchor),queue:[],progress:0,rally:null,
     root:anchor
   };
   const bar=new THREE.Group();
@@ -259,6 +337,7 @@ function createBuildingInstance(entry,type,level,anchor,footprint){
   instance.healthBar={root:bar,fill};
   anchor.add(bar);
   buildingInstances.set(id,instance);
+  updateNavObstacles();
   return instance;
 }
 let orcVillage=null;
@@ -353,6 +432,7 @@ async function loadOrcVillage(limit=3){
     village.add(anchor);
   }
   orcVillage=village;
+  refreshHUD();
   console.info('Orc village:',village.children.length,'/',entries.length,'individual buildings loaded; textures reused:',deduplicatedTextures,'verified:',manifest.sharedTexturesVerified);
 }
 // Five level-one buildings load by default; ?orcDebug=0 disables them for profiling.
@@ -366,7 +446,7 @@ if(orcDebugCount){
 
 function resize(){
   const w=viewport.clientWidth,h=viewport.clientHeight;
-  const aspect=w/Math.max(1,h),halfHeight=Math.max(30,30/Math.max(.32,aspect));
+  const aspect=w/Math.max(1,h),halfHeight=cameraZoom;
   camera.left=-halfHeight*aspect;camera.right=halfHeight*aspect;
   camera.top=halfHeight;camera.bottom=-halfHeight;
   camera.updateProjectionMatrix();
@@ -513,7 +593,8 @@ function spawnUnit(kind,x,z,index=0){
     id:nextUnitId++,kind,root,visual,mixer:new THREE.AnimationMixer(visual),actions:new Map(),current:'',action:null,
     health:kind==='witch'?85:110,maxHealth:kind==='witch'?85:110,
     heading:{x:kind==='witch'?1:-1,z:0},facing:1,attack:null,stun:0,cooldown:rand(.25,1),dead:false,deadTime:0,
-    speed:kind==='witch'?3.3:2.75,destination:null,weapon:null,selectionRing:marker,outfitInfo
+    speed:kind==='witch'?3.3:2.75,destination:null,route:null,routeVersion:-1,
+    routeGoal:null,routeAge:0,weapon:null,selectionRing:marker,outfitInfo
   };
   for(const clip of source.animations)if(!actor.actions.has(clip.name))actor.actions.set(clip.name,actor.mixer.clipAction(clip));
   // Reuse the native grip routine without replacing the Quaternius skeleton.
@@ -532,7 +613,7 @@ function spawnOrcDefenders(){
 }
 function clearSelection(){
   for(const actor of selected)actor.selectionRing.visible=false;
-  selected.clear();selectedBuilding=null;refreshHUD();
+  selected.clear();selectedBuilding=null;drawBuildingSelection();refreshHUD();
 }
 function selectUnits(actors,append=false){
   if(!append)clearSelection();
@@ -544,7 +625,7 @@ function selectUnits(actors,append=false){
   refreshHUD();
 }
 function selectBuilding(building){
-  clearSelection();selectedBuilding=building;refreshHUD();
+  clearSelection();selectedBuilding=building;drawBuildingSelection();refreshHUD();
 }
 function worldPoint(clientX,clientY){
   const rect=viewport.getBoundingClientRect();
@@ -567,21 +648,32 @@ function pickUnit(x,y){
   }
   return found;
 }
-function pickBuilding(pos){
-  if(activeFaction==='witch'){
-    return Math.hypot(pos.x-WITCH_HOUSE.x,pos.z-WITCH_HOUSE.z)<4.3?{kind:'witch-house',root:witchHouse}:null;
+function pickBuilding(clientX,clientY){
+  // True 3D volume selection: the roof hits the building even when the
+  // 2D ground-plane point is far behind the building's footprint.
+  const rect=viewport.getBoundingClientRect();
+  const ndc=new THREE.Vector2((clientX-rect.left)/rect.width*2-1,
+    -(clientY-rect.top)/rect.height*2+1);
+  const ray=new THREE.Raycaster();ray.setFromCamera(ndc,camera);
+  let best=null,bestDistance=Infinity;
+  for(const building of liveBuildings()){
+    if(building.clanId!==(activeFaction==='orc'?'orcs':'witch')||!building.root)continue;
+    const b=building.hitbox,volume=new THREE.Box3(
+      new THREE.Vector3(b.minX,b.minY,b.minZ),new THREE.Vector3(b.maxX,b.maxY,b.maxZ));
+    const point=ray.ray.intersectBox(volume,new THREE.Vector3());
+    if(!point)continue;
+    const distance=point.distanceTo(ray.ray.origin);
+    if(distance<bestDistance){bestDistance=distance;best=building;}
   }
-  for(const instance of buildingInstances.values())
-    if(Math.hypot(pos.x-instance.root.position.x,pos.z-instance.root.position.z)<instance.hitbox.width*.7)
-      return instance;
-  return null;
+  return best;
 }
 function issueMove(destination){
   const actors=[...selected].filter(actor=>!actor.dead&&actor.kind===activeFaction);
   const cols=Math.max(1,Math.ceil(Math.sqrt(actors.length)));
   actors.forEach((actor,i)=>{
     const dx=(i%cols-(cols-1)/2)*1.35,dz=(Math.floor(i/cols)-Math.floor((actors.length-1)/cols)/2)*1.35;
-    actor.destination={x:clamp(destination.x+dx,-27,27),z:clamp(destination.z+dz,-27,27)};
+    actor.destination=navigatorRTS.findSafeGoal({x:destination.x+dx,z:destination.z+dz});
+    actor.route=null;actor.routeVersion=-1;actor.routeAge=0;
   });
   refreshHUD();
 }
@@ -599,13 +691,22 @@ function beginBuild(type){
   if(!running||paused||activeFaction!=='orc'||!ORC_COSTS[type]||!buildingBlueprints.has(type)||gold.orc<ORC_COSTS[type])return false;
   buildMode=type;refreshHUD();return true;
 }
-function validBuildPosition(x,z){
-  if(x<3||x>ARENA_HALF-3||z<-ARENA_HALF+3||z>ARENA_HALF-3)return false;
-  if(Math.hypot(x-WITCH_HOUSE.x,z-WITCH_HOUSE.z)<7)return false;
-  return [...buildingInstances.values()].every(b=>Math.hypot(x-b.root.position.x,z-b.root.position.z)>5.1);
+function validBuildPosition(x,z,type='hut'){
+  if(!buildingBlueprints.has(type))return false;
+  const half=1.95;
+  const proposed={minX:x-half,maxX:x+half,minZ:z-half,maxZ:z+half};
+  if(proposed.minX<0||proposed.maxX>ARENA_HALF-.35||
+    proposed.minZ<-ARENA_HALF+.35||proposed.maxZ>ARENA_HALF-.35)return false;
+  const margin=.8;
+  if(liveBuildings().some(b=>
+    proposed.minX<b.hitbox.maxX+margin&&proposed.maxX>b.hitbox.minX-margin&&
+    proposed.minZ<b.hitbox.maxZ+margin&&proposed.maxZ>b.hitbox.minZ-margin))return false;
+  return units.every(actor=>actor.dead||
+    actor.root.position.x<proposed.minX-.6||actor.root.position.x>proposed.maxX+.6||
+    actor.root.position.z<proposed.minZ-.6||actor.root.position.z>proposed.maxZ+.6);
 }
 function buildOrc(type,x,z){
-  if(!ORC_COSTS[type]||!buildingBlueprints.has(type)||gold.orc<ORC_COSTS[type]||!validBuildPosition(x,z))return false;
+  if(!ORC_COSTS[type]||!buildingBlueprints.has(type)||gold.orc<ORC_COSTS[type]||!validBuildPosition(x,z,type))return false;
   const template=buildingBlueprints.get(type),model=template.source.clone(true);
   model.updateMatrixWorld(true);
   const bounds=new THREE.Box3().setFromObject(model),center=bounds.getCenter(new THREE.Vector3());
@@ -620,6 +721,7 @@ function buildOrc(type,x,z){
   const instance=createBuildingInstance(template.entry,type,1,anchor,3.9);
   if(!orcVillage){orcVillage=new THREE.Group();scene.add(orcVillage);}
   orcVillage.add(anchor);gold.orc-=ORC_COSTS[type];buildMode=null;
+  updateNavObstacles();
   showBanner(ORC_NAMES[type]+' CONSTRUITE');refreshHUD();return instance;
 }
 function refreshHUD(){
@@ -658,7 +760,7 @@ function refreshHUD(){
     info.textContent=activeFaction==='witch'?'Touchez une sorcière, puis le terrain. Touchez la maison pour entraîner.':'Touchez un bâtiment pour construire, ou choisissez un type ci-dessous.';
     if(activeFaction==='witch'){
       addButton('Sélectionner toutes les sorcières',()=>selectUnits(units.filter(a=>a.kind==='witch'&&!a.dead)));
-      addButton('Maison',()=>selectBuilding({kind:'witch-house',root:witchHouse}));
+      addButton('Maison',()=>selectBuilding(witchBuilding));
     }else for(const type of Object.keys(ORC_COSTS))
       addButton(ORC_NAMES[type]+' · '+ORC_COSTS[type],()=>beginBuild(type),!buildingBlueprints.has(type)||gold.orc<ORC_COSTS[type]);
   }
@@ -682,8 +784,9 @@ function startSession(){
   units.length=0;selected.clear();selectedBuilding=null;nextUnitId=1;
   gold={witch:2000,orc:900};training=[];trainElapsed=0;buildMode=null;orcSpawned=false;
   activeFaction='witch';paused=false;running=true;cameraFollow={x:0,z:0};
+  updateNavObstacles();
   spawnUnit('witch',-18,-13,0);spawnUnit('witch',-16.5,-15,1);spawnUnit('witch',-19,-16,2);
-  spawnOrcDefenders();selectBuilding({kind:'witch-house',root:witchHouse});
+  spawnOrcDefenders();selectBuilding(witchBuilding);
   $('pause').disabled=false;$('pause').textContent='Ⅱ';$('overlay').hidden=true;
   showBanner('DÉBUT DE LA PARTIE');refreshHUD();
 }
@@ -789,7 +892,7 @@ function touchAt(x,y,append=false){
     if(!buildOrc(buildMode,pos.x,pos.z))showBanner('EMPLACEMENT INVALIDE / OR INSUFFISANT');
     return;
   }
-  const building=pickBuilding(pos);
+  const building=pickBuilding(x,y);
   if(building){selectBuilding(building);return;}
   if(selected.size){issueMove(pos);return;}
   clearSelection();
