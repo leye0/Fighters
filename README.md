@@ -1,33 +1,65 @@
 # Fighters — prototype RTS sorcières contre orcs
 
-[**Jouer dans le navigateur**](https://www.streamlev.com/Fighters/) · [**Laboratoire des animations**](https://www.streamlev.com/Fighters/motion-lab.html)
+[**Jouer au RTS**](https://www.streamlev.com/Fighters/) · [**Laboratoire des animations**](https://www.streamlev.com/Fighters/motion-lab.html)
 
-Fighters est maintenant un **prototype de stratégie en temps réel (RTS)** sur une carte 3D isométrique. Le système de beat ’em up, son joystick virtuel, ses gestes de combat, ses vagues et son contrôle direct des personnages ont été remplacés par des ordres d'unité et un système de production/construction.
+Prototype de stratégie en temps réel sur une carte 3D isométrique. Les anciens contrôles directs du beat ’em up ont été supprimés : les personnages suivent maintenant des **ordres de sélection, déplacement et production**.
 
-## Comment jouer
+## Contrôles
 
-- **Sorcières (faction initiale)** : toucher ou cliquer sur une sorcière pour la sélectionner; toucher le sol pour lui ordonner de marcher vers cet endroit.
-- **Groupe** : glisser pour dessiner un rectangle autour de plusieurs unités (souris ou écran tactile), puis toucher un emplacement pour déplacer le groupe en formation. **Ctrl/Cmd+A** sélectionne les unités de la faction active; **Maj+clic** permet d'ajouter/retirer des unités.
-- **Maison des sorcières** : la sélectionner pour afficher le bouton « Entraîner une sorcière ». Chaque entraînement coûte **120 pièces d'or** et prend **3,5 secondes**. Les commandes s'accumulent dans une **file d'attente**. Solde initial : **2 000 pièces d'or**.
-- **Orcs** : sélectionner la faction avec le bouton ⚔ en haut, puis choisir une construction dans le panneau de commandes. Toucher un emplacement libre de la **moitié est** de la carte pour poser un bâtiment. Cinq modèles niveau 1 disponibles : **caserne, hutte, mine, chaudron et atelier**, plus les cinq bâtiments présents au départ. Solde initial : **900 pièces d'or**. Les bâtiments ont une empreinte, des points de vie, un coût et un identifiant unique.
-- **Combat** : les deux types d'unités utilisent une IA d'engagement automatique à proximité et les véritables clips d'attaque, de marche, d'impact et de mort. Les orcs défendent leur zone; les sorcières suivent leurs ordres de déplacement et engagent les adversaires proches.
-- **Pause** : bouton Ⅱ ou touche **P**. **Échap** annule une construction. Les boutons 🧙 et ⚔ changent la faction contrôlée.
+- **Sélection :** clic/tap sur une sorcière, un orc ou le **modèle 3D d'un bâtiment**, y compris son toit. **Glisser** sur le terrain dessine une boîte de sélection de groupe, **Maj+clic** ajoute ou retire des unités, **Ctrl/Cmd+A** sélectionne toutes les unités de la faction.
+- **Déplacement :** avec des unités sélectionnées, toucher/clicker le sol ordonne le déplacement en formation. Le combat s'enclenche automatiquement lorsque les ennemis sont proches. Les ordres explicites restent prioritaires face à l'aggro lointaine.
+- **Caméra :** **molette** (ordinateur), **pincement à deux doigts** (téléphone/tablette), boutons **− / +** en haut de l'écran. **Deux doigts en translation** déplacent la caméra sur mobile; **bouton central ou droit maintenu et glissé** la déplace sur ordinateur. Le zoom est ancré sous le curseur / au centre du pincement. La projection orthographique cadre la carte dans l'espace au-dessus du panneau de commandes.
+- **Factions :** boutons 🧙 et ⚔ en haut pour contrôler les sorcières ou les orcs.
+- **Pause :** bouton Ⅱ ou **P**. **Échap** annule la construction/le rassemblement ou vide la sélection.
 
-Aucun gisement de ressources n'est placé sur le territoire des sorcières à ce stade. Les coûts, les timings et les points de vie sont provisoires. Le prototype ne comporte pas encore de système de récolte, de recherche technologique, de navigation autour des bâtiments, de victoire/défaite de faction ni de véritable économie asymétrique.
+## Interface de type Warcraft
 
-## Modèles et animation
+La barre inférieure présente **portrait, nom du bâtiment, niveau, points de vie, barre de santé, grille d'actions, file de production, progression et annulation avec remboursement**. Les boutons changent selon le type de sélection.
 
-Le projet conserve le **rig Quaternius de 65 os**, les GLB homme/femme et les **86 animations natives** des personnages, les costumes et coiffures skinnés sur leur squelette original, et les épées montées sur l'os de la main par leur poignée calibrée. Pas de retargeting vers un squelette étranger.
+### Sorcières
 
-Le vrai modèle `witch_house.glb` est utilisé pour la maison des sorcières. Les bâtiments orcs sont extraits des deux morceaux du GLB d'origine lors du déploiement par `scripts/split-orc-buildings.mjs`; le niveau 1 de chaque type est instancié dans le village et sert de prototype pour construire de nouveaux bâtiments, avec conservation des animations propres aux modèles.
+La maison est le bâtiment de production. Elle commence au **niveau 1** avec **500 PV**. Chaque sorcière coûte **120 pièces d'or** et prend **3,5 secondes** de formation au niveau 1. Les ordres peuvent s'empiler (8 maximum).
 
-Le laboratoire `docs/motion-lab.html` est indépendant et reste accessible pour contrôler les animations sources.
+- **Entraîner :** ajouter une sorcière à la file.
+- **Améliorer :** construire le niveau 2 puis le niveau 3 (durée 8 puis 10 secondes). La maison atteint **750 puis 1 000 PV** et la formation devient **20 % puis 40 % plus rapide**.
+- **Ralliement :** choisir un point d'apparition secondaire vers lequel les nouvelles sorcières se déplacent automatiquement.
+- **Or initial :** 2 000. Aucun gisement n'est posé du côté sorcière.
 
-## Vérification
+### Orcs
 
-- La page expose `window.__fightersQA` pour les tests de régression, notamment `snapshot()`, `train()`, `selectWitches()`, `move(x,z)`, `beginBuild(type)`, `build(type,x,z)`, `advance(seconds)` et `reset()`.
-- `scripts/browser-qa.mjs` utilise **Chrome réel + WebGL SwiftShader**, vérifie le chargement des deux factions et des cinq plans, la file d'entraînement, les déplacements de groupe, la construction et ses collisions, l'argent, la pause et la réinitialisation.
-- `.github/workflows/browser-qa.yml` prépare les modèles via la même extraction que le déploiement Pages, puis exécute la suite.
-- `.github/workflows/pages.yml` produit les assets complets dans GitHub Pages : ne pas ouvrir `docs/index.html` en `file://`.
+Cinq modèles de bâtiments niveau 1 présents dès le départ : **caserne, hutte, mine, chaudron et atelier**, ainsi que quatre soldats orcs. La caserne peut **entraîner des orcs** pour 100 pièces d'or en 4,5 secondes au niveau 1. Les autres bâtiments proposent aussi **amélioration, ralliement et construction**.
 
-Le jeu doit être servi par HTTP avec tous les assets générés. Le workflow Pages publie sur le site de démonstration indiqué ci-dessus.
+- Les structures sont améliorables du **niveau 1 à 3**. L'upgrade met à jour les PV et **charge le véritable GLB de niveau 2 ou 3** depuis le jeu de bâtiments existant, sans modèle inventé.
+- **Construire :** sélectionner un plan dans la grille de bâtiments, puis un emplacement libre dans le territoire orc. Construction impossible si elle chevauche un bâtiment ou une unité.
+- **Or initial :** 900. Les coûts affichés dans la barre sont retirés lors de la commande. Les opérations en file peuvent être annulées et remboursées.
+
+## Hitboxes et navigation — adaptation de WarConquer
+
+Chaque bâtiment obtient une **AABB 3D calculée depuis son modèle GLB**, dans les coordonnées mondiales. La maison des sorcières et chacun des bâtiments orcs disposent d'un volume distinct, y compris les bâtiments ajoutés en cours de partie. Ces volumes sont employés pour :
+
+1. sélectionner le bâtiment par un rayon depuis la caméra (et pas uniquement par distance au sol);
+2. empêcher les chevauchements à la construction;
+3. alimenter le moteur de navigation et interdire aux unités de traverser les édifices.
+
+La navigation pure JS est dans `docs/rts-navigation.js`, inspirée de `leye0/WarConquer/scripts/perception-brain.js` :
+
+- **A*** sur grille de 1 mètre, huit directions, heuristique octile, **sans couper les angles diagonaux**;
+- **collision continue** d'un cercle mobile avec les AABB élargies, y compris à grands pas de simulation;
+- **simplification des chemins** lorsqu'une ligne directe est libre;
+- recherche du **point praticable le plus proche** si l'ordre vise l'intérieur d'un bâtiment;
+- **invalidation du trajet** après la pose d'un obstacle et nouveau calcul de route si nécessaire.
+
+Il s'agit d'une navigation autour des **structures statiques**. Le prototype n'implémente pas encore une séparation avancée des foules, l'économie/collecte, la recherche technologique ou les conditions de victoire.
+
+## Animations et assets conservés
+
+Les personnages utilisent toujours les **86 clips Quaternius** et leur **squelette natif de 65 os**. Les vêtements, cheveux et épées restent skinnés et montés sur le rig d'origine, sans retargeting. Le modèle de maison `witch_house.glb` est réutilisé; les bâtiments orcs sont extraits de `orc_rts_building_set_-_proto_series.glb.part1/.part2` au déploiement via `scripts/split-orc-buildings.mjs`.
+
+## Tests automatisés
+
+- `node scripts/test-rts-navigation.mjs` : A*, murs, hitbox gonflée par le rayon du personnage, anti-tunneling, obstruction dynamique, contournement sans couper les coins.
+- `node scripts/browser-qa.mjs` : **Chrome/WebGL SwiftShader**, UI de bâtiments, zoom, formation des deux factions, amélioration des bâtiments avec **vrai GLB de niveau 2**, AABB, placement, déplacement autour d'une hutte avec audit de collision, réinitialisation et capture d'écran mobile.
+- `.github/workflows/browser-qa.yml` prépare les modèles 3D et exécute les deux tests sur `main`.
+- `.github/workflows/pages.yml` prépare et publie la démo. Ouvrir via **HTTPS** et non `file://`.
+
+Le laboratoire d'animations `docs/motion-lab.html` reste indépendant et inchangé.
