@@ -1794,6 +1794,12 @@ window.__fightersQA={
     ready,running,paused,activeFaction,cameraZoom,cameraCenter:{...cameraFollow},
     orcAI:orcDirector.snapshot(),qaPassiveKind,pinch:pinch?{...pinch}:null,
     activeTouches:activeTouches.size,
+    touchGesture:pointerStart?.mode||null,
+    ui:{...uiStats,activePings:activeOrderPings.size,
+      commandButtonCount:$('command-buttons').children.length,
+      persistentButtons:[...$('quick-commands').querySelectorAll('button')].map(b=>b.id),
+      queueButtons:$('training-progress').querySelectorAll('button').length,
+      orderPrompt:$('order-prompt').hidden?'':$('order-prompt').textContent},
     gold:{...gold},projection:camera.isOrthographicCamera?'orthographic':'perspective',
     cameraQuaternion:camera.quaternion.toArray(),
     witches:units.filter(a=>a.kind==='witch'&&!a.dead).map(a=>({
@@ -1852,6 +1858,12 @@ window.__fightersQA={
     if(a)selectUnits([a]);
   },
   tap:(x,y)=>touchAt(x,y),
+  unitScreenPoint:(kind,index)=>{
+    const actor=units.filter(u=>u.kind===kind&&!u.dead)[index];
+    return actor?screenPoint(actor):null;
+  },
+  centerCamera:(x,z)=>{cameraFollow.x=x;cameraFollow.z=z;positionCamera();},
+  clearPings:clearOrderPings,
   auditTravel:(kind,index,seconds)=>{
     const a=units.filter(u=>u.kind===kind&&!u.dead)[index];
     if(!a)throw Error('Missing audit actor');
