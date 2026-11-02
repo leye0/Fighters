@@ -880,48 +880,144 @@ function buildOrc(type,x,z){
 function refreshHUD(){
   $('witch-gold').textContent=gold.witch;
   $('orc-gold').textContent=gold.orc;
-  $('unit-count').textContent=units.filter(x=>x.kind==='witch'&&!x.dead).length+' : '+units.filter(x=>x.kind==='orc'&&!x.dead).length;
+  $('unit-count').textContent=units.filter(u=>u.kind==='witch'&&!u.dead).length+' : '+
+    units.filter(u=>u.kind==='orc'&&!u.dead).length;
   $('faction-title').textContent=activeFaction==='witch'?'SORCIÈRES':'ORCS';
   $('witch-faction').classList.toggle('active',activeFaction==='witch');
   $('orc-faction').classList.toggle('active',activeFaction==='orc');
-  const title=$('command-title'),info=$('command-info'),buttons=$('command-buttons');
-  buttons.replaceChildren();
-  const addButton=(label,action,disabled=false)=>{
-    const b=document.createElement('button');b.type='button';b.textContent=label;b.disabled=disabled;
-    b.onclick=event=>{event.stopPropagation();action();};buttons.appendChild(b);
-  };
-  const alive=[...selected].filter(a=>!a.dead);
-  if(buildMode){
-    title.textContent='Construction : '+ORC_NAMES[buildMode];
-    info.textContent='Touchez une zone libre du territoire orc (moitié droite).';
-    addButton('Annuler',()=>{buildMode=null;refreshHUD();});
-  }else if(selectedBuilding?.kind==='witch-house'&&activeFaction==='witch'){
-    title.textContent='Maison des sorcières';
-    info.textContent='Entraîner une sorcière : '+TRAIN_COST+' or · '+TRAIN_DURATION+' secondes.';
-    addButton('Entraîner une sorcière',issueTrain,gold.witch<TRAIN_COST||!running||paused);
-  }else if(activeFaction==='orc'&&selectedBuilding){
-    title.textContent=ORC_NAMES[selectedBuilding.type]+' · niveau '+selectedBuilding.level;
-    info.textContent='PV '+Math.ceil(selectedBuilding.health)+' / '+selectedBuilding.maxHealth+'. Construisez sur votre territoire.';
-    for(const type of Object.keys(ORC_COSTS))
-      addButton(ORC_NAMES[type]+' · '+ORC_COSTS[type],()=>beginBuild(type),!buildingBlueprints.has(type)||gold.orc<ORC_COSTS[type]);
-  }else if(alive.length){
-    title.textContent=alive.length+' '+(activeFaction==='witch'?'sorcière(s)':'orc(s)')+' sélectionné(s)';
-    info.textContent='Touchez le terrain pour vous déplacer. Combat automatique à proximité.';
-    addButton('Arrêter',()=>{alive.forEach(a=>a.destination=null);refreshHUD();});
-  }else{
-    title.textContent=activeFaction==='witch'?'Armée des sorcières':'Village orc';
-    info.textContent=activeFaction==='witch'?'Touchez une sorcière, puis le terrain. Touchez la maison pour entraîner.':'Touchez un bâtiment pour construire, ou choisissez un type ci-dessous.';
-    if(activeFaction==='witch'){
-      addButton('Sélectionner toutes les sorcières',()=>selectUnits(units.filter(a=>a.kind==='witch'&&!a.dead)));
-      addButton('Maison',()=>selectBuilding(witchBuilding));
-    }else for(const type of Object.keys(ORC_COSTS))
-      addButton(ORC_NAMES[type]+' · '+ORC_COSTS[type],()=>beginBuild(type),!buildingBlueprints.has(type)||gold.orc<ORC_COSTS[type]);
+
+  const b=selectedBuilding,alive=[...selected].filter(u=>!u.dead),
+    faction=b?.clanId==='witch'?'witch':'orc',
+    title=$('command-title'),info=$('command-info'),health=$('command-health'),
+    portrait=$('command-icon'),buttons=$('command-buttons'),queueUI=$('training-progress');
+  const context=[activeFaction,b?.id||'',b?.level||0,b?.health||0,alive.map(u=>u.id).join(','),
+    buildMode||'',rallyMode,constructionTab,gold.witch,gold.orc,buildingBlueprints.size,
+    b?.queue.map(j=>j.kind).join(',')||'',running,paused].join('|');
+
+  if(context!==lastHudSignature){
+    lastHudSignature=context;buttons.replaceChildren();health.replaceChildren();
+    const add=(symbol,name,cost,action,disabled=false,tooltip='')=>{
+      const element=document.createElement('button');
+      element.type='button';element.disabled=!!disabled;
+      element.title=tooltip||name+(cost?' · '+cost+' or':'');
+      element.setAttribute('aria-label',element.title);
+      for(const [className,text] of [['action-symbol',symbol],['action-name',name],
+        ['action-cost',cost?cost+' or':'']]){
+        const span=document.createElement('span');span.className=className;span.textContent=text;
+        element.appendChild(span);
+      }
+      element.onclick=event=>{event.stopPropagation();action();};
+      buttons.appendChild(element);
+    };
+    const stopConstruction=()=>{buildMode=null;rallyMode=false;constructionTab=false;refreshHUD();};
+    if(buildMode){
+      portrait.textContent='🏗️';title.textContent='Construction · '+ORC_NAMES[buildMode];
+      info.textContent='Touchez une zone libre dans le territoire des orcs. Les hitboxes bloquent le chevauchement.';
+      add('✖','Annuler','',stopConstruction);
+    }else if(rallyMode){
+      portrait.textContent='🚩';title.textContent='Point de rassemblement';
+      info.textContent='Touchez le sol pour choisir où iront les nouvelles unités.';
+      add('✖','Annuler','',stopConstruction);
+    }else if(constructionTab&&activeFaction==='orc'){
+      portrait.textContent='🏗️';title.textContent='Construire · Village orc';
+      info.textContent='Choisissez un plan. Positionnez le bâtiment en cliquant ensuite sur la carte.';
+      for(const type of Object.keys(ORC_COSTS))
+        add(({barrack:'🏰',hut:'🛖',mine:'⛏️',cauldron:'⚗️',factory:'🏭'})[type],
+          ORC_NAMES[type],ORC_COSTS[type],()=>beginBuild(type),
+          gold.orc<ORC_COSTS[type]||!buildingBlueprints.has(type),'Construire '+ORC_NAMES[type]);
+      add('↩','Retour','',()=>{constructionTab=false;refreshHUD();});
+    }else if(b){
+      const names={'witch-house':'Maison des sorcières',...ORC_NAMES};
+      const icons={'witch-house':'🏡',barrack:'🏰',hut:'🛖',mine:'⛏️',
+        cauldron:'⚗️',factory:'🏭'};
+      portrait.textContent=icons[b.type]||'🏠';
+      title.textContent=(names[b.type]||'Bâtiment')+' · niveau '+b.level;
+      info.textContent=b.clanId==='witch'?
+        'Bâtiment de production des sorcières · améliorations : formation plus rapide, davantage de PV.':
+        b.type==='barrack'?'Caserne orc · formation de combattants et améliorations.':
+        'Bâtiment orc · améliorer la structure et définir un point de rassemblement.';
+      const track=document.createElement('div');track.className='hp-track';
+      const fill=document.createElement('div');fill.className='hp-fill';
+      fill.style.width=100*b.health/b.maxHealth+'%';track.appendChild(fill);
+      health.append(document.createTextNode('PV '+Math.ceil(b.health)+' / '+b.maxHealth),track);
+      if(b.type==='witch-house')
+        add('🧙','Sorcière',TRAIN_COST,issueTrain,
+          gold.witch<TRAIN_COST||b.queue.length>=MAX_QUEUE||paused,'Former une sorcière');
+      if(b.clanId==='orcs'&&b.type==='barrack')
+        add('👹','Entraîner orc',ORC_TRAIN_COST,()=>issueOrcTrain(b),
+          gold.orc<ORC_TRAIN_COST||b.queue.length>=MAX_QUEUE||paused);
+      const cost=upgradeCost(b),pending=b.queue.some(item=>item.kind==='upgrade');
+      add('⬆️','Améliorer',cost,()=>issueUpgrade(b),
+        cost===null||pending||gold[faction]<cost||b.queue.length>=MAX_QUEUE||paused,
+        cost===null?'Niveau maximal':pending?'Amélioration déjà dans la file':
+        'Améliorer au niveau '+(b.level+1));
+      add('🚩','Ralliement','',beginRally,paused,'Définir le point de rassemblement');
+      if(b.clanId==='orcs')
+        add('🏗️','Construire','',()=>{constructionTab=true;refreshHUD();});
+      if(b.queue.length)add('✖','Annuler prochain','',()=>cancelOrder(b,0));
+    }else if(alive.length){
+      portrait.textContent=activeFaction==='witch'?'🧙':'👹';
+      title.textContent=alive.length+' '+(activeFaction==='witch'?'sorcière(s)':'orc(s)');
+      info.textContent='Déplacement : touchez le sol. Les unités contournent les bâtiments et engagent les ennemis proches.';
+      const average=Math.round(alive.reduce((sum,u)=>sum+u.health/u.maxHealth,0)/alive.length*100);
+      const track=document.createElement('div');track.className='hp-track';
+      const fill=document.createElement('div');fill.className='hp-fill';
+      fill.style.width=average+'%';track.appendChild(fill);
+      health.append(document.createTextNode('Santé moyenne : '+average+' %'),track);
+      add('✋','Arrêter','',()=>{alive.forEach(u=>{u.destination=null;u.route=null;});refreshHUD();});
+      add('👥','Toutes les unités','',()=>selectUnits(units.filter(u=>u.kind===activeFaction&&!u.dead)));
+    }else{
+      portrait.textContent=activeFaction==='witch'?'🏡':'🏰';
+      title.textContent=activeFaction==='witch'?'Armée des sorcières':'Village des orcs';
+      info.textContent=activeFaction==='witch'?'Sélectionnez une sorcière ou la maison pour ouvrir sa production.':
+        'Sélectionnez une caserne pour produire des orcs, ou construisez des bâtiments.';
+      if(activeFaction==='witch'){
+        add('🏡','Maison','',()=>selectBuilding(witchBuilding));
+        add('👥','Toutes les unités','',()=>selectUnits(units.filter(u=>u.kind==='witch'&&!u.dead)));
+      }else{
+        add('🏗️','Construire','',()=>{constructionTab=true;refreshHUD();});
+        add('🏰','Caserne','',()=>{
+          const barrack=[...buildingInstances.values()].find(v=>v.type==='barrack');
+          if(barrack)selectBuilding(barrack);
+        },![...buildingInstances.values()].some(v=>v.type==='barrack'));
+      }
+    }
+    $('selection-summary').textContent=buildMode?'Poser '+ORC_NAMES[buildMode]:
+      rallyMode?'Choisir un point de rassemblement':b?
+      (b.type==='witch-house'?'Maison des sorcières':ORC_NAMES[b.type])+' · niveau '+b.level:
+      alive.length+' unité(s) sélectionnée(s)';
   }
-  $('selection-summary').textContent=buildMode?'Placer '+ORC_NAMES[buildMode]:alive.length?'Unités sélectionnées : '+alive.length:selectedBuilding?'Bâtiment sélectionné':'Sélection et ordres tactiques';
-  if(training.length){
-    const progress=Math.round(100*trainElapsed/training[0].duration);
-    $('training-progress').textContent='Production : '+training.length+' en file · '+progress+' %';
-  }else $('training-progress').textContent='Production : aucune unité en file';
+  const orderSignature=b?b.id+'|'+b.queue.map(o=>o.kind+':'+o.duration).join(','):'none';
+  if(queueUI.dataset.signature!==orderSignature){
+    queueUI.dataset.signature=orderSignature;queueUI.replaceChildren();
+    if(b?.queue.length){
+      const heading=document.createElement('div');
+      heading.className='production-heading';queueUI.appendChild(heading);
+      const meter=document.createElement('div');meter.className='production-meter';
+      const fill=document.createElement('div');fill.className='production-meter-fill';
+      meter.appendChild(fill);queueUI.appendChild(meter);
+      const jobs=document.createElement('div');jobs.className='production-jobs';
+      b.queue.forEach((job,i)=>{
+        const btn=document.createElement('button');
+        btn.title='Annuler cette commande et récupérer '+job.cost+' pièces d’or';
+        btn.textContent=(job.kind==='upgrade'?'⬆️':job.kind==='witch'?'🧙':'👹')+
+          (i===0?' ⏳':'')+' ×';
+        btn.onclick=event=>{event.stopPropagation();cancelOrder(b,i);};
+        jobs.appendChild(btn);
+      });
+      queueUI.appendChild(jobs);
+    }else{
+      queueUI.textContent=b?'File de production vide · max. '+MAX_QUEUE+' commandes':'Sélectionnez un bâtiment pour ses commandes';
+    }
+  }
+  if(b?.queue.length){
+    const order=b.queue[0],progress=clamp(b.progress/order.duration,0,1);
+    const header=queueUI.querySelector('.production-heading');
+    const fill=queueUI.querySelector('.production-meter-fill');
+    if(header)header.textContent='Production : '+(order.kind==='upgrade'?'amélioration':
+      order.kind==='witch'?'sorcière':'orc')+' · '+Math.floor(progress*100)+' % · '+b.queue.length+' en file';
+    if(fill)fill.style.width=progress*100+'%';
+  }
 }
 function changeFaction(faction){
   if(faction!=='witch'&&faction!=='orc')return;
