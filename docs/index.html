@@ -746,11 +746,24 @@ function screenPoint(actor){
   return {x:rect.left+(point.x+1)*rect.width/2,y:rect.top+(1-point.y)*rect.height/2};
 }
 function pickUnit(x,y,includeEnemies=false){
-  let found=null,distance=Infinity;
+  // Touch targets encompass the projected 3D silhouette, not a single point
+  // at the actor's feet. This makes tiny Quaternius witches usable on phones.
+  let found=null,best=Infinity;
+  const radius=viewport.clientWidth<760?41:30;
+  const rect=viewport.getBoundingClientRect();
+  const screen=(p)=>({
+    x:rect.left+(p.x+1)*rect.width/2,
+    y:rect.top+(1-p.y)*rect.height/2
+  });
   for(const actor of units){
     if(actor.dead||(!includeEnemies&&actor.kind!==activeFaction))continue;
-    const p=screenPoint(actor),d=Math.hypot(p.x-x,p.y-y);
-    if(d<Math.max(23,viewport.clientWidth*.024)&&d<distance){found=actor;distance=d;}
+    const world=actor.root.position;
+    const base=screen(new THREE.Vector3(world.x,.05,world.z).project(camera));
+    const top=screen(new THREE.Vector3(world.x,2.45,world.z).project(camera));
+    const vx=top.x-base.x,vy=top.y-base.y,lengthSq=vx*vx+vy*vy;
+    const t=lengthSq?clamp(((x-base.x)*vx+(y-base.y)*vy)/lengthSq,0,1):0;
+    const d=Math.hypot(x-(base.x+vx*t),y-(base.y+vy*t));
+    if(d<radius&&d<best){found=actor;best=d;}
   }
   return found;
 }
@@ -773,6 +786,40 @@ function pickBuilding(clientX,clientY){
   }
   return best;
 }
+const activeOrderPings=new Set();
+function removeOrderPing(el){
+  if(!activeOrderPings.delete(el))return;
+  clearTimeout(el.cleanupTimer);
+  el.remove();uiStats.feedbackRemoved++;
+}
+function clearOrderPings(){
+  for(const el of [...activeOrderPings])removeOrderPing(el);
+}
+function showOrderPing(position,type){
+  // A bounded, non-interactive DOM overlay, released on animation completion.
+  // Never attach a new Three.js material or mesh for each tactical order.
+  const rect=viewport.getBoundingClientRect();
+  const point=new THREE.Vector3(position.x,position.y??.12,position.z).project(camera);
+  if(!Number.isFinite(point.x)||!Number.isFinite(point.y))return;
+  const x=(point.x+1)*rect.width/2,y=(1-point.y)*rect.height/2;
+  if(x<-40||y<-40||x>rect.width+40||y>rect.height+40)return;
+  while(activeOrderPings.size>=6)removeOrderPing(activeOrderPings.values().next().value);
+  const el=document.createElement('div');
+  el.className='order-ping '+(type==='attack'?'attack':'move');
+  el.style.left=x+'px';el.style.top=y+'px';
+  $('order-pings').appendChild(el);activeOrderPings.add(el);
+  uiStats.feedbackCreated++;uiStats.peakPings=Math.max(uiStats.peakPings,activeOrderPings.size);
+  el.addEventListener('animationend',()=>removeOrderPing(el),{once:true});
+  el.cleanupTimer=setTimeout(()=>removeOrderPing(el),1100);
+}
+function pingAttackTarget(target){
+  if(isBuilding(target)){
+    const b=target.hitbox;
+    showOrderPing({x:(b.minX+b.maxX)/2,z:(b.minZ+b.maxZ)/2,y:b.maxY+.35},'attack');
+  }else if(target?.root)showOrderPing({
+    x:target.root.position.x,z:target.root.position.z,y:1.2
+  },'attack');
+}
 function issueMove(destination){
   const actors=[...selected].filter(actor=>!actor.dead&&actor.kind===activeFaction);
   const cols=Math.max(1,Math.ceil(Math.sqrt(actors.length)));
@@ -782,6 +829,7 @@ function issueMove(destination){
     actor.attackOrder=null;actor.approachCache=null;
     actor.route=null;actor.routeVersion=-1;actor.routeAge=0;
   });
+  if(actors.length)showOrderPing({x:destination.x,z:destination.z,y:.1},'move');
   refreshHUD();
 }
 function trainingDuration(building,kind){
@@ -1165,6 +1213,7 @@ function showBanner(message){
 }
 function startSession(){
   if(!ready)return;
+  clearOrderPings();
   for(const actor of units){actor.mixer.stopAllAction();scene.remove(actor.root);}
   units.length=0;selected.clear();selectedBuilding=null;nextUnitId=1;
   // Match reset removes constructed buildings while retaining the initial village.
@@ -1268,7 +1317,7 @@ function orderAttack(actors,target){
     actor.approachCache=null;
     issued++;
   }
-  if(issued){attackMode=false;refreshHUD();}
+  if(issued){attackMode=false;pingAttackTarget(target);refreshHUD();}
   return issued>0;
 }
 function removeRallyMarker(b){
@@ -1516,16 +1565,23 @@ function touchAt(x,y,append=false){
   if(rallyMode){if(!setRally(selectedBuilding,pos))showBanner('EMPLACEMENT INVALIDE');return;}
   if(buildMode){if(!buildOrc(buildMode,pos.x,pos.z))
     showBanner('EMPLACEMENT INVALIDE / OR INSUFFISANT');return;}
-  const unit=pickUnit(x,y,true),building=pickBuilding(x,y);
-  const target=unit||building;
-  if(selected.size&&target&&targetFaction(target)!==(activeFaction==='witch'?'witch':'orcs')){
-    orderAttack([...selected],target);return;
+  const friend=pickUnit(x,y,false),building=pickBuilding(x,y);
+  const unit=pickUnit(x,y,true);
+  const faction=activeFaction==='witch'?'witch':'orcs';
+  // A selected unit needs only one more tap on a hostile building: no
+  // separate target mode, and roofs win over nearby unit-selection circles.
+  if(selected.size){
+    if(building&&targetFaction(building)!==faction){
+      orderAttack([...selected],building);return;
+    }
+    if(unit&&targetFaction(unit)!==faction){
+      orderAttack([...selected],unit);return;
+    }
   }
   if(attackMode){
-    if(target&&orderAttack([...selected],target))return;
     showBanner('CIBLE ENNEMIE REQUISE');return;
   }
-  if(unit&&unit.kind===activeFaction){selectUnits([unit],append);return;}
+  if(friend){selectUnits([friend],append);return;}
   if(building){selectBuilding(building);return;}
   if(selected.size){issueMove(pos);return;}
   clearSelection();
