@@ -79,6 +79,18 @@ async function run(){
   'Upgrade action missing from contextual panel');
  check(await evaluate("document.querySelector('#command-icon').textContent.length>0"),
   'Contextual building portrait missing');
+ // Shortcuts must keep their DOM identity throughout a long simulated match.
+ check(await evaluate("['quick-home','quick-army','quick-attack','quick-stop','quick-cancel'].every(id=>!!document.getElementById(id))"),
+  'Permanent quick-command bar not found');
+ await evaluate("window.__stableQuick=document.querySelector('#quick-home');window.__stableTrain=document.querySelector('#command-buttons button')");
+ const steady=await evaluate('window.__fightersQA.snapshot()');
+ await evaluate('window.__fightersQA.advance(70)');
+ const postSteady=await evaluate('window.__fightersQA.snapshot()');
+ check(postSteady.ui.commandRebuilds-steady.ui.commandRebuilds<=1,
+   'HUD rebuilt during idle match: '+JSON.stringify([steady.ui,postSteady.ui]));
+ check(await evaluate("window.__stableQuick===document.querySelector('#quick-home')&&window.__stableTrain===document.querySelector('#command-buttons button')"),
+   'Quick/context button DOM identity was not preserved');
+
 
  check(await evaluate("document.querySelector('#witch-faction,#orc-faction,#zoom-in,#zoom-out')===null"),
   'Unused faction/zoom toolbar remains on screen');
@@ -109,6 +121,11 @@ async function run(){
  check((await evaluate('window.__fightersQA.snapshot()')).witches.length===5,
   'Upgraded house production failed');
  await evaluate('window.__fightersQA.selectWitches();window.__fightersQA.move(-3,-3)');
+ check(await evaluate("document.querySelector('.order-ping.move')!==null"),
+   'Move order needs a blue fading marker');
+ await sleep(1200);
+ check((await evaluate('window.__fightersQA.snapshot()')).ui.activePings===0,
+   'Blue move marker survived beyond animation lifetime');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.selectedIds.length===5,'RTS group selection failed');
  const before=s.witches[0];
@@ -254,6 +271,27 @@ async function run(){
  check(await evaluate('window.__fightersQA.isClear(8,-10)'),
   'Reset must remove constructed building hitboxes');
 
+ // First tap selects a witch, second tap directly attacks the enemy building.
+ await evaluate("window.__fightersQA.reset();window.__fightersQA.centerCamera(-18,-14)");
+ const witchPoint=await evaluate("window.__fightersQA.unitScreenPoint('witch',0)");
+ check(witchPoint&&Number.isFinite(witchPoint.x),'Cannot project witch');
+ await evaluate("window.__fightersQA.tap("+witchPoint.x+","+witchPoint.y+")");
+ let tapState=await evaluate('window.__fightersQA.snapshot()');
+ check(tapState.selectedIds.length===1,'First tap did not select a witch');
+ await evaluate("window.__fightersQA.centerCamera(22,21)");
+ const targetPoint=await evaluate("window.__fightersQA.buildingScreenPoint("+JSON.stringify(hutId)+")");
+ check(targetPoint&&Number.isFinite(targetPoint.x),'Cannot project hut');
+ await evaluate("window.__fightersQA.tap("+targetPoint.x+","+targetPoint.y+")");
+ tapState=await evaluate('window.__fightersQA.snapshot()');
+ check(tapState.witches.find(u=>u.id===tapState.selectedIds[0])?.attackTargetId===hutId,
+   'Second tap did not order witch to destroy enemy building');
+ check(await evaluate("document.querySelector('.order-ping.attack')!==null"),
+   'Attack order needs a red fading reticle');
+ await sleep(1200);
+ check((await evaluate('window.__fightersQA.snapshot()')).ui.activePings===0,
+   'Attack reticle leaked after animation');
+ await evaluate('window.__fightersQA.reset()');
+
  // Real native animation, target acquisition, damage and destruction.
  await evaluate("window.__fightersQA.passive('orc');window.__fightersQA.selectUnit('witch',0)");
  const hutId=(await evaluate('window.__fightersQA.snapshot()')).buildings.find(b=>b.type==='hut').id;
@@ -283,7 +321,13 @@ async function run(){
 
  // Enable real orc director, accelerate physics, inspect real built models.
  await evaluate("window.__fightersQA.reset();window.__fightersQA.enableOrcAI(true)");
+ await evaluate("window.__aiButtonBefore=document.querySelector('#command-buttons button')");
+ const rebuildsBeforeAI=(await evaluate('window.__fightersQA.snapshot()')).ui.commandRebuilds;
  await evaluate('window.__fightersQA.advance(41)');
+ const rebuildsAfterAI=(await evaluate('window.__fightersQA.snapshot()')).ui.commandRebuilds;
+ check(rebuildsAfterAI-rebuildsBeforeAI<=2&&
+   await evaluate("document.querySelector('#command-buttons button')===window.__aiButtonBefore"),
+   'Orc mine income triggered repeated HUD/button rebuilding');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.orcAI.decisions.some(a=>a.type==='build'),
   'Orc director never planned a village expansion: '+JSON.stringify(s.orcAI));
@@ -300,7 +344,7 @@ async function run(){
  check(s.witches.length===3&&s.orcs.length===4&&
   s.buildings.filter(b=>!b.destroyed).length===5,'Reset after AI restores starting match');
  check(!errors.length,'Browser JavaScript exceptions: '+errors.join(' | '));
- console.log('PASS RTS: HUD removal, real Chrome zoom/pinch, native combat building destruction both ways, fixed world-space healthbars, autonomous orc village, upgrades, A* pathfinding, mobile layout.');
+ console.log('PASS RTS: stable HUD, persistent shortcuts, blue/red reticles, two-tap attacks, one-finger pan, long-press selection, two-finger zoom, destroyed buildings and strategic AI.');
 
 }
 try{await run();}finally{try{socket?.close();}catch{}chrome.kill();try{rmSync(profile,{recursive:true,force:true,maxRetries:8,retryDelay:350});}catch(error){console.warn('Chrome profile cleanup only:',error.message);}}
