@@ -1299,7 +1299,7 @@ function nearestHostile(actor,maxDistance=Infinity){
   return nearest?{target:nearest,distance}:null;
 }
 function approachBuilding(actor,building){
-  const b=building.hitbox,p=actor.root.position,pad=1.05;
+  const b=building.hitbox,p=actor.root.position,pad=UNIT_RADIUS+.14;
   if(actor.approachCache?.id===building.id&&actor.approachCache.version===navigatorRTS.version&&
     actor.approachAge<2.5&&navigatorRTS.pointClear(actor.approachCache.point))
     return actor.approachCache.point;
@@ -1436,7 +1436,7 @@ function dealDamage(target,amount,attacker){
 function navigateActor(actor,target,dt,mode){
   const pos=actor.root.position,from={x:pos.x,z:pos.z};
   const distance=Math.hypot(target.x-pos.x,target.z-pos.z);
-  const arrival=mode==='pursuit'?1.35:.36;
+  const arrival=mode==='engage'?.055:mode==='pursuit'?1.35:.36;
   if(distance<=arrival)return 'arrived';
   const goalChanged=!actor.routeGoal||
     Math.hypot(target.x-actor.routeGoal.x,target.z-actor.routeGoal.z)>(mode==='pursuit'?1.1:.4);
@@ -1578,7 +1578,7 @@ function tickUnit(actor,dt){
     }
     const location=isBuilding(target)?approachBuilding(actor,target):target.root.position;
     if(location){
-      const result=navigateActor(actor,location,dt,isBuilding(target)?'order':'pursuit');
+      const result=navigateActor(actor,location,dt,isBuilding(target)?'engage':'pursuit');
       if(result!=='moving')animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop');
       return;
     }
@@ -2004,6 +2004,8 @@ window.__fightersQA={
     witches:units.filter(a=>a.kind==='witch'&&!a.dead).map(a=>({
       id:a.id,x:a.root.position.x,z:a.root.position.z,radius:a.radius,health:a.health,animation:a.current,
       destination:a.destination?{...a.destination}:null,pathLength:a.route?.waypoints.length??0,
+      approachPoint:a.approachCache?.point||null,attackDistance:a.attackOrder?targetDistance(a,a.attackOrder):null,
+      routeGoal:a.routeGoal||null,attackCooldown:a.cooldown,
       attackTargetId:a.attackOrder?.id||null
     })),
     orcs:units.filter(a=>a.kind==='orc'&&!a.dead).map(a=>({
