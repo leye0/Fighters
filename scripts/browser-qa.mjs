@@ -93,4 +93,4 @@ async function run(){
  writeFileSync('captures/rts.png',Buffer.from(png.data,'base64'));
  console.log('PASS RTS: native WebGL scene, two factions, 3+4 units, training queue, 4-unit group movement, 5 building blueprints, non-overlapping orc construction, resources, pause, reset.');
 }
-try{await run();}finally{try{socket?.close();}catch{}chrome.kill();rmSync(profile,{recursive:true,force:true});}
+try{await run();}finally{try{socket?.close();}catch{}chrome.kill();try{rmSync(profile,{recursive:true,force:true,maxRetries:8,retryDelay:350});}catch(error){console.warn('Chrome profile cleanup only:',error.message);}}
