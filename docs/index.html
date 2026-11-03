@@ -219,12 +219,36 @@ const witchBuilding={
 let buildingSelectionRing=null;
 const UNIT_RADIUS=window.FightersUnitPhysics.RADIUS;
 const navigatorRTS=new window.FightersNavigation.Navigator({halfSize:ARENA_HALF,cellSize:1,radius:UNIT_RADIUS});
-function buildingBounds(root){
+function buildingBounds(root,type=''){
   root.updateMatrixWorld(true);
-  const b=new THREE.Box3().setFromObject(root);
-  if(b.isEmpty())throw Error('Bâtiment sans volume de collision');
-  return {shape:'aabb',minX:b.min.x,maxX:b.max.x,minZ:b.min.z,maxZ:b.max.z,
-    minY:b.min.y,maxY:b.max.y};
+  const visual=new THREE.Box3().setFromObject(root);
+  if(visual.isEmpty())throw Error('Bâtiment sans volume de collision');
+  // Roofs, mine scaffolding and decorative trim are not solid walls at
+  // ground level. Measure the actual lower structural geometry in WORLD space
+  // instead of treating the entire roof/winch AABB as the blocking footprint.
+  const base=new THREE.Box3(),v=new THREE.Vector3();
+  const cutoff=visual.min.y+(visual.max.y-visual.min.y)*.38;
+  let sampled=0;
+  root.traverse(mesh=>{
+    const positions=mesh.isMesh&&mesh.geometry?.getAttribute('position');
+    if(!positions)return;
+    for(let i=0;i<positions.count;i++){
+      v.fromBufferAttribute(positions,i).applyMatrix4(mesh.matrixWorld);
+      if(v.y>cutoff)continue;
+      base.expandByPoint(v);sampled++;
+    }
+  });
+  const width=visual.max.x-visual.min.x,depth=visual.max.z-visual.min.z;
+  const measured=sampled>=12&&!base.isEmpty()&&
+    base.max.x-base.min.x>=width*.28&&base.max.z-base.min.z>=depth*.28;
+  // Never truncate more than a small eave/scaffolding border if the source
+  // mesh is ambiguous; units must never be allowed through solid masonry.
+  const maxTrim=type==='mine'?.42:.24;
+  const minX=measured?Math.min(visual.min.x+maxTrim,Math.max(visual.min.x,base.min.x)):visual.min.x;
+  const maxX=measured?Math.max(visual.max.x-maxTrim,Math.min(visual.max.x,base.max.x)):visual.max.x;
+  const minZ=measured?Math.min(visual.min.z+maxTrim,Math.max(visual.min.z,base.min.z)):visual.min.z;
+  const maxZ=measured?Math.max(visual.max.z-maxTrim,Math.min(visual.max.z,base.max.z)):visual.max.z;
+  return {shape:'aabb',minX,maxX,minZ,maxZ,minY:visual.min.y,maxY:visual.max.y};
 }
 function liveBuildings(){return [witchBuilding,...buildingInstances.values()].filter(b=>!b.destroyed);}
 function updateNavObstacles(){
@@ -417,7 +441,7 @@ async function loadWitchHouse(){
   anchor.position.set(WITCH_HOUSE.x,0,WITCH_HOUSE.z);
   anchor.add(house);
   scene.add(anchor);witchHouse=anchor;witchBuilding.root=anchor;
-  witchBuilding.hitbox=buildingBounds(anchor);
+  witchBuilding.hitbox=buildingBounds(anchor,'witch-house');
   updateNavObstacles();drawBuildingSelection();refreshHUD();
 }
 loadWitchHouse().catch(err=>console.warn('Witch house GLB unavailable:',err));
@@ -447,7 +471,7 @@ function createBuildingInstance(entry,type,level,anchor,footprint){
     id,modelId:entry.id,sourceNode:entry.sourceNode||entry.name,
     type,level,clanId:'orcs',health:spec.maxHealth,maxHealth:spec.maxHealth,
     constructionCost:spec.constructionCost,requiredTechnology:spec.requiredTechnology,
-    hitbox:buildingBounds(anchor),queue:[],progress:0,rally:null,rallyMarker:null,
+    hitbox:buildingBounds(anchor,type),queue:[],progress:0,rally:null,rallyMarker:null,
     root:anchor,visualLevel:1,initial:false,destroyed:false
   };
   const bar=new THREE.Group();
@@ -966,7 +990,7 @@ async function useOrcLevelModel(building,level){
   const mixer=new THREE.AnimationMixer(model);
   for(const clip of gltf.animations||[])if(clip.tracks.length)mixer.clipAction(clip).play();
   orcAnimationMixers.push(mixer);
-  building.hitbox=buildingBounds(offset);building.visualLevel=level;
+  building.hitbox=buildingBounds(offset,building.type);building.visualLevel=level;
   updateNavObstacles();drawBuildingSelection();refreshHUD();
 }
 function finishUpgrade(building){
