@@ -31,28 +31,37 @@
  }
  function unionTriangles(triangles,union){
   if(typeof union!=='function')throw Error('Polygon union library not loaded');
-  let combined=[];
-  const batch=[];
+  const portions=[],batch=[],seen=new Set();
+  const snap=v=>Math.round(v*100000)/100000;
   const flush=()=>{
    if(!batch.length)return;
-   const region=union(...batch);
-   combined=combined.length?union(combined,region):region;
+   portions.push(union(...batch));
    batch.length=0;
   };
   for(const triangle of triangles){
-   // glTF matrices produce many near-coincident projected vertices
-   // (~1e-10 apart). Snap only numerical noise at sub-millimetric resolution,
-   // not a hand-chosen collision padding or an AABB approximation.
-   const snap=v=>Math.round(v*100000)/100000;
+   // Stabilize near-identical glTF vertices at numerical, not gameplay,
+   // precision. Repeated backfaces/identical projected triangles collapse.
    const ring=triangle.map(p=>Array.isArray(p)?
      [snap(p[0]),snap(p[1])]:[snap(p.x),snap(p.z)]);
    if(ring.length<3||Math.abs(signedArea(ring))<1e-8)continue;
-   batch.push([ring]);
+   const key=ring.map(p=>p.join(',')).sort().join('|');
+   if(seen.has(key))continue;
+   seen.add(key);batch.push([ring]);
    if(batch.length>=64)flush();
   }
   flush();
-  if(!combined.length)throw Error('No projected structural triangles for building');
-  return combined;
+  if(!portions.length)throw Error('No projected structural triangles for building');
+  // Balanced binary union is dramatically faster and more stable than
+  // repeatedly unioning an ever-growing 10k-edge silhouette with 64 triangles.
+  let level=portions;
+  while(level.length>1){
+   const next=[];
+   for(let i=0;i<level.length;i+=2){
+    next.push(i+1<level.length?union(level[i],level[i+1]):level[i]);
+   }
+   level=next;
+  }
+  return level[0];
  }
  function makeFootprint(polygons,minY=0,maxY=0){
   let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;
