@@ -4,7 +4,9 @@ on:
     branches: [main]
     paths:
       - 'docs/index.html'
+      - 'docs/rts-footprint.js'
       - 'docs/rts-navigation.js'
+      - 'scripts/test-rts-footprint.mjs'
       - 'docs/rts-unit-physics.js'
       - 'scripts/test-rts-unit-physics.mjs'
       - 'docs/orc-strategy.js'
@@ -38,6 +40,7 @@ jobs:
           node-version: '22'
       - name: Test deterministic navigation and orc strategic planning
         run: |
+          node scripts/test-rts-footprint.mjs
           node scripts/test-rts-navigation.mjs
           node scripts/test-rts-unit-physics.mjs
           node scripts/test-orc-strategy.mjs
