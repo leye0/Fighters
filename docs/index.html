@@ -1783,10 +1783,25 @@ function beginTouchGesture(event){
   touchGestureCounters.starts++;
 }
 function applyPinch(a,b){
-  const center={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
   const distance=Math.max(1,Math.hypot(a.x-b.x,a.y-b.y));
-  if(pinch)zoomCamera(clamp(pinch.distance/distance,.65,1.55),center.x,center.y);
-  pinch={distance,center};
+  if(!pinch)return;
+  const factor=clamp(pinch.distance/distance,.65,1.55);
+  // Anchor the zoom at the INITIAL two-finger centroid, not at the moving
+  // centroid. Parallel two-finger translation must not pan the camera.
+  if(Math.abs(factor-1)>.005)
+    zoomCamera(factor,pinch.center.x,pinch.center.y);
+  pinch.distance=distance;
+}
+let pinchFramePending=false;
+function schedulePinch(){
+  if(pinchFramePending)return;
+  pinchFramePending=true;
+  requestAnimationFrame(()=>{
+    pinchFramePending=false;
+    if(activeTouches.size<2||!pinch)return;
+    const [a,b]=[...activeTouches.values()];
+    applyPinch(a,b);
+  });
 }
 function startPinch(){
   cancelPointerGesture();
@@ -1859,10 +1874,7 @@ viewport.addEventListener('pointermove',event=>{
   if(isTouch){
     lastTouchAt=performance.now();
     activeTouches.set(id,{x:event.clientX,y:event.clientY});
-    if(activeTouches.size>=2){
-      const [a,b]=[...activeTouches.values()];
-      applyPinch(a,b);return;
-    }
+    if(activeTouches.size>=2){schedulePinch();return;}
     updateTouchGesture(event);return;
   }
   if(cameraDrag?.id===id){
