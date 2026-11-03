@@ -915,6 +915,75 @@ async function run(){
  }));
  await screenshot('rts-real-gameplay-soak');
 
+ // More faithful human session: recruit over time THROUGH the actual HUD
+ // buttons and send dozens of actual pointer clicks to ground points across
+ // the map. This catches leaks in commands, rebuilding, animations and paths
+ // that a one-shot unit spawn cannot exercise.
+ await evaluate('window.__fightersQA.reset();window.__fightersQA.enableOrcAI(true)');
+ const destinations=[[-21,-9],[-14,4],[-6,-3],[-19,15],[-3,15],[9,8],
+   [-10,-15],[15,-10],[-4,21],[-23,3],[5,-18],[-9,18],
+   [18,13],[-16,-19],[2,2],[-3,-24]];
+ let trainingClicks=0,moveClicks=0;
+ const humanSamples=[];
+ for(let cycle=0;cycle<8;cycle++){
+   await evaluate('window.__fightersQA.selectHouse()');
+   for(let recruit=0;recruit<4;recruit++){
+     const slot=[0,1,2,1][(cycle+recruit)%4];
+     const queued=await evaluate("(()=>{const buttons=[...document.querySelectorAll('#command-buttons button')]"+
+       ".filter(b=>b.title.startsWith('Former '));"+
+       "const button=buttons["+slot+"];if(!button||button.disabled)return false;"+
+       "button.click();return true})()");
+     if(queued)trainingClicks++;
+   }
+   const cpuStart=Date.now();
+   await evaluate('window.__fightersQA.advance(9)');
+   for(let move=0;move<6;move++){
+     if(!await evaluate('window.__fightersQA.snapshot().running'))break;
+     const target=destinations[(cycle*6+move)%destinations.length];
+     await evaluate('window.__fightersQA.selectWitches();'+
+       'window.__fightersQA.centerCamera('+target.join(',')+')');
+     const point=await evaluate('window.__fightersQA.groundScreenPoint('+
+       target.join(',')+')');
+     if(!point||!Number.isFinite(point.x)||!Number.isFinite(point.y))continue;
+     // Dispatch genuine browser mouse events through the same handlers as a
+     // player's tap; this does NOT call the test-only move helper.
+     await call('Input.dispatchMouseEvent',{type:'mousePressed',x:point.x,y:point.y,
+       button:'left',buttons:1,clickCount:1});
+     await call('Input.dispatchMouseEvent',{type:'mouseReleased',x:point.x,y:point.y,
+       button:'left',buttons:0,clickCount:1});
+     moveClicks++;
+     await evaluate('window.__fightersQA.advance(2)');
+   }
+   const cpuMs=Date.now()-cpuStart;
+   await sleep(900);
+   await call('HeapProfiler.collectGarbage');
+   const memory=await call('Runtime.getHeapUsage');
+   const game=await evaluate('window.__fightersQA.snapshot()');
+   const sample={cycle:cycle+1,gameSeconds:(cycle+1)*21,
+     trainingClicks,moveClicks,cpuMs,
+     heapMiB:Math.round(memory.usedSize/1048576*100)/100,
+     witches:game.witches.length,orcs:game.orcs.length,
+     buildingCount:game.buildings.filter(b=>!b.destroyed).length,
+     gpu:game.gpu,running:game.running};
+   humanSamples.push(sample);
+   console.log('HUMAN_PLAY_RECRUIT_AND_CLICKS',JSON.stringify(sample));
+   if(!game.running){
+     // A victory/defeat is a real outcome; begin another match to exercise
+     // resource disposal and memory across consecutive played sessions.
+     await evaluate('window.__fightersQA.reset();window.__fightersQA.enableOrcAI(true)');
+   }
+ }
+ check(trainingClicks>=10&&moveClicks>=30,
+   'Long-play scenario did not actually recruit and click repeatedly: '+
+   JSON.stringify({trainingClicks,moveClicks}));
+ console.log('HUMAN_PLAY_SUMMARY',JSON.stringify({
+   simulatedSeconds:168,trainingClicks,moveClicks,
+   retainedHeap:humanSamples.map(p=>p.heapMiB),
+   cpuMs:humanSamples.map(p=>p.cpuMs),
+   gpuTextures:humanSamples.map(p=>p.gpu.textures)
+ }));
+ await screenshot('rts-human-play-recruit-and-move');
+
  await evaluate('window.__fightersQA.enableOrcAI(false);window.__fightersQA.reset()');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.witches.length===3&&s.orcs.length===4&&
