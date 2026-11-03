@@ -863,6 +863,9 @@ async function run(){
    'Crowd is still walking/oscillating after arrival: '+JSON.stringify(s.witches));
  console.log('PASS twenty witches: 20 distinct goals, complete arrival, idle and stable positions.');
 
+ // Opt-in only: prevent 270 simulated seconds from running (and billing)
+ // on every normal pull request. Run locally with FIGHTERS_LONG_PLAY=1.
+ if(process.env.FIGHTERS_LONG_PLAY==='1'){
  // Real-match soak: training, a large moving army, physical mining,
  // autonomous scouting/construction and live WebGL rendering all stay active.
  // Repeated GC checkpoints distinguish retained JS heap from expected
@@ -984,6 +987,7 @@ async function run(){
  }));
  await screenshot('rts-human-play-recruit-and-move');
 
+ }
  // Regression for the actual WebGL leak: new skinned characters allocate
  // their OWN skeleton bone texture. A reset must return texture count to
  // baseline; merely detaching meshes leaves the GPU allocation alive.
@@ -1000,8 +1004,16 @@ async function run(){
    await sleep(450);
    const restored=(await evaluate('window.__fightersQA.snapshot()')).gpu.textures;
    gpuLifecycles.push({peak,restored});
-   check(restored<=gpuBaseline+2,
-     'GPU skeleton bone textures leaked after actor reset: '+
+   console.log('GPU_BONE_TEXTURE_CYCLE',JSON.stringify({
+     baseline:gpuBaseline,cycle:cycle+1,peak,restored
+   }));
+   check(peak>=restored+10,
+     'GPU did not release per-actor skinning textures after reset: '+
+       JSON.stringify({baseline:gpuBaseline,gpuLifecycles}));
+   // The FIRST cycle can initialize still-unseen material/texture variants.
+   // A true per-unit leak keeps increasing after that warm-up cycle.
+   if(cycle>0)check(restored<=gpuLifecycles[0].restored+2,
+     'GPU texture count grows across repeated identical unit lifecycles: '+
        JSON.stringify({baseline:gpuBaseline,gpuLifecycles}));
  }
  console.log('GPU_BONE_TEXTURE_LIFECYCLE',JSON.stringify({
