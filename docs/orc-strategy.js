@@ -67,6 +67,8 @@
    const own=state.orcs.filter(u=>!u.dead),enemy=state.witches.filter(u=>!u.dead);
    const workers=own.filter(u=>u.role==='worker');
    const fighters=own.filter(u=>u.role!=='worker');
+   // An enemy base is a strategic target only after a real line-of-sight discovery.
+   const enemyBaseKnown=state.enemyBaseKnown===true;
    const barrack=buildings.find(b=>b.type==='barrack');
    const mines=buildings.filter(b=>b.type==='mine');
    const base={x:19,z:18};
@@ -74,7 +76,8 @@
     (near(u,base,16)||buildings.some(b=>near(u,boxCentre(b),6.5))));
    const threatened=attackers.length>0;
    if(threatened){this.lastThreat=this.clock;this.mode='defend';}
-   else this.mode=this.clock-this.lastThreat<10?'recover':'develop';
+   else this.mode=this.clock-this.lastThreat<10?'recover':
+     enemyBaseKnown?'develop':'explore';
    const orders=[];
    const canSpend=(cost,reserve=0)=>state.gold>=cost+reserve;
    const queueLength=b=>b?.queue?.length||0;
@@ -117,10 +120,20 @@
       })[0];
     if(target)orders.push({type:'upgrade',buildingId:target.id,reason:'development'});
    }
-   // Fire a raid only with a real group; do not feed troops one at a time.
+   // Reserve one real fighter to explore unknown terrain. The waypoint comes
+   // exclusively from the orcs' own fog grid, not from any enemy location.
+   if(!threatened&&!enemyBaseKnown&&this.clock>=8&&state.scoutTarget){
+    const scout=fighters.find(u=>u.scouting&&!u.attackOrder)||
+      fighters.find(u=>!u.mining&&!u.attackOrder&&!u.destination);
+    if(scout&&!scout.destination)
+     orders.push({type:'scout',unitId:scout.id,
+       x:state.scoutTarget.x,z:state.scoutTarget.z,reason:'unknown_territory'});
+   }
+   // Fire a raid only with a real group AND a discovered enemy headquarters.
    const unassigned=fighters.filter(u=>!u.mining&&!u.attackOrder&&!(u.attack?.target));
    const threshold=this.raidNumber===0?4:5;
-   if(!threatened&&this.clock>20&&unassigned.length>=threshold&&this.clock-this.lastRaid>22){
+   if(enemyBaseKnown&&!threatened&&this.clock>20&&
+     unassigned.length>=threshold&&this.clock-this.lastRaid>22){
     const squad=unassigned.sort((a,b)=>(a.health/a.maxHealth)-(b.health/b.maxHealth))
       .slice(-Math.min(7,unassigned.length));
     orders.push({type:'raid',unitIds:squad.map(u=>u.id),reason:'squad_ready'});

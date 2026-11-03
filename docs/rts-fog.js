@@ -73,6 +73,26 @@
       }
       return rgba;
     }
+    // Find the next unknown, navigable waypoint from this clan's OWN map.
+    // No enemy positions or enemy exploration state are consulted.
+    frontier(clan,origin,valid=()=>true){
+      if(!this.maps[clan])throw Error('Unknown fog faction: '+clan);
+      if(!Number.isFinite(origin?.x)||!Number.isFinite(origin?.z))return null;
+      const candidates=[];
+      const step=4.5,limit=this.halfSize-3;
+      for(let z=-limit;z<=limit;z+=step){
+        for(let x=-limit;x<=limit;x+=step){
+          if(this.sample(x,z,clan).explored>.15)continue;
+          // Prefer reachable nearby frontiers, gently favouring the neutral
+          // centre so scouts explore contested ground before remote corners.
+          const score=Math.hypot(x-origin.x,z-origin.z)+.15*Math.hypot(x,z);
+          candidates.push({x:Math.round(x*10)/10,z:Math.round(z*10)/10,score});
+        }
+      }
+      candidates.sort((a,b)=>a.score-b.score||a.z-b.z||a.x-b.x);
+      for(const p of candidates)if(valid(p.x,p.z))return{x:p.x,z:p.z};
+      return null;
+    }
     textureData(clan){return this.maps[clan].rgba;}
     sample(x,z,clan='witch'){
       const idx=this.index(x,z),map=this.maps[clan];

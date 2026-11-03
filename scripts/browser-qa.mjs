@@ -171,8 +171,9 @@ async function run(){
    fogState.exploredCells<fogState.cells/3,
    'Fog must use a compact, local starting discovery area: '+JSON.stringify(fogState));
  const hidden=await evaluate('window.__fightersQA.fogAt(22,21)');
- check(hidden.explored===0&&hidden.visible===0,
-   'The enemy side must be completely unknown at match start');
+ const orcOwned=await evaluate("window.__fightersQA.fogAt(22,21,'orc')");
+ check(hidden.explored===0&&hidden.visible===0&&orcOwned.visible>.2,
+   'Enemy exploration must never leak into the witch map');
  await screenshot('rts-fog-start');
  const beforeExplore=await evaluate('window.__fightersQA.fogAt(-8,-8)');
  check(beforeExplore.explored===0,'Distant central ground must begin black');
@@ -183,9 +184,12 @@ async function run(){
  const exploredCount=await evaluate('window.__fightersQA.snapshot().fog.exploredCells');
  check(exploredCount>fogState.exploredCells,'Exploration did not expand the visible map');
  await evaluate("window.__fightersQA.moveUnitTo('witch',0,-8,-8);window.__fightersQA.moveUnitTo('witch',1,-8,-8);window.__fightersQA.moveUnitTo('witch',2,-8,-8)");
- const remembered=await evaluate('window.__fightersQA.fogAt(-18,-13)');
+ const remembered=await evaluate('window.__fightersQA.fogAt(-15,-18)');
+ const homeSight=await evaluate("window.__fightersQA.fogAt(-23.5,-17.5,'witch')");
  check(remembered.explored>0&&remembered.visible===0,
-   'The explored map must persist even after scouts move away');
+   'Exploration memory must persist even after scouts leave their old positions');
+ check(homeSight.visible>.2,
+   'The witch house must provide vision after every witch walks away');
  const fogRendering=await evaluate('window.__fightersQA.snapshot().fog');
  check(fogRendering.exploredBrightness===1,
    'Explored terrain must stay fully visible, not darken again: '+JSON.stringify(fogRendering));
@@ -193,7 +197,27 @@ async function run(){
  await evaluate('window.__fightersQA.reset()');
  check((await evaluate('window.__fightersQA.fogAt(-8,-8)')).explored===0,
    'Reset must discard exploration from the prior match');
- console.log('PASS FOG OF WAR: black unknown, reveal by walking, remembered darkness, compact buffers, reset.');
+ console.log('PASS FOG OF WAR: faction-isolated exploration, building sight, walking, memory, compact buffers, reset.');
+
+ // Orcs must physically explore before they know where the witch house is.
+ await evaluate("window.__fightersQA.enableOrcAI(true);window.__fightersQA.advance(11)");
+ const scoutState=await evaluate('window.__fightersQA.snapshot()');
+ check(!scoutState.fog.enemyBaseKnownToOrcs&&
+   scoutState.orcAI.decisions.some(a=>a.type==='scout')&&
+   !scoutState.orcAI.decisions.some(a=>a.type==='raid')&&
+   scoutState.orcs.some(u=>u.scouting&&u.destination),
+   'Orcs must send a scouting fighter instead of raiding a magically known house: '+
+     JSON.stringify({ai:scoutState.orcAI,orcs:scoutState.orcs,fog:scoutState.fog}));
+ const houseApproach=await evaluate("[-16,-18,-15,-19,-17,-21].reduce((a,_,i,all)=>"+
+   "i%2===0&&window.__fightersQA.isClear(all[i],all[i+1])&&!a?"+
+     "{x:all[i],z:all[i+1]}:a,null)");
+ check(houseApproach,'No valid approach to the witch house for visibility regression');
+ await evaluate("window.__fightersQA.moveUnitTo('orc',0,"+
+   houseApproach.x+","+houseApproach.z+")");
+ check((await evaluate('window.__fightersQA.snapshot()')).fog.enemyBaseKnownToOrcs,
+   'Orc headquarters knowledge must unlock only upon physical scout sight');
+ await evaluate('window.__fightersQA.enableOrcAI(false);window.__fightersQA.reset()');
+ console.log('PASS ORC SCOUTING: no omniscient raid, scout waypoint, house discovery by sight.');
 
  // Real pointer events, not just QA.tap: friendly units must remain pickable
  // through fog, including when their silhouettes overlap the witch house.

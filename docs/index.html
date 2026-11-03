@@ -477,6 +477,8 @@ let qaPassiveKind=null;
 // Warcraft-style map exploration: one 112×112 RGBA texture (49 KiB) is
 // rendered across the viewport; both factions' discovery grids use ~147 KiB.
 const fogOfWar=new window.FightersFog.FogGrid({halfSize:ARENA_HALF,cellSize:.5,radius:7.5,fade:1.25});
+// Each clan keeps its own permanent memory of enemy structures; never share it.
+const knownEnemyBuildings={witch:new Set(),orc:new Set()};
 const fogTexture=new THREE.DataTexture(fogOfWar.textureData('witch'),
   fogOfWar.size,fogOfWar.size,THREE.RGBAFormat);
 fogTexture.minFilter=THREE.LinearFilter;fogTexture.magFilter=THREE.LinearFilter;
@@ -528,11 +530,45 @@ function positionFogOverlay(){
   fogShader.uniforms.right.value.set(fogBR.x-fogBL.x,fogBR.z-fogBL.z);
   fogShader.uniforms.up.value.set(fogTL.x-fogBL.x,fogTL.z-fogBL.z);
 }
+function buildingInSight(building,clan){
+  const h=building.hitbox;
+  if(!h)return false;
+  const midX=(h.minX+h.maxX)/2,midZ=(h.minZ+h.maxZ)/2;
+  // A large building can be spotted at its edges before its centre is in range.
+  return [[midX,midZ],[h.minX,midZ],[h.maxX,midZ],
+    [midX,h.minZ],[midX,h.maxZ]].some(([x,z])=>fogOfWar.visibleAt(x,z,clan));
+}
 function updateVision(){
-  for(const [clan,kind] of [['witch','witch'],['orc','orc']]){
-    const scouts=units.filter(actor=>actor.kind===kind&&!actor.dead)
+  const structures=liveBuildings();
+  for(const [clan,kind,ownership] of [['witch','witch','witch'],['orc','orc','orcs']]){
+    const sources=units.filter(actor=>actor.kind===kind&&!actor.dead)
       .map(actor=>({x:actor.root.position.x,z:actor.root.position.z}));
-    fogOfWar.update(clan,scouts);
+    // Completed clan buildings have the same sight radius as a character.
+    // Natural gold mines are deposits, not watchtowers.
+    for(const b of structures){
+      if(b.clanId!==ownership||b.type==='mine'||!b.hitbox)continue;
+      sources.push({x:(b.hitbox.minX+b.hitbox.maxX)/2,
+        z:(b.hitbox.minZ+b.hitbox.maxZ)/2});
+    }
+    fogOfWar.update(clan,sources);
+    for(const b of structures){
+      if(b.clanId!==ownership&&b.clanId!=='neutral'&&buildingInSight(b,clan))
+        knownEnemyBuildings[clan].add(b.id);
+    }
+  }
+  // Only active-faction visibility controls the screen. Orc exploration never
+  // uncovers the player's map; moving enemy units need live sight to be shown.
+  const ownership=activeFaction==='witch'?'witch':'orcs';
+  for(const actor of units){
+    if(!actor.dead)actor.root.visible=actor.kind===activeFaction||
+      fogOfWar.visibleAt(actor.root.position.x,actor.root.position.z,activeFaction);
+  }
+  for(const b of structures){
+    const friendly=b.clanId===ownership||b.clanId==='neutral';
+    const liveSight=buildingInSight(b,activeFaction);
+    if(b.root)b.root.visible=friendly||knownEnemyBuildings[activeFaction].has(b.id);
+    if(b.healthBar)b.healthBar.root.visible=(friendly||liveSight)&&
+      (b.health<b.maxHealth||selectedBuilding===b);
   }
   fogTexture.image.data=fogOfWar.textureData(activeFaction);
   fogTexture.needsUpdate=true;
@@ -567,7 +603,9 @@ function drawMinimap(){
     if(!b.hitbox)continue;
     const box=b.hitbox,x=(box.minX+box.maxX)/2,z=(box.minZ+box.maxZ)/2;
     const visibility=fogOfWar.sample(x,z,activeFaction);
-    if(visibility.explored<.2)continue;
+    if(visibility.explored<.2||
+      (b.clanId!==(activeFaction==='witch'?'witch':'orcs')&&
+        b.clanId!=='neutral'&&!knownEnemyBuildings[activeFaction].has(b.id)))continue;
     minimapContext.fillStyle=b.type==='mine'?'#d4c36e':
       b.clanId===(activeFaction==='witch'?'witch':'orcs')?'#b2d3ce':'#c16c57';
     minimapContext.fillRect(miniX(box.minX),miniZ(box.minZ),
@@ -1780,8 +1818,7 @@ function refreshHUD(){
 function changeFaction(faction){
   if(faction!=='witch'&&faction!=='orc')return;
   activeFaction=faction;buildMode=null;rallyMode=false;constructionTab=false;attackMode=false;
-  fogTexture.image.data=fogOfWar.textureData(activeFaction);fogTexture.needsUpdate=true;
-  clearSelection();refreshHUD();
+  updateVision();clearSelection();refreshHUD();
 }
 function showBanner(message){
   // Short, compositor-driven toast. A JS timeout can be delayed under heavy
@@ -1817,7 +1854,8 @@ function startSession(){
   }
   resize();
   gold={witch:2000,orc:900};buildMode=null;orcSpawned=false;
-  fogOfWar.reset();fogElapsed=0;fogStarted=true;
+  fogOfWar.reset();knownEnemyBuildings.witch.clear();
+  knownEnemyBuildings.orc.clear();fogElapsed=0;fogStarted=true;
   orcDirector.reset();orcIncomeFraction=0;strategyAccumulator=0;attackMode=false;qaPassiveKind=null;
   completedMiningCycles=0;totalMinedGold=0;
   rallyMode=false;constructionTab=false;lastHudSignature='';
@@ -2252,6 +2290,16 @@ function stepOrcStrategy(dt){
   // then credit gold ONLY after a miner completes a physical work cycle.
   assignMiners();
   const aliveOrcs=units.filter(a=>a.kind==='orc'&&!a.dead);
+  const enemyBaseKnown=knownEnemyBuildings.orc.has(witchBuilding.id);
+  const scout=aliveOrcs.find(a=>roles.isFighter(a)&&a.scouting&&!a.attackOrder)||
+    aliveOrcs.find(a=>roles.isFighter(a)&&!a.attackOrder&&!a.destination);
+  const source=scout?.root.position;
+  const scoutTarget=!enemyBaseKnown&&source&&!scout.destination?
+    fogOfWar.frontier('orc',source,(x,z)=>{
+      const goal={x,z};
+      return navigatorRTS.pointClear(goal)&&
+        (navigatorRTS.segmentClear(source,goal)||!!navigatorRTS.plan(source,goal));
+    }):null;
   const context={
     ready:true,running,paused,gold:gold.orc,
     buildings:[...buildingInstances.values()].filter(b=>!b.destroyed&&b.clanId==='orcs').map(b=>({
@@ -2260,11 +2308,14 @@ function stepOrcStrategy(dt){
     })),
     orcs:aliveOrcs.map(u=>({id:u.id,x:u.root.position.x,z:u.root.position.z,
       health:u.health,maxHealth:u.maxHealth,dead:u.dead,
-      role:u.role,attackOrder:!!u.attackOrder,mining:!!u.mineJob})),
-    witches:units.filter(u=>u.kind==='witch'&&!u.dead).map(u=>({
+      role:u.role,attackOrder:!!u.attackOrder,mining:!!u.mineJob,
+      scouting:!!u.scouting,destination:!!u.destination})),
+    // Hidden witches cannot trigger omniscient defense orders.
+    witches:units.filter(u=>u.kind==='witch'&&!u.dead&&
+      fogOfWar.visibleAt(u.root.position.x,u.root.position.z,'orc')).map(u=>({
       id:u.id,x:u.root.position.x,z:u.root.position.z,role:u.role,dead:u.dead
     })),
-    unitCap:16
+    enemyBaseKnown,scoutTarget,unitCap:16
   };
   const actions=orcDirector.update(dt,context,validBuildPosition);
   for(const action of actions){
@@ -2276,15 +2327,25 @@ function stepOrcStrategy(dt){
     }else if(action.type==='upgrade'){
       const b=buildingInstances.get(action.buildingId);
       if(b&&!b.destroyed)queueOrder(b,'upgrade');
-    }else if(action.type==='raid'&&!witchBuilding.destroyed){
+    }else if(action.type==='scout'&&!enemyBaseKnown){
+      const actor=aliveOrcs.find(u=>u.id===action.unitId);
+      if(actor&&roles.isFighter(actor)&&!actor.attackOrder){
+        actor.scouting=true;actor.destination={x:action.x,z:action.z};
+        actor.route=null;actor.routeAge=0;
+      }
+    }else if(action.type==='raid'&&enemyBaseKnown&&!witchBuilding.destroyed){
       const squad=aliveOrcs.filter(u=>roles.isFighter(u)&&action.unitIds.includes(u.id));
-      for(const actor of squad){actor.attackOrder=witchBuilding;actor.destination=null;actor.route=null;}
+      for(const actor of squad){
+        actor.scouting=false;actor.attackOrder=witchBuilding;
+        actor.destination=null;actor.route=null;
+      }
     }else if(action.type==='defend'){
       const attackers=units.filter(u=>u.kind==='witch'&&!u.dead);
       for(const orc of aliveOrcs){
         if(!roles.isFighter(orc)||orc.attackOrder||Math.hypot(orc.root.position.x-action.x,
           orc.root.position.z-action.z)>16)continue;
-        const enemy=attackers.sort((a,b)=>
+        const enemy=attackers.filter(u=>fogOfWar.visibleAt(
+          u.root.position.x,u.root.position.z,'orc')).sort((a,b)=>
           targetDistance(orc,a)-targetDistance(orc,b))[0];
         if(enemy)orc.attackOrder=enemy;
       }
@@ -2657,7 +2718,9 @@ window.__fightersQA={
     loading:{...loadingProfile,characters:{...loadingProfile.characters}},
     ready,running,paused,activeFaction,cameraZoom,cameraCenter:{...cameraFollow},
     fog:{activeFaction,...fogOfWar.stats(activeFaction),
-      exploredBrightness:fogShader.uniforms.exploredBrightness.value},
+      exploredBrightness:fogShader.uniforms.exploredBrightness.value,
+      enemyBaseKnownToOrcs:knownEnemyBuildings.orc.has(witchBuilding.id),
+      orcExploredCells:fogOfWar.stats('orc').exploredCells},
     selectionRingStyle:{depthTest:sharedSelectionMaterials[activeFaction].depthTest,
       renderOrder:units.find(u=>u.kind===activeFaction)?.selectionRing.renderOrder??null},
     orcAI:orcDirector.snapshot(),qaPassiveKind,
@@ -2696,7 +2759,8 @@ window.__fightersQA={
       id:a.id,role:a.role,x:a.root.position.x,z:a.root.position.z,health:a.health,animation:a.current,
       heading:{...a.heading},combatTargetId:a.attack?.target?.id||null,
       attackTargetId:a.attackOrder?.id||null,miningTargetId:a.mineJob?.mineId||null,
-      destination:a.destination?{...a.destination}:null,pathLength:a.route?.waypoints.length??0
+      destination:a.destination?{...a.destination}:null,pathLength:a.route?.waypoints.length??0,
+      scouting:!!a.scouting
     })),
     selectedIds:[...selected].map(a=>a.id),selectedBuilding:selectedBuilding?.kind||selectedBuilding?.type||null,
     selectedBuildingId:selectedBuilding?.id||null,
