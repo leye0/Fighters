@@ -166,6 +166,17 @@ async function run(){
  await evaluate('window.__fightersQA.advance(4.6)');
  check((await evaluate('window.__fightersQA.snapshot()')).orcs.length===5,
   'Orc barrack training queue failed');
+ // Routine RTS messages are tiny white-on-black toasts literally at the
+ // screen bottom and never overlaid in giant typography on the battlefield.
+ const notice=await evaluate("(()=>{const el=document.querySelector('#banner'),s=getComputedStyle(el),r=el.getBoundingClientRect();return {text:el.textContent,font:parseFloat(s.fontSize),color:s.color,bg:s.backgroundColor,bottom:innerHeight-r.bottom,z:Number(s.zIndex),opacity:parseFloat(s.opacity)}})()");
+ check(notice.text==='ORC FORMÉ'&&notice.font<=11&&
+   notice.color==='rgb(255, 255, 255)'&&notice.bg==='rgb(0, 0, 0)'&&
+   notice.bottom>=0&&notice.bottom<=38&&notice.z>7&&notice.opacity>.1,
+   'Training notice must be tiny white-on-black at bottom: '+JSON.stringify(notice));
+ await sleep(750);
+ check(await evaluate("parseFloat(getComputedStyle(document.querySelector('#banner')).opacity)<.02"),
+   'Training notice must disappear in under one second');
+
 
  check(await evaluate("window.__fightersQA.beginBuild('hut')"),'Hut placement action refused');
  check(await evaluate("!!window.__fightersQA.build('hut',8,-10)"),'Orc hut construction failed');
