@@ -70,7 +70,10 @@
    const crowdNow=crowdPenalty(end,from,agent,units,radius);
    const crowdAhead=nav.segmentClear(from,preview)?
      crowdPenalty(preview,from,agent,units,radius):0;
-   const congestion=crowdNow*.55+crowdAhead*1.25;
+   // Once inside the assigned formation slot's landing radius, continue
+   // towards that slot instead of orbiting a nearby friend forever.
+   const landingWeight=clamp((gap-.45)/1.25,0,1);
+   const congestion=(crowdNow*.55+crowdAhead*1.25)*landingWeight;
    const score=progress*1.5-congestion-Math.abs(angle)*.10;
    if(score>bestScore){best=end;bestScore=score;}
   }
@@ -113,6 +116,47 @@
   }
   return corrections;
  }
+ // Reserve individual slots for the whole group BEFORE anyone starts moving.
+ // findSafeGoal() alone may snap multiple offset requests onto the exact same
+ // pathfinding cell next to a building: no amount of steering can fix that.
+ function formationGoals(actors,centre,nav,{spacing=1.35}={}){
+  if(!actors.length)return [];
+  const origin=nav.clamp(centre),slots=[],eligible=[];
+  const ringLimit=Math.max(8,Math.ceil(Math.sqrt(actors.length))*3+3);
+  for(let ring=0;ring<=ringLimit;ring++){
+   for(let z=-ring;z<=ring;z++)for(let x=-ring;x<=ring;x++){
+    if(Math.max(Math.abs(x),Math.abs(z))!==ring)continue;
+    const p={x:origin.x+x*spacing,z:origin.z+z*spacing};
+    if(!nav.pointClear(p))continue;
+    slots.push(p);
+   }
+   if(slots.length>=actors.length*3)break;
+  }
+  slots.sort((a,b)=>distance(a,origin)-distance(b,origin)||
+    a.z-b.z||a.x-b.x);
+  const assigned=new Map(),available=[...actors].sort((a,b)=>
+    distance(location(a),origin)-distance(location(b),origin)||
+    (a.id||0)-(b.id||0));
+  for(const actor of available){
+   let best=-1,bestScore=Infinity;
+   const start=location(actor);
+   for(let j=0;j<slots.length;j++){
+    const slot=slots[j];
+    if(eligible[j]===false)continue;
+    const delta=distance(start,slot);
+    const centreCost=distance(origin,slot);
+    const score=delta+centreCost*.24;
+    if(score>=bestScore)continue;
+    // A crowded slot is not a valid assignment if the unit cannot route to it.
+    // A* is evaluated only for promising slots, never every candidate.
+    if(!nav.segmentClear(start,slot)&&!nav.plan(start,slot))continue;
+    best=j;bestScore=score;
+   }
+   if(best<0){assigned.set(actor,null);continue;}
+   assigned.set(actor,slots[best]);eligible[best]=false;
+  }
+  return actors.map(actor=>assigned.get(actor)||null);
+ }
  return {RADIUS,MIN_SPACING,distance,sweptCircleHit,freeForUnit,
-  crowdPenalty,step,separate};
+  crowdPenalty,step,separate,formationGoals};
 });
