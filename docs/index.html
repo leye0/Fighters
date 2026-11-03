@@ -116,6 +116,8 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 
 </style>
 <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
+<script src="./vendor/polygon-clipping.umd.js"></script>
+<script src="./rts-footprint.js"></script>
 <script src="./rts-navigation.js"></script>
 <script src="./rts-unit-physics.js"></script>
 <script src="./orc-strategy.js"></script>
@@ -220,35 +222,60 @@ function buildingVisualBounds(root){
     minZ:b.min.z,maxZ:b.max.z,minY:b.min.y,maxY:b.max.y};
 }
 function buildingBounds(root,type=''){
-  root.updateMatrixWorld(true);
+  // Convert the *real* GLB triangles to world coordinates, slice away roof
+  // overhangs by retaining the lower structural portion, flatten onto X/Z,
+  // and take the exact topological union of their projections. The resulting
+  // polygon may be concave, rotated, contain holes or have separate islands.
+  // No rectangular hitbox, type-specific trims or guessed footprint sizes.
+  root.updateWorldMatrix(true,true);
   const visual=new THREE.Box3().setFromObject(root);
-  if(visual.isEmpty())throw Error('Bâtiment sans volume de collision');
-  // Roofs, mine scaffolding and decorative trim are not solid walls at
-  // ground level. Measure the actual lower structural geometry in WORLD space
-  // instead of treating the entire roof/winch AABB as the blocking footprint.
-  const base=new THREE.Box3(),v=new THREE.Vector3();
-  const cutoff=visual.min.y+(visual.max.y-visual.min.y)*.38;
-  let sampled=0;
-  root.traverse(mesh=>{
-    const positions=mesh.isMesh&&mesh.geometry?.getAttribute('position');
-    if(!positions)return;
-    for(let i=0;i<positions.count;i++){
-      v.fromBufferAttribute(positions,i).applyMatrix4(mesh.matrixWorld);
-      if(v.y>cutoff)continue;
-      base.expandByPoint(v);sampled++;
+  if(visual.isEmpty())throw Error('Bâtiment sans géométrie de collision');
+  const height=visual.max.y-visual.min.y;
+  const FP=window.FightersFootprint,union=window.polygonClipping?.union;
+  const getTriangles=ratio=>{
+    const cutoff=visual.min.y+height*ratio,triangles=[];
+    const v1=new THREE.Vector3(),v2=new THREE.Vector3(),v3=new THREE.Vector3();
+    root.traverse(mesh=>{
+      if(!mesh.isMesh||!mesh.geometry)return;
+      const positions=mesh.geometry.getAttribute('position');
+      if(!positions||positions.itemSize!==3)return;
+      const indices=mesh.geometry.getIndex();
+      const count=indices?indices.count:positions.count;
+      for(let i=0;i+2<count;i+=3){
+        const a=indices?indices.getX(i):i;
+        const b=indices?indices.getX(i+1):i+1;
+        const c=indices?indices.getX(i+2):i+2;
+        v1.fromBufferAttribute(positions,a).applyMatrix4(mesh.matrixWorld);
+        v2.fromBufferAttribute(positions,b).applyMatrix4(mesh.matrixWorld);
+        v3.fromBufferAttribute(positions,c).applyMatrix4(mesh.matrixWorld);
+        if(Math.min(v1.y,v2.y,v3.y)>cutoff)continue;
+        const clipped=FP.clipTriangleBelow([
+          {x:v1.x,y:v1.y,z:v1.z},
+          {x:v2.x,y:v2.y,z:v2.z},
+          {x:v3.x,y:v3.y,z:v3.z}
+        ],cutoff);
+        if(clipped.length>=3)triangles.push(clipped);
+      }
+    });
+    return triangles;
+  };
+  // 38% of the GLB's own height is a structural slice, NOT a world-space
+  // rectangular margin. If a model lacks a bottom face, expand the slice
+  // until actual projected triangles exist; never fabricate a box.
+  let polygons;
+  for(const ratio of [.38,.65,1]){
+    const triangles=getTriangles(ratio);
+    if(!triangles.length)continue;
+    try{polygons=FP.unionTriangles(triangles,union);}catch(error){
+      if(ratio===1)throw error;
     }
-  });
-  const width=visual.max.x-visual.min.x,depth=visual.max.z-visual.min.z;
-  const measured=sampled>=12&&!base.isEmpty()&&
-    base.max.x-base.min.x>=width*.28&&base.max.z-base.min.z>=depth*.28;
-  // Never truncate more than a small eave/scaffolding border if the source
-  // mesh is ambiguous; units must never be allowed through solid masonry.
-  const maxTrim=type==='mine'?.42:.24;
-  const minX=measured?Math.min(visual.min.x+maxTrim,Math.max(visual.min.x,base.min.x)):visual.min.x;
-  const maxX=measured?Math.max(visual.max.x-maxTrim,Math.min(visual.max.x,base.max.x)):visual.max.x;
-  const minZ=measured?Math.min(visual.min.z+maxTrim,Math.max(visual.min.z,base.min.z)):visual.min.z;
-  const maxZ=measured?Math.max(visual.max.z-maxTrim,Math.min(visual.max.z,base.max.z)):visual.max.z;
-  return {shape:'aabb',minX,maxX,minZ,maxZ,minY:visual.min.y,maxY:visual.max.y};
+    if(polygons?.length)break;
+  }
+  if(!polygons?.length)throw Error('Impossible de projeter la base polygonale du bâtiment: '+type);
+  const footprint=FP.makeFootprint(polygons,visual.min.y,visual.max.y);
+  if(!Number.isFinite(footprint.minX)||!Number.isFinite(footprint.maxZ))
+    throw Error('Contour GLB invalide: '+type);
+  return footprint;
 }
 function liveBuildings(){return [witchBuilding,...buildingInstances.values()].filter(b=>!b.destroyed);}
 function updateNavObstacles(){
@@ -257,22 +284,28 @@ function updateNavObstacles(){
 }
 function drawBuildingSelection(){
   if(buildingSelectionRing){
-    scene.remove(buildingSelectionRing);buildingSelectionRing.geometry.dispose();
-    buildingSelectionRing.material.dispose();buildingSelectionRing=null;
+    scene.remove(buildingSelectionRing);
+    buildingSelectionRing.traverse(node=>{
+      node.geometry?.dispose();node.material?.dispose();
+    });
+    buildingSelectionRing=null;
   }
   if(!selectedBuilding?.hitbox)return;
-  const b=selectedBuilding.hitbox,width=b.maxX-b.minX+.36,depth=b.maxZ-b.minZ+.36;
-  const geometry=new THREE.BufferGeometry().setFromPoints([
-    new THREE.Vector3(-width/2,0,-depth/2),new THREE.Vector3(width/2,0,-depth/2),
-    new THREE.Vector3(width/2,0,depth/2),new THREE.Vector3(-width/2,0,depth/2),
-    new THREE.Vector3(-width/2,0,-depth/2)
-  ]);
-  const material=new THREE.LineBasicMaterial({
-    color:selectedBuilding.clanId==='witch'?0xc2f5a3:0xf8c47f,depthTest:false
-  });
-  buildingSelectionRing=new THREE.Line(geometry,material);
-  buildingSelectionRing.position.set((b.minX+b.maxX)/2,.08,(b.minZ+b.maxZ)/2);
-  buildingSelectionRing.renderOrder=10;scene.add(buildingSelectionRing);
+  const footprint=selectedBuilding.hitbox;
+  const color=selectedBuilding.clanId==='witch'?0xc2f5a3:0xf8c47f;
+  // The selection outline displays the SAME physical polygon used by A*
+  // and the fighters. No rectangular selection outline.
+  buildingSelectionRing=new THREE.Group();
+  for(const polygon of footprint.polygons)for(const ring of polygon){
+    const points=ring.map(p=>new THREE.Vector3(p[0],.08,p[1]));
+    if(points.length<3)continue;
+    points.push(points[0].clone());
+    const line=new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(points),
+      new THREE.LineBasicMaterial({color,depthTest:false}));
+    line.renderOrder=10;buildingSelectionRing.add(line);
+  }
+  scene.add(buildingSelectionRing);
 }
 
 const INV_SQRT2=Math.SQRT1_2;
