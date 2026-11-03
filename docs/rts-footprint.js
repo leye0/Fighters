@@ -35,7 +35,9 @@
   const snap=v=>Math.round(v*100000)/100000;
   const flush=()=>{
    if(!batch.length)return;
-   portions.push(union(...batch));
+   const region=union(...batch);
+   // An entirely degenerate coplanar batch can return null after clipping.
+   if(region?.length)portions.push(region);
    batch.length=0;
   };
   for(const triangle of triangles){
@@ -57,10 +59,14 @@
   while(level.length>1){
    const next=[];
    for(let i=0;i<level.length;i+=2){
-    next.push(i+1<level.length?union(level[i],level[i+1]):level[i]);
+    if(i+1===level.length){next.push(level[i]);continue;}
+    const merged=union(level[i],level[i+1]);
+    if(merged?.length)next.push(merged);
+    else next.push(level[i],level[i+1]);
    }
    level=next;
   }
+  if(!level[0]?.length)throw Error('Failed to produce polygon footprint');
   return level[0];
  }
  function makeFootprint(polygons,minY=0,maxY=0){
