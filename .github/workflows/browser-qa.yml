@@ -6,6 +6,8 @@ on:
       - 'docs/index.html'
       - 'docs/rts-footprint.js'
       - 'docs/rts-navigation.js'
+      - 'docs/rts-fog.js'
+      - 'scripts/test-rts-fog.mjs'
       - 'scripts/test-rts-footprint.mjs'
       - 'docs/rts-unit-physics.js'
       - 'scripts/test-rts-unit-physics.mjs'
