@@ -6,6 +6,8 @@ on:
       - 'docs/index.html'
       - 'docs/rts-footprint.js'
       - 'docs/rts-navigation.js'
+      - 'docs/rts-fog.js'
+      - 'scripts/test-rts-fog.mjs'
       - 'scripts/test-rts-footprint.mjs'
       - 'docs/rts-unit-physics.js'
       - 'scripts/test-rts-unit-physics.mjs'
@@ -48,6 +50,7 @@ jobs:
         run: |
           node scripts/test-rts-footprint.mjs
           node scripts/test-rts-navigation.mjs
+          node scripts/test-rts-fog.mjs
           node scripts/test-rts-unit-physics.mjs
           node scripts/test-orc-strategy.mjs
           node scripts/test-rts-roles.mjs
