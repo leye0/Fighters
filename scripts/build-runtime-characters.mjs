@@ -47,8 +47,14 @@ for(const gender of ['female','male']){
   skin.listJoints().map(joint=>joint.getName()));
  assert(oldSkins.length>0&&Math.max(...oldSkins.map(x=>x.length))>=20,
   'Missing native skeleton: '+original);
- for(const animation of clips)if(!RUNTIME_CLIPS.includes(animation.getName()))
+ for(const animation of clips)if(!RUNTIME_CLIPS.includes(animation.getName())){
+  // Animation.dispose() removes only the animation itself. Explicitly detach
+  // its channels and samplers so all unneeded keyframe accessors become
+  // unreferenced, allowing prune() to reclaim their large binary arrays.
+  for(const channel of [...animation.listChannels()])channel.dispose();
+  for(const sampler of [...animation.listSamplers()])sampler.dispose();
   animation.dispose();
+ }
  await doc.transform(prune());
  const reduced=root.listAnimations();
  assert(reduced.length===RUNTIME_CLIPS.length,'Incorrect runtime clip count');
@@ -77,6 +83,7 @@ for(const gender of ['female','male']){
  assert(JSON.stringify(currentSkins)===JSON.stringify(oldSkins),
   'Serialized GLB skeleton mismatch');
  // Reject a fake optimization before it can replace the known-working build.
+ console.log('RUNTIME_SIZE_DIAGNOSTIC '+JSON.stringify({gender,originalBytes,packed:packed.length,zipped:zipped.length,accessors:root.listAccessors().length}));
  assert(packed.length<originalBytes*.6,
   'Optimized model is unexpectedly large, not safe to deploy');
  console.log('RUNTIME_CHARACTER '+JSON.stringify({
