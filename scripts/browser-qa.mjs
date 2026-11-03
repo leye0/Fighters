@@ -441,6 +441,9 @@ async function run(){
   'A worker must not be assigned combat orders');
  check(!await evaluate("window.__fightersQA.orderMine('witch',0,'neutral-gold-mine')"),
   'Melee fighter must not mine gold');
+ await evaluate("window.__fightersQA.selectUnit('witch',0)");
+ check(!await evaluate("window.__fightersQA.attackBuilding('neutral-gold-mine')"),
+  'Neutral mineral deposits must not become hostile combat targets');
  const witchGoldBefore=s.gold.witch;
  check(await evaluate("window.__fightersQA.orderMine('witch',1,'neutral-gold-mine')"),
   'Witch worker could not take a mine job');

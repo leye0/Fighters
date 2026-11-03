@@ -1183,7 +1183,16 @@ function buildWitchHouse(x,z,{prepaid=false}={}){
     queue:[],progress:0,rally:null,rallyMarker:null,
     hitbox:buildShape('witch-house',x,z),visualHitbox:buildingVisualBounds(root)
   };
-  buildingInstances.set(id,instance);scene.add(root);
+  // Built houses participate in the same world-space health-bar lifecycle
+  // and QA inspection as every original orc building.
+  const bar=new THREE.Group();bar.name='healthbar-world-'+id;
+  const backdrop=new THREE.Mesh(new THREE.PlaneGeometry(2.3,.24),
+    new THREE.MeshBasicMaterial({color:0x292929,depthTest:false,side:THREE.DoubleSide}));
+  const fill=new THREE.Mesh(new THREE.PlaneGeometry(2.2,.17),
+    new THREE.MeshBasicMaterial({color:0x65c957,depthTest:false,side:THREE.DoubleSide}));
+  fill.position.z=.01;bar.add(backdrop,fill);
+  instance.healthBar={root:bar,fill};scene.add(bar);
+  buildingInstances.set(id,instance);scene.add(root);updateHealthBar(instance);
   if(!prepaid)gold.witch-=WITCH_BUILD_COST;
   updateNavObstacles();refreshHUD();return instance;
 }
@@ -1553,7 +1562,8 @@ function unitFaction(actor){return actor.kind==='witch'?'witch':'orcs';}
 function targetFaction(target){return target.clanId||unitFaction(target);}
 function isBuilding(target){return !!target?.hitbox;}
 function enemyOf(actor,target){
-  return target&&!target.dead&&!target.destroyed&&unitFaction(actor)!==targetFaction(target);
+  return target&&!target.dead&&!target.destroyed&&targetFaction(target)!=='neutral'&&
+    unitFaction(actor)!==targetFaction(target);
 }
 function targetDistance(actor,target){
   const p=actor.root.position;
@@ -2053,9 +2063,8 @@ function touchAt(x,y,append=false){
   // no separate target mode, and the polygon wins over nearby unit circles.
   if(selected.size){
     if(building?.type==='mine'&&orderMine([...selected],building))return;
-    if(building&&targetFaction(building)!==faction){
-      orderAttack([...selected],building);return;
-    }
+    if(building&&targetFaction(building)!==faction&&targetFaction(building)!=='neutral'&&
+      orderAttack([...selected],building))return;
     if(unit&&targetFaction(unit)!==faction){
       orderAttack([...selected],unit);return;
     }
