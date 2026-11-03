@@ -19,6 +19,10 @@ for(const type of Object.keys(COST)){
  assert.deepEqual(site,planSite(type,starting,valid),'Planning must be deterministic');
 }
 assert.equal(planSite('hut',starting,()=>false),null,'No illegal fallback placement');
+assert.equal(planSite('mine',starting,valid),null,
+ 'Mines are fixed natural deposits and cannot be planned or constructed');
+assert(!Object.hasOwn(COST,'mine'),'Build cost catalog must not list mines');
+
 const director=new Director();
 let state={
  ready:true,running:true,paused:false,gold:900,buildings:starting,
@@ -40,6 +44,9 @@ assert(director.snapshot().decisions.some(a=>a.type==='raid'),
  'AI must form squads and launch a counterattack');
 assert(director.snapshot().decisions.some(a=>a.type==='build'),
  'AI must expand the village at suitable sites');
+assert(!director.snapshot().decisions.some(a=>a.type==='build'&&a.building==='mine'),
+ 'Orc director illegally generated a new natural mine');
+
 director.reset();
 assert.equal(director.snapshot().raids,0);
 assert.equal(director.snapshot().decisions.length,0);
