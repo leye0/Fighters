@@ -267,22 +267,51 @@ async function run(){
    'One-finger drag inadvertently selected units');
  await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
 
- // Hold one full second before dragging to activate selection, without panning.
- await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[touch(5,200,260)]});
+ // A real long-press rectangle must select ACTUAL visible witches; simply
+ // checking that a rectangle rendered previously let this regression escape.
+ await evaluate("window.__fightersQA.reset();window.__fightersQA.centerCamera(-18,-14)");
+ const witchScreen=await evaluate("Array.from({length:3},(_,i)=>window.__fightersQA.unitScreenPoint('witch',i))");
+ const bound={x1:Math.max(12,Math.floor(Math.min(...witchScreen.map(p=>p.x))-20)),
+  y1:Math.max(100,Math.floor(Math.min(...witchScreen.map(p=>p.y))-20)),
+  x2:Math.min(378,Math.ceil(Math.max(...witchScreen.map(p=>p.x))+20)),
+  y2:Math.ceil(Math.max(...witchScreen.map(p=>p.y))+20)};
+ const panelTop=await evaluate("document.querySelector('#command-panel').getBoundingClientRect().top");
+ console.log('REAL MOBILE GROUP SELECT POINTS:',JSON.stringify({witchScreen,bound,panelTop}));
+ check(bound.x2>bound.x1+20&&bound.y2>bound.y1+20&&
+   bound.y2<panelTop-6,'Witches not visible in touch-select test region');
+ await call('Input.dispatchTouchEvent',{type:'touchStart',
+   touchPoints:[touch(5,bound.x1,bound.y1)]});
  await sleep(1120);
- check((await evaluate('window.__fightersQA.snapshot()')).touchGesture==='select',
-   'One-second long press did not enable box selection');
- const beforeHoldDrag=await evaluate('window.__fightersQA.snapshot()');
- await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[touch(5,280,355)]});
- check(await evaluate("document.querySelector('#selection-rectangle').hidden===false"),
-   'Long-press drag must reveal selection rectangle');
- const afterHoldDrag=await evaluate('window.__fightersQA.snapshot()');
- check(Math.hypot(afterHoldDrag.cameraCenter.x-beforeHoldDrag.cameraCenter.x,
-   afterHoldDrag.cameraCenter.z-beforeHoldDrag.cameraCenter.z)<.05,
-   'Long-press box selection must not pan camera');
+ let held=await evaluate('window.__fightersQA.snapshot()');
+ check(held.touchGesture==='select'&&held.selectionRectangleVisible,
+   'One-second touch must enter visible selection mode: '+JSON.stringify(held.touchGestureCounters));
+ const beforeHoldDrag=held;
+ await call('Input.dispatchTouchEvent',{type:'touchMove',
+   touchPoints:[touch(5,bound.x2,bound.y2)]});
+ held=await evaluate('window.__fightersQA.snapshot()');
+ check(held.selectionRectangleVisible&&held.touchGesture==='select',
+   'Long-press drag lost its selection rectangle');
+ check(Math.hypot(held.cameraCenter.x-beforeHoldDrag.cameraCenter.x,
+   held.cameraCenter.z-beforeHoldDrag.cameraCenter.z)<.05,
+   'Long-press box selection must not pan the camera');
  await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
- check(await evaluate("document.querySelector('#selection-rectangle').hidden"),
-   'Selection rectangle not cleared on finger release');
+ held=await evaluate('window.__fightersQA.snapshot()');
+ check(!held.selectionRectangleVisible&&held.selectedIds.length===3&&
+    held.visibleSelectionRings===3,
+   'Long-press dragged over 3 witches but did not select them: '+JSON.stringify({
+    selected:held.selectedIds,rings:held.visibleSelectionRings,
+    gesture:held.touchGesture,counters:held.touchGestureCounters,
+    witchScreen,bound
+   }));
+ // A stationary long press is also meaningful: it selects a single witch.
+ await call('Input.dispatchTouchEvent',{type:'touchStart',
+   touchPoints:[touch(6,witchScreen[0].x,witchScreen[0].y)]});
+ await sleep(1100);
+ await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ held=await evaluate('window.__fightersQA.snapshot()');
+ check(held.selectedIds.length===1&&held.visibleSelectionRings===1,
+   'Stationary one-second hold should select the character under the finger');
+ console.log('PASS MOBILE LONG-PRESS: 1s hold then drag selected 3/3 real witches, stationary hold selected 1 witch.');
  await call('Emulation.setTouchEmulationEnabled',{enabled:false});
  await screenshot('rts-mobile-pinch-zoom');
  await call('Emulation.clearDeviceMetricsOverride');
