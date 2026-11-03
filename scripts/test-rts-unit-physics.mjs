@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-const {RADIUS,sweptCircleHit,freeForUnit,step,separate}=require('../docs/rts-unit-physics.js');
+const {RADIUS,sweptCircleHit,freeForUnit,step,separate,formationGoals}=require('../docs/rts-unit-physics.js');
 const {Navigator}=require('../docs/rts-navigation.js');
 const unit=(id,x,z)=>({id,dead:false,root:{position:{x,z}}});
 const nav=new Navigator({halfSize:28,radius:RADIUS});
@@ -68,4 +68,19 @@ const noLateralRoom={
 for(let i=0;i<30;i++)separate(trapped,noLateralRoom,RADIUS,1/60);
 assert.equal(trapped[0].root.position.x,0,'Do not force apart through walls');
 assert.equal(trapped[1].root.position.x,0,'Do not force apart through walls');
-console.log('PASS soft RTS crowds: preferred lanes, open-field dispersion, last-resort overlap and hard building walls.');
+// Twenty soldiers placed beside a blocked building/corner each need a
+// DIFFERENT destination. Previously findSafeGoal snapped them to the same
+// cell and the crowd-stirring algorithm orbited those duplicate goals forever.
+const formation=Array.from({length:20},(_,i)=>unit(100+i,-20+i%5*.8,-20+Math.floor(i/5)*.8));
+for(const destination of [{x:8,z:7},{x:26.8,z:26.8},{x:0,z:0},{x:-26,z:-26}]){
+ const goals=formationGoals(formation,destination,nav);
+ assert.equal(goals.length,formation.length);
+ for(const goal of goals)assert(goal&&nav.pointClear(goal),
+  'Formation has a blocked or missing destination at '+JSON.stringify(destination));
+ for(let i=0;i<goals.length;i++)for(let j=i+1;j<goals.length;j++)
+  assert(Math.hypot(goals[i].x-goals[j].x,goals[i].z-goals[j].z)>=1.20,
+   'Multiple witches assigned the same point');
+ const again=formationGoals(formation,destination,nav);
+ assert.deepEqual(goals,again,'Group movement must assign stable deterministic slots');
+}
+console.log('PASS soft RTS crowds: reserved 20-unit formations, preferred lanes, open-field dispersion, last-resort overlap and hard building walls.');
