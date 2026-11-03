@@ -988,15 +988,29 @@ function buildingPerimeterSites(building,clearance=UNIT_RADIUS+.08){
 }
 function safeSpawnNear(building){
   const sites=buildingPerimeterSites(building,UNIT_RADIUS+.14);
-  for(const point of sites){
+  // Exact polygons can leave narrow pockets between a wall and the map edge.
+  // A point may be collision-free yet have no A* exit; do not spawn a unit
+  // that can never reach the rest of the battlefield.
+  const hub=navigatorRTS.findSafeGoal({x:0,z:0});
+  if(!hub)return null;
+  if(building.spawnReachVersion!==navigatorRTS.version){
+    building.spawnReachVersion=navigatorRTS.version;
+    building.spawnReachable=new Map();
+  }
+  for(let i=0;i<sites.length;i++){
+    const point=sites[i];
     if(units.some(u=>!u.dead&&Math.hypot(u.root.position.x-point.x,
       u.root.position.z-point.z)<UNIT_RADIUS*2.3))continue;
+    if(!building.spawnReachable.has(i))
+      building.spawnReachable.set(i,!!navigatorRTS.plan(point,hub));
+    if(!building.spawnReachable.get(i))continue;
     return point;
   }
   const b=building.hitbox;
-  return navigatorRTS.findSafeSpawn(building.rally||{
+  const fallback=navigatorRTS.findSafeSpawn(building.rally||{
     x:(b.minX+b.maxX)/2,z:b.maxZ+UNIT_RADIUS*3
   });
+  return fallback&&navigatorRTS.plan(fallback,hub)?fallback:null;
 }
 function finishTraining(building,kind){
   const position=safeSpawnNear(building);
