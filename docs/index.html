@@ -1615,7 +1615,9 @@ function tickMineWorker(actor,dt){
   if(reach>BUILDING_CONTACT){
     const goal=approachBuilding(actor,mine);
     if(!goal)return false;
-    const status=navigateActor(actor,goal,dt,'order');
+    const status=navigateActor(actor,goal,dt,'engage');
+    // Mining is a physical contact task, not a loose formation move.
+    // The order-mode .36m arrival tolerance left workers .2m beyond reach.
     if(status!=='moving')animation(actor,'Idle_Loop');
     return true;
   }
