@@ -341,6 +341,8 @@ async function run(){
  check(!mode.selectionRectangleVisible&&
    await evaluate("document.querySelector('#quick-select').getAttribute('aria-pressed')==='false'"),
    'Selection shortcut should clear itself and rectangle after choosing units');
+ check(await evaluate("(()=>{const b=document.querySelector('#banner').getBoundingClientRect();return b.left>=-1&&b.right<=innerWidth+1&&b.height<95})()"),
+   'Mobile selection confirmation banner is clipped or obscures the map');
  await screenshot('rts-mobile-reliable-selection');
  console.log('PASS MOBILE EXPLICIT SELECTION: quick-select + immediate touch-drag selected 3/3 witches.');
 
