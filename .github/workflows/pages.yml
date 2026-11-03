@@ -10,6 +10,8 @@ on:
       - 'scripts/compress-character-assets.sh'
       - 'scripts/build-runtime-characters.mjs'
       - 'scripts/split-orc-buildings.mjs'
+      - 'scripts/generate-building-footprints.mjs'
+      - 'scripts/union-xz-triangles.py'
       - 'scripts/verify-costumes.mjs'
       - 'scripts/download-costumes.sh'
       - 'scripts/download-sword.sh'
@@ -35,6 +37,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Download and pin upstream models into the Pages artifact
         run: |
           mkdir -p docs/models
@@ -47,6 +52,8 @@ jobs:
           cp node_modules/three/build/three.core.js docs/vendor/three/three.core.js
           cp -R node_modules/three/examples/jsm docs/vendor/three/addons
           node scripts/split-orc-buildings.mjs docs/models/orc_rts_building_set_-_proto_series.glb docs/models/orc-buildings
+          python3 -m pip install --disable-pip-version-check shapely==2.1.2
+          node scripts/generate-building-footprints.mjs docs/models/witch_house.glb docs/models/orc-buildings
           curl --fail --location --silent --show-error --retry 3 \
             "https://raw.githubusercontent.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/5821923af517ac5fdc82505faa92a0d575fc1b1a/test/human_male.glb" \
             --output docs/models/human_male.glb
