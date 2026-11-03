@@ -115,6 +115,8 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 #touch-hold-indicator[hidden]{display:none}
 @keyframes hold-select{from{opacity:.45;rotate:0deg}to{opacity:1;rotate:360deg;border-color:#c3ef93}}
 #selection-rectangle{border:2px solid #c1f5a7;box-shadow:inset 0 0 12px #8ae49933}
+/* iOS: never hand a long press to native text selection or callout. */
+.viewport,.viewport canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:none;overscroll-behavior:none}
 </style>
 <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
 <script src="./rts-navigation.js"></script>
@@ -1735,171 +1737,192 @@ function selectRectangle(a,b,append=false){
 let pointerStart=null;
 let inputSuppressedByPinch=false;
 const HOLD_TO_SELECT_MS=1000;
+let touchGestureCounters={starts:0,holds:0,boxes:0,selectedUnits:0,cancels:0};
 function clearHoldCue(){
-  const cue=$('touch-hold-indicator');
-  cue.hidden=true;
+  $('touch-hold-indicator').hidden=true;
 }
 function cancelPointerGesture(){
-  if(pointerStart?.timer)clearTimeout(pointerStart.timer);
+  if(pointerStart?.timer!==null&&pointerStart?.timer!==undefined)
+    clearTimeout(pointerStart.timer);
   pointerStart=null;
-  $('selection-rectangle').hidden=true;clearHoldCue();
+  $('selection-rectangle').hidden=true;
+  clearHoldCue();
 }
 function renderSelectionRectangle(start,x,y){
   const box=$('selection-rectangle'),rect=viewport.getBoundingClientRect();
-  box.hidden=false;box.style.left=Math.min(start.x,x)-rect.left+'px';
+  box.hidden=false;
+  box.style.left=Math.min(start.x,x)-rect.left+'px';
   box.style.top=Math.min(start.y,y)-rect.top+'px';
-  box.style.width=Math.abs(x-start.x)+'px';
-  box.style.height=Math.abs(y-start.y)+'px';
+  box.style.width=Math.max(10,Math.abs(x-start.x))+'px';
+  box.style.height=Math.max(10,Math.abs(y-start.y))+'px';
+}
+function activateTouchSelection(gesture){
+  if(pointerStart!==gesture||gesture.mode!=='waiting'||
+    activeTouches.size!==1||inputSuppressedByPinch||!running||paused)return;
+  clearTimeout(gesture.timer);gesture.timer=null;
+  gesture.mode='select';touchGestureCounters.holds++;
+  clearHoldCue();
+  renderSelectionRectangle(gesture,gesture.lastX,gesture.lastY);
 }
 function beginOneFingerGesture(id,x,y){
   cancelPointerGesture();
-  const gesture={id,x,y,lastX:x,lastY:y,shift:false,mode:'waiting',timer:null};
-  const rect=viewport.getBoundingClientRect(),cue=$('touch-hold-indicator');
-  cue.hidden=false;cue.style.left=x-rect.left+'px';cue.style.top=y-rect.top+'px';
-  cue.style.animation='none';void cue.offsetWidth;cue.style.animation='';
-  gesture.timer=setTimeout(()=>{
-    if(pointerStart!==gesture||activeTouches.size>1||pinch)return;
-    gesture.mode='select';gesture.timer=null;clearHoldCue();
-    renderSelectionRectangle(gesture,gesture.x,gesture.y);
-  },HOLD_TO_SELECT_MS);
+  const gesture={id,x,y,lastX:x,lastY:y,shift:false,mode:'waiting',
+    timer:null,startedAt:performance.now()};
   pointerStart=gesture;
+  const rect=viewport.getBoundingClientRect(),cue=$('touch-hold-indicator');
+  cue.hidden=false;cue.style.left=x-rect.left+'px';
+  cue.style.top=y-rect.top+'px';
+  cue.style.animation='none';void cue.offsetWidth;cue.style.animation='';
+  gesture.timer=setTimeout(()=>activateTouchSelection(gesture),HOLD_TO_SELECT_MS);
+  touchGestureCounters.starts++;
 }
 function updateOneFingerGesture(x,y){
   const gesture=pointerStart;
   if(!gesture)return;
   const distance=Math.hypot(x-gesture.x,y-gesture.y);
+  // Frame drops may delay JS timers on iOS. Use the actual elapsed touch time
+  // as well; after 1000 ms the gesture can never become a camera pan.
+  if(gesture.mode==='waiting'&&performance.now()-gesture.startedAt>=HOLD_TO_SELECT_MS)
+    activateTouchSelection(gesture);
   if(gesture.mode==='waiting'&&distance>11){
-    if(gesture.timer)clearTimeout(gesture.timer);
-    gesture.timer=null;gesture.mode='pan';clearHoldCue();
+    clearTimeout(gesture.timer);gesture.timer=null;
+    gesture.mode='pan';clearHoldCue();
   }
   if(gesture.mode==='pan')panCamera(x-gesture.lastX,y-gesture.lastY);
-  else if(gesture.mode==='select'&&distance>8)renderSelectionRectangle(gesture,x,y);
+  else if(gesture.mode==='select'&&distance>5)
+    renderSelectionRectangle(gesture,x,y);
   gesture.lastX=x;gesture.lastY=y;
 }
 function applyPinch(a,b){
   const center={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
   const distance=Math.max(1,Math.hypot(a.x-b.x,a.y-b.y));
-  if(pinch){
-    // Two fingers are reserved for zoom alone; parallel translation does NOT
-    // pan the map. The player pans with one finger instead.
-    zoomCamera(clamp(pinch.distance/distance,.65,1.55),center.x,center.y);
-  }
+  if(pinch)zoomCamera(clamp(pinch.distance/distance,.65,1.55),center.x,center.y);
   pinch={distance,center};
 }
-function beginPinch(){
-  const points=[...activeTouches.values()];
-  if(points.length<2)return;
-  inputSuppressedByPinch=true;cancelPointerGesture();
-  const [a,b]=points;
-  pinch={distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),
-    center:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}};
+function completeOneFingerGesture(gesture,x,y){
+  const duration=performance.now()-gesture.startedAt;
+  if(gesture.mode==='waiting'&&duration>=HOLD_TO_SELECT_MS)
+    activateTouchSelection(gesture);
+  const mode=gesture.mode;
+  const movement=Math.hypot(x-gesture.x,y-gesture.y);
+  cancelPointerGesture();
+  if(mode==='pan')return;
+  if(mode==='select'&&gesture.id!==null&&duration>=HOLD_TO_SELECT_MS){
+    // Long-press followed by a drag selects the whole rectangle; holding
+    // without dragging selects the character directly under the finger.
+    if(movement>10){
+      selectRectangle(gesture,{x,y},false);
+      touchGestureCounters.boxes++;
+    }else{
+      const single=pickUnit(x,y,false);
+      if(single)selectUnits([single],false);
+    }
+    touchGestureCounters.selectedUnits=selected.size;
+    return;
+  }
+  if(mode==='select'&&movement>15&&!buildMode&&!attackMode)
+    selectRectangle(gesture,{x,y},gesture.shift);
+  else if(movement<16)touchAt(x,y,gesture.shift);
+}
+function syncActiveTouches(event){
+  activeTouches.clear();
+  for(const touch of event.touches)
+    activeTouches.set(touch.identifier,{x:touch.clientX,y:touch.clientY});
 }
 viewport.addEventListener('touchstart',event=>{
   if(event.target.closest('.command-panel')||event.target.closest('.hud'))return;
-  if(event.touches.length===1){
-    if(!pointerStart&&running&&!paused&&!$('overlay').hidden){
-      const touch=event.touches[0];beginOneFingerGesture('touch-'+touch.identifier,touch.clientX,touch.clientY);
-    }
-    return;
-  }
-  if(activeTouches.size<2)inputSuppressedByPinch=true;
-  cancelPointerGesture();
-  if(!pinch){
+  if(!running||paused||!$('overlay').hidden)return;
+  event.preventDefault(); // Prevent iOS text/callout handling from stealing hold.
+  syncActiveTouches(event);
+  if(event.touches.length>=2){
+    inputSuppressedByPinch=true;
+    cancelPointerGesture();
     const a=event.touches[0],b=event.touches[1];
     pinch={distance:Math.max(1,Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)),
       center:{x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2}};
+  }else if(event.touches.length===1&&!inputSuppressedByPinch){
+    const a=event.touches[0];
+    beginOneFingerGesture(a.identifier,a.clientX,a.clientY);
   }
 },{passive:false});
 viewport.addEventListener('touchmove',event=>{
   if(!running||paused)return;
+  event.preventDefault();
+  syncActiveTouches(event);
   if(event.touches.length>=2){
-    event.preventDefault();
     const a=event.touches[0],b=event.touches[1];
     applyPinch({x:a.clientX,y:a.clientY},{x:b.clientX,y:b.clientY});
   }else if(event.touches.length===1&&!inputSuppressedByPinch&&pointerStart){
-    // Some browser/automation combinations send TouchEvents without matching
-    // pointermove, so the single-finger pan must have a native fallback.
-    event.preventDefault();
-    const a=event.touches[0];
-    updateOneFingerGesture(a.clientX,a.clientY);
+    const touch=event.touches[0];
+    if(pointerStart.id===touch.identifier)
+      updateOneFingerGesture(touch.clientX,touch.clientY);
   }
 },{passive:false});
 viewport.addEventListener('touchend',event=>{
+  if(!running)return;
+  event.preventDefault();
+  syncActiveTouches(event);
   if(event.touches.length<2)pinch=null;
   if(event.touches.length===0){
-    if(pointerStart){
-      const g=pointerStart,at=event.changedTouches[0];
-      cancelPointerGesture();
-      if(!inputSuppressedByPinch&&g.mode==='select'&&at&&
-        Math.hypot(at.clientX-g.x,at.clientY-g.y)>15)
-        selectRectangle(g,{x:at.clientX,y:at.clientY},false);
-      else if(!inputSuppressedByPinch&&g.mode==='waiting'&&at)
-        touchAt(at.clientX,at.clientY);
-    }
+    const gesture=pointerStart,ended=event.changedTouches[0];
+    if(gesture&&ended&&!inputSuppressedByPinch&&
+      gesture.id===ended.identifier)
+      completeOneFingerGesture(gesture,ended.clientX,ended.clientY);
+    else cancelPointerGesture();
     inputSuppressedByPinch=false;
+  }else if(inputSuppressedByPinch){
+    cancelPointerGesture(); // A pinch never turns into a selection mid-gesture.
   }
 },{passive:false});
+viewport.addEventListener('touchcancel',event=>{
+  syncActiveTouches(event);touchGestureCounters.cancels++;
+  cancelPointerGesture();pinch=null;inputSuppressedByPinch=false;
+},{passive:false});
+// Mouse and stylus pointer events are separate from TouchEvents. Previously
+// pointerdown restarted the 1000ms hold after touchstart, and pointercancel
+// could erase the selection before touchend on iOS.
 viewport.addEventListener('wheel',event=>{
   if(event.target.closest('.command-panel'))return;
   event.preventDefault();
   zoomCamera(Math.exp(clamp(event.deltaY,-400,400)*.0015),event.clientX,event.clientY);
 },{passive:false});
 viewport.addEventListener('pointerdown',event=>{
+  if(event.pointerType==='touch')return;
   if(event.target.closest('.command-panel')||event.target.closest('.hud'))return;
   if(!running||paused||!$('overlay').hidden)return;
-  if(event.pointerType==='touch'){
-    activeTouches.set(event.pointerId,{x:event.clientX,y:event.clientY});
-    if(activeTouches.size>=2){beginPinch();}
-    else{
-      inputSuppressedByPinch=false;
-      beginOneFingerGesture(event.pointerId,event.clientX,event.clientY);
-    }
-  }else if(event.button===1||event.button===2){
+  if(event.button===1||event.button===2){
     cameraDrag={id:event.pointerId,x:event.clientX,y:event.clientY};
   }else if(event.button===0){
-    pointerStart={id:event.pointerId,x:event.clientX,y:event.clientY,
-      lastX:event.clientX,lastY:event.clientY,shift:event.shiftKey,mode:'select',timer:null};
+    pointerStart={id:'mouse-'+event.pointerId,x:event.clientX,y:event.clientY,
+      lastX:event.clientX,lastY:event.clientY,shift:event.shiftKey,
+      mode:'select',timer:null};
   }else return;
   event.preventDefault();viewport.setPointerCapture(event.pointerId);
 });
 viewport.addEventListener('pointermove',event=>{
-  if(activeTouches.has(event.pointerId))
-    activeTouches.set(event.pointerId,{x:event.clientX,y:event.clientY});
-  if(activeTouches.size>=2){
-    // Prefer touchmove for actual touch devices; this also supports pointer
-    // event implementations without native TouchEvents.
-    if(event.pointerType!=='touch'){
-      const [a,b]=[...activeTouches.values()];applyPinch(a,b);
-    }
-    return;
-  }
+  if(event.pointerType==='touch')return;
   if(cameraDrag?.id===event.pointerId){
     panCamera(event.clientX-cameraDrag.x,event.clientY-cameraDrag.y);
     cameraDrag.x=event.clientX;cameraDrag.y=event.clientY;return;
   }
   const gesture=pointerStart;
-  if(!gesture)return;
-  // A native touchstart may have created the gesture first. Native touchmove
-  // and pointermove both share the same last position, avoiding double panning.
-  if(gesture.id!==event.pointerId&&typeof gesture.id!=='string')return;
-  updateOneFingerGesture(event.clientX,event.clientY);
+  if(!gesture||gesture.id!=='mouse-'+event.pointerId)return;
+  const distance=Math.hypot(event.clientX-gesture.x,event.clientY-gesture.y);
+  if(distance>8)renderSelectionRectangle(gesture,event.clientX,event.clientY);
+  gesture.lastX=event.clientX;gesture.lastY=event.clientY;
 });
 function releasePointer(event){
-  const pinching=inputSuppressedByPinch||activeTouches.size>=2;
-  activeTouches.delete(event.pointerId);
-  if(activeTouches.size<2)pinch=null;
-  if(activeTouches.size===0&&event.pointerType==='touch')inputSuppressedByPinch=false;
+  if(event.pointerType==='touch')return;
   if(cameraDrag?.id===event.pointerId){cameraDrag=null;return;}
   const gesture=pointerStart;
-  if(!gesture||gesture.id!==event.pointerId)return;
-  cancelPointerGesture();
-  if(pinching||event.type!=='pointerup')return;
+  if(!gesture||gesture.id!=='mouse-'+event.pointerId)return;
   const end={x:event.clientX,y:event.clientY};
   const distance=Math.hypot(end.x-gesture.x,end.y-gesture.y);
-  if(gesture.mode==='pan')return;
-  if(gesture.mode==='select'&&distance>15&&!buildMode&&!attackMode){
+  cancelPointerGesture();
+  if(event.type!=='pointerup')return;
+  if(distance>15&&!buildMode&&!attackMode)
     selectRectangle(gesture,end,gesture.shift);
-  }else if(distance<16)touchAt(event.clientX,event.clientY,gesture.shift);
+  else if(distance<16)touchAt(end.x,end.y,gesture.shift);
 }
 for(const name of ['pointerup','pointercancel','lostpointercapture'])
   viewport.addEventListener(name,releasePointer);
@@ -2039,6 +2062,8 @@ window.__fightersQA={
     mixers:orcAnimationMixers.length,
     worldHealthBars:scene.children.filter(node=>node.name?.startsWith('healthbar-world-')).length,
     touchGesture:pointerStart?.mode||null,
+    touchGestureCounters:{...touchGestureCounters},
+    selectionRectangleVisible:!$('selection-rectangle').hidden,
     ui:{...uiStats,activePings:activeOrderPings.size,
       commandButtonCount:$('command-buttons').children.length,
       persistentButtons:[...$('quick-commands').querySelectorAll('button')].map(b=>b.id),
