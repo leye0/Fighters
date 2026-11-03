@@ -2142,6 +2142,7 @@ window.__fightersQA={
     cameraQuaternion:camera.quaternion.toArray(),
     witches:units.filter(a=>a.kind==='witch'&&!a.dead).map(a=>({
       id:a.id,x:a.root.position.x,z:a.root.position.z,radius:a.radius,health:a.health,animation:a.current,
+      heading:{...a.heading},combatTargetId:a.attack?.target?.id||null,
       destination:a.destination?{...a.destination}:null,pathLength:a.route?.waypoints.length??0,
       approachPoint:a.approachCache?.point||null,attackDistance:a.attackOrder?targetDistance(a,a.attackOrder):null,
       routeGoal:a.routeGoal||null,attackCooldown:a.cooldown,
@@ -2149,6 +2150,8 @@ window.__fightersQA={
     })),
     orcs:units.filter(a=>a.kind==='orc'&&!a.dead).map(a=>({
       id:a.id,x:a.root.position.x,z:a.root.position.z,health:a.health,animation:a.current,
+      heading:{...a.heading},combatTargetId:a.attack?.target?.id||null,
+      attackTargetId:a.attackOrder?.id||null,miningTargetId:a.mineJob?.mineId||null,
       destination:a.destination?{...a.destination}:null,pathLength:a.route?.waypoints.length??0
     })),
     selectedIds:[...selected].map(a=>a.id),selectedBuilding:selectedBuilding?.kind||selectedBuilding?.type||null,
@@ -2171,6 +2174,15 @@ window.__fightersQA={
     blueprints:[...buildingBlueprints.keys()],witchHouseLoaded:!!witchHouse
   }),
   train:issueTrain,trainOrc:()=>issueOrcTrain(selectedBuilding),
+  spawnWitches:(targetCount=20)=>{
+    let total=units.filter(u=>u.kind==='witch'&&!u.dead).length;
+    while(total<Math.min(35,targetCount)){
+      const place=safeSpawnNear(witchBuilding);
+      if(!place)break;
+      spawnUnit('witch',place.x,place.z,total);total++;
+    }
+    return total;
+  },
   attackBuilding:id=>orderAttack([...selected],[witchBuilding,...buildingInstances.values()].find(b=>b.id===id)),
   attackUnit:id=>orderAttack([...selected],units.find(u=>u.id===id)),
   damageBuilding:(id,amount)=>{
