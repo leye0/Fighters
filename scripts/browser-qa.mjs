@@ -863,6 +863,58 @@ async function run(){
    'Crowd is still walking/oscillating after arrival: '+JSON.stringify(s.witches));
  console.log('PASS twenty witches: 20 distinct goals, complete arrival, idle and stable positions.');
 
+ // Real-match soak: training, a large moving army, physical mining,
+ // autonomous scouting/construction and live WebGL rendering all stay active.
+ // Repeated GC checkpoints distinguish retained JS heap from expected
+ // temporary allocations and raw game-tick CPU growth.
+ await evaluate("window.__fightersQA.reset();window.__fightersQA.enableOrcAI(true);"+
+   "window.__fightersQA.selectHouse();"+
+   "window.__fightersQA.trainRole('witch','worker');"+
+   "window.__fightersQA.trainRole('witch','melee');"+
+   "window.__fightersQA.trainRole('witch','ranged')");
+ await evaluate('window.__fightersQA.advance(22)');
+ const armySize=await evaluate('window.__fightersQA.spawnWitches(20)');
+ check(armySize===20,'Long-play test could not assemble twenty witches: '+armySize);
+ await evaluate("(()=>{const points=[[-16,8],[-14,14],[-10,-12],[-5,8]];"+
+   "const at=points.find(p=>window.__fightersQA.canBuild(p[0],p[1],'witch-house'));"+
+   "if(at)window.__fightersQA.orderBuild('witch-house',at[0],at[1]);})()");
+ await call('HeapProfiler.enable');
+ const longPlay=[];
+ for(const [index,goal] of [[-7,-13],[-13,3],[-6,13],[-12,-8]].entries()){
+   if(await evaluate('window.__fightersQA.snapshot().running')){
+     await evaluate("window.__fightersQA.selectWitches();window.__fightersQA.move("+
+       goal.join(',')+")");
+   }
+   const start=Date.now();
+   await evaluate('window.__fightersQA.advance(20)');
+   const cpuMs=Date.now()-start;
+   // Let the actual requestAnimationFrame/WebGL pipeline catch up after
+   // fast-forwarding game time; the separate RAF render is not faked.
+   await sleep(1250);
+   await call('HeapProfiler.collectGarbage');
+   const heap=await call('Runtime.getHeapUsage');
+   const snap=await evaluate('window.__fightersQA.snapshot()');
+   const sample={phase:index+1,elapsedGameSeconds:(index+1)*20+22,
+     cpuMs,retainedHeapMiB:Math.round(heap.usedSize/1048576*100)/100,
+     totalHeapMiB:Math.round(heap.totalSize/1048576*100)/100,
+     witches:snap.witches.length,orcs:snap.orcs.length,
+     buildings:snap.buildings.filter(b=>!b.destroyed).length,
+     gold:snap.gold,explored:snap.fog.exploredCells,
+     gpu:snap.gpu,aiMode:snap.orcAI.mode,running:snap.running};
+   longPlay.push(sample);
+   console.log('REAL_GAMEPLAY_SOAK',JSON.stringify(sample));
+ }
+ check(longPlay.some(p=>p.orcs>4)&&longPlay.some(p=>p.explored>0),
+   'Long-play did not exercise enemy production and exploration');
+ const tail=longPlay.slice(-2);
+ const driftMiB=tail[1].retainedHeapMiB-tail[0].retainedHeapMiB;
+ console.log('REAL_GAMEPLAY_SOAK_SUMMARY',JSON.stringify({
+   gameSeconds:102,heapDriftMiBLast20Seconds:driftMiB,
+   cpuMsPer20GameSeconds:longPlay.map(p=>p.cpuMs),
+   gpu:longPlay.map(p=>p.gpu)
+ }));
+ await screenshot('rts-real-gameplay-soak');
+
  await evaluate('window.__fightersQA.enableOrcAI(false);window.__fightersQA.reset()');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.witches.length===3&&s.orcs.length===4&&
