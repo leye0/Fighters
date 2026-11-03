@@ -21,6 +21,8 @@ on:
       - 'scripts/download-sword.sh'
       - 'scripts/decompress-sword.mjs'
       - '.github/workflows/browser-qa.yml'
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
