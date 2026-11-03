@@ -1943,7 +1943,7 @@ async function fetchAsset(url,{compressed=false,timeout=18000}={}){
   }finally{clearTimeout(timeoutId);}
 }
 async function getBinary(file,onProgress=()=>{}){
-  const started=performance.now(),isCharacter=/^human_(female|male)\\.(?:rts\\.)?glb$/.test(file);
+  const started=performance.now(),isCharacter=/^human_(female|male)\.(?:rts\.)?glb$/.test(file);
   const rawUrl='./models/'+file;
   if(isCharacter&&typeof DecompressionStream==='function'){
     try{
