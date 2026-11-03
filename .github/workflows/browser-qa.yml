@@ -42,7 +42,6 @@ jobs:
           node scripts/test-rts-navigation.mjs
           node scripts/test-rts-unit-physics.mjs
           node scripts/test-orc-strategy.mjs
-          node scripts/test-rts-footprint.mjs
       - name: Prepare complete RTS building assets and native character models
         run: |
           mkdir -p docs/models
@@ -55,6 +54,7 @@ jobs:
           cp -R node_modules/three/examples/jsm docs/vendor/three/addons
           mkdir -p docs/vendor
           cp node_modules/polygon-clipping/dist/polygon-clipping.umd.js docs/vendor/polygon-clipping.umd.js
+          node scripts/test-rts-footprint.mjs
           node scripts/split-orc-buildings.mjs docs/models/orc_rts_building_set_-_proto_series.glb docs/models/orc-buildings
           curl -fLsS --retry 3 https://raw.githubusercontent.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/5821923af517ac5fdc82505faa92a0d575fc1b1a/test/human_male.glb -o docs/models/human_male.glb
           curl -fLsS --retry 3 https://raw.githubusercontent.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/5821923af517ac5fdc82505faa92a0d575fc1b1a/test/human_female.glb -o docs/models/human_female.glb
