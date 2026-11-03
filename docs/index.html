@@ -1813,186 +1813,159 @@ function selectRectangle(a,b,append=false){
   });
   selectUnits(actors,append);
 }
-// Single Pointer Events pipeline for iOS Safari, Android, mouse and stylus.
-// Unlike the previous implementation, touch contacts DO receive pointerdown.
+// All touch input uses one Pointer Events chain. No long-press timers and
+// no pinch zoom. TWO simultaneous fingertips define a live selection rectangle.
 let pointerStart=null;
+let twoFingerBox=null;
+let twoFingerAwaitRelease=false;
 let lastTouchAt=-10000;
-const HOLD_TO_SELECT_MS=1000;
-const TOUCH_PAN_THRESHOLD=23; // drift tolerance; an intentional early swipe pans.
-const touchGestureCounters={starts:0,holds:0,boxes:0,selectedUnits:0,cancels:0};
-function clearHoldCue(){ $('touch-hold-indicator').hidden=true; }
+const touchGestureCounters={starts:0,boxes:0,selectedUnits:0,cancels:0};
+function clearSelectionBox(){
+  $('selection-rectangle').hidden=true;
+}
 function cancelPointerGesture(){
-  if(pointerStart?.timer!=null)clearTimeout(pointerStart.timer);
   pointerStart=null;
-  $('selection-rectangle').hidden=true;clearHoldCue();
+  clearSelectionBox();
 }
 function renderSelectionRectangle(start,x,y){
   const box=$('selection-rectangle'),rect=viewport.getBoundingClientRect();
-  box.hidden=false;box.style.left=Math.min(start.x,x)-rect.left+'px';
+  box.hidden=false;
+  box.style.left=Math.min(start.x,x)-rect.left+'px';
   box.style.top=Math.min(start.y,y)-rect.top+'px';
   box.style.width=Math.max(10,Math.abs(x-start.x))+'px';
   box.style.height=Math.max(10,Math.abs(y-start.y))+'px';
 }
-function activateTouchSelection(gesture){
-  if(pointerStart!==gesture||gesture.mode!=='waiting'||activeTouches.size!==1||
-    !running||paused)return;
-  if(gesture.timer!=null)clearTimeout(gesture.timer);
-  gesture.timer=null;gesture.mode='select';touchGestureCounters.holds++;
-  clearHoldCue();
-  renderSelectionRectangle(gesture,gesture.lastX,gesture.lastY);
+function startTwoFingerSelection(){
+  cancelPointerGesture();
+  const fingers=[...activeTouches.entries()];
+  if(fingers.length!==2)return;
+  const [[aId,a],[bId,b]]=fingers;
+  twoFingerBox={ids:[aId,bId],a:{...a},b:{...b}};
+  twoFingerAwaitRelease=false;
+  renderSelectionRectangle(a,b.x,b.y);
 }
-function beginTouchGesture(event){
-  const rect=viewport.getBoundingClientRect();
-  const gesture={id:event.pointerId,type:'touch',
-    x:event.clientX,y:event.clientY,lastX:event.clientX,lastY:event.clientY,
-    startedAt:performance.now(),mode:'waiting',timer:null};
-  pointerStart=gesture;
-  const cue=$('touch-hold-indicator');
-  cue.hidden=false;cue.style.left=gesture.x-rect.left+'px';
-  cue.style.top=gesture.y-rect.top+'px';
-  cue.style.animation='none';void cue.offsetWidth;cue.style.animation='';
-  gesture.timer=setTimeout(()=>activateTouchSelection(gesture),HOLD_TO_SELECT_MS);
+function updateTwoFingerSelection(){
+  if(!twoFingerBox)return;
+  const [aId,bId]=twoFingerBox.ids;
+  // Keep the last observed position for each pointer so the box can be
+  // completed reliably even if Safari releases the fingers one after another.
+  if(activeTouches.has(aId))twoFingerBox.a={...activeTouches.get(aId)};
+  if(activeTouches.has(bId))twoFingerBox.b={...activeTouches.get(bId)};
+  renderSelectionRectangle(twoFingerBox.a,twoFingerBox.b.x,twoFingerBox.b.y);
+}
+function finishTwoFingerSelection(){
+  if(!twoFingerBox)return;
+  const {a,b}=twoFingerBox;
+  twoFingerBox=null;
+  twoFingerAwaitRelease=true;
+  clearSelectionBox();
+  if(!running||paused)return;
+  selectRectangle(a,b,false);
+  touchGestureCounters.boxes++;
+  touchGestureCounters.selectedUnits=selected.size;
+  showBanner(selected.size?
+    selected.size+' UNITÉ'+(selected.size>1?'S':'')+' SÉLECTIONNÉE'+(selected.size>1?'S':''):
+    'AUCUNE UNITÉ DANS LA ZONE');
+}
+function beginTouchPan(event){
+  pointerStart={id:event.pointerId,type:'touch',mode:'tap',
+    x:event.clientX,y:event.clientY,lastX:event.clientX,
+    lastY:event.clientY};
   touchGestureCounters.starts++;
 }
-function applyPinch(a,b){
-  const distance=Math.max(1,Math.hypot(a.x-b.x,a.y-b.y));
-  if(!pinch)return;
-  const factor=clamp(pinch.distance/distance,.65,1.55);
-  // Anchor the zoom at the INITIAL two-finger centroid, not at the moving
-  // centroid. Parallel two-finger translation must not pan the camera.
-  if(Math.abs(factor-1)>.005)
-    zoomCamera(factor,pinch.center.x,pinch.center.y);
-  pinch.distance=distance;
-}
-let pinchFramePending=false;
-function schedulePinch(){
-  if(pinchFramePending)return;
-  pinchFramePending=true;
-  requestAnimationFrame(()=>{
-    pinchFramePending=false;
-    if(activeTouches.size<2||!pinch)return;
-    const [a,b]=[...activeTouches.values()];
-    applyPinch(a,b);
-  });
-}
-function startPinch(){
-  cancelPointerGesture();
-  const [a,b]=[...activeTouches.values()];
-  if(!a||!b)return;
-  pinch={distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),
-    center:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}};
-}
-function updateTouchGesture(event){
+function updateTouchPan(event){
   const gesture=pointerStart;
-  if(!gesture||gesture.id!==event.pointerId)return;
+  if(!gesture||gesture.id!==event.pointerId||twoFingerAwaitRelease)return;
   const x=event.clientX,y=event.clientY;
-  const distance=Math.hypot(x-gesture.x,y-gesture.y);
-  if(gesture.mode==='waiting'&&
-    performance.now()-gesture.startedAt>=HOLD_TO_SELECT_MS)
-    activateTouchSelection(gesture);
-  if(gesture.mode==='waiting'&&distance>TOUCH_PAN_THRESHOLD){
-    if(gesture.timer!=null)clearTimeout(gesture.timer);
-    gesture.timer=null;gesture.mode='pan';clearHoldCue();
-  }
-  if(gesture.mode==='pan')panCamera(x-gesture.lastX,y-gesture.lastY);
-  else if(gesture.mode==='select'&&distance>5)renderSelectionRectangle(gesture,x,y);
+  if(gesture.mode==='tap'&&Math.hypot(x-gesture.x,y-gesture.y)>11)
+    gesture.mode='pan';
+  if(gesture.mode==='pan')
+    panCamera(x-gesture.lastX,y-gesture.lastY);
   gesture.lastX=x;gesture.lastY=y;
-}
-function finishTouchGesture(gesture,x,y,cancelled=false){
-  const elapsed=performance.now()-gesture.startedAt;
-  const dist=Math.hypot(x-gesture.x,y-gesture.y);
-  // A delayed setTimeout must not prevent a valid 1-second hold from selecting.
-  if(gesture.mode==='waiting'&&elapsed>=HOLD_TO_SELECT_MS){
-    gesture.mode='select';touchGestureCounters.holds++;
-  }
-  const mode=gesture.mode;
-  cancelPointerGesture();
-  if(mode==='select'){
-    if(dist>12){
-      selectRectangle(gesture,{x,y},false);
-      touchGestureCounters.boxes++;
-    }else{
-      const unit=pickUnit(x,y,false);
-      if(unit)selectUnits([unit],false);
-    }
-    touchGestureCounters.selectedUnits=selected.size;
-    showBanner(selected.size?selected.size+' UNITÉ'+(selected.size>1?'S':'')+' SÉLECTIONNÉE'+(selected.size>1?'S':''):'AUCUNE UNITÉ DANS LA ZONE',true);
-  }else if(!cancelled&&mode==='waiting'&&dist<16)touchAt(x,y);
-  // 'pan' intentionally does not issue an order on release.
 }
 viewport.addEventListener('pointerdown',event=>{
   if(event.target.closest('.command-panel')||event.target.closest('.hud'))return;
   if(!running||paused||!$('overlay').hidden)return;
   const touch=event.pointerType==='touch'||event.pointerType==='pen';
-  if(!touch&&performance.now()-lastTouchAt<750)return; // synthetic mouse
+  if(!touch&&performance.now()-lastTouchAt<750)return;
   if(!touch&&![0,1,2].includes(event.button))return;
   event.preventDefault();
   if(touch){
     lastTouchAt=performance.now();
     activeTouches.set(event.pointerId,{x:event.clientX,y:event.clientY});
-    if(activeTouches.size===1)beginTouchGesture(event);
-    else if(activeTouches.size>=2)startPinch();
+    if(activeTouches.size===1&&!twoFingerAwaitRelease)
+      beginTouchPan(event);
+    else if(activeTouches.size===2)
+      startTwoFingerSelection();
   }else if(event.button===1||event.button===2){
     cameraDrag={id:event.pointerId,x:event.clientX,y:event.clientY};
   }else{
-    pointerStart={id:event.pointerId,type:'mouse',x:event.clientX,y:event.clientY,
-      lastX:event.clientX,lastY:event.clientY,shift:event.shiftKey,mode:'select',timer:null};
+    // Desktop still uses ordinary mouse-drag rectangle selection.
+    pointerStart={id:event.pointerId,type:'mouse',x:event.clientX,
+      y:event.clientY,lastX:event.clientX,lastY:event.clientY,
+      shift:event.shiftKey,mode:'select'};
   }
   try{viewport.setPointerCapture(event.pointerId);}catch(e){}
 });
 viewport.addEventListener('pointermove',event=>{
   const id=event.pointerId;
-  const isTouch=activeTouches.has(id);
-  if(isTouch){
+  if(activeTouches.has(id)){
     lastTouchAt=performance.now();
     activeTouches.set(id,{x:event.clientX,y:event.clientY});
-    if(activeTouches.size>=2){schedulePinch();return;}
-    updateTouchGesture(event);return;
+    if(twoFingerBox)updateTwoFingerSelection();
+    else if(!twoFingerAwaitRelease&&activeTouches.size===1)
+      updateTouchPan(event);
+    return;
   }
   if(cameraDrag?.id===id){
     panCamera(event.clientX-cameraDrag.x,event.clientY-cameraDrag.y);
     cameraDrag.x=event.clientX;cameraDrag.y=event.clientY;return;
   }
   if(pointerStart?.id!==id||pointerStart.type!=='mouse')return;
-  const g=pointerStart;
-  if(Math.hypot(event.clientX-g.x,event.clientY-g.y)>8)
-    renderSelectionRectangle(g,event.clientX,event.clientY);
-  g.lastX=event.clientX;g.lastY=event.clientY;
+  const gesture=pointerStart;
+  if(Math.hypot(event.clientX-gesture.x,event.clientY-gesture.y)>8)
+    renderSelectionRectangle(gesture,event.clientX,event.clientY);
+  gesture.lastX=event.clientX;gesture.lastY=event.clientY;
 });
 function releasePointer(event){
   const id=event.pointerId;
-  const touch=activeTouches.has(id);
-  const wasPinching=activeTouches.size>=2||!!pinch;
-  if(touch){
+  const isTouch=activeTouches.has(id);
+  if(isTouch){
     lastTouchAt=performance.now();
+    activeTouches.set(id,{x:event.clientX,y:event.clientY});
+    if(twoFingerBox&&twoFingerBox.ids.includes(id)){
+      updateTwoFingerSelection();
+      finishTwoFingerSelection();
+    }
     activeTouches.delete(id);
-    if(activeTouches.size<2)pinch=null;
-    if(wasPinching){cancelPointerGesture();return;}
+    // Once a two-finger box has finished, the leftover finger is NOT allowed
+    // to issue a tap, an attack order or an accidental camera movement.
+    if(!activeTouches.size)twoFingerAwaitRelease=false;
+    if(twoFingerAwaitRelease){cancelPointerGesture();return;}
   }
   if(cameraDrag?.id===id){cameraDrag=null;return;}
-  const g=pointerStart;
-  if(!g||g.id!==id)return;
-  if(g.type==='touch'){
-    // The browser can deliver pointercancel without pointerup on iOS. A hold
-    // that has already matured can still complete its rectangle on cancel.
+  const gesture=pointerStart;
+  if(!gesture||gesture.id!==id)return;
+  cancelPointerGesture();
+  if(gesture.type==='touch'){
     if(event.type!=='pointerup')touchGestureCounters.cancels++;
-    finishTouchGesture(g,event.clientX,event.clientY,event.type!=='pointerup');
+    if(event.type==='pointerup'&&gesture.mode==='tap'&&
+      Math.hypot(event.clientX-gesture.x,event.clientY-gesture.y)<16)
+      touchAt(event.clientX,event.clientY);
     return;
   }
-  const dist=Math.hypot(event.clientX-g.x,event.clientY-g.y);
-  cancelPointerGesture();
   if(event.type!=='pointerup')return;
-  if(dist>15&&!buildMode&&!attackMode)
-    selectRectangle(g,{x:event.clientX,y:event.clientY},g.shift);
-  else if(dist<16)touchAt(event.clientX,event.clientY,g.shift);
+  const distance=Math.hypot(event.clientX-gesture.x,event.clientY-gesture.y);
+  if(distance>15&&!buildMode&&!attackMode)
+    selectRectangle(gesture,{x:event.clientX,y:event.clientY},gesture.shift);
+  else if(distance<16)
+    touchAt(event.clientX,event.clientY,gesture.shift);
 }
 for(const name of ['pointerup','pointercancel','lostpointercapture'])
   viewport.addEventListener(name,releasePointer);
-viewport.addEventListener('wheel',event=>{
-  if(event.target.closest('.command-panel'))return;
-  event.preventDefault();
-  zoomCamera(Math.exp(clamp(event.deltaY,-400,400)*.0015),event.clientX,event.clientY);
-},{passive:false});
+// Wheel input never changes the fixed scale. Prevent the browser from
+// zooming the game canvas with Ctrl+wheel / trackpad pinch as well.
+viewport.addEventListener('wheel',event=>event.preventDefault(),{passive:false});
 viewport.addEventListener('contextmenu',event=>event.preventDefault());
 
 document.addEventListener('keydown',event=>{
@@ -2119,14 +2092,15 @@ window.__fightersQA={
   snapshot:()=>({
     loading:{...loadingProfile,characters:{...loadingProfile.characters}},
     ready,running,paused,activeFaction,cameraZoom,cameraCenter:{...cameraFollow},
-    orcAI:orcDirector.snapshot(),qaPassiveKind,pinch:pinch?{...pinch}:null,
+    orcAI:orcDirector.snapshot(),qaPassiveKind,
+    twoFingerSelection:twoFingerBox?{a:{...twoFingerBox.a},b:{...twoFingerBox.b}}:null,
     mining:{completedMiningCycles,totalMinedGold,workers:units.filter(u=>u.mineJob&&!u.dead).map(u=>({
       id:u.id,mineId:u.mineJob.mineId,progress:u.mineJob.progress,
       x:u.root.position.x,z:u.root.position.z}))},
     activeTouches:activeTouches.size,
     mixers:orcAnimationMixers.length,
     worldHealthBars:scene.children.filter(node=>node.name?.startsWith('healthbar-world-')).length,
-    touchGesture:pointerStart?.mode||null,
+    touchGesture:twoFingerBox?'two-finger-select':pointerStart?.mode||null,
     touchGestureCounters:{...touchGestureCounters},
     selectionRectangleVisible:!$('selection-rectangle').hidden,
     visibleSelectionRings:units.filter(u=>u.kind===activeFaction&&!u.dead&&u.selectionRing.visible).length,
