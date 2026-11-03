@@ -776,7 +776,7 @@ function selectUnits(actors,append=false){
   refreshHUD();
 }
 function selectBuilding(building){
-  clearSelection();selectedBuilding=building;buildMode=null;rallyMode=false;constructionTab=false;attackMode=false;
+  clearSelection();selectedBuilding=building;buildMode=null;rallyMode=false;constructionTab=false;attackMode=false;selectionMode=false;
   drawBuildingSelection();refreshHUD();
 }
 function worldPoint(clientX,clientY){
@@ -1051,7 +1051,7 @@ function cancelTransientMode(){
   attackMode=false;selectionMode=false;buildMode=null;rallyMode=false;constructionTab=false;refreshHUD();
 }
 function stopSelectedUnits(){
-  attackMode=false;
+  attackMode=false;selectionMode=false;
   for(const unit of selected){unit.destination=null;unit.attackOrder=null;unit.route=null;}
   refreshHUD();
 }
@@ -1297,7 +1297,7 @@ function startSession(){
     }
   }
   cameraZoom=35;resize();refreshZoomLabel();
-  gold={witch:2000,orc:900};buildMode=null;orcSpawned=false;
+  gold={witch:2000,orc:900};buildMode=null;selectionMode=false;orcSpawned=false;
   orcDirector.reset();orcIncomeFraction=0;strategyAccumulator=0;attackMode=false;selectionMode=false;qaPassiveKind=null;
   completedMiningCycles=0;totalMinedGold=0;
   rallyMode=false;constructionTab=false;lastHudSignature='';
@@ -1782,14 +1782,20 @@ function activateTouchSelection(gesture){
 }
 function beginOneFingerGesture(id,x,y){
   cancelPointerGesture();
-  const gesture={id,x,y,lastX:x,lastY:y,shift:false,mode:'waiting',
+  const explicitSelection=selectionMode;
+  const gesture={id,x,y,lastX:x,lastY:y,shift:false,
+    mode:explicitSelection?'select':'waiting',explicitSelection,
     timer:null,startedAt:performance.now()};
   pointerStart=gesture;
   const rect=viewport.getBoundingClientRect(),cue=$('touch-hold-indicator');
-  cue.hidden=false;cue.style.left=x-rect.left+'px';
-  cue.style.top=y-rect.top+'px';
-  cue.style.animation='none';void cue.offsetWidth;cue.style.animation='';
-  gesture.timer=setTimeout(()=>activateTouchSelection(gesture),HOLD_TO_SELECT_MS);
+  cue.hidden=explicitSelection;
+  if(!explicitSelection){
+    cue.style.left=x-rect.left+'px';cue.style.top=y-rect.top+'px';
+    cue.style.animation='none';void cue.offsetWidth;cue.style.animation='';
+    gesture.timer=setTimeout(()=>activateTouchSelection(gesture),HOLD_TO_SELECT_MS);
+  }else{
+    renderSelectionRectangle(gesture,x,y);
+  }
   touchGestureCounters.starts++;
 }
 function updateOneFingerGesture(x,y){
@@ -1800,7 +1806,9 @@ function updateOneFingerGesture(x,y){
   // as well; after 1000 ms the gesture can never become a camera pan.
   if(gesture.mode==='waiting'&&performance.now()-gesture.startedAt>=HOLD_TO_SELECT_MS)
     activateTouchSelection(gesture);
-  if(gesture.mode==='waiting'&&distance>11){
+  // Allow natural finger drift during a one-second hold. Safari's touch
+  // coordinates can wander by several pixels even with the finger at rest.
+  if(gesture.mode==='waiting'&&distance>23){
     clearTimeout(gesture.timer);gesture.timer=null;
     gesture.mode='pan';clearHoldCue();
   }
@@ -1826,6 +1834,19 @@ function completeOneFingerGesture(gesture,x,y){
   const mode=gesture.mode;
   const movement=Math.hypot(x-gesture.x,y-gesture.y);
   cancelPointerGesture();
+  if(gesture.explicitSelection){
+    if(movement>10){
+      selectRectangle(gesture,{x,y},false);
+      touchGestureCounters.boxes++;
+    }else{
+      const single=pickUnit(x,y,false);
+      selectUnits(single?[single]:[],false);
+    }
+    touchGestureCounters.selectedUnits=selected.size;
+    selectionMode=false;
+    showBanner(selected.size?selected.size+' UNITÉ'+(selected.size>1?'S':'')+' SÉLECTIONNÉE'+(selected.size>1?'S':''):'AUCUNE UNITÉ DANS LA ZONE');
+    refreshHUD();return;
+  }
   if(mode==='pan')return;
   if(mode==='select'&&gesture.id!==null&&duration>=HOLD_TO_SELECT_MS){
     // Long-press followed by a drag selects the whole rectangle; holding
@@ -1838,6 +1859,7 @@ function completeOneFingerGesture(gesture,x,y){
       if(single)selectUnits([single],false);
     }
     touchGestureCounters.selectedUnits=selected.size;
+    if(selected.size)showBanner(selected.size+' UNITÉ'+(selected.size>1?'S':'')+' SÉLECTIONNÉE'+(selected.size>1?'S':''));
     return;
   }
   if(mode==='select'&&movement>15&&!buildMode&&!attackMode)
@@ -1957,8 +1979,10 @@ document.addEventListener('keydown',event=>{
   if(event.code==='KeyW'&&event.altKey&&new URLSearchParams(location.search).has('qa'))changeFaction('witch');
   if(event.code==='KeyO'&&event.altKey&&new URLSearchParams(location.search).has('qa'))changeFaction('orc');
   if(event.code==='KeyF'&&selected.size){selectionMode=false;attackMode=true;refreshHUD();}
-  if(event.code==='KeyS'&&!event.repeat&&document.activeElement?.tagName!=='INPUT'){
-    selectionMode=!selectionMode;refreshHUD();
+  if(event.code==='KeyS'&&!event.repeat&&document.activeElement?.tagName!=='INPUT'&&running&&!paused){
+    selectionMode=!selectionMode;
+    if(selectionMode){attackMode=false;buildMode=null;rallyMode=false;constructionTab=false;}
+    refreshHUD();
   }
   if(['Equal','NumpadAdd'].includes(event.code))zoomCamera(.82);
   if(['Minus','NumpadSubtract'].includes(event.code))zoomCamera(1.22);
