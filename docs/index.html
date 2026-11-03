@@ -967,8 +967,15 @@ function updateHealthBar(building){
   const bar=building.healthBar.root,b=building.hitbox;
   bar.position.set((b.minX+b.maxX)/2,b.maxY+.85,(b.minZ+b.maxZ)/2);
   bar.quaternion.copy(camera.quaternion);
-  bar.visible=!building.destroyed&&(building.health<building.maxHealth||selectedBuilding===building);
-  building.healthBar.fill.scale.x=THREE.MathUtils.clamp(building.health/building.maxHealth,0,1);
+  const friendly=building.clanId===(activeFaction==='witch'?'witch':'orcs')||
+    building.clanId==='neutral';
+  bar.visible=!building.destroyed&&(friendly||buildingInSight(building,activeFaction))&&
+    (building.health<building.maxHealth||selectedBuilding===building);
+  const fraction=THREE.MathUtils.clamp(building.health/building.maxHealth,0,1);
+  // PlaneGeometry is centre-anchored. Shift the shrinking fill left so its
+  // left edge stays at -1.1 and damage empties the bar from right to left.
+  building.healthBar.fill.scale.x=fraction;
+  building.healthBar.fill.position.x=-1.1*(1-fraction);
 }
 let orcVillage=null;
 const orcAnimationMixers=[];
@@ -1550,7 +1557,7 @@ function finishUpgrade(building){
   building.maxHealth=building.clanId==='witch'?500+250*(building.level-1):
     BUILDING_TYPES[building.type].levels[building.level].maxHealth;
   building.health=Math.min(building.maxHealth,building.health+(building.maxHealth-prev));
-  if(building.healthBar)building.healthBar.fill.scale.x=building.health/building.maxHealth;
+  if(building.healthBar)updateHealthBar(building);
   if(building.clanId==='orcs')
     useOrcLevelModel(building,building.level).catch(err=>console.warn('Upgrade GLB:',err));
   showBanner('AMÉLIORATION NIVEAU '+building.level);refreshHUD();
@@ -2978,7 +2985,9 @@ window.__fightersQA={
       healthbarParent:b.healthBar.root.parent===scene?'scene':'incorrect',
       healthbarQuaternion:b.healthBar.root.quaternion.toArray(),
       healthbarPosition:b.healthBar.root.position.toArray(),
-      healthbarVisible:b.healthBar.root.visible
+      healthbarVisible:b.healthBar.root.visible,
+      healthbarFillScale:b.healthBar.fill.scale.x,
+      healthbarFillOffset:b.healthBar.fill.position.x
     })),
     blueprints:[...buildingBlueprints.keys()],witchHouseLoaded:!!witchHouse
   }),

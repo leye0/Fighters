@@ -300,6 +300,21 @@ async function run(){
    'Orc HP bars must not inherit a building rotation/scale');
  check(s.buildings.every(b=>b.healthbarPosition[1]>b.hitbox.maxY),
    'Orc HP bars must be above building top');
+ // Enemy HP must drain from the right. Its left edge must never move,
+ // and a damaged building in the enemy's unseen territory cannot leak intel.
+ const hpBuilding=s.buildings.find(b=>b.type==='hut');
+ await evaluate("window.__fightersQA.setBuildingHealth("+
+   JSON.stringify(hpBuilding.id)+","+hpBuilding.maxHealth/2+")");
+ const damagedBar=(await evaluate('window.__fightersQA.snapshot()')).buildings.find(
+   b=>b.id===hpBuilding.id);
+ check(Math.abs(damagedBar.healthbarFillScale-.5)<.001&&
+   Math.abs(damagedBar.healthbarFillOffset+.55)<.001&&
+   Math.abs(damagedBar.healthbarFillOffset-1.1*damagedBar.healthbarFillScale+1.1)<.001,
+   'Enemy HP fill must stay pinned to the left edge at half health: '+JSON.stringify(damagedBar));
+ check(!damagedBar.healthbarVisible,
+   'Enemy damaged HP bar must stay hidden outside live witch vision');
+ await evaluate("window.__fightersQA.setBuildingHealth("+
+   JSON.stringify(hpBuilding.id)+","+hpBuilding.maxHealth+")");
 
  await evaluate("window.__fightersQA.setFaction('orc');window.__fightersQA.selectOrcBarrack()");
  s=await evaluate('window.__fightersQA.snapshot()');
