@@ -402,6 +402,26 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
     letter-spacing:0}
 }
 
+/* Warcraft II command hierarchy: contextual commands only, no universal
+   shortcut row and no artificial paging. The worker owns Build; production
+   buildings display the trainable units directly. */
+@media(max-width:820px),(max-height:540px){
+  :root{--war2-mobile:156px}
+  .command-panel{height:calc(var(--war2-mobile) + env(safe-area-inset-bottom,0px))}
+  .command-panel .command-identity{padding-right:2px}
+  .minimap-frame{height:93px}
+  .command-panel .quick-commands{display:none!important}
+  .command-panel .production-progress,
+  .command-panel.has-queue .production-progress{display:none!important}
+  .command-panel #command-buttons.command-grid{grid-template-rows:repeat(2,44px);
+    grid-auto-rows:44px;max-height:93px}
+}
+@media(max-width:355px){
+  :root{--war2-mobile:158px}
+  .command-panel .command-identity{padding-right:2px}
+  .minimap-frame{height:94px}
+}
+
 </style>
 <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
 <script src="./rts-footprint.js"></script>
@@ -434,13 +454,6 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
     </div>
   </div>
   <div class="command-operations">
-    <nav id="quick-commands" class="quick-commands" aria-label="Commandes permanentes">
-      <button id="quick-home" type="button" title="Maison des sorcières">🏡 <span>Maison</span></button>
-      <button id="quick-army" type="button" title="Sélectionner toutes les sorcières">👥 <span>Armée</span></button>
-      <button id="quick-attack" type="button" title="Cibler un ennemi">⚔️ <span>Attaquer</span></button>
-      <button id="quick-stop" type="button" title="Arrêter les unités sélectionnées">✋ <span>Stop</span></button>
-      <button id="quick-cancel" type="button" title="Annuler le mode actif">✕ <span>Annuler</span></button>
-    </nav>
     <div id="command-buttons" class="command-grid"></div>
     <div id="training-progress" class="production-progress" aria-live="off"></div>
   </div>
@@ -1302,6 +1315,7 @@ function spawnOrcDefenders(){
   starters.forEach(([role,x,z],i)=>spawnUnit('orc',x,z,i,role));
 }
 function clearSelection(){
+  constructionTab=false;
   for(const actor of selected)actor.selectionRing.visible=false;
   selected.clear();selectedBuilding=null;drawBuildingSelection();refreshHUD();
 }
@@ -1747,57 +1761,6 @@ function stopSelectedUnits(){
   }
   refreshHUD();
 }
-function selectArmy(){
-  selectUnits(units.filter(u=>!u.dead&&u.kind===activeFaction));
-}
-$('quick-home').onclick=()=>{
-  if(activeFaction==='witch'){if(!witchBuilding.destroyed)selectBuilding(witchBuilding);}
-  else{
-    const building=[...buildingInstances.values()].find(b=>b.type==='barrack'&&!b.destroyed);
-    if(building)selectBuilding(building);
-  }
-};
-$('quick-army').onclick=selectArmy;
-$('quick-attack').onclick=()=>{if([...selected].some(roles.isFighter)){
-  attackMode=!attackMode;refreshHUD();
-}};
-$('quick-stop').onclick=stopSelectedUnits;
-$('quick-cancel').onclick=cancelTransientMode;
-// Small-screen command pages: five 46px actions plus a reachable "Suite"
-// control. Keep every real button in the DOM, including its event handler,
-// so paging allocates no duplicate actions and never loses command state.
-let mobileCommandPage=0;
-const commandPageButton=document.createElement('button');
-commandPageButton.type='button';
-commandPageButton.className='command-page-next';
-commandPageButton.title='Afficher les commandes suivantes';
-commandPageButton.setAttribute('aria-label','Afficher les commandes suivantes');
-commandPageButton.innerHTML='<span class="action-symbol">⋯</span><span class="action-name">Suite</span><span class="action-cost"></span>';
-function layoutCommandPages(){
-  const grid=$('command-buttons');
-  const actions=[...grid.children].filter(button=>button!==commandPageButton);
-  const compact=matchMedia('(max-width:820px), (max-height:540px)').matches;
-  if(!compact||actions.length<=6){
-    for(const action of actions)action.hidden=false;
-    commandPageButton.remove();return;
-  }
-  const total=Math.ceil(actions.length/5);
-  mobileCommandPage%=total;
-  for(let i=0;i<actions.length;i++)
-    actions[i].hidden=i<mobileCommandPage*5||i>=(mobileCommandPage+1)*5;
-  const count=commandPageButton.querySelector('.action-cost');
-  count.textContent=(mobileCommandPage+1)+'/'+total;
-  commandPageButton.title='Commandes : page '+(mobileCommandPage+1)+' sur '+total;
-  commandPageButton.setAttribute('aria-label',commandPageButton.title+'. Afficher la suite');
-  grid.appendChild(commandPageButton);
-}
-commandPageButton.onclick=event=>{
-  event.stopPropagation();
-  const actions=[...$('command-buttons').children].filter(button=>button!==commandPageButton);
-  mobileCommandPage=(mobileCommandPage+1)%Math.ceil(actions.length/5);
-  layoutCommandPages();
-};
-window.addEventListener('resize',layoutCommandPages);
 function refreshHUD(){
   setText('witch-gold',gold.witch);
   setText('orc-gold',gold.orc);
@@ -1813,10 +1776,10 @@ function refreshHUD(){
     title=$('command-title'),info=$('command-info'),health=$('command-health'),
     portrait=$('command-icon'),buttons=$('command-buttons'),queueUI=$('training-progress');
   const context=[activeFaction,b?.id||'',b?.level||0,alive.map(u=>u.id).join(','),
-    constructionTab,constructionTab?buildingBlueprints.size:0].join('|');
+    constructionTab,constructionTab?buildingBlueprints.size:0,
+    b?.queue.length||0,!!buildMode,attackMode,rallyMode].join('|');
 
   if(context!==lastHudSignature){
-    mobileCommandPage=0;
     lastHudSignature=context;buttons.replaceChildren();health.replaceChildren();
     uiStats.commandRebuilds++;
     const add=(symbol,name,cost,action,disabled=false,tooltip='')=>{
@@ -1832,11 +1795,12 @@ function refreshHUD(){
       element.onclick=event=>{event.stopPropagation();action();};
       buttons.appendChild(element);
     };
-    const stopConstruction=()=>{buildMode=null;rallyMode=false;constructionTab=false;attackMode=false;refreshHUD();};
     if(constructionTab){
-      portrait.textContent='🏗️';title.textContent='Construire · '+(activeFaction==='witch'?'Sorcières':'Village orc');
-      info.textContent='Un ouvrier doit rejoindre le chantier pour construire le bâtiment.';
-      const types=activeFaction==='witch'?['witch-house']:Object.keys(ORC_COSTS);
+      portrait.textContent=constructionTab==='advanced'?'🏭':'🏗️';
+      title.textContent=constructionTab==='advanced'?'Bâtiments avancés':'Bâtiments de base';
+      info.textContent='Choisissez la structure à construire avec un ouvrier.';
+      const types=activeFaction==='witch'?['witch-house']:
+        constructionTab==='advanced'?['cauldron','factory']:['hut','barrack'];
       for(const type of types){
         const cost=constructionCost(type);
         add(({barrack:'🏰',hut:'🛖',cauldron:'⚗️',factory:'🏭','witch-house':'🏡'})[type],
@@ -1876,11 +1840,10 @@ function refreshHUD(){
         cost===null||pending||gold[faction]<cost||b.queue.length>=MAX_QUEUE||paused,
         cost===null?'Niveau maximal':pending?'Amélioration déjà dans la file':
         'Améliorer au niveau '+(b.level+1));
-      if(friendly)
-        add('🏗️','Construire','',()=>{constructionTab=true;refreshHUD();},
-          !builderAvailable(activeFaction),'Choisir un plan pour un ouvrier');
-      if(friendly)add('🚩','Ralliement','',beginRally,paused,'Définir le point de rassemblement');
-      if(friendly)add('✖','Annuler prochain','',()=>cancelOrder(b,0),b.queue.length===0);
+      // Warcraft II buildings show their train/upgrade icons directly;
+      // building construction belongs to the worker, never the barracks.
+      if(friendly&&b.queue.length)
+        add('✖','Annuler','',()=>cancelOrder(b,0),false,'Annuler la prochaine production');
     }else if(alive.length){
       const single=alive.length===1?alive[0]:null;
       portrait.textContent=single?single.profile.icon:activeFaction==='witch'?'🧙':'👹';
@@ -1906,31 +1869,21 @@ function refreshHUD(){
             Math.min(...workers.map(w=>targetDistance(w,b))));
           if(!orderMine(workers,mines[0]))showBanner('AUCUNE MINE DISPONIBLE');
         });
-        add('🏗️','Construire','',()=>{constructionTab=true;refreshHUD();});
+        add('🏗️',activeFaction==='witch'?'Construire':'Construire base','',()=>{
+          constructionTab='basic';refreshHUD();
+        });
+        if(activeFaction==='orc')add('🏭','Construire avancé','',()=>{
+          constructionTab='advanced';refreshHUD();
+        });
       }
-      add('✋','Arrêter','',()=>{alive.forEach(u=>{
-        cancelConstruction(u);u.mineJob=null;u.destination=null;u.attackOrder=null;u.route=null;
-      });refreshHUD();});
-      add('👥','Toutes les unités','',()=>selectUnits(units.filter(u=>u.kind===activeFaction&&!u.dead)));
+      add('✋','Arrêter','',stopSelectedUnits);
     }else{
-      portrait.textContent=activeFaction==='witch'?'🏡':'🏰';
-      title.textContent=activeFaction==='witch'?'Armée des sorcières':'Village des orcs';
-      info.textContent=activeFaction==='witch'?'Sélectionnez une sorcière ou la maison pour ouvrir sa production.':
-        'Sélectionnez une caserne pour produire des orcs, ou construisez des bâtiments.';
-      if(activeFaction==='witch'){
-        add('🏡','Maison','',()=>selectBuilding(witchBuilding));
-        add('🏗️','Construire','',()=>{constructionTab=true;refreshHUD();},
-          !builderAvailable(activeFaction));
-        add('👥','Toutes les unités','',()=>selectUnits(units.filter(u=>u.kind==='witch'&&!u.dead)));
-      }else{
-        add('🏗️','Construire','',()=>{constructionTab=true;refreshHUD();},
-          !builderAvailable(activeFaction));
-        add('🏰','Caserne','',()=>{
-          const barrack=[...buildingInstances.values()].find(v=>v.type==='barrack');
-          if(barrack)selectBuilding(barrack);
-        },![...buildingInstances.values()].some(v=>v.type==='barrack'));
-      }
+      // Original Warcraft II: the command pad is empty without a selection.
+      portrait.textContent='⌖';title.textContent='Aucune sélection';
+      info.textContent='Sélectionnez une unité ou un bâtiment sur la carte.';
     }
+    if(buildMode||attackMode||rallyMode)
+      add('↩','Annuler','',cancelTransientMode,false,'Annuler l’ordre en cours');
     $('selection-summary').textContent=buildMode?'Poser '+(ORC_NAMES[buildMode]||'maison'):
       rallyMode?'Choisir un point de rassemblement':b?
       (b.type==='witch-house'?'Maison des sorcières':ORC_NAMES[b.type])+' · niveau '+b.level:
@@ -1941,7 +1894,8 @@ function refreshHUD(){
   // the ResizeObserver/render-layout feedback that slowed long battles.
   if(b){
     const hp=health.firstChild,fill=health.querySelector('.hp-fill');
-    const text='Niv. '+b.level+' · PV '+Math.ceil(b.health)+' / '+b.maxHealth;
+    const text='Niv. '+b.level+' · PV '+Math.ceil(b.health)+' / '+b.maxHealth+
+      (b.queue.length?' · ⏳ '+Math.floor(100*clamp(b.progress/b.queue[0].duration,0,1))+'%':'');
     if(hp?.nodeType===Node.TEXT_NODE&&hp.textContent!==text)hp.textContent=text;
     if(fill)fill.style.width=(100*b.health/b.maxHealth)+'%';
   }else if(alive.length){
@@ -1970,13 +1924,6 @@ function refreshHUD(){
     else if(action==='Caserne')disabled||=![...buildingInstances.values()].some(v=>v.type==='barrack'&&!v.destroyed);
     button.disabled=!!disabled;
   }
-  $('quick-attack').disabled=![...selected].some(roles.isFighter)||paused||!running;
-  $('quick-stop').disabled=selected.size===0||paused||!running;
-  $('quick-home').disabled=!running||(activeFaction==='witch'&&witchBuilding.destroyed);
-  $('quick-army').disabled=!running||!units.some(u=>!u.dead&&u.kind===activeFaction);
-  const modeActive=attackMode||!!buildMode||rallyMode||constructionTab;
-  $('quick-cancel').disabled=!modeActive;
-  $('quick-attack').setAttribute('aria-pressed',String(attackMode));
   const prompt=$('order-prompt');
   const hint=attackMode?'⚔ Touchez une unité ou un bâtiment ennemi.':
     buildMode?'🏗 Touchez une zone libre : votre ouvrier y construira le bâtiment.':
@@ -1984,11 +1931,6 @@ function refreshHUD(){
     constructionTab?'Choisissez le bâtiment à construire.':'';
   if(prompt.hidden===!!hint)prompt.hidden=!hint;
   if(hint&&prompt.textContent!==hint)prompt.textContent=hint;
-  const goldHome=$('quick-home').querySelector('span');
-  if(goldHome){
-    const label=activeFaction==='witch'?'Maison':'Caserne';
-    if(goldHome.textContent!==label)goldHome.textContent=label;
-  }
   const orderSignature=b?b.id+'|'+b.queue.map(o=>o.kind+':'+o.role+':'+o.duration).join(','):'none';
   if(queueUI.dataset.signature!==orderSignature){
     queueUI.dataset.signature=orderSignature;queueUI.replaceChildren();
@@ -2013,7 +1955,6 @@ function refreshHUD(){
     }
   }
   $('command-panel').classList.toggle('has-queue',!!b?.queue.length);
-  layoutCommandPages();
   if(b?.queue.length){
     const order=b.queue[0],progress=clamp(b.progress/order.duration,0,1);
     const header=queueUI.querySelector('.production-heading');
@@ -2950,7 +2891,7 @@ window.__fightersQA={
     visibleSelectionRings:units.filter(u=>u.kind===activeFaction&&!u.dead&&u.selectionRing.visible).length,
     ui:{...uiStats,activePings:activeOrderPings.size,
       commandButtonCount:$('command-buttons').children.length,
-      persistentButtons:[...$('quick-commands').querySelectorAll('button')].map(b=>b.id),
+      persistentButtons:[],
       queueButtons:$('training-progress').querySelectorAll('button').length,
       orderPrompt:$('order-prompt').hidden?'':$('order-prompt').textContent},
     gold:{...gold},projection:camera.isOrthographicCamera?'orthographic':'perspective',
