@@ -94,7 +94,7 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;padding:0;overf
 
 /* Permanent shortcut row never gets replaced by contextual commands. */
 .command-operations{min-width:0}
-.quick-commands{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;padding-bottom:7px;border-bottom:1px solid #546b68}
+.quick-commands{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;padding-bottom:7px;border-bottom:1px solid #546b68}
 .quick-commands button{min-height:40px;border:1px solid #748983;background:#1b343a;color:#e5f1da;border-radius:5px;font-weight:750;display:flex;align-items:center;justify-content:center;gap:5px;font-size:16px;white-space:nowrap;padding:4px}
 .quick-commands button span{font-size:11px}.quick-commands button:disabled{opacity:.4;cursor:default}
 .quick-commands button[aria-pressed="true"]{border-color:#ffd47c;background:#4f4430}
@@ -145,7 +145,6 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
     <nav id="quick-commands" class="quick-commands" aria-label="Commandes permanentes">
       <button id="quick-home" type="button" title="Maison des sorcières">🏡 <span>Maison</span></button>
       <button id="quick-army" type="button" title="Sélectionner toutes les sorcières">👥 <span>Armée</span></button>
-      <button id="quick-select" type="button" aria-pressed="false" title="Sélectionner des unités par rectangle (sans appui long)">▧ <span>Sélection</span></button>
       <button id="quick-attack" type="button" title="Cibler un ennemi">⚔️ <span>Attaquer</span></button>
       <button id="quick-stop" type="button" title="Arrêter les unités sélectionnées">✋ <span>Stop</span></button>
       <button id="quick-cancel" type="button" title="Annuler le mode actif">✕ <span>Annuler</span></button>
@@ -294,7 +293,7 @@ const ORC_TRAIN_COST=100,ORC_TRAIN_DURATION=4.5,MAX_QUEUE=8;
 const orcDirector=new window.FightersOrcStrategy.Director();
 const autonomousOrcs=!new URLSearchParams(location.search).has('qa');
 orcDirector.enabled=autonomousOrcs;
-let orcIncomeFraction=0,attackMode=false,selectionMode=false,strategyAccumulator=0;
+let orcIncomeFraction=0,attackMode=false,strategyAccumulator=0;
 let completedMiningCycles=0,totalMinedGold=0;
 let qaPassiveKind=null;
 let cameraFollow={x:0,z:0};
@@ -777,7 +776,7 @@ function selectUnits(actors,append=false){
   refreshHUD();
 }
 function selectBuilding(building){
-  clearSelection();selectedBuilding=building;buildMode=null;rallyMode=false;constructionTab=false;attackMode=false;selectionMode=false;
+  clearSelection();selectedBuilding=building;buildMode=null;rallyMode=false;constructionTab=false;attackMode=false;
   drawBuildingSelection();refreshHUD();
 }
 function worldPoint(clientX,clientY){
@@ -1049,15 +1048,14 @@ function setText(id,value){
   if(el.textContent!==display)el.textContent=display;
 }
 function cancelTransientMode(){
-  attackMode=false;selectionMode=false;buildMode=null;rallyMode=false;constructionTab=false;refreshHUD();
+  attackMode=false;buildMode=null;rallyMode=false;constructionTab=false;refreshHUD();
 }
 function stopSelectedUnits(){
-  attackMode=false;selectionMode=false;
+  attackMode=false;
   for(const unit of selected){unit.destination=null;unit.attackOrder=null;unit.route=null;}
   refreshHUD();
 }
 function selectArmy(){
-  selectionMode=false;
   selectUnits(units.filter(u=>!u.dead&&u.kind===activeFaction));
 }
 $('quick-home').onclick=()=>{
@@ -1068,13 +1066,7 @@ $('quick-home').onclick=()=>{
   }
 };
 $('quick-army').onclick=selectArmy;
-$('quick-select').onclick=()=>{
-  if(!running||paused)return;
-  selectionMode=!selectionMode;
-  if(selectionMode){attackMode=false;buildMode=null;rallyMode=false;constructionTab=false;}
-  refreshHUD();
-};
-$('quick-attack').onclick=()=>{if(selected.size){selectionMode=false;attackMode=!attackMode;refreshHUD();}};
+$('quick-attack').onclick=()=>{if(selected.size){attackMode=!attackMode;refreshHUD();}};
 $('quick-stop').onclick=stopSelectedUnits;
 $('quick-cancel').onclick=cancelTransientMode;
 function refreshHUD(){
@@ -1213,17 +1205,14 @@ function refreshHUD(){
     button.disabled=!!disabled;
   }
   $('quick-attack').disabled=selected.size===0||paused||!running;
-  $('quick-select').disabled=paused||!running;
   $('quick-stop').disabled=selected.size===0||paused||!running;
   $('quick-home').disabled=!running||(activeFaction==='witch'&&witchBuilding.destroyed);
   $('quick-army').disabled=!running||!units.some(u=>!u.dead&&u.kind===activeFaction);
-  const modeActive=attackMode||selectionMode||!!buildMode||rallyMode||constructionTab;
+  const modeActive=attackMode||!!buildMode||rallyMode||constructionTab;
   $('quick-cancel').disabled=!modeActive;
   $('quick-attack').setAttribute('aria-pressed',String(attackMode));
-  $('quick-select').setAttribute('aria-pressed',String(selectionMode));
   const prompt=$('order-prompt');
-  const hint=selectionMode?'▧ SÉLECTION : glissez un doigt sur vos unités.':
-    attackMode?'⚔ Touchez une unité ou un bâtiment ennemi.':
+  const hint=attackMode?'⚔ Touchez une unité ou un bâtiment ennemi.':
     buildMode?'🏗 Touchez une zone libre pour construire · Annuler en bas.':
     rallyMode?'🚩 Touchez le sol pour fixer le rassemblement.':
     constructionTab?'Choisissez le bâtiment à construire.':'';
@@ -1299,8 +1288,8 @@ function startSession(){
     }
   }
   cameraZoom=35;resize();refreshZoomLabel();
-  gold={witch:2000,orc:900};buildMode=null;selectionMode=false;orcSpawned=false;
-  orcDirector.reset();orcIncomeFraction=0;strategyAccumulator=0;attackMode=false;selectionMode=false;qaPassiveKind=null;
+  gold={witch:2000,orc:900};buildMode=null;orcSpawned=false;
+  orcDirector.reset();orcIncomeFraction=0;strategyAccumulator=0;attackMode=false;qaPassiveKind=null;
   completedMiningCycles=0;totalMinedGold=0;
   rallyMode=false;constructionTab=false;lastHudSignature='';
   for(const b of liveBuildings()){b.queue=[];b.progress=0;b.level=1;
@@ -1752,73 +1741,46 @@ function selectRectangle(a,b,append=false){
   });
   selectUnits(actors,append);
 }
+// Single Pointer Events pipeline for iOS Safari, Android, mouse and stylus.
+// Unlike the previous implementation, touch contacts DO receive pointerdown.
 let pointerStart=null;
-let inputSuppressedByPinch=false;
-let lastNativeTouchAt=0;
+let lastTouchAt=-10000;
 const HOLD_TO_SELECT_MS=1000;
-let touchGestureCounters={starts:0,holds:0,boxes:0,selectedUnits:0,cancels:0};
-function clearHoldCue(){
-  $('touch-hold-indicator').hidden=true;
-}
+const TOUCH_PAN_THRESHOLD=23; // drift tolerance; an intentional early swipe pans.
+const touchGestureCounters={starts:0,holds:0,boxes:0,selectedUnits:0,cancels:0};
+function clearHoldCue(){ $('touch-hold-indicator').hidden=true; }
 function cancelPointerGesture(){
-  if(pointerStart?.timer!==null&&pointerStart?.timer!==undefined)
-    clearTimeout(pointerStart.timer);
+  if(pointerStart?.timer!=null)clearTimeout(pointerStart.timer);
   pointerStart=null;
-  $('selection-rectangle').hidden=true;
-  clearHoldCue();
+  $('selection-rectangle').hidden=true;clearHoldCue();
 }
 function renderSelectionRectangle(start,x,y){
   const box=$('selection-rectangle'),rect=viewport.getBoundingClientRect();
-  box.hidden=false;
-  box.style.left=Math.min(start.x,x)-rect.left+'px';
+  box.hidden=false;box.style.left=Math.min(start.x,x)-rect.left+'px';
   box.style.top=Math.min(start.y,y)-rect.top+'px';
   box.style.width=Math.max(10,Math.abs(x-start.x))+'px';
   box.style.height=Math.max(10,Math.abs(y-start.y))+'px';
 }
 function activateTouchSelection(gesture){
-  if(pointerStart!==gesture||gesture.mode!=='waiting'||
-    activeTouches.size!==1||inputSuppressedByPinch||!running||paused)return;
-  clearTimeout(gesture.timer);gesture.timer=null;
-  gesture.mode='select';touchGestureCounters.holds++;
+  if(pointerStart!==gesture||gesture.mode!=='waiting'||activeTouches.size!==1||
+    !running||paused)return;
+  if(gesture.timer!=null)clearTimeout(gesture.timer);
+  gesture.timer=null;gesture.mode='select';touchGestureCounters.holds++;
   clearHoldCue();
   renderSelectionRectangle(gesture,gesture.lastX,gesture.lastY);
 }
-function beginOneFingerGesture(id,x,y){
-  cancelPointerGesture();
-  const explicitSelection=selectionMode;
-  const gesture={id,x,y,lastX:x,lastY:y,shift:false,
-    mode:explicitSelection?'select':'waiting',explicitSelection,
-    timer:null,startedAt:performance.now()};
+function beginTouchGesture(event){
+  const rect=viewport.getBoundingClientRect();
+  const gesture={id:event.pointerId,type:'touch',
+    x:event.clientX,y:event.clientY,lastX:event.clientX,lastY:event.clientY,
+    startedAt:performance.now(),mode:'waiting',timer:null};
   pointerStart=gesture;
-  const rect=viewport.getBoundingClientRect(),cue=$('touch-hold-indicator');
-  cue.hidden=explicitSelection;
-  if(!explicitSelection){
-    cue.style.left=x-rect.left+'px';cue.style.top=y-rect.top+'px';
-    cue.style.animation='none';void cue.offsetWidth;cue.style.animation='';
-    gesture.timer=setTimeout(()=>activateTouchSelection(gesture),HOLD_TO_SELECT_MS);
-  }else{
-    renderSelectionRectangle(gesture,x,y);
-  }
+  const cue=$('touch-hold-indicator');
+  cue.hidden=false;cue.style.left=gesture.x-rect.left+'px';
+  cue.style.top=gesture.y-rect.top+'px';
+  cue.style.animation='none';void cue.offsetWidth;cue.style.animation='';
+  gesture.timer=setTimeout(()=>activateTouchSelection(gesture),HOLD_TO_SELECT_MS);
   touchGestureCounters.starts++;
-}
-function updateOneFingerGesture(x,y){
-  const gesture=pointerStart;
-  if(!gesture)return;
-  const distance=Math.hypot(x-gesture.x,y-gesture.y);
-  // Frame drops may delay JS timers on iOS. Use the actual elapsed touch time
-  // as well; after 1000 ms the gesture can never become a camera pan.
-  if(gesture.mode==='waiting'&&performance.now()-gesture.startedAt>=HOLD_TO_SELECT_MS)
-    activateTouchSelection(gesture);
-  // Allow natural finger drift during a one-second hold. Safari's touch
-  // coordinates can wander by several pixels even with the finger at rest.
-  if(gesture.mode==='waiting'&&distance>23){
-    clearTimeout(gesture.timer);gesture.timer=null;
-    gesture.mode='pan';clearHoldCue();
-  }
-  if(gesture.mode==='pan')panCamera(x-gesture.lastX,y-gesture.lastY);
-  else if(gesture.mode==='select'&&distance>5)
-    renderSelectionRectangle(gesture,x,y);
-  gesture.lastX=x;gesture.lastY=y;
 }
 function applyPinch(a,b){
   const center={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
@@ -1826,179 +1788,136 @@ function applyPinch(a,b){
   if(pinch)zoomCamera(clamp(pinch.distance/distance,.65,1.55),center.x,center.y);
   pinch={distance,center};
 }
-function completeOneFingerGesture(gesture,x,y){
-  const duration=performance.now()-gesture.startedAt;
-  if(gesture.mode==='waiting'&&duration>=HOLD_TO_SELECT_MS){
-    // touchend has zero active touches; timer callbacks are sometimes delayed
-    // on mobile under heavy WebGL load, so recognition must also work here.
-    clearTimeout(gesture.timer);gesture.timer=null;gesture.mode='select';
-    touchGestureCounters.holds++;
+function startPinch(){
+  cancelPointerGesture();
+  const [a,b]=[...activeTouches.values()];
+  if(!a||!b)return;
+  pinch={distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),
+    center:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}};
+}
+function updateTouchGesture(event){
+  const gesture=pointerStart;
+  if(!gesture||gesture.id!==event.pointerId)return;
+  const x=event.clientX,y=event.clientY;
+  const distance=Math.hypot(x-gesture.x,y-gesture.y);
+  if(gesture.mode==='waiting'&&
+    performance.now()-gesture.startedAt>=HOLD_TO_SELECT_MS)
+    activateTouchSelection(gesture);
+  if(gesture.mode==='waiting'&&distance>TOUCH_PAN_THRESHOLD){
+    if(gesture.timer!=null)clearTimeout(gesture.timer);
+    gesture.timer=null;gesture.mode='pan';clearHoldCue();
+  }
+  if(gesture.mode==='pan')panCamera(x-gesture.lastX,y-gesture.lastY);
+  else if(gesture.mode==='select'&&distance>5)renderSelectionRectangle(gesture,x,y);
+  gesture.lastX=x;gesture.lastY=y;
+}
+function finishTouchGesture(gesture,x,y,cancelled=false){
+  const elapsed=performance.now()-gesture.startedAt;
+  const dist=Math.hypot(x-gesture.x,y-gesture.y);
+  // A delayed setTimeout must not prevent a valid 1-second hold from selecting.
+  if(gesture.mode==='waiting'&&elapsed>=HOLD_TO_SELECT_MS){
+    gesture.mode='select';touchGestureCounters.holds++;
   }
   const mode=gesture.mode;
-  const movement=Math.hypot(x-gesture.x,y-gesture.y);
   cancelPointerGesture();
-  if(gesture.explicitSelection){
-    if(movement>10){
+  if(mode==='select'){
+    if(dist>12){
       selectRectangle(gesture,{x,y},false);
       touchGestureCounters.boxes++;
     }else{
-      const single=pickUnit(x,y,false);
-      selectUnits(single?[single]:[],false);
+      const unit=pickUnit(x,y,false);
+      if(unit)selectUnits([unit],false);
     }
     touchGestureCounters.selectedUnits=selected.size;
-    selectionMode=false;
     showBanner(selected.size?selected.size+' UNITÉ'+(selected.size>1?'S':'')+' SÉLECTIONNÉE'+(selected.size>1?'S':''):'AUCUNE UNITÉ DANS LA ZONE',true);
-    refreshHUD();return;
-  }
-  if(mode==='pan')return;
-  if(mode==='select'&&gesture.id!==null&&duration>=HOLD_TO_SELECT_MS){
-    // Long-press followed by a drag selects the whole rectangle; holding
-    // without dragging selects the character directly under the finger.
-    if(movement>10){
-      selectRectangle(gesture,{x,y},false);
-      touchGestureCounters.boxes++;
-    }else{
-      const single=pickUnit(x,y,false);
-      if(single)selectUnits([single],false);
-    }
-    touchGestureCounters.selectedUnits=selected.size;
-    if(selected.size)showBanner(selected.size+' UNITÉ'+(selected.size>1?'S':'')+' SÉLECTIONNÉE'+(selected.size>1?'S':''),true);
-    return;
-  }
-  if(mode==='select'&&movement>15&&!buildMode&&!attackMode)
-    selectRectangle(gesture,{x,y},gesture.shift);
-  else if(movement<16)touchAt(x,y,gesture.shift);
+  }else if(!cancelled&&mode==='waiting'&&dist<16)touchAt(x,y);
+  // 'pan' intentionally does not issue an order on release.
 }
-function syncActiveTouches(event){
-  activeTouches.clear();
-  for(const touch of event.touches)
-    activeTouches.set(touch.identifier,{x:touch.clientX,y:touch.clientY});
-}
-viewport.addEventListener('touchstart',event=>{
-  lastNativeTouchAt=performance.now();
+viewport.addEventListener('pointerdown',event=>{
   if(event.target.closest('.command-panel')||event.target.closest('.hud'))return;
   if(!running||paused||!$('overlay').hidden)return;
-  event.preventDefault(); // Prevent iOS text/callout handling from stealing hold.
-  syncActiveTouches(event);
-  if(event.touches.length>=2){
-    inputSuppressedByPinch=true;
-    cancelPointerGesture();
-    const a=event.touches[0],b=event.touches[1];
-    pinch={distance:Math.max(1,Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)),
-      center:{x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2}};
-  }else if(event.touches.length===1&&!inputSuppressedByPinch){
-    const a=event.touches[0];
-    beginOneFingerGesture(a.identifier,a.clientX,a.clientY);
-  }
-},{passive:false});
-viewport.addEventListener('touchmove',event=>{
-  lastNativeTouchAt=performance.now();
-  if((event.target.closest('.command-panel')||event.target.closest('.hud'))&&
-    !pointerStart&&!inputSuppressedByPinch)return;
-  if(!running||paused)return;
+  const touch=event.pointerType==='touch'||event.pointerType==='pen';
+  if(!touch&&performance.now()-lastTouchAt<750)return; // synthetic mouse
+  if(!touch&&![0,1,2].includes(event.button))return;
   event.preventDefault();
-  syncActiveTouches(event);
-  if(event.touches.length>=2){
-    const a=event.touches[0],b=event.touches[1];
-    applyPinch({x:a.clientX,y:a.clientY},{x:b.clientX,y:b.clientY});
-  }else if(event.touches.length===1&&!inputSuppressedByPinch&&pointerStart){
-    const touch=event.touches[0];
-    if(pointerStart.id===touch.identifier)
-      updateOneFingerGesture(touch.clientX,touch.clientY);
+  if(touch){
+    lastTouchAt=performance.now();
+    activeTouches.set(event.pointerId,{x:event.clientX,y:event.clientY});
+    if(activeTouches.size===1)beginTouchGesture(event);
+    else if(activeTouches.size>=2)startPinch();
+  }else if(event.button===1||event.button===2){
+    cameraDrag={id:event.pointerId,x:event.clientX,y:event.clientY};
+  }else{
+    pointerStart={id:event.pointerId,type:'mouse',x:event.clientX,y:event.clientY,
+      lastX:event.clientX,lastY:event.clientY,shift:event.shiftKey,mode:'select',timer:null};
   }
-},{passive:false});
-viewport.addEventListener('touchend',event=>{
-  lastNativeTouchAt=performance.now();
-  if((event.target.closest('.command-panel')||event.target.closest('.hud'))&&
-    !pointerStart&&!inputSuppressedByPinch)return;
-  if(!running)return;
-  event.preventDefault();
-  syncActiveTouches(event);
-  if(event.touches.length<2)pinch=null;
-  if(event.touches.length===0){
-    const gesture=pointerStart,ended=event.changedTouches[0];
-    if(gesture&&ended&&!inputSuppressedByPinch&&
-      gesture.id===ended.identifier)
-      completeOneFingerGesture(gesture,ended.clientX,ended.clientY);
-    else cancelPointerGesture();
-    inputSuppressedByPinch=false;
-  }else if(inputSuppressedByPinch){
-    cancelPointerGesture(); // A pinch never turns into a selection mid-gesture.
+  try{viewport.setPointerCapture(event.pointerId);}catch(e){}
+});
+viewport.addEventListener('pointermove',event=>{
+  const id=event.pointerId;
+  const isTouch=activeTouches.has(id);
+  if(isTouch){
+    lastTouchAt=performance.now();
+    activeTouches.set(id,{x:event.clientX,y:event.clientY});
+    if(activeTouches.size>=2){
+      const [a,b]=[...activeTouches.values()];
+      applyPinch(a,b);return;
+    }
+    updateTouchGesture(event);return;
   }
-},{passive:false});
-viewport.addEventListener('touchcancel',event=>{
-  lastNativeTouchAt=performance.now();
-  const gesture=pointerStart,eligible=gesture&&!inputSuppressedByPinch&&
-    (gesture.mode==='select'||performance.now()-gesture.startedAt>=HOLD_TO_SELECT_MS);
-  syncActiveTouches(event);touchGestureCounters.cancels++;
-  // iOS Safari may issue touchcancel when a context gesture intervenes.
-  // Preserve a completed long hold or drawn rectangle instead of discarding it.
-  if(eligible)completeOneFingerGesture(gesture,gesture.lastX,gesture.lastY);
-  else cancelPointerGesture();
-  pinch=null;inputSuppressedByPinch=false;
-},{passive:false});
-// Mouse and stylus pointer events are separate from TouchEvents. Previously
-// pointerdown restarted the 1000ms hold after touchstart, and pointercancel
-// could erase the selection before touchend on iOS.
+  if(cameraDrag?.id===id){
+    panCamera(event.clientX-cameraDrag.x,event.clientY-cameraDrag.y);
+    cameraDrag.x=event.clientX;cameraDrag.y=event.clientY;return;
+  }
+  if(pointerStart?.id!==id||pointerStart.type!=='mouse')return;
+  const g=pointerStart;
+  if(Math.hypot(event.clientX-g.x,event.clientY-g.y)>8)
+    renderSelectionRectangle(g,event.clientX,event.clientY);
+  g.lastX=event.clientX;g.lastY=event.clientY;
+});
+function releasePointer(event){
+  const id=event.pointerId;
+  const touch=activeTouches.has(id);
+  const wasPinching=activeTouches.size>=2||!!pinch;
+  if(touch){
+    lastTouchAt=performance.now();
+    activeTouches.delete(id);
+    if(activeTouches.size<2)pinch=null;
+    if(wasPinching){cancelPointerGesture();return;}
+  }
+  if(cameraDrag?.id===id){cameraDrag=null;return;}
+  const g=pointerStart;
+  if(!g||g.id!==id)return;
+  if(g.type==='touch'){
+    // The browser can deliver pointercancel without pointerup on iOS. A hold
+    // that has already matured can still complete its rectangle on cancel.
+    if(event.type!=='pointerup')touchGestureCounters.cancels++;
+    finishTouchGesture(g,event.clientX,event.clientY,event.type!=='pointerup');
+    return;
+  }
+  const dist=Math.hypot(event.clientX-g.x,event.clientY-g.y);
+  cancelPointerGesture();
+  if(event.type!=='pointerup')return;
+  if(dist>15&&!buildMode&&!attackMode)
+    selectRectangle(g,{x:event.clientX,y:event.clientY},g.shift);
+  else if(dist<16)touchAt(event.clientX,event.clientY,g.shift);
+}
+for(const name of ['pointerup','pointercancel','lostpointercapture'])
+  viewport.addEventListener(name,releasePointer);
 viewport.addEventListener('wheel',event=>{
   if(event.target.closest('.command-panel'))return;
   event.preventDefault();
   zoomCamera(Math.exp(clamp(event.deltaY,-400,400)*.0015),event.clientX,event.clientY);
 },{passive:false});
-viewport.addEventListener('pointerdown',event=>{
-  if(event.pointerType==='touch'||performance.now()-lastNativeTouchAt<650)return;
-  if(event.target.closest('.command-panel')||event.target.closest('.hud'))return;
-  if(!running||paused||!$('overlay').hidden)return;
-  if(event.button===1||event.button===2){
-    cameraDrag={id:event.pointerId,x:event.clientX,y:event.clientY};
-  }else if(event.button===0){
-    pointerStart={id:'mouse-'+event.pointerId,x:event.clientX,y:event.clientY,
-      lastX:event.clientX,lastY:event.clientY,shift:event.shiftKey,
-      mode:'select',timer:null};
-  }else return;
-  event.preventDefault();viewport.setPointerCapture(event.pointerId);
-});
-viewport.addEventListener('pointermove',event=>{
-  if(event.pointerType==='touch'||performance.now()-lastNativeTouchAt<650)return;
-  if(cameraDrag?.id===event.pointerId){
-    panCamera(event.clientX-cameraDrag.x,event.clientY-cameraDrag.y);
-    cameraDrag.x=event.clientX;cameraDrag.y=event.clientY;return;
-  }
-  const gesture=pointerStart;
-  if(!gesture||gesture.id!=='mouse-'+event.pointerId)return;
-  const distance=Math.hypot(event.clientX-gesture.x,event.clientY-gesture.y);
-  if(distance>8)renderSelectionRectangle(gesture,event.clientX,event.clientY);
-  gesture.lastX=event.clientX;gesture.lastY=event.clientY;
-});
-function releasePointer(event){
-  if(event.pointerType==='touch'||performance.now()-lastNativeTouchAt<650)return;
-  if(cameraDrag?.id===event.pointerId){cameraDrag=null;return;}
-  const gesture=pointerStart;
-  if(!gesture||gesture.id!=='mouse-'+event.pointerId)return;
-  const end={x:event.clientX,y:event.clientY};
-  const distance=Math.hypot(end.x-gesture.x,end.y-gesture.y);
-  cancelPointerGesture();
-  if(event.type!=='pointerup')return;
-  if(distance>15&&!buildMode&&!attackMode)
-    selectRectangle(gesture,end,gesture.shift);
-  else if(distance<16)touchAt(end.x,end.y,gesture.shift);
-}
-for(const name of ['pointerup','pointercancel','lostpointercapture'])
-  viewport.addEventListener(name,releasePointer);
 viewport.addEventListener('contextmenu',event=>event.preventDefault());
 
 document.addEventListener('keydown',event=>{
-  if(event.code==='Escape'){buildMode=null;rallyMode=false;constructionTab=false;attackMode=false;selectionMode=false;clearSelection();refreshHUD();}
+  if(event.code==='Escape'){buildMode=null;rallyMode=false;constructionTab=false;attackMode=false;clearSelection();refreshHUD();}
   if(event.code==='KeyP'&&!event.repeat)pauseGame();
   if(event.code==='KeyA'&&(event.ctrlKey||event.metaKey)){event.preventDefault();selectUnits(units.filter(a=>a.kind===activeFaction&&!a.dead));}
   if(event.code==='KeyW'&&event.altKey&&new URLSearchParams(location.search).has('qa'))changeFaction('witch');
   if(event.code==='KeyO'&&event.altKey&&new URLSearchParams(location.search).has('qa'))changeFaction('orc');
-  if(event.code==='KeyF'&&selected.size){selectionMode=false;attackMode=true;refreshHUD();}
-  if(event.code==='KeyS'&&!event.repeat&&document.activeElement?.tagName!=='INPUT'&&running&&!paused){
-    selectionMode=!selectionMode;
-    if(selectionMode){attackMode=false;buildMode=null;rallyMode=false;constructionTab=false;}
-    refreshHUD();
-  }
+  if(event.code==='KeyF'&&selected.size){attackMode=true;refreshHUD();}
   if(['Equal','NumpadAdd'].includes(event.code))zoomCamera(.82);
   if(['Minus','NumpadSubtract'].includes(event.code))zoomCamera(1.22);
 });
@@ -2126,7 +2045,7 @@ window.__fightersQA={
     mixers:orcAnimationMixers.length,
     worldHealthBars:scene.children.filter(node=>node.name?.startsWith('healthbar-world-')).length,
     touchGesture:pointerStart?.mode||null,
-    touchGestureCounters:{...touchGestureCounters},selectionMode,
+    touchGestureCounters:{...touchGestureCounters},
     selectionRectangleVisible:!$('selection-rectangle').hidden,
     visibleSelectionRings:units.filter(u=>u.kind===activeFaction&&!u.dead&&u.selectionRing.visible).length,
     ui:{...uiStats,activePings:activeOrderPings.size,
