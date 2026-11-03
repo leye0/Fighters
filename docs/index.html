@@ -603,9 +603,14 @@ async function loadOrcVillage(limit=3){
     anchor.add(offset);
     const type=(entries[i].sourceNode||entries[i].name).match(/(?:orc_)?(barrack|hut|mine|cauldron|factory)_Lv1$/i)?.[1]?.toLowerCase();
     if(!type)continue;
-    buildingBlueprints.set(type,{entry:entries[i],source:model.clone(true),clips:buildingClips,footprint});
     const target=3.9;
     anchor.scale.setScalar(target/footprint);
+    // Cache this model's exact unrotated foundation contour once. Placement
+    // translates it in X/Z instead of guessing a 3.9×3.9 square or repeatedly
+    // projecting thousands of triangles during AI site planning.
+    const localHitbox=buildingBounds(anchor,type);
+    buildingBlueprints.set(type,{entry:entries[i],source:model.clone(true),
+      clips:buildingClips,footprint,localHitbox});
     const p=ORC_VILLAGE.positions[type];
     anchor.position.set(p.x,0,p.z);
     anchor.rotation.y=(i%4)*Math.PI/2;
@@ -969,17 +974,25 @@ function cancelOrder(building,index){
   refreshHUD();return true;
 }
 function safeSpawnNear(building){
-  const box=building.hitbox,cx=(box.minX+box.maxX)/2,cz=(box.minZ+box.maxZ)/2;
-  const radius=Math.max(box.maxX-box.minX,box.maxZ-box.minZ)/2+1.4;
-  for(let ring=0;ring<7;ring++)for(let i=0;i<16;i++){
-    const a=i*Math.PI/8,point={x:cx+Math.cos(a)*(radius+ring*.7),
-      z:cz+Math.sin(a)*(radius+ring*.7)};
-    if(!navigatorRTS.pointClear(point))continue;
-    if(units.some(u=>!u.dead&&Math.hypot(u.root.position.x-point.x,
-      u.root.position.z-point.z)<.95))continue;
-    return point;
+  const box=building.hitbox,pad=UNIT_RADIUS+.35;
+  for(const [a,b] of window.FightersFootprint.outlineEdges(box)){
+    const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz);
+    if(!len)continue;
+    const nx=-dz/len,nz=dx/len;
+    for(let i=0;i<=Math.ceil(len/.9);i++){
+      const t=i/Math.max(1,Math.ceil(len/.9));
+      for(const side of [1,-1]){
+        const point={x:a.x+dx*t+nx*pad*side,
+          z:a.z+dz*t+nz*pad*side};
+        if(!navigatorRTS.pointClear(point))continue;
+        if(units.some(u=>!u.dead&&Math.hypot(u.root.position.x-point.x,
+          u.root.position.z-point.z)<.95))continue;
+        return point;
+      }
+    }
   }
-  return navigatorRTS.findSafeSpawn(building.rally||{x:cx+radius,z:cz+radius});
+  return navigatorRTS.findSafeSpawn(building.rally||
+    {x:(box.minX+box.maxX)/2,z:box.maxZ+1});
 }
 function finishTraining(building,kind){
   const position=safeSpawnNear(building);
@@ -1063,18 +1076,18 @@ function beginBuild(type){
   buildMode=type;rallyMode=false;constructionTab=false;refreshHUD();return true;
 }
 function validBuildPosition(x,z,type='hut'){
-  if(!ORC_COSTS[type]||!buildingBlueprints.has(type))return false;
-  const half=1.95;
-  const proposed={minX:x-half,maxX:x+half,minZ:z-half,maxZ:z+half};
+  const template=buildingBlueprints.get(type);
+  if(!ORC_COSTS[type]||!template?.localHitbox)return false;
+  const Nav=window.FightersNavigation;
+  const proposed=window.FightersFootprint.translateFootprint(template.localHitbox,x,z);
   if(proposed.minX<0||proposed.maxX>ARENA_HALF-.35||
     proposed.minZ<-ARENA_HALF+.35||proposed.maxZ>ARENA_HALF-.35)return false;
-  const margin=.8;
-  if(liveBuildings().some(b=>
-    proposed.minX<b.hitbox.maxX+margin&&proposed.maxX>b.hitbox.minX-margin&&
-    proposed.minZ<b.hitbox.maxZ+margin&&proposed.maxZ>b.hitbox.minZ-margin))return false;
+  // Only the unit's physical radius supplies a passage margin. Building
+  // dimensions and angles come entirely from the projected GLB triangles.
+  if(liveBuildings().some(b=>Nav.footprintsOverlap(proposed,b.hitbox,UNIT_RADIUS)))
+    return false;
   return units.every(actor=>actor.dead||
-    actor.root.position.x<proposed.minX-.6||actor.root.position.x>proposed.maxX+.6||
-    actor.root.position.z<proposed.minZ-.6||actor.root.position.z>proposed.maxZ+.6);
+    Nav.distanceToFootprint(actor.root.position,proposed)>UNIT_RADIUS);
 }
 function buildOrc(type,x,z,{byAI=false}={}){
   if(!ORC_COSTS[type]||!buildingBlueprints.has(type)||gold.orc<ORC_COSTS[type]||!validBuildPosition(x,z,type))return false;
