@@ -1808,8 +1808,11 @@ function touchAt(x,y,append=false){
   if(attackMode){
     showBanner('CIBLE ENNEMIE REQUISE');return;
   }
-  if(friend){selectUnits([friend],append);return;}
+  // A true ray hit on the building's 3D roof is more precise than the
+  // enlarged 2D unit touch radius. Do not accidentally select a nearby orc
+  // instead of the building that was tapped.
   if(building){selectBuilding(building);return;}
+  if(friend){selectUnits([friend],append);return;}
   if(selected.size){issueMove(pos);return;}
   clearSelection();
 }
