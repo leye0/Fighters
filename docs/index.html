@@ -2131,6 +2131,15 @@ function releaseActor(actor){
   cancelConstruction(actor);
   selected.delete(actor);
   actor.mixer.stopAllAction();actor.mixer.uncacheRoot(actor.visual);
+  // Every SkeletonUtils.clone owns one or more GPU bone textures. Removing
+  // the actor from the scene does NOT release these WebGL allocations.
+  // Dispose only its unique skeletons; shared body/outfit geometry, textures
+  // and materials must remain available to every other unit.
+  const skeletons=new Set();
+  actor.visual.traverse(node=>{
+    if(node.isSkinnedMesh&&node.skeleton)skeletons.add(node.skeleton);
+  });
+  for(const skeleton of skeletons)skeleton.dispose();
   scene.remove(actor.root);
   // Selection geometry and material belong to the shared per-clan cache.
 }
