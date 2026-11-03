@@ -1729,8 +1729,13 @@ function touchAt(x,y,append=false){
 function selectRectangle(a,b,append=false){
   const left=Math.min(a.x,b.x),right=Math.max(a.x,b.x),
     top=Math.min(a.y,b.y),bottom=Math.max(a.y,b.y);
+  // Rectangles intersect visible character silhouettes, not only the actor's
+  // root pixel. A one-finger box on a small phone screen must not inexplicably
+  // ignore a witch whose feet are just outside the rectangle.
   const actors=units.filter(u=>!u.dead&&u.kind===activeFaction).filter(u=>{
-    const p=screenPoint(u);return p.x>=left&&p.x<=right&&p.y>=top&&p.y<=bottom;
+    const p=screenPoint(u),radius=viewport.clientWidth<760?11:7;
+    return p.x+radius>=left&&p.x-radius<=right&&
+      p.y+radius>=top&&p.y-radius<=bottom;
   });
   selectUnits(actors,append);
 }
@@ -1801,8 +1806,12 @@ function applyPinch(a,b){
 }
 function completeOneFingerGesture(gesture,x,y){
   const duration=performance.now()-gesture.startedAt;
-  if(gesture.mode==='waiting'&&duration>=HOLD_TO_SELECT_MS)
-    activateTouchSelection(gesture);
+  if(gesture.mode==='waiting'&&duration>=HOLD_TO_SELECT_MS){
+    // touchend has zero active touches; timer callbacks are sometimes delayed
+    // on mobile under heavy WebGL load, so recognition must also work here.
+    clearTimeout(gesture.timer);gesture.timer=null;gesture.mode='select';
+    touchGestureCounters.holds++;
+  }
   const mode=gesture.mode;
   const movement=Math.hypot(x-gesture.x,y-gesture.y);
   cancelPointerGesture();
@@ -2064,6 +2073,7 @@ window.__fightersQA={
     touchGesture:pointerStart?.mode||null,
     touchGestureCounters:{...touchGestureCounters},
     selectionRectangleVisible:!$('selection-rectangle').hidden,
+    visibleSelectionRings:units.filter(u=>u.kind===activeFaction&&!u.dead&&u.selectionRing.visible).length,
     ui:{...uiStats,activePings:activeOrderPings.size,
       commandButtonCount:$('command-buttons').children.length,
       persistentButtons:[...$('quick-commands').querySelectorAll('button')].map(b=>b.id),
