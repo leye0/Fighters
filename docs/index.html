@@ -52,10 +52,6 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;padding:0;overf
 #training-progress{font-size:11px;color:#e4d88e;margin-top:5px}#selection-rectangle{position:absolute;z-index:6;pointer-events:none;border:1px solid #b4f69c;background:#93f4ba2a}
 #selection-rectangle[hidden]{display:none}
 @media(max-width:720px){.score{gap:6px}.score strong{font-size:14px}.score small{font-size:7px}.hero-hud{min-width:90px;width:auto}.hero-hud strong{font-size:12px}.hero-hud small{font-size:9px}.hud{gap:5px}.command-panel{padding:8px 10px;max-width:min(360px,calc(100% - 18px))}#command-buttons button{padding:6px 8px}}
-.zoom-controls{display:flex;align-items:center;background:#0c1930d9;border:1px solid #68859e;border-radius:10px;padding:2px;gap:2px;pointer-events:auto}
-.zoom-controls span{font-size:10px;min-width:40px;text-align:center;color:#dcf6ed;font-weight:800}
-.zoom-controls button{background:#253c4f;border:0;width:30px;height:30px;color:#ebfcff}
-@media(max-width:700px){.zoom-controls span{display:none}.zoom-controls button{width:25px;height:27px}}
 .command-panel{left:calc(env(safe-area-inset-left,0px) + 10px);right:calc(env(safe-area-inset-right,0px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 10px);width:auto;max-width:none;min-height:158px;display:grid;grid-template-columns:minmax(225px,1fr) minmax(410px,1.4fr);gap:15px;padding:12px;background:#0c1423f1;border:2px solid #697c82;border-top:3px solid #bbc6a4;box-shadow:0 10px 35px #000b;backdrop-filter:blur(8px)}
 .command-identity{display:flex;align-items:center;gap:12px;min-width:0}
 .command-portrait{width:96px;height:96px;flex-shrink:0;border:3px ridge #acbf9b;border-radius:4px;background:radial-gradient(circle at 45% 30%,#526751,#152522 72%);display:grid;place-items:center;font-size:49px;box-shadow:inset 0 0 20px #091817}
@@ -114,9 +110,6 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 #order-prompt[hidden]{display:none}
 @media(max-width:760px){.quick-commands{gap:3px;padding-bottom:5px}.quick-commands button{min-height:39px;font-size:17px;flex-direction:column;gap:1px;padding:3px 0}.quick-commands button span{font-size:9px}
 .command-panel{max-height:39dvh}.command-grid{grid-template-columns:repeat(4,minmax(0,1fr))}#order-prompt{bottom:clamp(175px,40vh,360px);max-width:94vw;white-space:normal;text-align:center}}
-#touch-hold-indicator{position:absolute;pointer-events:none;z-index:6;width:46px;height:46px;border:3px solid #7a9ab18c;border-top-color:#d7f5a3;border-radius:50%;transform:translate(-50%,-50%);animation:hold-select 1s linear forwards;box-shadow:0 0 10px #0008}
-#touch-hold-indicator[hidden]{display:none}
-@keyframes hold-select{from{opacity:.45;rotate:0deg}to{opacity:1;rotate:360deg;border-color:#c3ef93}}
 #selection-rectangle{border:2px solid #c1f5a7;box-shadow:inset 0 0 12px #8ae49933}
 /* iOS: never hand a long press to native text selection or callout. */
 .viewport,.viewport canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:none;overscroll-behavior:none}
@@ -134,7 +127,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
   <div class="score"><div><small>OR SORCIÈRES</small><strong id="witch-gold">2000</strong></div><div><small>OR ORCS</small><strong id="orc-gold">900</strong></div><div><small>UNITÉS</small><strong id="unit-count">0 : 0</strong></div></div>
   <button id="pause" class="pause-compact" aria-label="Pause" title="Pause (P)" disabled>Ⅱ</button>
 </div>
-<div id="viewport" class="viewport" aria-label="Carte de stratégie en temps réel"><div class="scanlines"></div><div id="banner" class="banner"></div><div id="selection-rectangle" hidden></div><div id="touch-hold-indicator" hidden></div><div id="order-pings" aria-hidden="true"></div><div id="order-prompt" role="status" aria-live="polite" hidden></div>
+<div id="viewport" class="viewport" aria-label="Carte de stratégie en temps réel"><div class="scanlines"></div><div id="banner" class="banner"></div><div id="selection-rectangle" hidden></div><div id="order-pings" aria-hidden="true"></div><div id="order-prompt" role="status" aria-live="polite" hidden></div>
 <aside class="command-panel" id="command-panel" aria-label="Panneau de commandes RTS">
   <div class="command-identity">
     <div id="command-icon" class="command-portrait" aria-hidden="true">🏰</div>
@@ -335,26 +328,12 @@ let cameraFollow={x:0,z:0};
 const cameraLook=new THREE.Vector3(0,1.15,0);
 const clock=new THREE.Clock();
 const rand=(min,max)=>min+Math.random()*(max-min);
-let cameraZoom=35,pinch=null,cameraDrag=null;
+// Fixed orthographic scale: the initial 35-unit half-height was three times
+// farther out. Camera translation still works; no input may modify this zoom.
+const CAMERA_ZOOM=35/3;
+const cameraZoom=CAMERA_ZOOM;
+let cameraDrag=null;
 const activeTouches=new Map();
-function zoomCamera(factor,clientX,clientY){
-  const rect=viewport.getBoundingClientRect();
-  const x=clientX??rect.left+rect.width/2,y=clientY??rect.top+rect.height/2;
-  positionCamera();
-  const before=worldPoint(x,y);
-  const next=clamp(cameraZoom*factor,9,48);
-  if(Math.abs(next-cameraZoom)<1e-5)return;
-  cameraZoom=next;resize();positionCamera();
-  const after=worldPoint(x,y);
-  if(before&&after){
-    cameraFollow.x=clamp(cameraFollow.x+before.x-after.x,-26,26);
-    cameraFollow.z=clamp(cameraFollow.z+before.z-after.z,-26,26);
-  }
-  positionCamera();refreshZoomLabel();
-}
-function refreshZoomLabel(){
-  // Zoom is gesture/keyboard driven; no intrusive toolbar.
-}
 function panCamera(dx,dy){
   const box=viewport.getBoundingClientRect(),cx=box.left+box.width/2,cy=box.top+box.height/2;
   const before=worldPoint(cx,cy),after=worldPoint(cx+dx,cy+dy);
@@ -1332,7 +1311,7 @@ function startSession(){
       useOrcLevelModel(building,1).catch(err=>console.warn('Reset model:',err));
     }
   }
-  cameraZoom=35;resize();refreshZoomLabel();
+  resize();
   gold={witch:2000,orc:900};buildMode=null;orcSpawned=false;
   orcDirector.reset();orcIncomeFraction=0;strategyAccumulator=0;attackMode=false;qaPassiveKind=null;
   completedMiningCycles=0;totalMinedGold=0;
@@ -1340,7 +1319,10 @@ function startSession(){
   for(const b of liveBuildings()){b.queue=[];b.progress=0;b.level=1;
     b.maxHealth=b.clanId==='witch'?500:BUILDING_TYPES[b.type].levels[1].maxHealth;
     b.health=b.maxHealth;}
-  activeFaction='witch';paused=false;running=true;cameraFollow={x:0,z:0};
+  // At 3× magnification the old map-centre start would show empty terrain
+  // on phones. Begin beside the house and the three starting witches.
+  activeFaction='witch';paused=false;running=true;cameraFollow={x:-18,z:-14};
+  positionCamera();
   updateNavObstacles();
   spawnUnit('witch',-18,-13,0);spawnUnit('witch',-16.5,-15,1);spawnUnit('witch',-19,-16,2);
   spawnOrcDefenders();selectBuilding(witchBuilding);
@@ -2020,8 +2002,6 @@ document.addEventListener('keydown',event=>{
   if(event.code==='KeyW'&&event.altKey&&new URLSearchParams(location.search).has('qa'))changeFaction('witch');
   if(event.code==='KeyO'&&event.altKey&&new URLSearchParams(location.search).has('qa'))changeFaction('orc');
   if(event.code==='KeyF'&&selected.size){attackMode=true;refreshHUD();}
-  if(['Equal','NumpadAdd'].includes(event.code))zoomCamera(.82);
-  if(['Minus','NumpadSubtract'].includes(event.code))zoomCamera(1.22);
 });
 function pauseGame(){
   if(!running)return;
@@ -2256,7 +2236,6 @@ window.__fightersQA={
   route:(from,to)=>navigatorRTS.plan(from,to),
   setFaction:changeFaction,beginBuild,build:(type,x,z)=>buildOrc(type,x,z),
   setRally:(x,z)=>setRally(selectedBuilding,{x,z}),
-  zoom:(factor,x,y)=>zoomCamera(factor,x,y),
   pan:(x,y)=>panCamera(x,y),
   buildingScreenPoint:(id)=>{
     const b=liveBuildings().find(v=>v.id===id);
