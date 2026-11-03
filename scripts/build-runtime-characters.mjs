@@ -43,6 +43,13 @@ for(const gender of ['female','male']){
   assert(nativeNames.has(name),'Missing native clip '+name);
  const retained=clips.filter(clip=>RUNTIME_CLIPS.includes(clip.getName()));
  const before=new Map(retained.map(clip=>[clip.getName(),fingerprintAnimation(clip)]));
+ console.log('SOURCE_TEXTURE_BREAKDOWN '+JSON.stringify({
+  gender,
+  textures:root.listTextures().map(t=>({name:t.getName(),size:t.getImage()?.byteLength||0,
+    dimensions:t.getSize?.(),mime:t.getMimeType?.()})),
+  meshCount:root.listMeshes().length,
+  skinCount:root.listSkins().length
+ }));
  const oldSkins=root.listSkins().map(skin=>
   skin.listJoints().map(joint=>joint.getName()));
  assert(oldSkins.length>0&&Math.max(...oldSkins.map(x=>x.length))>=20,
