@@ -116,8 +116,6 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 
 </style>
 <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
-<script src="./vendor/polygon-clipping.umd.js"></script>
-<script src="./rts-footprint.js"></script>
 <script src="./rts-navigation.js"></script>
 <script src="./rts-unit-physics.js"></script>
 <script src="./orc-strategy.js"></script>
@@ -222,64 +220,35 @@ function buildingVisualBounds(root){
     minZ:b.min.z,maxZ:b.max.z,minY:b.min.y,maxY:b.max.y};
 }
 function buildingBounds(root,type=''){
-  // Convert the *real* GLB triangles to world coordinates, slice away roof
-  // overhangs by retaining the lower structural portion, flatten onto X/Z,
-  // and take the exact topological union of their projections. The resulting
-  // polygon may be concave, rotated, contain holes or have separate islands.
-  // No rectangular hitbox, type-specific trims or guessed footprint sizes.
-  root.updateWorldMatrix(true,true);
+  root.updateMatrixWorld(true);
   const visual=new THREE.Box3().setFromObject(root);
-  if(visual.isEmpty())throw Error('Bâtiment sans géométrie de collision');
-  const height=visual.max.y-visual.min.y;
-  const FP=window.FightersFootprint,union=window.polygonClipping?.union;
-  const getTriangles=ratio=>{
-    const cutoff=visual.min.y+height*ratio,triangles=[];
-    const v1=new THREE.Vector3(),v2=new THREE.Vector3(),v3=new THREE.Vector3();
-    root.traverse(mesh=>{
-      if(!mesh.isMesh||!mesh.geometry)return;
-      const positions=mesh.geometry.getAttribute('position');
-      if(!positions||positions.itemSize!==3)return;
-      const indices=mesh.geometry.getIndex();
-      const count=indices?indices.count:positions.count;
-      for(let i=0;i+2<count;i+=3){
-        const a=indices?indices.getX(i):i;
-        const b=indices?indices.getX(i+1):i+1;
-        const c=indices?indices.getX(i+2):i+2;
-        v1.fromBufferAttribute(positions,a).applyMatrix4(mesh.matrixWorld);
-        v2.fromBufferAttribute(positions,b).applyMatrix4(mesh.matrixWorld);
-        v3.fromBufferAttribute(positions,c).applyMatrix4(mesh.matrixWorld);
-        if(Math.min(v1.y,v2.y,v3.y)>cutoff)continue;
-        const clipped=FP.clipTriangleBelow([
-          {x:v1.x,y:v1.y,z:v1.z},
-          {x:v2.x,y:v2.y,z:v2.z},
-          {x:v3.x,y:v3.y,z:v3.z}
-        ],cutoff);
-        if(clipped.length>=3)triangles.push(clipped);
-      }
-    });
-    return triangles;
-  };
-  // 38% of the GLB's own height is a structural slice, NOT a world-space
-  // rectangular margin. If a model lacks a bottom face, expand the slice
-  // until actual projected triangles exist; never fabricate a box.
-  let polygons;
-  for(const ratio of [.38,.65,1]){
-    const triangles=getTriangles(ratio);
-    if(!triangles.length)continue;
-    try{polygons=FP.unionTriangles(triangles,union);}catch(error){
-      if(ratio===1)throw error;
+  if(visual.isEmpty())throw Error('Bâtiment sans volume de collision');
+  // Roofs, mine scaffolding and decorative trim are not solid walls at
+  // ground level. Measure the actual lower structural geometry in WORLD space
+  // instead of treating the entire roof/winch AABB as the blocking footprint.
+  const base=new THREE.Box3(),v=new THREE.Vector3();
+  const cutoff=visual.min.y+(visual.max.y-visual.min.y)*.38;
+  let sampled=0;
+  root.traverse(mesh=>{
+    const positions=mesh.isMesh&&mesh.geometry?.getAttribute('position');
+    if(!positions)return;
+    for(let i=0;i<positions.count;i++){
+      v.fromBufferAttribute(positions,i).applyMatrix4(mesh.matrixWorld);
+      if(v.y>cutoff)continue;
+      base.expandByPoint(v);sampled++;
     }
-    if(polygons?.length)break;
-  }
-  if(!polygons?.length)throw Error('Impossible de projeter la base polygonale du bâtiment: '+type);
-  const footprint=FP.makeFootprint(polygons,visual.min.y,visual.max.y);
-  console.info('Real GLB polygon footprint',type,
-    {triangles:getTriangles(.38).length,polygons:footprint.polygons.length,
-     edges:FP.outlineEdges(footprint).length,
-     bounds:[footprint.minX,footprint.maxX,footprint.minZ,footprint.maxZ]});
-  if(!Number.isFinite(footprint.minX)||!Number.isFinite(footprint.maxZ))
-    throw Error('Contour GLB invalide: '+type);
-  return footprint;
+  });
+  const width=visual.max.x-visual.min.x,depth=visual.max.z-visual.min.z;
+  const measured=sampled>=12&&!base.isEmpty()&&
+    base.max.x-base.min.x>=width*.28&&base.max.z-base.min.z>=depth*.28;
+  // Never truncate more than a small eave/scaffolding border if the source
+  // mesh is ambiguous; units must never be allowed through solid masonry.
+  const maxTrim=type==='mine'?.42:.24;
+  const minX=measured?Math.min(visual.min.x+maxTrim,Math.max(visual.min.x,base.min.x)):visual.min.x;
+  const maxX=measured?Math.max(visual.max.x-maxTrim,Math.min(visual.max.x,base.max.x)):visual.max.x;
+  const minZ=measured?Math.min(visual.min.z+maxTrim,Math.max(visual.min.z,base.min.z)):visual.min.z;
+  const maxZ=measured?Math.max(visual.max.z-maxTrim,Math.min(visual.max.z,base.max.z)):visual.max.z;
+  return {shape:'aabb',minX,maxX,minZ,maxZ,minY:visual.min.y,maxY:visual.max.y};
 }
 function liveBuildings(){return [witchBuilding,...buildingInstances.values()].filter(b=>!b.destroyed);}
 function updateNavObstacles(){
@@ -288,32 +257,22 @@ function updateNavObstacles(){
 }
 function drawBuildingSelection(){
   if(buildingSelectionRing){
-    scene.remove(buildingSelectionRing);
-    buildingSelectionRing.traverse(node=>{
-      node.geometry?.dispose();node.material?.dispose();
-    });
-    buildingSelectionRing=null;
+    scene.remove(buildingSelectionRing);buildingSelectionRing.geometry.dispose();
+    buildingSelectionRing.material.dispose();buildingSelectionRing=null;
   }
   if(!selectedBuilding?.hitbox)return;
-  const footprint=selectedBuilding.hitbox;
-  const color=selectedBuilding.clanId==='witch'?0xc2f5a3:0xf8c47f;
-  // The selection outline displays the SAME physical polygon used by A*
-  // and the fighters. No rectangular selection outline.
-  buildingSelectionRing=new THREE.Group();
-  const loops=footprint.polygons||[[[
-    [footprint.minX,footprint.minZ],[footprint.maxX,footprint.minZ],
-    [footprint.maxX,footprint.maxZ],[footprint.minX,footprint.maxZ]
-  ]]];
-  for(const polygon of loops)for(const ring of polygon){
-    const points=ring.map(p=>new THREE.Vector3(p[0],.08,p[1]));
-    if(points.length<3)continue;
-    points.push(points[0].clone());
-    const line=new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints(points),
-      new THREE.LineBasicMaterial({color,depthTest:false}));
-    line.renderOrder=10;buildingSelectionRing.add(line);
-  }
-  scene.add(buildingSelectionRing);
+  const b=selectedBuilding.hitbox,width=b.maxX-b.minX+.36,depth=b.maxZ-b.minZ+.36;
+  const geometry=new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(-width/2,0,-depth/2),new THREE.Vector3(width/2,0,-depth/2),
+    new THREE.Vector3(width/2,0,depth/2),new THREE.Vector3(-width/2,0,depth/2),
+    new THREE.Vector3(-width/2,0,-depth/2)
+  ]);
+  const material=new THREE.LineBasicMaterial({
+    color:selectedBuilding.clanId==='witch'?0xc2f5a3:0xf8c47f,depthTest:false
+  });
+  buildingSelectionRing=new THREE.Line(geometry,material);
+  buildingSelectionRing.position.set((b.minX+b.maxX)/2,.08,(b.minZ+b.maxZ)/2);
+  buildingSelectionRing.renderOrder=10;scene.add(buildingSelectionRing);
 }
 
 const INV_SQRT2=Math.SQRT1_2;
@@ -472,11 +431,7 @@ async function loadWitchHouse(){
   witchBuilding.visualHitbox=buildingVisualBounds(anchor);
   updateNavObstacles();drawBuildingSelection();refreshHUD();
 }
-const witchHouseReady=loadWitchHouse().then(()=>true,error=>{
-  console.error('Witch house polygon generation failed:',error);
-  window.__witchHouseLoadError=String(error?.message||error);
-  return false;
-});
+loadWitchHouse().catch(err=>console.warn('Witch house GLB unavailable:',err));
 
 // Declarative building catalog. Economic/technology values are intentionally unset
 // until RTS balancing is designed; no construction or combat rules are enabled.
@@ -615,14 +570,9 @@ async function loadOrcVillage(limit=3){
     anchor.add(offset);
     const type=(entries[i].sourceNode||entries[i].name).match(/(?:orc_)?(barrack|hut|mine|cauldron|factory)_Lv1$/i)?.[1]?.toLowerCase();
     if(!type)continue;
+    buildingBlueprints.set(type,{entry:entries[i],source:model.clone(true),clips:buildingClips,footprint});
     const target=3.9;
     anchor.scale.setScalar(target/footprint);
-    // Cache this model's exact unrotated foundation contour once. Placement
-    // translates it in X/Z instead of guessing a 3.9×3.9 square or repeatedly
-    // projecting thousands of triangles during AI site planning.
-    const localHitbox=buildingBounds(anchor,type);
-    buildingBlueprints.set(type,{entry:entries[i],source:model.clone(true),
-      clips:buildingClips,footprint,localHitbox});
     const p=ORC_VILLAGE.positions[type];
     anchor.position.set(p.x,0,p.z);
     anchor.rotation.y=(i%4)*Math.PI/2;
@@ -645,10 +595,7 @@ function beginOrcVillageLoad(){
   if(orcVillageLoadStarted||!orcDebugCount)return;
   orcVillageLoadStarted=true;
   setTimeout(()=>loadOrcVillage(orcDebugCount)
-    .catch(err=>{
-      window.__orcVillageLoadError=String(err?.stack||err);
-      console.error('Orc village polygon loading failed:',err);
-    }),100);
+    .catch(err=>console.warn('Orc village loading failed:',err)),100);
 }
 
 function resize(){
@@ -989,25 +936,17 @@ function cancelOrder(building,index){
   refreshHUD();return true;
 }
 function safeSpawnNear(building){
-  const box=building.hitbox,pad=UNIT_RADIUS+.35;
-  for(const [a,b] of window.FightersFootprint.outlineEdges(box)){
-    const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz);
-    if(!len)continue;
-    const nx=-dz/len,nz=dx/len;
-    for(let i=0;i<=Math.ceil(len/.9);i++){
-      const t=i/Math.max(1,Math.ceil(len/.9));
-      for(const side of [1,-1]){
-        const point={x:a.x+dx*t+nx*pad*side,
-          z:a.z+dz*t+nz*pad*side};
-        if(!navigatorRTS.pointClear(point))continue;
-        if(units.some(u=>!u.dead&&Math.hypot(u.root.position.x-point.x,
-          u.root.position.z-point.z)<.95))continue;
-        return point;
-      }
-    }
+  const box=building.hitbox,cx=(box.minX+box.maxX)/2,cz=(box.minZ+box.maxZ)/2;
+  const radius=Math.max(box.maxX-box.minX,box.maxZ-box.minZ)/2+1.4;
+  for(let ring=0;ring<7;ring++)for(let i=0;i<16;i++){
+    const a=i*Math.PI/8,point={x:cx+Math.cos(a)*(radius+ring*.7),
+      z:cz+Math.sin(a)*(radius+ring*.7)};
+    if(!navigatorRTS.pointClear(point))continue;
+    if(units.some(u=>!u.dead&&Math.hypot(u.root.position.x-point.x,
+      u.root.position.z-point.z)<.95))continue;
+    return point;
   }
-  return navigatorRTS.findSafeSpawn(building.rally||
-    {x:(box.minX+box.maxX)/2,z:box.maxZ+1});
+  return navigatorRTS.findSafeSpawn(building.rally||{x:cx+radius,z:cz+radius});
 }
 function finishTraining(building,kind){
   const position=safeSpawnNear(building);
@@ -1091,18 +1030,18 @@ function beginBuild(type){
   buildMode=type;rallyMode=false;constructionTab=false;refreshHUD();return true;
 }
 function validBuildPosition(x,z,type='hut'){
-  const template=buildingBlueprints.get(type);
-  if(!ORC_COSTS[type]||!template?.localHitbox)return false;
-  const Nav=window.FightersNavigation;
-  const proposed=window.FightersFootprint.translateFootprint(template.localHitbox,x,z);
+  if(!ORC_COSTS[type]||!buildingBlueprints.has(type))return false;
+  const half=1.95;
+  const proposed={minX:x-half,maxX:x+half,minZ:z-half,maxZ:z+half};
   if(proposed.minX<0||proposed.maxX>ARENA_HALF-.35||
     proposed.minZ<-ARENA_HALF+.35||proposed.maxZ>ARENA_HALF-.35)return false;
-  // Only the unit's physical radius supplies a passage margin. Building
-  // dimensions and angles come entirely from the projected GLB triangles.
-  if(liveBuildings().some(b=>Nav.footprintsOverlap(proposed,b.hitbox,UNIT_RADIUS)))
-    return false;
+  const margin=.8;
+  if(liveBuildings().some(b=>
+    proposed.minX<b.hitbox.maxX+margin&&proposed.maxX>b.hitbox.minX-margin&&
+    proposed.minZ<b.hitbox.maxZ+margin&&proposed.maxZ>b.hitbox.minZ-margin))return false;
   return units.every(actor=>actor.dead||
-    Nav.distanceToFootprint(actor.root.position,proposed)>UNIT_RADIUS);
+    actor.root.position.x<proposed.minX-.6||actor.root.position.x>proposed.maxX+.6||
+    actor.root.position.z<proposed.minZ-.6||actor.root.position.z>proposed.maxZ+.6);
 }
 function buildOrc(type,x,z,{byAI=false}={}){
   if(!ORC_COSTS[type]||!buildingBlueprints.has(type)||gold.orc<ORC_COSTS[type]||!validBuildPosition(x,z,type))return false;
@@ -1399,7 +1338,8 @@ function enemyOf(actor,target){
 function targetDistance(actor,target){
   const p=actor.root.position;
   if(!isBuilding(target))return Math.hypot(target.root.position.x-p.x,target.root.position.z-p.z);
-  return window.FightersNavigation.distanceToFootprint(p,target.hitbox);
+  const b=target.hitbox;
+  return Math.hypot(Math.max(b.minX-p.x,0,p.x-b.maxX),Math.max(b.minZ-p.z,0,p.z-b.maxZ));
 }
 function nearestHostile(actor,maxDistance=Infinity){
   let nearest=null,distance=maxDistance,priority=Infinity;
@@ -1415,29 +1355,10 @@ function nearestHostile(actor,maxDistance=Infinity){
   return nearest?{target:nearest,distance}:null;
 }
 const BUILDING_CONTACT=.78;
-function footprintCenter(b){
-  // Area-weighted centroid of the actual foundation, not an AABB midpoint.
-  let weight=0,x=0,z=0;
-  for(const polygon of b.polygons||[])for(let k=0;k<polygon.length;k++){
-    const ring=polygon[k];let crossSum=0,cx=0,cz=0;
-    for(let i=0;i<ring.length;i++){
-      const a=ring[i],v=ring[(i+1)%ring.length];
-      const cross=a[0]*v[1]-v[0]*a[1];
-      crossSum+=cross;cx+=(a[0]+v[0])*cross;cz+=(a[1]+v[1])*cross;
-    }
-    if(Math.abs(crossSum)<1e-9)continue;
-    const sign=k===0?1:-1,area=Math.abs(crossSum)/2;
-    x+=sign*area*cx/(3*crossSum);
-    z+=sign*area*cz/(3*crossSum);
-    weight+=sign*area;
-  }
-  return weight>1e-7?{x:x/weight,z:z/weight}:
-    {x:(b.minX+b.maxX)/2,z:(b.minZ+b.maxZ)/2};
-}
 function faceBuildingCenter(actor,building){
-  const centre=footprintCenter(building.hitbox);
-  faceDirection(actor,centre.x-actor.root.position.x,
-    centre.z-actor.root.position.z);
+  const b=building.hitbox;
+  faceDirection(actor,(b.minX+b.maxX)/2-actor.root.position.x,
+    (b.minZ+b.maxZ)/2-actor.root.position.z);
 }
 function approachBuilding(actor,building){
   const b=building.hitbox,p=actor.root.position,pad=UNIT_RADIUS+.14;
@@ -1445,32 +1366,31 @@ function approachBuilding(actor,building){
     actor.approachCache.version===navigatorRTS.version&&
     actor.approachAge<2.5&&navigatorRTS.pointClear(actor.approachCache.point))
     return actor.approachCache.point;
-  const from={x:p.x,z:p.z},candidates=[],Nav=window.FightersNavigation;
-  const push=point=>{
+  const from={x:p.x,z:p.z};
+  const candidates=[];
+  const push=(x,z)=>{
+    const point={x,z};
     if(navigatorRTS.pointClear(point)&&
-      !candidates.some(c=>Math.hypot(c.x-point.x,c.z-point.z)<.25))
+      !candidates.some(c=>Math.hypot(c.x-x,c.z-z)<.25))
       candidates.push(point);
   };
-  // Sample the REAL edges, including concave recesses, rather than the four
-  // faces of a guessed bounding rectangle. Check both normal directions
-  // because rings can have opposite winding for holes.
-  for(const [a,c] of window.FightersFootprint.outlineEdges(b)){
-    const dx=c.x-a.x,dz=c.z-a.z,len=Math.hypot(dx,dz);
-    if(len<1e-8)continue;
-    const nx=-dz/len,nz=dx/len;
-    const samples=Math.max(1,Math.ceil(len/1.05));
-    for(let i=0;i<=samples;i++){
-      const t=(i+.0001)/(samples+.0002);
-      const x=a.x+dx*t,z=a.z+dz*t;
-      push({x:x+pad*nx,z:z+pad*nz});
-      push({x:x-pad*nx,z:z-pad*nz});
-    }
+  // Sample the whole physical perimeter, not just four corners. Attackers
+  // reserve different nearby spots so they surround the building rather than
+  // forming a single pile of units beating one another.
+  const across=(lo,hi)=>{
+    const length=hi-lo,n=Math.max(1,Math.ceil(length/1.15));
+    return Array.from({length:n+1},(_,i)=>lo+length*i/n);
+  };
+  for(const z of across(b.minZ,b.maxZ)){
+    push(b.minX-pad,z);push(b.maxX+pad,z);
   }
-  const contact=Nav.closestFootprintPoint(from,b);
-  if(contact){
-    const dx=from.x-contact.x,dz=from.z-contact.z,len=Math.hypot(dx,dz);
-    if(len>1e-8)push({x:contact.x+pad*dx/len,z:contact.z+pad*dz/len});
+  for(const x of across(b.minX,b.maxX)){
+    push(x,b.minZ-pad);push(x,b.maxZ+pad);
   }
+  const x=THREE.MathUtils.clamp(p.x,b.minX,b.maxX);
+  const z=THREE.MathUtils.clamp(p.z,b.minZ,b.maxZ);
+  const outward={x:p.x-x,z:p.z-z},length=Math.hypot(outward.x,outward.z);
+  if(length>.01)push(x+pad*outward.x/length,z+pad*outward.z/length);
   const coworkers=units.filter(other=>other!==actor&&!other.dead&&
     (other.attackOrder===building||other.attack?.target===building||
       other.mineJob?.mineId===building.id));
@@ -2155,12 +2075,6 @@ async function load(){
     loadingProfile.readyMs=Math.round(performance.now()-loadingProfile.startedAt);
     loadingProfile.steps.push('characters_8_native_clips_parallel','native_rig_verified',
       'costumes_complete','sword_complete');
-    // Never start a match against a guessed temporary AABB; a fully
-    // polygonized witch-house model must be ready before gameplay begins.
-    $('overlay-desc').textContent='Calcul des collisions polygonales…';
-    if(!await witchHouseReady||witchBuilding.hitbox.shape!=='polygon')
-      throw Error('Contour polygonal de la maison indisponible : '+
-        (window.__witchHouseLoadError||'GLB incomplet'));
     ready=true;$('load-bar').style.width='100%';$('start').disabled=false;
     $('start').textContent='▶ COMMENCER';
     $('overlay-desc').textContent='Sélectionnez vos sorcières puis touchez le terrain. Les orcs développent leur village pendant la partie.';
@@ -2228,8 +2142,7 @@ window.__fightersQA={
       healthbarPosition:b.healthBar.root.position.toArray(),
       healthbarVisible:b.healthBar.root.visible
     })),
-    blueprints:[...buildingBlueprints.keys()],witchHouseLoaded:!!witchHouse,
-    orcVillageLoadError:window.__orcVillageLoadError||null
+    blueprints:[...buildingBlueprints.keys()],witchHouseLoaded:!!witchHouse
   }),
   train:issueTrain,trainOrc:()=>issueOrcTrain(selectedBuilding),
   spawnWitches:(targetCount=20)=>{
