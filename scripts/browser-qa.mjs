@@ -112,8 +112,8 @@ async function run(){
  check(s.projection==='orthographic','Expected RTS orthographic camera');
  check(await evaluate("document.querySelector('#command-title').textContent.includes('Maison des sorcières')"),
   'Building info panel missing');
- check(await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.textContent.includes('Sorcière'))"),
-  'Training action missing from contextual panel');
+ check(await evaluate("['Ouvrière','Garde','Arcaniste'].every(name=>Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.textContent.includes(name)))"),
+  'Three witch training roles missing from contextual panel');
  check(await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.textContent.includes('Améliorer'))"),
   'Upgrade action missing from contextual panel');
  check(await evaluate("document.querySelector('#command-icon').textContent.length>0"),

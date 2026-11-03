@@ -621,7 +621,7 @@ async function loadOrcVillage(limit=3){
         buildingInstances.delete('orc-mine-02');
         buildingInstances.set(deposit.id,deposit);
         deposit.healthBar.root.name='healthbar-world-'+deposit.id;
-        village.add(mirror);
+        village.add(mirror);updateNavObstacles();
       }
     }
   }
@@ -1139,9 +1139,9 @@ function validBuildPosition(x,z,type='hut'){
   const proposed=buildShape(type,x,z);
   if(!proposed)return false;
   const clan=buildFaction(type),geometry=window.FightersFootprints;
-  const min=clan==='witch'?-ARENA_HALF:0,max=clan==='witch'?0:ARENA_HALF;
-  if(proposed.minX<min||proposed.maxX>max||
-    proposed.minZ<min||proposed.maxZ>max)return false;
+  const minX=clan==='witch'?-ARENA_HALF:0,maxX=clan==='witch'?0:ARENA_HALF;
+  if(proposed.minX<minX||proposed.maxX>maxX||
+    proposed.minZ<-ARENA_HALF||proposed.maxZ>ARENA_HALF)return false;
   // The same true projected X/Z polygons govern construction and collision.
   if(liveBuildings().some(b=>geometry.polygonsOverlap(proposed,b.hitbox))||
      pendingBuilds.some(job=>geometry.polygonsOverlap(proposed,job.site.hitbox)))return false;
@@ -1775,7 +1775,8 @@ function navigateActor(actor,target,dt,mode){
 const MINING_SECONDS=4.5,MINING_PAY=22;
 function assignMiners(){
   if(!orcDirector.enabled||!running)return;
-  const mines=[...buildingInstances.values()].filter(b=>b.type==='mine'&&!b.destroyed);
+  const mines=[...buildingInstances.values()].filter(b=>b.type==='mine'&&
+    b.clanId==='orcs'&&!b.destroyed);
   const orcs=units.filter(u=>u.kind==='orc'&&roles.isWorker(u)&&!u.dead&&!u.constructJob);
   const limit=Math.min(mines.length,Math.max(1,Math.floor(orcs.length/3)));
   let assigned=orcs.filter(u=>u.mineJob&&mines.some(b=>b.id===u.mineJob.mineId));
@@ -1967,7 +1968,7 @@ function stepOrcStrategy(dt){
   const aliveOrcs=units.filter(a=>a.kind==='orc'&&!a.dead);
   const context={
     ready:true,running,paused,gold:gold.orc,
-    buildings:[...buildingInstances.values()].filter(b=>!b.destroyed).map(b=>({
+    buildings:[...buildingInstances.values()].filter(b=>!b.destroyed&&b.clanId==='orcs').map(b=>({
       id:b.id,type:b.type,level:b.level,queue:b.queue.map(j=>({kind:j.kind})),
       health:b.health,maxHealth:b.maxHealth,hitbox:b.hitbox,destroyed:b.destroyed
     })),
