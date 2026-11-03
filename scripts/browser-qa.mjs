@@ -67,10 +67,14 @@ async function run(){
  let s=await evaluate('window.__fightersQA.snapshot()');
  check(s.witches.length===3&&s.orcs.length===4,'Starting troops');
  check(s.loading.compressed,'Native characters should load from optimized gzip assets');
+ const fullTransfer={female:20994430,male:20683626};
+ const fullDecoded={female:35752840,male:35190592};
  for(const [name,profile] of Object.entries(s.loading.characters)){
-  check(profile.transport==='gzip'&&profile.wireBytes>0&&
-    profile.wireBytes<profile.decodedBytes*.8,
-   'Lossless compressed rig not used: '+name+' '+JSON.stringify(profile));
+  const gender=name.includes('female')?'female':'male';
+  check(name.includes('.rts.glb')&&profile.transport==='gzip'&&profile.wireBytes>0&&
+    profile.wireBytes<fullTransfer[gender]*.85&&
+    profile.decodedBytes<fullDecoded[gender]*.6,
+   'Compact native rig not used: '+name+' '+JSON.stringify(profile));
  }
  check(s.loading.readyMs>0&&s.loading.downloadMs>0,'Missing startup measurements');
  console.log('LOAD PROFILE (real Chrome):',JSON.stringify(s.loading));
@@ -239,14 +243,26 @@ async function run(){
    'Two-finger drag must not pan the camera');
  await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
 
+ // Center the map before checking panning: zoom anchoring may have brought
+ // the camera to its ±26 coordinate boundary, where further panning clamps.
+ await evaluate('window.__fightersQA.centerCamera(0,0)');
  const beforeSinglePan=await evaluate('window.__fightersQA.snapshot()');
- await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[touch(4,155,310)]});
- await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[touch(4,220,355)]});
+ // Send both CDP commands without an interposed round-trip: under WebGL
+ // load, waiting for the touchStart acknowledgement sometimes takes >1s,
+ // unintentionally activating the actual hold-to-select timer.
+ const panStart=call('Input.dispatchTouchEvent',{type:'touchStart',
+  touchPoints:[touch(4,155,310)]});
+ const panMove=call('Input.dispatchTouchEvent',{type:'touchMove',
+  touchPoints:[touch(4,220,355)]});
+ await Promise.all([panStart,panMove]);
  await sleep(80);
  const afterSinglePan=await evaluate('window.__fightersQA.snapshot()');
  check(Math.hypot(afterSinglePan.cameraCenter.x-beforeSinglePan.cameraCenter.x,
    afterSinglePan.cameraCenter.z-beforeSinglePan.cameraCenter.z)>.2,
-   'One-finger drag must pan the camera');
+   'One-finger drag must pan the camera: '+JSON.stringify({
+    before:beforeSinglePan.cameraCenter,after:afterSinglePan.cameraCenter,
+    gesture:afterSinglePan.touchGesture,pinch:afterSinglePan.pinch
+   }));
  check(afterSinglePan.selectedIds.join(',')===beforeSinglePan.selectedIds.join(','),
    'One-finger drag inadvertently selected units');
  await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});

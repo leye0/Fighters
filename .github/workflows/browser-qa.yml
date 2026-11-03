@@ -45,7 +45,7 @@ jobs:
           mkdir -p docs/models
           cp witch_house.glb docs/models/witch_house.glb
           cat orc_rts_building_set_-_proto_series.glb.part1 orc_rts_building_set_-_proto_series.glb.part2 > docs/models/orc_rts_building_set_-_proto_series.glb
-          npm install --no-save --no-package-lock --no-audit --no-fund @gltf-transform/core@4.2.1 @gltf-transform/functions@4.2.1 three@0.180.0
+          npm install --no-save --no-package-lock --no-audit --no-fund @gltf-transform/core@4.2.1 @gltf-transform/functions@4.2.1 three@0.180.0 @gltf-transform/extensions@4.2.1 sharp@0.34.4
           mkdir -p docs/vendor/three
           cp node_modules/three/build/three.module.js docs/vendor/three/three.module.js
           cp node_modules/three/build/three.core.js docs/vendor/three/three.core.js
