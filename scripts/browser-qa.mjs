@@ -551,7 +551,7 @@ async function run(){
    'Invisible enemy building must not be targetable through black fog');
  // Scout with a different witch. The selected melee fighter can remain
  // far away, so clicking the hut cannot accidentally select the scout.
- await evaluate("window.__fightersQA.moveUnitTo('witch',2,17,21)");
+ await evaluate("window.__fightersQA.moveUnitTo('witch',1,18.5,21)");
  check((await evaluate('window.__fightersQA.fogAt(22,21)')).visible>.2,
    'Scout next to enemy hut must reveal the target');
  await evaluate("window.__fightersQA.tap("+targetPoint.x+","+targetPoint.y+")");
