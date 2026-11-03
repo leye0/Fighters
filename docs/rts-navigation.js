@@ -4,10 +4,11 @@
  * Public global window.FightersNavigation; Node: module.exports.
  */
 (function(root,factory){
-  const api=factory();
+  const api=factory(root.FightersFootprints||
+    (typeof require==='function'?require('./rts-footprint.js'):null));
   if(typeof module==='object'&&module.exports)module.exports=api;
   else root.FightersNavigation=api;
-})(typeof globalThis==='object'?globalThis:this,function(){
+})(typeof globalThis==='object'?globalThis:this,function(footprint){
  'use strict';
  const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
  const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
@@ -50,11 +51,17 @@
    constructor({halfSize=28,cellSize=1,radius=.38}={}){
      this.halfSize=halfSize;this.cellSize=cellSize;this.radius=radius;this.version=0;this.obstacles=[];
      this.side=Math.ceil(2*halfSize/cellSize);
+     this._blockedCache=new Int8Array(this.side*this.side).fill(-1);
    }
    setObstacles(obstacles){
-     if(!Array.isArray(obstacles)||obstacles.some(b=>![b.minX,b.maxX,b.minZ,b.maxZ].every(Number.isFinite)||b.minX>=b.maxX||b.minZ>=b.maxZ))
-       throw Error('Each obstacle needs a finite nonempty world-space AABB');
-     this.obstacles=obstacles.map(b=>({...b}));this.version++;
+     if(!Array.isArray(obstacles)||obstacles.some(b=>
+       ![b.minX,b.maxX,b.minZ,b.maxZ].every(Number.isFinite)||
+       b.minX>=b.maxX||b.minZ>=b.maxZ||
+       (b.shape==='polygon'&&(!footprint||!Array.isArray(b.polygons)||!b.polygons.length))))
+       throw Error('Each obstacle needs a valid nonempty 2D shape and AABB broadphase');
+     this.obstacles=obstacles.map(b=>({...b}));
+     this._blockedCache.fill(-1);
+     this.version++;
    }
    clamp(p){
      const edge=this.halfSize-this.radius-.08;
@@ -62,11 +69,15 @@
    }
    pointClear(p){
      const limit=this.halfSize-this.radius-.05;
-     return Math.abs(p.x)<=limit&&Math.abs(p.z)<=limit&&!this.obstacles.some(b=>pointInside(b,p.x,p.z,this.radius));
+     return Math.abs(p.x)<=limit&&Math.abs(p.z)<=limit&&!this.obstacles.some(b=>
+       b.shape==='polygon'?footprint.pointBlocked(p,b,this.radius):
+         pointInside(b,p.x,p.z,this.radius));
    }
    segmentClear(from,to){
      if(!this.pointClear(from)||!this.pointClear(to))return false;
-     return !this.obstacles.some(b=>segmentHitsBox(from,to,b,this.radius));
+     return !this.obstacles.some(b=>b.shape==='polygon'?
+       footprint.segmentBlocked(from,to,b,this.radius):
+       segmentHitsBox(from,to,b,this.radius));
    }
    index(x,z){return z*this.side+x;}
    coord(i){return {x:i%this.side,z:Math.floor(i/this.side)};}
@@ -79,11 +90,17 @@
    inside(c){return c.x>=0&&c.z>=0&&c.x<this.side&&c.z<this.side;}
    cellBlocked(c){
      if(!this.inside(c))return true;
-     // Treat cell squares as blocked when they intersect a padded building.
+     const id=this.index(c.x,c.z);
+     if(this._blockedCache[id]!==-1)return !!this._blockedCache[id];
      const x=-this.halfSize+c.x*this.cellSize,z=-this.halfSize+c.z*this.cellSize;
      const pad=this.radius+.04;
-     return this.obstacles.some(b=>x<=b.maxX+pad&&x+this.cellSize>=b.minX-pad&&
-       z<=b.maxZ+pad&&z+this.cellSize>=b.minZ-pad);
+     const rect={minX:x,maxX:x+this.cellSize,minZ:z,maxZ:z+this.cellSize};
+     const blocked=this.obstacles.some(b=>b.shape==='polygon'?
+       footprint.cellBlocked(rect,b,pad):
+       x<=b.maxX+pad&&x+this.cellSize>=b.minX-pad&&
+         z<=b.maxZ+pad&&z+this.cellSize>=b.minZ-pad);
+     this._blockedCache[id]=blocked?1:0;
+     return blocked;
    }
    findSafeGoal(request){
      const goal=this.clamp(request),raw=this.cell(goal);
