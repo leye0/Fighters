@@ -94,7 +94,7 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;padding:0;overf
 
 /* Permanent shortcut row never gets replaced by contextual commands. */
 .command-operations{min-width:0}
-.quick-commands{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;padding-bottom:7px;border-bottom:1px solid #546b68}
+.quick-commands{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;padding-bottom:7px;border-bottom:1px solid #546b68}
 .quick-commands button{min-height:40px;border:1px solid #748983;background:#1b343a;color:#e5f1da;border-radius:5px;font-weight:750;display:flex;align-items:center;justify-content:center;gap:5px;font-size:16px;white-space:nowrap;padding:4px}
 .quick-commands button span{font-size:11px}.quick-commands button:disabled{opacity:.4;cursor:default}
 .quick-commands button[aria-pressed="true"]{border-color:#ffd47c;background:#4f4430}
@@ -144,6 +144,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
     <nav id="quick-commands" class="quick-commands" aria-label="Commandes permanentes">
       <button id="quick-home" type="button" title="Maison des sorcières">🏡 <span>Maison</span></button>
       <button id="quick-army" type="button" title="Sélectionner toutes les sorcières">👥 <span>Armée</span></button>
+      <button id="quick-select" type="button" aria-pressed="false" title="Sélectionner des unités par rectangle (sans appui long)">▧ <span>Sélection</span></button>
       <button id="quick-attack" type="button" title="Cibler un ennemi">⚔️ <span>Attaquer</span></button>
       <button id="quick-stop" type="button" title="Arrêter les unités sélectionnées">✋ <span>Stop</span></button>
       <button id="quick-cancel" type="button" title="Annuler le mode actif">✕ <span>Annuler</span></button>
@@ -292,7 +293,7 @@ const ORC_TRAIN_COST=100,ORC_TRAIN_DURATION=4.5,MAX_QUEUE=8;
 const orcDirector=new window.FightersOrcStrategy.Director();
 const autonomousOrcs=!new URLSearchParams(location.search).has('qa');
 orcDirector.enabled=autonomousOrcs;
-let orcIncomeFraction=0,attackMode=false,strategyAccumulator=0;
+let orcIncomeFraction=0,attackMode=false,selectionMode=false,strategyAccumulator=0;
 let completedMiningCycles=0,totalMinedGold=0;
 let qaPassiveKind=null;
 let cameraFollow={x:0,z:0};
@@ -1047,7 +1048,7 @@ function setText(id,value){
   if(el.textContent!==display)el.textContent=display;
 }
 function cancelTransientMode(){
-  attackMode=false;buildMode=null;rallyMode=false;constructionTab=false;refreshHUD();
+  attackMode=false;selectionMode=false;buildMode=null;rallyMode=false;constructionTab=false;refreshHUD();
 }
 function stopSelectedUnits(){
   attackMode=false;
@@ -1055,6 +1056,7 @@ function stopSelectedUnits(){
   refreshHUD();
 }
 function selectArmy(){
+  selectionMode=false;
   selectUnits(units.filter(u=>!u.dead&&u.kind===activeFaction));
 }
 $('quick-home').onclick=()=>{
@@ -1065,7 +1067,13 @@ $('quick-home').onclick=()=>{
   }
 };
 $('quick-army').onclick=selectArmy;
-$('quick-attack').onclick=()=>{if(selected.size){attackMode=!attackMode;refreshHUD();}};
+$('quick-select').onclick=()=>{
+  if(!running||paused)return;
+  selectionMode=!selectionMode;
+  if(selectionMode){attackMode=false;buildMode=null;rallyMode=false;constructionTab=false;}
+  refreshHUD();
+};
+$('quick-attack').onclick=()=>{if(selected.size){selectionMode=false;attackMode=!attackMode;refreshHUD();}};
 $('quick-stop').onclick=stopSelectedUnits;
 $('quick-cancel').onclick=cancelTransientMode;
 function refreshHUD(){
@@ -1204,14 +1212,17 @@ function refreshHUD(){
     button.disabled=!!disabled;
   }
   $('quick-attack').disabled=selected.size===0||paused||!running;
+  $('quick-select').disabled=paused||!running;
   $('quick-stop').disabled=selected.size===0||paused||!running;
   $('quick-home').disabled=!running||(activeFaction==='witch'&&witchBuilding.destroyed);
   $('quick-army').disabled=!running||!units.some(u=>!u.dead&&u.kind===activeFaction);
-  const modeActive=attackMode||!!buildMode||rallyMode||constructionTab;
+  const modeActive=attackMode||selectionMode||!!buildMode||rallyMode||constructionTab;
   $('quick-cancel').disabled=!modeActive;
   $('quick-attack').setAttribute('aria-pressed',String(attackMode));
+  $('quick-select').setAttribute('aria-pressed',String(selectionMode));
   const prompt=$('order-prompt');
-  const hint=attackMode?'⚔ Touchez une unité ou un bâtiment ennemi.':
+  const hint=selectionMode?'▧ SÉLECTION : glissez un doigt sur vos unités.':
+    attackMode?'⚔ Touchez une unité ou un bâtiment ennemi.':
     buildMode?'🏗 Touchez une zone libre pour construire · Annuler en bas.':
     rallyMode?'🚩 Touchez le sol pour fixer le rassemblement.':
     constructionTab?'Choisissez le bâtiment à construire.':'';
@@ -1287,7 +1298,7 @@ function startSession(){
   }
   cameraZoom=35;resize();refreshZoomLabel();
   gold={witch:2000,orc:900};buildMode=null;orcSpawned=false;
-  orcDirector.reset();orcIncomeFraction=0;strategyAccumulator=0;attackMode=false;qaPassiveKind=null;
+  orcDirector.reset();orcIncomeFraction=0;strategyAccumulator=0;attackMode=false;selectionMode=false;qaPassiveKind=null;
   completedMiningCycles=0;totalMinedGold=0;
   rallyMode=false;constructionTab=false;lastHudSignature='';
   for(const b of liveBuildings()){b.queue=[];b.progress=0;b.level=1;
@@ -1940,12 +1951,15 @@ for(const name of ['pointerup','pointercancel','lostpointercapture'])
 viewport.addEventListener('contextmenu',event=>event.preventDefault());
 
 document.addEventListener('keydown',event=>{
-  if(event.code==='Escape'){buildMode=null;rallyMode=false;constructionTab=false;attackMode=false;clearSelection();refreshHUD();}
+  if(event.code==='Escape'){buildMode=null;rallyMode=false;constructionTab=false;attackMode=false;selectionMode=false;clearSelection();refreshHUD();}
   if(event.code==='KeyP'&&!event.repeat)pauseGame();
   if(event.code==='KeyA'&&(event.ctrlKey||event.metaKey)){event.preventDefault();selectUnits(units.filter(a=>a.kind===activeFaction&&!a.dead));}
   if(event.code==='KeyW'&&event.altKey&&new URLSearchParams(location.search).has('qa'))changeFaction('witch');
   if(event.code==='KeyO'&&event.altKey&&new URLSearchParams(location.search).has('qa'))changeFaction('orc');
-  if(event.code==='KeyF'&&selected.size){attackMode=true;refreshHUD();}
+  if(event.code==='KeyF'&&selected.size){selectionMode=false;attackMode=true;refreshHUD();}
+  if(event.code==='KeyS'&&!event.repeat&&document.activeElement?.tagName!=='INPUT'){
+    selectionMode=!selectionMode;refreshHUD();
+  }
   if(['Equal','NumpadAdd'].includes(event.code))zoomCamera(.82);
   if(['Minus','NumpadSubtract'].includes(event.code))zoomCamera(1.22);
 });
@@ -2073,7 +2087,7 @@ window.__fightersQA={
     mixers:orcAnimationMixers.length,
     worldHealthBars:scene.children.filter(node=>node.name?.startsWith('healthbar-world-')).length,
     touchGesture:pointerStart?.mode||null,
-    touchGestureCounters:{...touchGestureCounters},
+    touchGestureCounters:{...touchGestureCounters},selectionMode,
     selectionRectangleVisible:!$('selection-rectangle').hidden,
     visibleSelectionRings:units.filter(u=>u.kind===activeFaction&&!u.dead&&u.selectionRing.visible).length,
     ui:{...uiStats,activePings:activeOrderPings.size,
