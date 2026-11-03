@@ -219,6 +219,13 @@ const witchBuilding={
 let buildingSelectionRing=null;
 const UNIT_RADIUS=window.FightersUnitPhysics.RADIUS;
 const navigatorRTS=new window.FightersNavigation.Navigator({halfSize:ARENA_HALF,cellSize:1,radius:UNIT_RADIUS});
+function buildingVisualBounds(root){
+  root.updateMatrixWorld(true);
+  const b=new THREE.Box3().setFromObject(root);
+  if(b.isEmpty())throw Error('Bâtiment sans volume visuel');
+  return {shape:'aabb',minX:b.min.x,maxX:b.max.x,
+    minZ:b.min.z,maxZ:b.max.z,minY:b.min.y,maxY:b.max.y};
+}
 function buildingBounds(root,type=''){
   root.updateMatrixWorld(true);
   const visual=new THREE.Box3().setFromObject(root);
@@ -442,6 +449,7 @@ async function loadWitchHouse(){
   anchor.add(house);
   scene.add(anchor);witchHouse=anchor;witchBuilding.root=anchor;
   witchBuilding.hitbox=buildingBounds(anchor,'witch-house');
+  witchBuilding.visualHitbox=buildingVisualBounds(anchor);
   updateNavObstacles();drawBuildingSelection();refreshHUD();
 }
 loadWitchHouse().catch(err=>console.warn('Witch house GLB unavailable:',err));
@@ -471,7 +479,8 @@ function createBuildingInstance(entry,type,level,anchor,footprint){
     id,modelId:entry.id,sourceNode:entry.sourceNode||entry.name,
     type,level,clanId:'orcs',health:spec.maxHealth,maxHealth:spec.maxHealth,
     constructionCost:spec.constructionCost,requiredTechnology:spec.requiredTechnology,
-    hitbox:buildingBounds(anchor,type),queue:[],progress:0,rally:null,rallyMarker:null,
+    hitbox:buildingBounds(anchor,type),visualHitbox:buildingVisualBounds(anchor),
+    queue:[],progress:0,rally:null,rallyMarker:null,
     root:anchor,visualLevel:1,initial:false,destroyed:false
   };
   const bar=new THREE.Group();
@@ -851,7 +860,9 @@ function pickBuilding(clientX,clientY){
   let best=null,bestDistance=Infinity;
   for(const building of liveBuildings()){
     if(!building.root)continue;
-    const b=building.hitbox,volume=new THREE.Box3(
+    // Roof clicks use the FULL visual AABB; navigation and melee use the
+    // smaller physical foundation footprint. These must be separate.
+    const b=building.visualHitbox||building.hitbox,volume=new THREE.Box3(
       new THREE.Vector3(b.minX,b.minY,b.minZ),new THREE.Vector3(b.maxX,b.maxY,b.maxZ));
     const point=ray.ray.intersectBox(volume,new THREE.Vector3());
     if(!point)continue;
@@ -990,7 +1001,8 @@ async function useOrcLevelModel(building,level){
   const mixer=new THREE.AnimationMixer(model);
   for(const clip of gltf.animations||[])if(clip.tracks.length)mixer.clipAction(clip).play();
   orcAnimationMixers.push(mixer);
-  building.hitbox=buildingBounds(offset,building.type);building.visualLevel=level;
+  building.hitbox=buildingBounds(offset,building.type);
+  building.visualHitbox=buildingVisualBounds(offset);building.visualLevel=level;
   updateNavObstacles();drawBuildingSelection();refreshHUD();
 }
 function finishUpgrade(building){
