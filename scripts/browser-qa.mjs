@@ -312,6 +312,38 @@ async function run(){
  check(held.selectedIds.length===1&&held.visibleSelectionRings===1,
    'Stationary one-second hold should select the character under the finger');
  console.log('PASS MOBILE LONG-PRESS: 1s hold then drag selected 3/3 real witches, stationary hold selected 1 witch.');
+ // A physical iPhone needs a reliable alternative when Safari cancels hold.
+ // The permanent Selection shortcut makes one-finger drag immediately
+ // select a real group, WITHOUT a one-second delay or accidental map pan.
+ await evaluate("window.__fightersQA.reset();window.__fightersQA.centerCamera(-18,-14);document.querySelector('#quick-select').click()");
+ let mode=await evaluate('window.__fightersQA.snapshot()');
+ check(mode.selectionMode&&
+   await evaluate("document.querySelector('#quick-select').getAttribute('aria-pressed')==='true'"),
+   'Permanent Selection button did not enter selection mode');
+ const groupPoints=await evaluate("Array.from({length:3},(_,i)=>window.__fightersQA.unitScreenPoint('witch',i))");
+ const box={x1:Math.max(12,Math.floor(Math.min(...groupPoints.map(p=>p.x))-20)),
+   y1:Math.max(100,Math.floor(Math.min(...groupPoints.map(p=>p.y))-20)),
+   x2:Math.min(378,Math.ceil(Math.max(...groupPoints.map(p=>p.x))+20)),
+   y2:Math.ceil(Math.max(...groupPoints.map(p=>p.y))+20)};
+ const cameraBeforeBox={...mode.cameraCenter};
+ await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[touch(7,box.x1,box.y1)]});
+ mode=await evaluate('window.__fightersQA.snapshot()');
+ check(mode.touchGesture==='select'&&mode.selectionRectangleVisible,
+   'Selection shortcut must show an immediate box without waiting one second');
+ await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[touch(7,box.x2,box.y2)]});
+ await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ mode=await evaluate('window.__fightersQA.snapshot()');
+ check(mode.selectedIds.length===3&&mode.visibleSelectionRings===3&&!mode.selectionMode,
+   'Selection shortcut failed to select 3 real witches: '+JSON.stringify({box,groupPoints,
+    selected:mode.selectedIds,rings:mode.visibleSelectionRings,counters:mode.touchGestureCounters}));
+ check(Math.hypot(mode.cameraCenter.x-cameraBeforeBox.x,mode.cameraCenter.z-cameraBeforeBox.z)<.08,
+   'Explicit box selection must not pan the map');
+ check(!mode.selectionRectangleVisible&&
+   await evaluate("document.querySelector('#quick-select').getAttribute('aria-pressed')==='false'"),
+   'Selection shortcut should clear itself and rectangle after choosing units');
+ await screenshot('rts-mobile-reliable-selection');
+ console.log('PASS MOBILE EXPLICIT SELECTION: quick-select + immediate touch-drag selected 3/3 witches.');
+
  await call('Emulation.setTouchEmulationEnabled',{enabled:false});
  await screenshot('rts-mobile-pinch-zoom');
  await call('Emulation.clearDeviceMetricsOverride');
