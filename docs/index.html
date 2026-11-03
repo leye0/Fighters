@@ -1752,6 +1752,7 @@ function selectRectangle(a,b,append=false){
 }
 let pointerStart=null;
 let inputSuppressedByPinch=false;
+let lastNativeTouchAt=0;
 const HOLD_TO_SELECT_MS=1000;
 let touchGestureCounters={starts:0,holds:0,boxes:0,selectedUnits:0,cancels:0};
 function clearHoldCue(){
@@ -1872,6 +1873,7 @@ function syncActiveTouches(event){
     activeTouches.set(touch.identifier,{x:touch.clientX,y:touch.clientY});
 }
 viewport.addEventListener('touchstart',event=>{
+  lastNativeTouchAt=performance.now();
   if(event.target.closest('.command-panel')||event.target.closest('.hud'))return;
   if(!running||paused||!$('overlay').hidden)return;
   event.preventDefault(); // Prevent iOS text/callout handling from stealing hold.
@@ -1888,7 +1890,9 @@ viewport.addEventListener('touchstart',event=>{
   }
 },{passive:false});
 viewport.addEventListener('touchmove',event=>{
-  if(event.target.closest('.command-panel')||event.target.closest('.hud'))return;
+  lastNativeTouchAt=performance.now();
+  if((event.target.closest('.command-panel')||event.target.closest('.hud'))&&
+    !pointerStart&&!inputSuppressedByPinch)return;
   if(!running||paused)return;
   event.preventDefault();
   syncActiveTouches(event);
@@ -1902,7 +1906,9 @@ viewport.addEventListener('touchmove',event=>{
   }
 },{passive:false});
 viewport.addEventListener('touchend',event=>{
-  if(event.target.closest('.command-panel')||event.target.closest('.hud'))return;
+  lastNativeTouchAt=performance.now();
+  if((event.target.closest('.command-panel')||event.target.closest('.hud'))&&
+    !pointerStart&&!inputSuppressedByPinch)return;
   if(!running)return;
   event.preventDefault();
   syncActiveTouches(event);
@@ -1919,8 +1925,15 @@ viewport.addEventListener('touchend',event=>{
   }
 },{passive:false});
 viewport.addEventListener('touchcancel',event=>{
+  lastNativeTouchAt=performance.now();
+  const gesture=pointerStart,eligible=gesture&&!inputSuppressedByPinch&&
+    (gesture.mode==='select'||performance.now()-gesture.startedAt>=HOLD_TO_SELECT_MS);
   syncActiveTouches(event);touchGestureCounters.cancels++;
-  cancelPointerGesture();pinch=null;inputSuppressedByPinch=false;
+  // iOS Safari may issue touchcancel when a context gesture intervenes.
+  // Preserve a completed long hold or drawn rectangle instead of discarding it.
+  if(eligible)completeOneFingerGesture(gesture,gesture.lastX,gesture.lastY);
+  else cancelPointerGesture();
+  pinch=null;inputSuppressedByPinch=false;
 },{passive:false});
 // Mouse and stylus pointer events are separate from TouchEvents. Previously
 // pointerdown restarted the 1000ms hold after touchstart, and pointercancel
@@ -1931,7 +1944,7 @@ viewport.addEventListener('wheel',event=>{
   zoomCamera(Math.exp(clamp(event.deltaY,-400,400)*.0015),event.clientX,event.clientY);
 },{passive:false});
 viewport.addEventListener('pointerdown',event=>{
-  if(event.pointerType==='touch')return;
+  if(event.pointerType==='touch'||performance.now()-lastNativeTouchAt<650)return;
   if(event.target.closest('.command-panel')||event.target.closest('.hud'))return;
   if(!running||paused||!$('overlay').hidden)return;
   if(event.button===1||event.button===2){
@@ -1944,7 +1957,7 @@ viewport.addEventListener('pointerdown',event=>{
   event.preventDefault();viewport.setPointerCapture(event.pointerId);
 });
 viewport.addEventListener('pointermove',event=>{
-  if(event.pointerType==='touch')return;
+  if(event.pointerType==='touch'||performance.now()-lastNativeTouchAt<650)return;
   if(cameraDrag?.id===event.pointerId){
     panCamera(event.clientX-cameraDrag.x,event.clientY-cameraDrag.y);
     cameraDrag.x=event.clientX;cameraDrag.y=event.clientY;return;
@@ -1956,7 +1969,7 @@ viewport.addEventListener('pointermove',event=>{
   gesture.lastX=event.clientX;gesture.lastY=event.clientY;
 });
 function releasePointer(event){
-  if(event.pointerType==='touch')return;
+  if(event.pointerType==='touch'||performance.now()-lastNativeTouchAt<650)return;
   if(cameraDrag?.id===event.pointerId){cameraDrag=null;return;}
   const gesture=pointerStart;
   if(!gesture||gesture.id!=='mouse-'+event.pointerId)return;
