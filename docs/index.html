@@ -116,6 +116,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 
 </style>
 <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
+<script src="./rts-footprint.js"></script>
 <script src="./rts-navigation.js"></script>
 <script src="./rts-unit-physics.js"></script>
 <script src="./orc-strategy.js"></script>
@@ -219,37 +220,42 @@ function buildingVisualBounds(root){
   return {shape:'aabb',minX:b.min.x,maxX:b.max.x,
     minZ:b.min.z,maxZ:b.max.z,minY:b.min.y,maxY:b.max.y};
 }
-function buildingBounds(root,type=''){
-  root.updateMatrixWorld(true);
-  const visual=new THREE.Box3().setFromObject(root);
-  if(visual.isEmpty())throw Error('Bâtiment sans volume de collision');
-  // Roofs, mine scaffolding and decorative trim are not solid walls at
-  // ground level. Measure the actual lower structural geometry in WORLD space
-  // instead of treating the entire roof/winch AABB as the blocking footprint.
-  const base=new THREE.Box3(),v=new THREE.Vector3();
-  const cutoff=visual.min.y+(visual.max.y-visual.min.y)*.38;
-  let sampled=0;
-  root.traverse(mesh=>{
-    const positions=mesh.isMesh&&mesh.geometry?.getAttribute('position');
-    if(!positions)return;
-    for(let i=0;i<positions.count;i++){
-      v.fromBufferAttribute(positions,i).applyMatrix4(mesh.matrixWorld);
-      if(v.y>cutoff)continue;
-      base.expandByPoint(v);sampled++;
-    }
-  });
-  const width=visual.max.x-visual.min.x,depth=visual.max.z-visual.min.z;
-  const measured=sampled>=12&&!base.isEmpty()&&
-    base.max.x-base.min.x>=width*.28&&base.max.z-base.min.z>=depth*.28;
-  // Never truncate more than a small eave/scaffolding border if the source
-  // mesh is ambiguous; units must never be allowed through solid masonry.
-  const maxTrim=type==='mine'?.42:.24;
-  const minX=measured?Math.min(visual.min.x+maxTrim,Math.max(visual.min.x,base.min.x)):visual.min.x;
-  const maxX=measured?Math.max(visual.max.x-maxTrim,Math.min(visual.max.x,base.max.x)):visual.max.x;
-  const minZ=measured?Math.min(visual.min.z+maxTrim,Math.max(visual.min.z,base.min.z)):visual.min.z;
-  const maxZ=measured?Math.max(visual.max.z-maxTrim,Math.min(visual.max.z,base.max.z)):visual.max.z;
-  return {shape:'aabb',minX,maxX,minZ,maxZ,minY:visual.min.y,maxY:visual.max.y};
+// Runtime collision is the transformed, actual triangle-projection silhouette.
+// The numeric AABB is derived from its vertices strictly for broadphase/HUD.
+const footprintCache=new Map();
+async function loadFootprint(file){
+  const basename=file.split('/').pop().replace(/\.glb$/i,'.json');
+  const url='./models/footprints/'+basename;
+  if(!footprintCache.has(url))footprintCache.set(url,
+    fetch(url).then(response=>{
+      if(!response.ok)throw Error('GLB silhouette HTTP '+response.status+' '+url);
+      return response.json();
+    }).then(data=>{
+      if(data.type!=='glb-projected-triangle-union-xz')throw Error('Invalid projected footprint '+url);
+      window.FightersFootprints.shapeFromPolygons(data.polygons);return data;
+    }));
+  return footprintCache.get(url);
 }
+function buildingBounds(model,projection){
+  if(!projection?.polygons?.length)throw Error('GLB projected XZ collision shape missing');
+  model.updateWorldMatrix(true,true);
+  const position=new THREE.Vector3();
+  const transformed=projection.polygons.map(poly=>poly.map(ring=>ring.map(([x,z])=>{
+    position.set(x,0,z).applyMatrix4(model.matrixWorld);
+    return [position.x,position.z];
+  })));
+  const footprint=window.FightersFootprints.shapeFromPolygons(transformed);
+  const visual=new THREE.Box3().setFromObject(model);
+  return {...footprint,minY:visual.min.y,maxY:visual.max.y};
+}
+function prototypeBuildingBounds(projection,center,scale){
+  // New buildings are placed without yaw; derive their EXACT projected
+  // silhouette from the very same GLB and actual renderer scale.
+  return window.FightersFootprints.shapeFromPolygons(
+    projection.polygons.map(poly=>poly.map(ring=>
+      ring.map(([x,z])=>[(x-center.x)*scale,(z-center.z)*scale]))));
+}
+
 function liveBuildings(){return [witchBuilding,...buildingInstances.values()].filter(b=>!b.destroyed);}
 function updateNavObstacles(){
   navigatorRTS.setObstacles(liveBuildings().map(b=>({id:b.id,...b.hitbox})));
@@ -410,7 +416,10 @@ buildStreet();
 // House is a genuine GLB asset, not a procedural stand-in. Its local front
 // vector is configurable until visually calibrated against the Sketchfab mesh.
 async function loadWitchHouse(){
-  const gltf=await loader.loadAsync('./models/witch_house.glb');
+  const [gltf,projection]=await Promise.all([
+    loader.loadAsync('./models/witch_house.glb'),
+    loadFootprint('./models/witch_house.glb')
+  ]);
   const house=gltf.scene;
   const bounds=new THREE.Box3().setFromObject(house);
   const size=bounds.getSize(new THREE.Vector3());
@@ -427,7 +436,7 @@ async function loadWitchHouse(){
   anchor.position.set(WITCH_HOUSE.x,0,WITCH_HOUSE.z);
   anchor.add(house);
   scene.add(anchor);witchHouse=anchor;witchBuilding.root=anchor;
-  witchBuilding.hitbox=buildingBounds(anchor,'witch-house');
+  witchBuilding.hitbox=buildingBounds(house,projection);
   witchBuilding.visualHitbox=buildingVisualBounds(anchor);
   updateNavObstacles();drawBuildingSelection();refreshHUD();
 }
@@ -451,16 +460,16 @@ const ORC_VILLAGE={
 const buildingInstances=new Map();
 const buildingBlueprints=new Map();
 const orcLevelEntries=new Map(),orcLevelCache=new Map();
-function createBuildingInstance(entry,type,level,anchor,footprint){
+function createBuildingInstance(entry,type,level,anchor,footprint,model,projection){
   const spec=BUILDING_TYPES[type].levels[level];
   const id='orc-'+type+'-'+String([...buildingInstances.keys()].filter(key=>key.startsWith('orc-'+type+'-')).length+1).padStart(2,'0');
   const instance={
     id,modelId:entry.id,sourceNode:entry.sourceNode||entry.name,
     type,level,clanId:'orcs',health:spec.maxHealth,maxHealth:spec.maxHealth,
     constructionCost:spec.constructionCost,requiredTechnology:spec.requiredTechnology,
-    hitbox:buildingBounds(anchor,type),visualHitbox:buildingVisualBounds(anchor),
+    hitbox:buildingBounds(model,projection),visualHitbox:buildingVisualBounds(anchor),
     queue:[],progress:0,rally:null,rallyMarker:null,
-    root:anchor,visualLevel:1,initial:false,destroyed:false
+    root:anchor,footprintProjection:projection,visualLevel:1,initial:false,destroyed:false
   };
   const bar=new THREE.Group();
   bar.name='healthbar-world-'+id;
@@ -512,9 +521,14 @@ async function loadOrcVillage(limit=3){
   for(let i=0;i<entries.length;i++){
     let model;
     let buildingClips=[];
+    let projection;
     try{
-      const gltf=await loader.loadAsync(entries[i].file);
+      const [gltf,collision]=await Promise.all([
+        loader.loadAsync(entries[i].file),
+        loadFootprint(entries[i].file)
+      ]);
       model=gltf.scene;
+      projection=collision;
       buildingClips=gltf.animations||[];
     }catch(err){
       console.warn('Orc building unavailable:',entries[i].name,err);
@@ -570,13 +584,17 @@ async function loadOrcVillage(limit=3){
     anchor.add(offset);
     const type=(entries[i].sourceNode||entries[i].name).match(/(?:orc_)?(barrack|hut|mine|cauldron|factory)_Lv1$/i)?.[1]?.toLowerCase();
     if(!type)continue;
-    buildingBlueprints.set(type,{entry:entries[i],source:model.clone(true),clips:buildingClips,footprint});
+    const physicalPrototype=prototypeBuildingBounds(projection,center,3.9/footprint);
+    buildingBlueprints.set(type,{
+      entry:entries[i],source:model.clone(true),clips:buildingClips,
+      footprint,projection,collisionLocal:physicalPrototype
+    });
     const target=3.9;
     anchor.scale.setScalar(target/footprint);
     const p=ORC_VILLAGE.positions[type];
     anchor.position.set(p.x,0,p.z);
     anchor.rotation.y=(i%4)*Math.PI/2;
-    const instance=createBuildingInstance(entries[i],type,1,anchor,target);
+    const instance=createBuildingInstance(entries[i],type,1,anchor,target,model,projection);
     instance.initial=true;
     anchor.userData={instanceId:instance.id,buildingId:entries[i].id,buildingName:entries[i].name,
       description:entries[i].description,originalFootprint:footprint,targetFootprint:target};
@@ -980,7 +998,9 @@ async function useOrcLevelModel(building,level){
   const mixer=new THREE.AnimationMixer(model);
   for(const clip of gltf.animations||[])if(clip.tracks.length)mixer.clipAction(clip).play();
   orcAnimationMixers.push(mixer);
-  building.hitbox=buildingBounds(offset,building.type);
+  const projection=await loadFootprint(entry.file);
+  building.hitbox=buildingBounds(model,projection);
+  building.footprintProjection=projection;
   building.visualHitbox=buildingVisualBounds(offset);building.visualLevel=level;
   updateNavObstacles();drawBuildingSelection();refreshHUD();
 }
@@ -1056,7 +1076,7 @@ function buildOrc(type,x,z,{byAI=false}={}){
     for(const clip of template.clips)if(clip.tracks.length)mixer.clipAction(clip).play();
     orcAnimationMixers.push(mixer);
   }
-  const instance=createBuildingInstance(template.entry,type,1,anchor,3.9);
+  const instance=createBuildingInstance(template.entry,type,1,anchor,3.9,model,template.projection);
   if(!orcVillage){orcVillage=new THREE.Group();scene.add(orcVillage);}
   orcVillage.add(anchor);gold.orc-=ORC_COSTS[type];
   if(!byAI){buildMode=null;showBanner(ORC_NAMES[type]+' CONSTRUITE');}
