@@ -351,9 +351,9 @@ async function run(){
  check(!await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.querySelector('.action-name')?.textContent?.startsWith('Construire'))"),
    'Orc barracks must not construct buildings (worker-only action)');
  await evaluate("window.__fightersQA.selectUnit('orc',1)");
- check(await evaluate("['Construire base','Construire avancé'].every(n=>Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.querySelector('.action-name')?.textContent===n))"),
+ check(await evaluate("['Bât. base','Bât. avancé'].every(n=>Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.querySelector('.action-name')?.textContent===n))"),
    'Orc worker needs distinct Warcraft II Basic/Advanced build commands');
- await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).find(b=>b.querySelector('.action-name')?.textContent==='Construire base')?.click()");
+ await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).find(b=>b.querySelector('.action-name')?.textContent==='Bât. base')?.click()");
  check(await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.textContent.includes('Hutte'))"),
    'Basic Build submenu did not open');
  check(!await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.textContent.includes('Mine'))"),
@@ -361,7 +361,7 @@ async function run(){
  check(await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.querySelector('.action-name')?.textContent==='Retour')"),
    'Warcraft II Build submenu needs its Back command');
  await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).find(b=>b.querySelector('.action-name')?.textContent==='Retour')?.click()");
- await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).find(b=>b.querySelector('.action-name')?.textContent==='Construire avancé')?.click()");
+ await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).find(b=>b.querySelector('.action-name')?.textContent==='Bât. avancé')?.click()");
  check(await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.textContent.includes('Chaudron')||b.textContent.includes('Usine'))"),
    'Advanced Build submenu did not open');
  await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).find(b=>b.querySelector('.action-name')?.textContent==='Retour')?.click();window.__fightersQA.selectOrcBarrack()");
@@ -446,7 +446,7 @@ async function run(){
  check(await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.querySelector('.action-name')?.textContent==='Construire')"),
    'Witch worker needs its contextual Build icon');
  await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).find(b=>b.querySelector('.action-name')?.textContent==='Construire')?.click()");
- check(await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.querySelector('.action-name')?.textContent==='Nouvelle maison')"),
+ check(await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.querySelector('.action-name')?.textContent==='Maison')"),
    'Witch Build submenu must expose construction type');
  check(await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.querySelector('.action-name')?.textContent==='Retour')"),
    'Build submenu must expose a Back command');
