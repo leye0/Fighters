@@ -876,10 +876,11 @@ function pingAttackTarget(target){
 }
 function issueMove(destination){
   const actors=[...selected].filter(actor=>!actor.dead&&actor.kind===activeFaction);
-  const cols=Math.max(1,Math.ceil(Math.sqrt(actors.length)));
+  // Make one reservation per soldier, BEFORE movement begins. The old grid
+  // independently snapped blocked offsets to the same nearest safe cell.
+  const goals=window.FightersUnitPhysics.formationGoals(actors,destination,navigatorRTS);
   actors.forEach((actor,i)=>{
-    const dx=(i%cols-(cols-1)/2)*1.35,dz=(Math.floor(i/cols)-Math.floor((actors.length-1)/cols)/2)*1.35;
-    actor.destination=navigatorRTS.findSafeGoal({x:destination.x+dx,z:destination.z+dz});
+    actor.destination=goals[i];
     actor.attackOrder=null;actor.approachCache=null;
     actor.route=null;actor.routeVersion=-1;actor.routeAge=0;
   });
