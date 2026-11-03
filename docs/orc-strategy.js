@@ -65,10 +65,13 @@
    if(!this.enabled||!state.ready||!state.running||state.paused)return [];
    const buildings=state.buildings.filter(b=>!b.destroyed);
    const own=state.orcs.filter(u=>!u.dead),enemy=state.witches.filter(u=>!u.dead);
+   const workers=own.filter(u=>u.role==='worker');
+   const fighters=own.filter(u=>u.role!=='worker');
    const barrack=buildings.find(b=>b.type==='barrack');
    const mines=buildings.filter(b=>b.type==='mine');
    const base={x:19,z:18};
-   const attackers=enemy.filter(u=>near(u,base,16)||buildings.some(b=>near(u,boxCentre(b),6.5)));
+   const attackers=enemy.filter(u=>u.role!=='worker'&&
+    (near(u,base,16)||buildings.some(b=>near(u,boxCentre(b),6.5))));
    const threatened=attackers.length>0;
    if(threatened){this.lastThreat=this.clock;this.mode='defend';}
    else this.mode=this.clock-this.lastThreat<10?'recover':'develop';
@@ -76,7 +79,7 @@
    const canSpend=(cost,reserve=0)=>state.gold>=cost+reserve;
    const queueLength=b=>b?.queue?.length||0;
    // Tactical defense takes priority over an offensive raid.
-   if(threatened&&own.length){
+   if(threatened&&fighters.length){
     orders.push({type:'defend',x:attackers[0].x,z:attackers[0].z,reason:'enemy_at_base'});
    }
    // Recover a destroyed barrack before trying to train.
@@ -86,9 +89,12 @@
    }
    const cap=state.unitCap||15;
    // Keep a defensive reserve while building an attacking group.
-   if(barrack&&own.length<cap&&queueLength(barrack)<2&&canSpend(100,
-       this.clock<30?100:30)){
-    orders.push({type:'train',buildingId:barrack.id,reason:own.length<6?'reinforce':'prepare_raid'});
+   if(barrack&&own.length<cap&&queueLength(barrack)<2){
+    const role=workers.length===0?'worker':this.tickCount%3===0?'ranged':'melee';
+    const price=role==='worker'?65:role==='ranged'?130:100;
+    if(canSpend(price,this.clock<30?100:30))
+     orders.push({type:'train',buildingId:barrack.id,role,
+       reason:workers.length===0?'restore_workers':fighters.length<6?'reinforce':'prepare_raid'});
    }
    // Natural deposits are fixed world resources. The AI may train miners and
    // upgrade an existing mine, but NEVER create or place an additional mine.
@@ -112,7 +118,7 @@
     if(target)orders.push({type:'upgrade',buildingId:target.id,reason:'development'});
    }
    // Fire a raid only with a real group; do not feed troops one at a time.
-   const unassigned=own.filter(u=>!u.mining&&!u.attackOrder&&!(u.attack?.target));
+   const unassigned=fighters.filter(u=>!u.mining&&!u.attackOrder&&!(u.attack?.target));
    const threshold=this.raidNumber===0?4:5;
    if(!threatened&&this.clock>20&&unassigned.length>=threshold&&this.clock-this.lastRaid>22){
     const squad=unassigned.sort((a,b)=>(a.health/a.maxHealth)-(b.health/b.maxHealth))
