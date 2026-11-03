@@ -310,6 +310,36 @@ async function run(){
  await screenshot('rts-mobile-two-finger-selected-witches');
  console.log('PASS MOBILE TWO-FINGER SELECT: 3/3 witches selected; zoom unchanged at 35/3.');
 
+ // iPhone users rarely lift both fingers simultaneously. The FIRST release
+ // must finish the selection; movement from the finger left on-screen must
+ // never become an unintended pan, tap, or attack command.
+ await evaluate("window.__fightersQA.reset();window.__fightersQA.centerCamera(-18,-14)");
+ const firstLiftStart=touch(9,bound.x1,bound.y1);
+ const secondLiftEnd=touch(10,bound.x2,bound.y2);
+ await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[
+   firstLiftStart,touch(10,bound.x1+22,bound.y1+22)
+ ]});
+ await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[firstLiftStart,secondLiftEnd]});
+ const staggeredCamera=(await evaluate('window.__fightersQA.snapshot()')).cameraCenter;
+ await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[secondLiftEnd]});
+ let staggered=await evaluate('window.__fightersQA.snapshot()');
+ check(staggered.selectedIds.length===3&&staggered.activeTouches===1&&
+   !staggered.selectionRectangleVisible,
+   'First finger release must finalize the box even if the other finger remains: '+JSON.stringify(staggered));
+ await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[touch(10,bound.x2+35,bound.y2+10)]});
+ staggered=await evaluate('window.__fightersQA.snapshot()');
+ check(Math.hypot(staggered.cameraCenter.x-staggeredCamera.x,
+   staggered.cameraCenter.z-staggeredCamera.z)<.05&&
+   staggered.selectedIds.length===3,
+   'Remaining touch after box select must not turn into a camera pan');
+ await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ staggered=await evaluate('window.__fightersQA.snapshot()');
+ check(staggered.activeTouches===0&&staggered.selectedIds.length===3&&
+   staggered.visibleSelectionRings===3,
+   'Lifting second finger must not issue an accidental tap/order');
+ console.log('PASS STAGGERED TWO-FINGER RELEASE: finalize on first lift, no pan/tap from remaining finger.');
+
+
  // A single finger may still drag the camera but cannot select a group.
  await evaluate('window.__fightersQA.centerCamera(0,0)');
  const beforeSinglePan=await evaluate('window.__fightersQA.snapshot()');
