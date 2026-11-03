@@ -106,14 +106,23 @@ async function run(){
    'Quick/context button DOM identity was not preserved');
 
 
- check(await evaluate("document.querySelector('#witch-faction,#orc-faction,#zoom-in,#zoom-out')===null"),
-  'Unused faction/zoom toolbar remains on screen');
- await evaluate("document.dispatchEvent(new KeyboardEvent('keydown',{code:'Equal',bubbles:true}))");
- s=await evaluate('window.__fightersQA.snapshot()');
- check(s.cameraZoom<35,'Keyboard zoom must change camera projection');
+ check(await evaluate("document.querySelector('#witch-faction,#orc-faction,#zoom-in,#zoom-out,.zoom-controls,#touch-hold-indicator')===null"),
+  'Zoom toolbar or legacy long-press hint was not removed');
+ const fixedZoom=35/3;
+ check(Math.abs(steady.cameraZoom-fixedZoom)<1e-7&&
+   Math.abs(steady.cameraCenter.x+18)<.05&&
+   Math.abs(steady.cameraCenter.z+14)<.05,
+   'Game must begin 3× closer and centered on starting witches: '+
+     JSON.stringify({zoom:steady.cameraZoom,camera:steady.cameraCenter}));
+ for(const code of ['Equal','NumpadAdd','Minus','NumpadSubtract']){
+   await evaluate("document.dispatchEvent(new KeyboardEvent('keydown',{code:'"+code+"',bubbles:true}))");
+   check(Math.abs((await evaluate('window.__fightersQA.snapshot()')).cameraZoom-fixedZoom)<1e-7,
+     'Keyboard shortcut must NOT change fixed zoom: '+code);
+ }
  await evaluate("document.querySelector('#viewport').dispatchEvent(new WheelEvent('wheel',{deltaY:220,clientX:680,clientY:340,bubbles:true,cancelable:true}))");
- check((await evaluate('window.__fightersQA.snapshot()')).cameraZoom>s.cameraZoom,
-  'Mouse wheel must zoom out');
+ check(Math.abs((await evaluate('window.__fightersQA.snapshot()')).cameraZoom-fixedZoom)<1e-7&&
+   !await evaluate("'zoom' in window.__fightersQA"),
+   'Wheel or debug API must not modify the locked camera scale');
  await evaluate('window.__fightersQA.reset()');
 
  check(await evaluate('window.__fightersQA.train()'),'Witch training refused');
@@ -250,122 +259,89 @@ async function run(){
  const framing=await evaluate("(()=>{const hero=document.querySelector('.hero-hud').getBoundingClientRect();const score=document.querySelector('.score').getBoundingClientRect();const pause=document.querySelector('#pause').getBoundingClientRect();return {hero:{right:hero.right,bottom:hero.bottom},score:{left:score.left,right:score.right},pause:{left:pause.left,right:pause.right}}})()");
  check(framing.hero.right<=framing.score.left+3&&framing.score.right<=framing.pause.left+4&&
   framing.pause.right<=mobile.width+1,'Compact mobile HUD overlaps: '+JSON.stringify(framing));
- // Real multi-touch input through Chrome DevTools, not a programmatic zoom setter.
+ // Two real simultaneous touch pointers form a rectangle immediately.
+ // The old hold-to-select and pinch-to-zoom paths are intentionally gone.
  await call('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:2});
  const touch=(id,x,y)=>({id,x,y,force:1,radiusX:4,radiusY:4});
- const beforePinch=await evaluate('window.__fightersQA.snapshot()');
- await call('Input.dispatchTouchEvent',{type:'touchStart',
-  touchPoints:[touch(1,135,290),touch(2,255,290)]});
- await call('Input.dispatchTouchEvent',{type:'touchMove',
-  touchPoints:[touch(1,110,290),touch(2,280,290)]});
- await sleep(100);
- const afterPinch=await evaluate('window.__fightersQA.snapshot()');
- check(afterPinch.cameraZoom<beforePinch.cameraZoom-1,
-  'Two-finger zoom did not change orthographic camera: '+JSON.stringify({
-    before:beforePinch.cameraZoom,after:afterPinch.cameraZoom}));
- // Two-finger parallel translation should NOT pan: reserved for zoom.
- await call('Input.dispatchTouchEvent',{type:'touchMove',
-  touchPoints:[touch(1,160,350),touch(2,330,350)]});
- await sleep(100);
- const parallel=await evaluate('window.__fightersQA.snapshot()');
- check(Math.hypot(parallel.cameraCenter.x-afterPinch.cameraCenter.x,
-   parallel.cameraCenter.z-afterPinch.cameraCenter.z)<.08,
-   'Two-finger drag must not pan the camera');
+ const fixedMobileZoom=35/3;
+ await evaluate("window.__fightersQA.reset();window.__fightersQA.centerCamera(-18,-14)");
+ let selectionBefore=await evaluate('window.__fightersQA.snapshot()');
+ const witchScreen=await evaluate("Array.from({length:3},(_,i)=>window.__fightersQA.unitScreenPoint('witch',i))");
+ const panelTop=await evaluate("document.querySelector('#command-panel').getBoundingClientRect().top");
+ const bound={
+   x1:Math.max(16,Math.floor(Math.min(...witchScreen.map(p=>p.x))-21)),
+   y1:Math.max(115,Math.floor(Math.min(...witchScreen.map(p=>p.y))-21)),
+   x2:Math.min(374,Math.ceil(Math.max(...witchScreen.map(p=>p.x))+21)),
+   y2:Math.ceil(Math.max(...witchScreen.map(p=>p.y))+21)
+ };
+ console.log('MOBILE TWO-FINGER BOUNDS:',JSON.stringify({witchScreen,bound,panelTop,zoom:selectionBefore.cameraZoom}));
+ check(bound.x2>bound.x1+25&&bound.y2>bound.y1+25&&bound.y2<panelTop-6,
+   '3 starting witches must be visible at fixed 3× zoom: '+JSON.stringify({witchScreen,bound,panelTop}));
+ const first=touch(1,bound.x1,bound.y1),second=touch(2,bound.x1+22,bound.y1+22);
+ await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[first,second]});
+ let boxState=await evaluate('window.__fightersQA.snapshot()');
+ check(boxState.activeTouches===2&&boxState.touchGesture==='two-finger-select'&&
+   boxState.selectionRectangleVisible&&boxState.twoFingerSelection,
+   'Two fingers must show a rectangle IMMEDIATELY, without a long press: '+JSON.stringify(boxState));
+ const cameraBeforeBox={...boxState.cameraCenter};
+ const boxMove=[first,touch(2,bound.x2,bound.y2)];
+ await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:boxMove});
+ boxState=await evaluate('window.__fightersQA.snapshot()');
+ check(boxState.selectionRectangleVisible&&
+   Math.abs(boxState.twoFingerSelection.b.x-bound.x2)<1&&
+   Math.abs(boxState.twoFingerSelection.b.y-bound.y2)<1,
+   'Two-finger rectangle must follow both live fingertips: '+
+     JSON.stringify(boxState.twoFingerSelection));
+ check(Math.abs(boxState.cameraZoom-fixedMobileZoom)<1e-7&&
+   Math.hypot(boxState.cameraCenter.x-cameraBeforeBox.x,
+     boxState.cameraCenter.z-cameraBeforeBox.z)<.05,
+   'Spreading two fingers must SELECT, not zoom or pan the camera');
+ // End both touches at once, as the iPhone can; selection must survive the
+ // multiple pointerup events and no surviving finger may trigger a tap.
  await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ boxState=await evaluate('window.__fightersQA.snapshot()');
+ check(!boxState.selectionRectangleVisible&&boxState.activeTouches===0&&
+   boxState.selectedIds.length===3&&boxState.visibleSelectionRings===3&&
+   boxState.touchGestureCounters.boxes>0,
+   'Two-finger rectangle failed to select three actual witches: '+JSON.stringify({
+     selected:boxState.selectedIds,rings:boxState.visibleSelectionRings,
+     gesture:boxState.touchGesture,counters:boxState.touchGestureCounters,witchScreen,bound
+   }));
+ await screenshot('rts-mobile-two-finger-selected-witches');
+ console.log('PASS MOBILE TWO-FINGER SELECT: 3/3 witches selected; zoom unchanged at 35/3.');
 
- // Center the map before checking panning: zoom anchoring may have brought
- // the camera to its ±26 coordinate boundary, where further panning clamps.
+ // A single finger may still drag the camera but cannot select a group.
  await evaluate('window.__fightersQA.centerCamera(0,0)');
  const beforeSinglePan=await evaluate('window.__fightersQA.snapshot()');
- // Send both CDP commands without an interposed round-trip: under WebGL
- // load, waiting for the touchStart acknowledgement sometimes takes >1s,
- // unintentionally activating the actual hold-to-select timer.
- const panStart=call('Input.dispatchTouchEvent',{type:'touchStart',
-  touchPoints:[touch(4,155,310)]});
- const panMove=call('Input.dispatchTouchEvent',{type:'touchMove',
-  touchPoints:[touch(4,220,355)]});
- await Promise.all([panStart,panMove]);
+ await call('Input.dispatchTouchEvent',{type:'touchStart',
+   touchPoints:[touch(4,155,310)]});
+ await call('Input.dispatchTouchEvent',{type:'touchMove',
+   touchPoints:[touch(4,220,355)]});
  await sleep(80);
  const afterSinglePan=await evaluate('window.__fightersQA.snapshot()');
  check(Math.hypot(afterSinglePan.cameraCenter.x-beforeSinglePan.cameraCenter.x,
    afterSinglePan.cameraCenter.z-beforeSinglePan.cameraCenter.z)>.2,
-   'One-finger drag must pan the camera: '+JSON.stringify({
-    before:beforeSinglePan.cameraCenter,after:afterSinglePan.cameraCenter,
-    gesture:afterSinglePan.touchGesture,pinch:afterSinglePan.pinch
-   }));
- check(afterSinglePan.selectedIds.join(',')===beforeSinglePan.selectedIds.join(','),
-   'One-finger drag inadvertently selected units');
+   'One-finger drag must continue to pan the map: '+
+     JSON.stringify({before:beforeSinglePan.cameraCenter,after:afterSinglePan.cameraCenter}));
+ check(afterSinglePan.selectedIds.join(',')===beforeSinglePan.selectedIds.join(',')&&
+   Math.abs(afterSinglePan.cameraZoom-fixedMobileZoom)<1e-7,
+   'One-finger pan changed the selected group or fixed zoom');
  await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
 
- // A real long-press rectangle must select ACTUAL visible witches; simply
- // checking that a rectangle rendered previously let this regression escape.
- await evaluate("window.__fightersQA.reset();window.__fightersQA.centerCamera(-18,-14)");
- const witchScreen=await evaluate("Array.from({length:3},(_,i)=>window.__fightersQA.unitScreenPoint('witch',i))");
- const bound={x1:Math.max(12,Math.floor(Math.min(...witchScreen.map(p=>p.x))-20)),
-  y1:Math.max(100,Math.floor(Math.min(...witchScreen.map(p=>p.y))-20)),
-  x2:Math.min(378,Math.ceil(Math.max(...witchScreen.map(p=>p.x))+20)),
-  y2:Math.ceil(Math.max(...witchScreen.map(p=>p.y))+20)};
- const panelTop=await evaluate("document.querySelector('#command-panel').getBoundingClientRect().top");
- console.log('REAL MOBILE GROUP SELECT POINTS:',JSON.stringify({witchScreen,bound,panelTop}));
- check(bound.x2>bound.x1+20&&bound.y2>bound.y1+20&&
-   bound.y2<panelTop-6,'Witches not visible in touch-select test region');
+ // One-finger HOLD is not selection anymore. A stationary hold on empty
+ // ground must not display a selection rectangle or alter the group.
+ await evaluate("window.__fightersQA.centerCamera(-18,-14)");
+ const beforeHold=await evaluate('window.__fightersQA.snapshot()');
  await call('Input.dispatchTouchEvent',{type:'touchStart',
-   touchPoints:[touch(5,bound.x1,bound.y1)]});
- await sleep(1120);
- let held=await evaluate('window.__fightersQA.snapshot()');
- check(held.touchGesture==='select'&&held.selectionRectangleVisible,
-   'One-second touch must enter visible selection mode: '+JSON.stringify(held.touchGestureCounters));
- const beforeHoldDrag=held;
- await call('Input.dispatchTouchEvent',{type:'touchMove',
-   touchPoints:[touch(5,bound.x2,bound.y2)]});
- held=await evaluate('window.__fightersQA.snapshot()');
- check(held.selectionRectangleVisible&&held.touchGesture==='select',
-   'Long-press drag lost its selection rectangle');
- check(Math.hypot(held.cameraCenter.x-beforeHoldDrag.cameraCenter.x,
-   held.cameraCenter.z-beforeHoldDrag.cameraCenter.z)<.05,
-   'Long-press box selection must not pan the camera');
+   touchPoints:[touch(7,335,340)]});
+ await sleep(1150);
+ const afterHold=await evaluate('window.__fightersQA.snapshot()');
+ check(!afterHold.selectionRectangleVisible&&afterHold.touchGesture==='tap'&&
+   afterHold.selectedIds.join(',')===beforeHold.selectedIds.join(','),
+   'One-finger long press must NOT start rectangle selection');
  await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
- held=await evaluate('window.__fightersQA.snapshot()');
- check(!held.selectionRectangleVisible&&held.selectedIds.length===3&&
-    held.visibleSelectionRings===3,
-   'Long-press dragged over 3 witches but did not select them: '+JSON.stringify({
-    selected:held.selectedIds,rings:held.visibleSelectionRings,
-    gesture:held.touchGesture,counters:held.touchGestureCounters,
-    witchScreen,bound
-   }));
- // A stationary long press is also meaningful: it selects a single witch.
- await call('Input.dispatchTouchEvent',{type:'touchStart',
-   touchPoints:[touch(6,witchScreen[0].x,witchScreen[0].y)]});
- await sleep(1100);
- await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
- held=await evaluate('window.__fightersQA.snapshot()');
- check(held.selectedIds.length===1&&held.visibleSelectionRings===1,
-   'Stationary one-second hold should select the character under the finger');
- console.log('PASS MOBILE LONG-PRESS: 1s hold then drag selected 3/3 real witches, stationary hold selected 1 witch.');
- // Verify the EXACT pointerdown -> 1000ms -> pointerup path on a phone.
- await evaluate("window.__fightersQA.reset();window.__fightersQA.centerCamera(-18,-14)");
- const beforePointerHold=await evaluate('window.__fightersQA.snapshot()');
- const pointerCoords=await evaluate("window.__fightersQA.unitScreenPoint('witch',0)");
- await call('Input.dispatchTouchEvent',{type:'touchStart',
-   touchPoints:[touch(7,pointerCoords.x,pointerCoords.y)]});
- const pointerStart=await evaluate('window.__fightersQA.snapshot()');
- check(pointerStart.activeTouches===1&&pointerStart.touchGesture==='waiting'&&
-   pointerStart.touchGestureCounters.starts>beforePointerHold.touchGestureCounters.starts,
-   'Touch gesture did not begin on pointerdown: '+
-     JSON.stringify({before:beforePointerHold.touchGestureCounters,after:pointerStart}));
- await sleep(1200);
- const heldPointer=await evaluate('window.__fightersQA.snapshot()');
- check(heldPointer.touchGesture==='select'&&heldPointer.selectionRectangleVisible,
-   'Pointerdown + one-second timeout did not activate selection: '+JSON.stringify(heldPointer));
- await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
- const releasedPointer=await evaluate('window.__fightersQA.snapshot()');
- check(releasedPointer.selectedIds.length===1&&
-   releasedPointer.visibleSelectionRings===1&&releasedPointer.activeTouches===0,
-   'Pointerup must retain selection and release pointer capture: '+JSON.stringify(releasedPointer));
- console.log('PASS POINTER-ONLY SELECTION: pointerdown, 1000ms timer, pointerup, 1 selected witch.');
-
  await call('Emulation.setTouchEmulationEnabled',{enabled:false});
- await screenshot('rts-mobile-pinch-zoom');
+ await screenshot('rts-mobile-fixed-camera');
  await call('Emulation.clearDeviceMetricsOverride');
 
  await evaluate('window.__fightersQA.reset()');
@@ -561,7 +537,7 @@ async function run(){
  check(s.witches.length===3&&s.orcs.length===4&&
   s.buildings.filter(b=>!b.destroyed).length===5,'Reset after AI restores starting match');
  check(!errors.length,'Browser JavaScript exceptions: '+errors.join(' | '));
- console.log('PASS RTS: stable HUD, persistent shortcuts, blue/red reticles, two-tap attacks, one-finger pan, long-press selection, two-finger zoom, destroyed buildings and strategic AI.');
+ console.log('PASS RTS: stable HUD, persistent shortcuts, blue/red reticles, two-tap attacks, one-finger pan, instant two-finger box selection, locked 3× zoom, destroyed buildings and strategic AI.');
 
 }
 try{await run();}finally{try{socket?.close();}catch{}chrome.kill();try{rmSync(profile,{recursive:true,force:true,maxRetries:8,retryDelay:350});}catch(error){console.warn('Chrome profile cleanup only:',error.message);}}
