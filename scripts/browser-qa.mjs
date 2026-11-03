@@ -180,6 +180,23 @@ async function run(){
    'Reset must discard exploration from the prior match');
  console.log('PASS FOG OF WAR: black unknown, reveal by walking, remembered darkness, compact buffers, reset.');
 
+ // Real pointer events, not just QA.tap: friendly units must remain pickable
+ // through fog, including when their silhouettes overlap the witch house.
+ for(let i=0;i<3;i++){
+   await evaluate('window.__fightersQA.selectHouse()');
+   const point=await evaluate("window.__fightersQA.unitScreenPoint('witch',"+i+")");
+   await call('Input.dispatchMouseEvent',{type:'mousePressed',x:point.x,y:point.y,
+     button:'left',buttons:1,clickCount:1});
+   await call('Input.dispatchMouseEvent',{type:'mouseReleased',x:point.x,y:point.y,
+     button:'left',buttons:0,clickCount:1});
+   const picked=await evaluate('window.__fightersQA.snapshot()');
+   check(picked.selectedIds.length>0&&picked.selectedBuildingId===null,
+     'Real mouse click on a friendly unit selected the house or empty ground: '+
+       JSON.stringify({i,point,selected:picked.selectedIds,building:picked.selectedBuildingId}));
+ }
+ await evaluate('window.__fightersQA.reset()');
+ console.log('PASS FRIENDLY UNIT TAPS: real mouse pointer events select all three witches.');
+
  // Building taps must hit the actual flat X/Z polygon, never the larger
  // projected 3D visual AABB or a roof overhang.
  await evaluate("window.__fightersQA.centerCamera("+
@@ -354,6 +371,17 @@ async function run(){
  console.log('MOBILE TWO-FINGER BOUNDS:',JSON.stringify({witchScreen,bound,panelTop,zoom:selectionBefore.cameraZoom}));
  check(bound.x2>bound.x1+25&&bound.y2>bound.y1+25&&bound.y2<panelTop-6,
    '3 starting witches must be visible at fixed 3× zoom: '+JSON.stringify({witchScreen,bound,panelTop}));
+ // A true single-finger tap must select a witch, never the building behind it.
+ const singleTouch=touch(77,witchScreen[2].x,witchScreen[2].y);
+ await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[singleTouch]});
+ await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ const oneTap=await evaluate('window.__fightersQA.snapshot()');
+ check(oneTap.selectedIds.length>0&&oneTap.selectedBuildingId===null,
+   'A single mobile tap on a witch selected the house or nothing: '+
+     JSON.stringify({point:singleTouch,selected:oneTap.selectedIds,building:oneTap.selectedBuildingId,
+       gesture:oneTap.touchGesture}));
+ console.log('PASS MOBILE SINGLE TAP: physical touch events select a friendly witch.');
+ await evaluate('window.__fightersQA.reset()');
  const first=touch(1,bound.x1,bound.y1),second=touch(2,bound.x1+22,bound.y1+22);
  await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[first,second]});
  let boxState=await evaluate('window.__fightersQA.snapshot()');
@@ -511,7 +539,9 @@ async function run(){
  check(witchPoint&&Number.isFinite(witchPoint.x),'Cannot project witch');
  await evaluate("window.__fightersQA.tap("+witchPoint.x+","+witchPoint.y+")");
  let tapState=await evaluate('window.__fightersQA.snapshot()');
- check(tapState.selectedIds.length===1,'First tap did not select a witch');
+ check(tapState.selectedIds.length===1&&
+   tapState.witches.find(u=>u.id===tapState.selectedIds[0])?.role==='melee',
+   'First tap must select the melee witch: '+JSON.stringify({selected:tapState.selectedIds,witches:tapState.witches.map(u=>({id:u.id,role:u.role}))}));
  await evaluate("window.__fightersQA.centerCamera(22,21)");
  const targetPoint=await evaluate("window.__fightersQA.buildingScreenPoint("+JSON.stringify(hutId)+")");
  check(targetPoint&&Number.isFinite(targetPoint.x),'Cannot project hut');
@@ -519,13 +549,18 @@ async function run(){
  tapState=await evaluate('window.__fightersQA.snapshot()');
  check(tapState.witches.find(u=>u.id===tapState.selectedIds[0])?.attackTargetId!==hutId,
    'Invisible enemy building must not be targetable through black fog');
- await evaluate("window.__fightersQA.moveUnitTo('witch',0,18.5,21)");
+ // Scout with a different witch. The selected melee fighter can remain
+ // far away, so clicking the hut cannot accidentally select the scout.
+ await evaluate("window.__fightersQA.moveUnitTo('witch',1,18.5,21)");
  check((await evaluate('window.__fightersQA.fogAt(22,21)')).visible>.2,
    'Scout next to enemy hut must reveal the target');
  await evaluate("window.__fightersQA.tap("+targetPoint.x+","+targetPoint.y+")");
  tapState=await evaluate('window.__fightersQA.snapshot()');
  check(tapState.witches.find(u=>u.id===tapState.selectedIds[0])?.attackTargetId===hutId,
-   'Second tap did not order witch to destroy enemy building');
+   'Second tap did not order witch to destroy enemy building: '+
+     JSON.stringify({selected:tapState.selectedIds,
+       witches:tapState.witches.map(u=>({id:u.id,role:u.role,attack:u.attackTargetId})),
+       building:tapState.selectedBuildingId}));
  check(await evaluate("document.querySelector('.order-ping.attack')!==null"),
    'Attack order needs a red fading reticle');
  await until("window.__fightersQA.snapshot().ui.activePings===0",'red order reticle cleanup',10000);
