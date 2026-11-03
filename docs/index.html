@@ -935,8 +935,11 @@ function pickUnit(x,y,includeEnemies=false){
     y:rect.top+(1-p.y)*rect.height/2
   });
   for(const actor of units){
+    // Our units are the vision sources: fog must never make them untappable,
+    // including the short interval before a new visibility-grid update.
     if(actor.dead||(!includeEnemies&&actor.kind!==activeFaction)||
-      !visibleToPlayer(actor.root.position.x,actor.root.position.z))continue;
+      (actor.kind!==activeFaction&&
+       !visibleToPlayer(actor.root.position.x,actor.root.position.z)))continue;
     const world=actor.root.position;
     const base=screen(new THREE.Vector3(world.x,.05,world.z).project(camera));
     const top=screen(new THREE.Vector3(world.x,2.45,world.z).project(camera));
@@ -2148,10 +2151,10 @@ function touchAt(x,y,append=false){
   if(attackMode){
     showBanner('CIBLE ENNEMIE REQUISE');return;
   }
-  // The exact X/Z polygon wins inside its boundary; outside it, an enlarged
-  // unit touch target must not accidentally select a building.
-  if(building){selectBuilding(building);return;}
+  // A character's projected 3D silhouette wins over a building behind it.
+  // The building still requires an EXACT X/Z polygon hit when no unit was hit.
   if(friend){selectUnits([friend],append);return;}
+  if(building){selectBuilding(building);return;}
   if(selected.size){issueMove(pos);return;}
   clearSelection();
 }
