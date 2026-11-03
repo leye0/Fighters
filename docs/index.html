@@ -20,7 +20,9 @@
 .gesture-indicator{position:absolute;display:none;z-index:6;pointer-events:none;width:68px;height:68px;border:2px solid #b8f3b2;border-radius:50%;background:#2a745648;color:#eaffc9;place-items:center;font-size:32px;text-shadow:0 2px 4px #000;transform:translate(-50%,-50%);box-shadow:0 0 25px #83f6ae44}
 .guard-indicator{position:absolute;right:17px;bottom:60px;z-index:6;display:none;color:#d7ecff;background:#31556bdc;border:1px solid #8dcde9;border-radius:10px;font-size:12px;font-weight:900;letter-spacing:.12em;padding:10px 14px;pointer-events:none}@keyframes rise{to{transform:translateY(-50px) scale(1.2);opacity:0}}
 .start-overlay{position:absolute;z-index:10;inset:0;background:#080d19bc;display:grid;place-items:center;padding:28px;text-align:center;backdrop-filter:blur(5px)}.start-overlay[hidden]{display:none}.start-card{max-width:540px;background:#101a2af0;border:1px solid #4b6280;border-radius:20px;padding:30px;box-shadow:0 28px 75px #0008}.start-card .stamp{font-size:11px;letter-spacing:.25em;color:#c1ed94;font-weight:900}.start-card h2{font-size:clamp(30px,5vw,55px);line-height:1;letter-spacing:-.065em;font-weight:1000;margin:12px 0;color:#f0f5ff}.start-card p{color:#acbdd6;line-height:1.65;font-size:14px}.start-card .primary{background:#f4ed66;color:#1c1b11;border:0;font-weight:950;border-radius:12px;font-size:15px;padding:13px 30px;margin-top:14px;box-shadow:4px 5px 0 #ec638c}.load-progress{height:5px;background:#394761;border-radius:5px;margin-top:16px;overflow:hidden}.load-progress>div{height:100%;width:0;background:#b9f18b;transition:width .2s}
-.banner{position:absolute;top:42%;left:50%;transform:translate(-50%,-50%);font-size:clamp(24px,5vw,54px);font-weight:1000;color:#fce97b;letter-spacing:.1em;text-shadow:0 4px 0 #ad476c,0 10px 20px #000;pointer-events:none;z-index:5;opacity:0;transition:opacity .2s;white-space:nowrap}
+/* Short RTS notifications: tiny white text on black, against the very bottom
+   edge, above the command panel but never intercepting its controls. */
+.banner{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 2px);top:auto;left:50%;transform:translateX(-50%);max-width:calc(100% - 16px);padding:2px 6px;background:#000;color:#fff;border:0;border-radius:2px;font:500 10px/1.15 ui-sans-serif,system-ui,-apple-system,sans-serif;letter-spacing:0;text-shadow:none;box-shadow:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;z-index:9;opacity:0;transition:opacity .09s linear}
 /* True fullscreen arcade surface on mobile and desktop. */
 html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;padding:0;overflow:hidden!important;overscroll-behavior:none;touch-action:none;-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none}
 *,*::before,*::after{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none}
@@ -117,7 +119,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 #selection-rectangle{border:2px solid #c1f5a7;box-shadow:inset 0 0 12px #8ae49933}
 /* iOS: never hand a long press to native text selection or callout. */
 .viewport,.viewport canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:none;overscroll-behavior:none}
-.banner.compact{font-size:clamp(13px,3.8vw,19px);letter-spacing:.015em;max-width:calc(100% - 28px);white-space:normal;text-align:center;top:41%;padding:7px 12px;border:1px solid #9cbf91a6;border-radius:7px;background:#111c2aed;box-shadow:0 4px 14px #0008;text-shadow:none;color:#ddffcb;line-height:1.3}
+
 </style>
 <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
 <script src="./rts-navigation.js"></script>
@@ -1259,10 +1261,14 @@ function changeFaction(faction){
   if(faction!=='witch'&&faction!=='orc')return;
   activeFaction=faction;buildMode=null;rallyMode=false;constructionTab=false;attackMode=false;clearSelection();refreshHUD();
 }
-function showBanner(message,compact=false){
-  $('banner').classList.toggle('compact',compact);
-  $('banner').textContent=message;$('banner').style.opacity=1;
-  clearTimeout(showBanner.timer);showBanner.timer=setTimeout(()=>$('banner').style.opacity=0,1300);
+function showBanner(message){
+  // All transient notices use a single small, bottom-aligned toast. Victory
+  // and defeat remain in the dedicated full-screen overlay.
+  const banner=$('banner');
+  banner.textContent=message;
+  banner.style.opacity='1';
+  clearTimeout(showBanner.timer);
+  showBanner.timer=setTimeout(()=>{banner.style.opacity='0';},500);
 }
 function startSession(){
   if(!ready)return;
