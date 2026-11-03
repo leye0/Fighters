@@ -166,6 +166,14 @@ async function run(){
  await evaluate('window.__fightersQA.advance(4.6)');
  check((await evaluate('window.__fightersQA.snapshot()')).orcs.length===5,
   'Orc barrack training queue failed');
+ check(!await evaluate("window.__fightersQA.beginBuild('mine')")&&
+   !await evaluate("window.__fightersQA.build('mine',9,7)"),
+   'A natural mine must NEVER be constructible by a player');
+ await evaluate("document.querySelector('#command-buttons button[title*='Construire']')?.click()");
+ check(!await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.textContent.includes('Mine'))"),
+   'Construction palette must not offer mine deposits');
+ await evaluate("document.querySelector('#quick-cancel').click();window.__fightersQA.selectOrcBarrack()");
+
  // Routine RTS messages are tiny white-on-black toasts literally at the
  // screen bottom and never overlaid in giant typography on the battlefield.
  const notice=await evaluate("(()=>{const el=document.querySelector('#banner'),s=getComputedStyle(el),r=el.getBoundingClientRect();return {text:el.textContent,font:parseFloat(s.fontSize),color:s.color,bg:s.backgroundColor,bottom:innerHeight-r.bottom,z:Number(s.zIndex),opacity:parseFloat(s.opacity)}})()");
@@ -395,7 +403,19 @@ async function run(){
  await evaluate("window.__fightersQA.moveUnitTo('witch',0,18.5,21)");
  check(await evaluate("window.__fightersQA.attackBuilding("+JSON.stringify(hutId)+")"),
   'Attack-building order was rejected');
- await evaluate('window.__fightersQA.advance(17)');
+ await evaluate('window.__fightersQA.advance(4)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ const hutBefore=s.buildings.find(b=>b.id===hutId);
+ const attackingWitch=s.witches[0];
+ const h=hutBefore.hitbox,dx=(h.minX+h.maxX)/2-attackingWitch.x,
+   dz=(h.minZ+h.maxZ)/2-attackingWitch.z,
+   actorToWall=Math.hypot(Math.max(h.minX-attackingWitch.x,0,attackingWitch.x-h.maxX),
+     Math.max(h.minZ-attackingWitch.z,0,attackingWitch.z-h.maxZ));
+ check(actorToWall<.98,
+   'Witch is still striking metres away from the hut border: '+JSON.stringify({attackingWitch,h}));
+ check((dx*attackingWitch.heading.x+dz*attackingWitch.heading.z)/Math.hypot(dx,dz)>.93,
+   'Witch must face the centre of the attacked building');
+ await evaluate('window.__fightersQA.advance(13)');
  s=await evaluate('window.__fightersQA.snapshot()');
  const destroyed=s.buildings.find(b=>b.id===hutId);
  check(destroyed?.destroyed&&destroyed.health===0,
@@ -437,7 +457,17 @@ async function run(){
  await evaluate("window.__fightersQA.moveUnitTo('orc',0,-18.2,-17.5);window.__fightersQA.selectUnit('orc',0);window.__fightersQA.setBuildingHealth('witch-house-01',27)");
  check(await evaluate("window.__fightersQA.attackBuilding('witch-house-01')"),
    'Orc attack-building order was rejected');
- await evaluate('window.__fightersQA.advance(16)');
+ await evaluate('window.__fightersQA.advance(3)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ const orcAtHouse=s.orcs[0],houseBox=s.house.hitbox;
+ const xh=(houseBox.minX+houseBox.maxX)/2-orcAtHouse.x,
+   zh=(houseBox.minZ+houseBox.maxZ)/2-orcAtHouse.z;
+ check(Math.hypot(Math.max(houseBox.minX-orcAtHouse.x,0,orcAtHouse.x-houseBox.maxX),
+   Math.max(houseBox.minZ-orcAtHouse.z,0,orcAtHouse.z-houseBox.maxZ))<1.02,
+   'Orc still attacks the witch house from too far away: '+JSON.stringify(orcAtHouse));
+ check((xh*orcAtHouse.heading.x+zh*orcAtHouse.heading.z)/Math.hypot(xh,zh)>.93,
+   'Attacking orc must look at the centre of witch house: '+JSON.stringify(orcAtHouse));
+ await evaluate('window.__fightersQA.advance(13)');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.house.destroyed&&s.house.health===0&&!s.running,
   'Orc must destroy witch house and end the match: '+JSON.stringify(s.house));
@@ -457,6 +487,17 @@ async function run(){
  check(s.mining.completedMiningCycles>=1&&s.mining.totalMinedGold>0,
    'Orc gold never came from a physical mining work cycle: '+JSON.stringify(s.mining));
  check(s.mining.workers.length>0,'AI must send actual workers to orc mines');
+ for(const worker of s.mining.workers.filter(w=>w.progress>.1)){
+   const mine=s.buildings.find(b=>b.id===worker.mineId),h=mine?.hitbox;
+   check(!!h,'Mine worker has no physical deposit');
+   const gap=Math.hypot(Math.max(h.minX-worker.x,0,worker.x-h.maxX),
+     Math.max(h.minZ-worker.z,0,worker.z-h.maxZ));
+   check(gap<.85,'Miner collected gold far from physical mine boundary: '+
+     JSON.stringify({worker,mine:h,gap}));
+ }
+ check(!s.orcAI.decisions.some(a=>a.type==='build'&&a.building==='mine'),
+   'AI illegally constructed a mineral deposit');
+
  check(s.orcAI.decisions.some(a=>a.type==='build'),
   'Orc director never planned a village expansion: '+JSON.stringify(s.orcAI));
  check(s.orcAI.decisions.some(a=>a.type==='train'),
@@ -485,6 +526,30 @@ async function run(){
  for(let i=0;i<living.length;i++)for(let j=i+1;j<living.length;j++)
   check(Math.hypot(living[i].x-living[j].x,living[i].z-living[j].z)>=.87,
     'Moving witches overlapped physical footprint');
+
+ // Regression: twenty independently trained-model witches must not orbit
+ // duplicate formation goals indefinitely near other witches.
+ await evaluate("window.__fightersQA.reset();window.__fightersQA.passive('orc')");
+ check(await evaluate("window.__fightersQA.spawnWitches(20)")===20,
+   'Failed to spawn twenty native-rig witches for crowd regression');
+ await evaluate("window.__fightersQA.selectWitches();window.__fightersQA.move(-8,-4)");
+ s=await evaluate('window.__fightersQA.snapshot()');
+ const crowd=s.witches,goals=crowd.map(w=>w.destination);
+ check(goals.length===20&&goals.every(g=>g&&Number.isFinite(g.x))&&
+   new Set(goals.map(p=>p.x.toFixed(3)+','+p.z.toFixed(3))).size===20,
+   'Multiple witches were assigned the same formation location: '+JSON.stringify(goals));
+ await evaluate('window.__fightersQA.advance(21)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.witches.filter(w=>w.destination).length===0,
+   'Some of the twenty witches are still walking forever: '+
+     JSON.stringify(s.witches.filter(w=>w.destination)));
+ const arrived=s.witches.map(w=>({id:w.id,x:w.x,z:w.z,animation:w.animation}));
+ await evaluate('window.__fightersQA.advance(7)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.witches.every(w=>!w.destination&&w.animation!=='Walk_Loop')&&
+   s.witches.every((w,i)=>Math.hypot(w.x-arrived[i].x,w.z-arrived[i].z)<.35),
+   'Crowd is still walking/oscillating after arrival: '+JSON.stringify(s.witches));
+ console.log('PASS twenty witches: 20 distinct goals, complete arrival, idle and stable positions.');
 
  await evaluate('window.__fightersQA.enableOrcAI(false);window.__fightersQA.reset()');
  s=await evaluate('window.__fightersQA.snapshot()');
