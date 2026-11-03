@@ -22,7 +22,8 @@
 .start-overlay{position:absolute;z-index:10;inset:0;background:#080d19bc;display:grid;place-items:center;padding:28px;text-align:center;backdrop-filter:blur(5px)}.start-overlay[hidden]{display:none}.start-card{max-width:540px;background:#101a2af0;border:1px solid #4b6280;border-radius:20px;padding:30px;box-shadow:0 28px 75px #0008}.start-card .stamp{font-size:11px;letter-spacing:.25em;color:#c1ed94;font-weight:900}.start-card h2{font-size:clamp(30px,5vw,55px);line-height:1;letter-spacing:-.065em;font-weight:1000;margin:12px 0;color:#f0f5ff}.start-card p{color:#acbdd6;line-height:1.65;font-size:14px}.start-card .primary{background:#f4ed66;color:#1c1b11;border:0;font-weight:950;border-radius:12px;font-size:15px;padding:13px 30px;margin-top:14px;box-shadow:4px 5px 0 #ec638c}.load-progress{height:5px;background:#394761;border-radius:5px;margin-top:16px;overflow:hidden}.load-progress>div{height:100%;width:0;background:#b9f18b;transition:width .2s}
 /* Short RTS notifications: tiny white text on black, against the very bottom
    edge, above the command panel but never intercepting its controls. */
-.banner{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 2px);top:auto;left:50%;transform:translateX(-50%);max-width:calc(100% - 16px);padding:2px 6px;background:#000;color:#fff;border:0;border-radius:2px;font:500 10px/1.15 ui-sans-serif,system-ui,-apple-system,sans-serif;letter-spacing:0;text-shadow:none;box-shadow:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;z-index:9;opacity:0;transition:opacity .09s linear}
+.banner{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 2px);top:auto;left:50%;transform:translateX(-50%);max-width:calc(100% - 16px);padding:2px 6px;background:#000;color:#fff;border:0;border-radius:2px;font:500 10px/1.15 ui-sans-serif,system-ui,-apple-system,sans-serif;letter-spacing:0;text-shadow:none;box-shadow:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;z-index:9;opacity:0}
+@keyframes tiny-rts-toast{0%,70%{opacity:1}100%{opacity:0}}
 /* True fullscreen arcade surface on mobile and desktop. */
 html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;padding:0;overflow:hidden!important;overscroll-behavior:none;touch-action:none;-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none}
 *,*::before,*::after{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none}
@@ -1262,13 +1263,13 @@ function changeFaction(faction){
   activeFaction=faction;buildMode=null;rallyMode=false;constructionTab=false;attackMode=false;clearSelection();refreshHUD();
 }
 function showBanner(message){
-  // All transient notices use a single small, bottom-aligned toast. Victory
-  // and defeat remain in the dedicated full-screen overlay.
+  // Short, compositor-driven toast. A JS timeout can be delayed under heavy
+  // WebGL rendering and leave the notification stranded on-screen.
   const banner=$('banner');
   banner.textContent=message;
-  banner.style.opacity='1';
-  clearTimeout(showBanner.timer);
-  showBanner.timer=setTimeout(()=>{banner.style.opacity='0';},500);
+  banner.style.animation='none';
+  void banner.offsetWidth; // restart the short animation for a fresh message
+  banner.style.animation='tiny-rts-toast .6s linear forwards';
 }
 function startSession(){
   if(!ready)return;
