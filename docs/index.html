@@ -645,7 +645,10 @@ function beginOrcVillageLoad(){
   if(orcVillageLoadStarted||!orcDebugCount)return;
   orcVillageLoadStarted=true;
   setTimeout(()=>loadOrcVillage(orcDebugCount)
-    .catch(err=>console.warn('Orc village loading failed:',err)),100);
+    .catch(err=>{
+      window.__orcVillageLoadError=String(err?.stack||err);
+      console.error('Orc village polygon loading failed:',err);
+    }),100);
 }
 
 function resize(){
@@ -2225,7 +2228,8 @@ window.__fightersQA={
       healthbarPosition:b.healthBar.root.position.toArray(),
       healthbarVisible:b.healthBar.root.visible
     })),
-    blueprints:[...buildingBlueprints.keys()],witchHouseLoaded:!!witchHouse
+    blueprints:[...buildingBlueprints.keys()],witchHouseLoaded:!!witchHouse,
+    orcVillageLoadError:window.__orcVillageLoadError||null
   }),
   train:issueTrain,trainOrc:()=>issueOrcTrain(selectedBuilding),
   spawnWitches:(targetCount=20)=>{
