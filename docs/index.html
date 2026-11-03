@@ -264,7 +264,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
   border:1px solid #72877b;border-radius:7px;background:#182724}
 .command-panel .command-portrait{width:42px;height:42px;border:1px solid #9bae8f;
   border-radius:5px;font-size:25px;background:#283e35}
-.command-panel .command-title{font:750 13px/1.15 system-ui,-apple-system,sans-serif;
+.command-panel #command-title.command-title{font:750 13px/1.15 system-ui,-apple-system,sans-serif;
   letter-spacing:0;color:#f6ebca;text-shadow:none;
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
 .command-panel .command-health{font:650 11px/1.2 system-ui,sans-serif;color:#e1ead7}
@@ -320,7 +320,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
   .command-panel .command-portrait{width:32px;height:32px;font-size:19px;
     border:1px solid #8c9e80;border-radius:5px}
   .command-panel .command-description{width:100%;min-width:0;overflow:hidden}
-  .command-panel .command-title{font:750 13px/1.25 system-ui,-apple-system,sans-serif;
+  .command-panel #command-title.command-title{font:750 14px/1.2 system-ui,-apple-system,sans-serif;
     white-space:nowrap;display:block;-webkit-line-clamp:unset;
     overflow:hidden;text-overflow:ellipsis;max-height:none}
   .command-panel .command-health{font:650 11px/1.1 system-ui,sans-serif;
@@ -1788,7 +1788,7 @@ function refreshHUD(){
       const icons={'witch-house':'🏡',barrack:'🏰',hut:'🛖',mine:'⛏️',
         cauldron:'⚗️',factory:'🏭'};
       portrait.textContent=icons[b.type]||'🏠';
-      title.textContent=(names[b.type]||'Bâtiment')+' · niveau '+b.level;
+      title.textContent=names[b.type]||'Bâtiment';
       const friendly=b.clanId===(activeFaction==='orc'?'orcs':'witch');
       info.textContent=!friendly?'Bâtiment ennemi · sélectionnez vos unités pour l’attaquer.':b.clanId==='witch'?
         'Bâtiment de production des sorcières · améliorations : formation plus rapide, davantage de PV.':
@@ -1797,7 +1797,7 @@ function refreshHUD(){
       const track=document.createElement('div');track.className='hp-track';
       const fill=document.createElement('div');fill.className='hp-fill';
       fill.style.width=100*b.health/b.maxHealth+'%';track.appendChild(fill);
-      health.append(document.createTextNode('PV '+Math.ceil(b.health)+' / '+b.maxHealth),track);
+      health.append(document.createTextNode('Niv. '+b.level+' · PV '+Math.ceil(b.health)+' / '+b.maxHealth),track);
       if(friendly&&(b.type==='witch-house'||b.type==='barrack')){
         const clan=b.clanId==='witch'?'witch':'orc';
         for(const role of ROLE_IDS){
@@ -1878,7 +1878,7 @@ function refreshHUD(){
   // the ResizeObserver/render-layout feedback that slowed long battles.
   if(b){
     const hp=health.firstChild,fill=health.querySelector('.hp-fill');
-    const text='PV '+Math.ceil(b.health)+' / '+b.maxHealth;
+    const text='Niv. '+b.level+' · PV '+Math.ceil(b.health)+' / '+b.maxHealth;
     if(hp?.nodeType===Node.TEXT_NODE&&hp.textContent!==text)hp.textContent=text;
     if(fill)fill.style.width=(100*b.health/b.maxHealth)+'%';
   }else if(alive.length){
