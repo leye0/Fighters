@@ -22,7 +22,7 @@ La barre supérieure n'affiche plus que la faction active, les ressources, le to
 
 ## Brouillard de guerre
 
-La carte débute **noire hors du champ de vision des unités**. Chaque sorcière ou orc découvre progressivement un rayon de 7,5 unités en marchant. Les zones déjà visitées restent connues, mais sont assombries quand aucun éclaireur n'y voit encore, comme dans Warcraft. Les ennemis cachés ne peuvent pas être ciblés par un clic ou un toucher, mais il est toujours possible d'ordonner un déplacement vers une zone inconnue. Chaque clan garde sa propre exploration; une nouvelle partie efface la découverte.
+La carte débute **noire hors du champ de vision des unités**. Chaque sorcière ou orc découvre progressivement un rayon de 7,5 unités en marchant. Une fois une zone découverte, elle reste **entièrement visible pour le reste de la partie** : le brouillard noir ne revient pas après le départ des unités. Les ennemis cachés ne peuvent pas être ciblés par un clic ou un toucher, mais il est toujours possible d'ordonner un déplacement vers une zone inconnue. Chaque clan garde sa propre exploration; une nouvelle partie efface la découverte.
 
 La visibilité repose sur une grille de **112 × 112 cases (0,5 unité)**, commune à toutes les unités d'un clan. Les deux clans utilisent environ **147 Kio de données** au total, et un seul masque GPU couvrant l'écran; la grille est actualisée huit fois par seconde au maximum, sans ajout de modèles ou textures lourdes.
 

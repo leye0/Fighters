@@ -185,7 +185,10 @@ async function run(){
  await evaluate("window.__fightersQA.moveUnitTo('witch',0,-8,-8);window.__fightersQA.moveUnitTo('witch',1,-8,-8);window.__fightersQA.moveUnitTo('witch',2,-8,-8)");
  const remembered=await evaluate('window.__fightersQA.fogAt(-18,-13)');
  check(remembered.explored>0&&remembered.visible===0,
-   'A previously visited tile should remain explored but darken after departure');
+   'The explored map must persist even after scouts move away');
+ const fogRendering=await evaluate('window.__fightersQA.snapshot().fog');
+ check(fogRendering.exploredBrightness===1,
+   'Explored terrain must stay fully visible, not darken again: '+JSON.stringify(fogRendering));
  await screenshot('rts-fog-explored');
  await evaluate('window.__fightersQA.reset()');
  check((await evaluate('window.__fightersQA.fogAt(-8,-8)')).explored===0,
@@ -206,8 +209,12 @@ async function run(){
      'Real mouse click on a friendly unit selected the house or empty ground: '+
        JSON.stringify({i,point,selected:picked.selectedIds,building:picked.selectedBuildingId}));
  }
+ const ringStyle=await evaluate('window.__fightersQA.snapshot().selectionRingStyle');
+ check(ringStyle.depthTest===false&&ringStyle.renderOrder>=10,
+   'Selection circles must render on top of paved ground and character feet: '+JSON.stringify(ringStyle));
+ await screenshot('rts-selection-ring-prominent');
  await evaluate('window.__fightersQA.reset()');
- console.log('PASS FRIENDLY UNIT TAPS: real mouse pointer events select all three witches.');
+ console.log('PASS FRIENDLY UNIT TAPS: mouse events and prominent, unobstructed selection rings.');
 
  // Building taps must hit the actual flat X/Z polygon, never the larger
  // projected 3D visual AABB or a roof overhang.
