@@ -85,13 +85,17 @@
      return !poly.slice(1).some(hole=>inRing(p,hole));
    });
  }
+ const edgeCache=new WeakMap();
  function edges(shape){
+   const cached=edgeCache.get(shape);
+   if(cached)return cached;
    const result=[];
    for(const poly of shape.polygons||[])for(const ring of poly)
      for(let i=0;i<ring.length;i++){
        const a=point(ring[i]),b=point(ring[(i+1)%ring.length]);
        if(dist(a,b)>EPS)result.push([a,b]);
      }
+   edgeCache.set(shape,result);
    return result;
  }
  function closestBoundary(p,shape){
