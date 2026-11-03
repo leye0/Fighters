@@ -10,6 +10,8 @@ on:
       - 'docs/rts-unit-physics.js'
       - 'scripts/test-rts-unit-physics.mjs'
       - 'docs/orc-strategy.js'
+      - 'docs/rts-roles.js'
+      - 'scripts/test-rts-roles.mjs'
       - 'scripts/test-orc-strategy.mjs'
       - 'scripts/compress-character-assets.sh'
       - 'scripts/build-runtime-characters.mjs'
@@ -48,6 +50,7 @@ jobs:
           node scripts/test-rts-navigation.mjs
           node scripts/test-rts-unit-physics.mjs
           node scripts/test-orc-strategy.mjs
+          node scripts/test-rts-roles.mjs
       - name: Prepare complete RTS building assets and native character models
         run: |
           mkdir -p docs/models

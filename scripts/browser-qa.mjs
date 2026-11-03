@@ -66,6 +66,21 @@ async function run(){
  await until('window.__fightersQA.snapshot().witchHouseLoaded','real witch house hitbox');
  let s=await evaluate('window.__fightersQA.snapshot()');
  check(s.witches.length===3&&s.orcs.length===4,'Starting troops');
+ check(s.witches.map(u=>u.role).join(',')==='melee,worker,ranged',
+  'Witches must start with worker, melee and ranged roles');
+ check(s.orcs.map(u=>u.role).join(',')==='melee,worker,ranged,melee',
+  'Orcs must start with one worker and two distinct fighter types');
+ check(s.assets.sourceRigs===2&&s.assets.roleModelsLoaded===0,
+  'Six roles must use only the two Quaternius rigs');
+ for(const clan of ['witch','orc']){
+  const sharing=await evaluate('window.__fightersQA.auditRigSharing('+JSON.stringify(clan)+')');
+  check(sharing.bodyGeometryShared&&sharing.outfitGeometryShared&&
+    sharing.roles.length===3,'Role outfits must share body and garment geometry: '+
+    JSON.stringify(sharing));
+ }
+ check(s.assets.sharedMaterials<120,
+  'Too many cosmetic materials: '+s.assets.sharedMaterials);
+ console.log('PASS SIX CHARACTER ROLES: shared bodies and costume geometry, separate worker/melee/ranged stats.');
  check(s.loading.compressed,'Native characters should load from optimized gzip assets');
  const fullTransfer={female:20994430,male:20683626};
  const fullDecoded={female:35752840,male:35190592};
@@ -187,7 +202,9 @@ async function run(){
  await until('window.__fightersQA.snapshot().blueprints.length===5',
   'Five real orc building blueprints',100000);
  s=await evaluate('window.__fightersQA.snapshot()');
- check(s.buildings.length===5,'Five default orc buildings');
+ check(s.buildings.filter(b=>b.clanId==='orcs').length===5&&
+  s.buildings.some(b=>b.id==='neutral-gold-mine'),
+  'Five orc buildings plus neutral witch-side gold deposit');
  check(s.buildings.every(b=>b.hitbox.maxX>b.hitbox.minX&&b.hitbox.maxZ>b.hitbox.minZ),
   'Every orc structure must have a real 3D collider');
  check(s.buildings.every(b=>b.healthbarParent==='scene'),
@@ -198,8 +215,8 @@ async function run(){
  await evaluate("window.__fightersQA.setFaction('orc');window.__fightersQA.selectOrcBarrack()");
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.selectedBuilding==='barrack','Orc barrack contextual selection');
- check(await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.textContent.includes('Entraîner orc'))"),
-  'Orc barrack training action missing');
+ check(await evaluate("['Ouvrier','Guerrier','Lanceur'].every(name=>Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.textContent.includes(name)))"),
+  'Orc barrack must produce all three role types');
  check(await evaluate("window.__fightersQA.trainOrc()"),'Orc production refused');
  await evaluate('window.__fightersQA.advance(4.6)');
  check((await evaluate('window.__fightersQA.snapshot()')).orcs.length===5,
@@ -239,7 +256,7 @@ async function run(){
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.buildings.every(b=>b.hitbox.shape==='polygon'&&b.hitbox.vertexCount>10),
    'Orc buildings must all use real GLB-projected multi-polygons');
- check(s.buildings.length===6&&s.buildings.filter(b=>b.type==='hut').length===2,
+ check(s.buildings.length===7&&s.buildings.filter(b=>b.type==='hut').length===2,
   'Second hut must be a unique placed building');
  check(!await evaluate("!!window.__fightersQA.build('hut',8,-10)"),
   'Colliding building placement must be refused');
@@ -415,7 +432,43 @@ async function run(){
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.gold.orc===noWorkerGold&&s.mining.totalMinedGold===0&&
    s.mining.workers.length===0,'Mine generated gold without any worker');
- check(s.house.level===1&&s.buildings.length===5,'Reset starting buildings');
+ check(s.house.level===1&&s.buildings.length===6,'Reset starting buildings');
+ // A witch worker can mine a neutral deposit; soldiers cannot mine, and
+ // workers cannot attack buildings. Collection requires physical contact.
+ const hutForWorker=s.buildings.find(b=>b.type==='hut').id;
+ await evaluate("window.__fightersQA.selectUnit('witch',1)");
+ check(!await evaluate('window.__fightersQA.attackBuilding('+JSON.stringify(hutForWorker)+')'),
+  'A worker must not be assigned combat orders');
+ check(!await evaluate("window.__fightersQA.orderMine('witch',0,'neutral-gold-mine')"),
+  'Melee fighter must not mine gold');
+ const witchGoldBefore=s.gold.witch;
+ check(await evaluate("window.__fightersQA.orderMine('witch',1,'neutral-gold-mine')"),
+  'Witch worker could not take a mine job');
+ await evaluate('window.__fightersQA.advance(38)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.gold.witch>witchGoldBefore&&s.mining.totalMinedGold>0,
+  'Witch worker never mined physical gold: '+JSON.stringify(s.mining));
+ check(s.mining.workers.every(u=>u.role==='worker'),
+  'Non-worker character was assigned mining');
+ // A construction order debits once, sends the worker to the real X/Z
+ // perimeter and creates the structure only after its work animation.
+ const site=await evaluate("(()=>{for(let z=-12;z>=-17;z-=2)for(let x=-8;x>=-16;x-=2)if(window.__fightersQA.canBuild(x,z,'witch-house'))return {x,z};return null})()");
+ check(site,'No safe witch house construction site');
+ const buildingsBefore=s.buildings.length,goldBeforeBuild=s.gold.witch;
+ check(await evaluate('window.__fightersQA.orderBuild("witch-house",'+site.x+','+site.z+')'),
+  'Witch worker could not start a construction job');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.buildings.length===buildingsBefore&&s.construction.length===1&&
+  s.gold.witch===goldBeforeBuild-230,'Construction must reserve resources and wait for worker');
+ await evaluate('window.__fightersQA.advance(38)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.construction.length===0&&s.buildings.length===buildingsBefore+1&&
+  s.buildings.some(b=>b.type==='witch-house'&&b.clanId==='witch'),
+  'Witch worker did not finish a real house: '+JSON.stringify(s.construction));
+ console.log('PASS ECONOMIC ROLES: witch mined gold, constructed a shared-model house; soldiers cannot mine, workers cannot fight.');
+ await evaluate('window.__fightersQA.reset()');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.buildings.length===6,'Reset must remove the additional witch house');
  check(await evaluate('window.__fightersQA.isClear(8,-10)'),
   'Reset must remove constructed building hitboxes');
 
@@ -604,7 +657,7 @@ async function run(){
  await evaluate('window.__fightersQA.enableOrcAI(false);window.__fightersQA.reset()');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.witches.length===3&&s.orcs.length===4&&
-  s.buildings.filter(b=>!b.destroyed).length===5,'Reset after AI restores starting match');
+  s.buildings.filter(b=>!b.destroyed).length===6,'Reset after AI restores starting match');
  check(!errors.length,'Browser JavaScript exceptions: '+errors.join(' | '));
  console.log('PASS RTS: stable HUD, persistent shortcuts, blue/red reticles, two-tap attacks, one-finger pan, instant two-finger box selection, locked 3× zoom, destroyed buildings and strategic AI.');
 
