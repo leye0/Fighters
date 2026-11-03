@@ -1982,23 +1982,18 @@ async function load(){
     // Both HTTP transfers run simultaneously, but expensive GLTF parsing stays
     // sequential to avoid a double peak of JS/GPU allocations on mobile.
     const characters=await Promise.all(['female','male'].map(gender=>
-      getBinary('human_'+gender+'.rts.glb')));
+      getBinary('human_'+gender+'.glb')));
     loadingProfile.downloadMs=Math.round(performance.now()-loadingProfile.startedAt);
     $('load-bar').style.width='42%';
     for(const [idx,gender] of ['female','male'].entries()){
-      const file='human_'+gender+'.rts.glb',started=performance.now();
+      const file='human_'+gender+'.glb',started=performance.now();
       const gltf=await loader.parseAsync(characters[idx],'');
       const required=['Idle_Loop','Walk_Loop','Jog_Fwd_Loop','Punch_Jab','Hit_Chest','Death01'];
       const gameClips=['Idle_Loop','Walk_Loop','Jog_Fwd_Loop','Punch_Jab',
         'Hit_Chest','Death01','Sword_Idle','Sword_Attack'];
-      if(gltf.animations.length!==gameClips.length||
-        gameClips.some(name=>!gltf.animations.some(clip=>clip.name===name))||
-        !gltf.scene.children.length||!gltf.scene.getObjectByProperty('isBone',true)){
-        // glTF Loader does not guarantee a top-level Bone reference,
-        // so the skinning invariant is validated using SkinnedMesh objects.
-        if(gltf.animations.length!==gameClips.length||!gltf.scene.children.length)
-          throw Error('Modèle RTS incomplet : '+file);
-      }
+      if(gltf.animations.length!==86||
+        gameClips.some(name=>!gltf.animations.some(clip=>clip.name===name)))
+        throw Error('Clips natifs invalides : '+file);
       const meshes=[];gltf.scene.traverse(node=>{if(node.isSkinnedMesh)meshes.push(node);});
       if(!meshes.length||meshes.some(mesh=>mesh.skeleton.bones.length<20))
         throw Error('Squelette natif invalide : '+file);
@@ -2017,7 +2012,7 @@ async function load(){
     const grip=swordModel.scene.getObjectByName('grip');
     if(!grip||grip.position.length()>1e-5)throw Error('Épée native non calibrée');
     loadingProfile.readyMs=Math.round(performance.now()-loadingProfile.startedAt);
-    loadingProfile.steps.push('characters_runtime_8clips_parallel','native_rig_verified',
+    loadingProfile.steps.push('characters_full_native_parallel','native_rig_verified',
       'costumes_complete','sword_complete');
     ready=true;$('load-bar').style.width='100%';$('start').disabled=false;
     $('start').textContent='▶ COMMENCER';
