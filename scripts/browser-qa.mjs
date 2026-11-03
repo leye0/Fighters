@@ -247,8 +247,14 @@ async function run(){
  // the camera to its ±26 coordinate boundary, where further panning clamps.
  await evaluate('window.__fightersQA.centerCamera(0,0)');
  const beforeSinglePan=await evaluate('window.__fightersQA.snapshot()');
- await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[touch(4,155,310)]});
- await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[touch(4,220,355)]});
+ // Send both CDP commands without an interposed round-trip: under WebGL
+ // load, waiting for the touchStart acknowledgement sometimes takes >1s,
+ // unintentionally activating the actual hold-to-select timer.
+ const panStart=call('Input.dispatchTouchEvent',{type:'touchStart',
+  touchPoints:[touch(4,155,310)]});
+ const panMove=call('Input.dispatchTouchEvent',{type:'touchMove',
+  touchPoints:[touch(4,220,355)]});
+ await Promise.all([panStart,panMove]);
  await sleep(80);
  const afterSinglePan=await evaluate('window.__fightersQA.snapshot()');
  check(Math.hypot(afterSinglePan.cameraCenter.x-beforeSinglePan.cameraCenter.x,
