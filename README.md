@@ -9,7 +9,7 @@ Fighters est un prototype de **stratégie en temps réel** en 3D isométrique. L
 | Action | Ordinateur | Téléphone/tablette |
 |---|---|---|
 | Sélectionner une sorcière ou un bâtiment | Clic gauche | Toucher |
-| Sélection multiple | Glisser sur la carte, Ctrl/Cmd+A ou **S** puis glisser | **▧ Sélection** dans la barre permanente, puis glisser directement un doigt; ou maintien une seconde suivi d'un glissement |
+| Sélection multiple | Glisser sur la carte ou Ctrl/Cmd+A | **Maintenir le doigt immobile pendant une seconde, puis glisser** pour encadrer les unités |
 | Déplacement / formation | Sélectionner puis cliquer au sol | Sélectionner puis toucher le terrain |
 | Attaquer une unité ou un bâtiment ennemi | **Deux clics :** sélectionner une sorcière puis cliquer directement le bâtiment ou l'unité ennemie | **Deux touches :** sorcière puis bâtiment ennemi, sans passer par un mode supplémentaire |
 | Zoom | Molette, touches **+ / −** | Pincement à deux doigts |
@@ -22,7 +22,7 @@ Le groupe **🧙 / ⚔ / + / −** qui occupait la barre supérieure a été ret
 
 ## Interface RTS
 
-La **barre inférieure** est divisée en **deux zones séparées**. La première contient six **raccourcis permanents** (Maison, Armée, Sélection, Attaquer, Stop, Annuler) qui restent en place même lorsqu'un mode d'attaque, une construction ou un bâtiment est sélectionné. La seconde affiche le portrait, le nom et le niveau du bâtiment sélectionné, les points de vie, une barre de santé et une grille de commandes contextuelles (**entraînement, amélioration, point de rassemblement et annulation/remboursement**). Un indicateur flottant donne les instructions de placement, de sélection ou de ciblage **sans masquer les raccourcis**. Pour sélectionner un sous-groupe sur iPhone, **toucher ▧ Sélection puis tracer un rectangle sans attendre**; ce mode se désactive après l'opération. Le maintien d'une seconde reste possible, mais n'est plus le seul moyen de sélectionner un groupe.
+La **barre inférieure** est divisée en **deux zones séparées**. La première contient cinq **raccourcis permanents** (Maison, Armée, Attaquer, Stop, Annuler) qui restent en place même lorsqu'un mode d'attaque, une construction ou un bâtiment est sélectionné. La seconde affiche le portrait, le nom et le niveau du bâtiment sélectionné, les points de vie, une barre de santé et une grille de commandes contextuelles (**entraînement, amélioration, point de rassemblement et annulation/remboursement**). Un indicateur flottant donne les instructions de placement ou de ciblage **sans masquer les raccourcis**. La sélection rectangulaire mobile utilise un seul parcours `pointerdown` → minuterie d'une seconde → `pointermove` → `pointerup`, sans bouton auxiliaire ni deuxième gestionnaire tactile.
 
 - La maison des sorcières entraîne une sorcière pour **120 pièces d’or** en **3,5 s** au niveau 1. Les améliorations augmentent ses PV et accélèrent la formation. La file contient jusqu'à huit commandes.
 - La caserne orc forme des soldats pour **100 pièces d’or** en **4,5 s** au niveau 1; toutes les structures peuvent être améliorées jusqu'au niveau 3. Les niveaux 2 et 3 utilisent les véritables GLB existants du kit de bâtiments.
@@ -80,7 +80,7 @@ Le workflow `.github/workflows/browser-qa.yml` exécute :
 - `node scripts/test-rts-navigation.mjs` : A*, collisions élargies, coins diagonaux, détours et obstacles dynamiques.
 - `node scripts/test-rts-unit-physics.mjs` : préférence de séparation en terrain libre, **passage temporairement superposé** dans un corridor, dispersion progressive à l'arrêt et murs toujours solides.
 - `node scripts/test-orc-strategy.mjs` : construction cohérente, stratégie économique, recrutement, défense, raiders et réinitialisation.
-- `node scripts/browser-qa.mjs` : vraie scène **Chrome WebGL SwiftShader**, zoom/pincement, **glisser à un doigt pour déplacer**, **appui long d'une seconde puis sélection rectangulaire**, **mode Sélection permanent avec glissement immédiat**, séquence de **deux touches pour attaquer**, mires bleues et rouges à durée de vie limitée, stabilité des menus, production et améliorations avec vrais GLB, collisions, **destruction des bâtiments par les deux factions** et **village orc bâti automatiquement**. Le test enregistre également des captures desktop et mobile.
+- `node scripts/browser-qa.mjs` : vraie scène **Chrome WebGL SwiftShader**, zoom/pincement, **glisser à un doigt pour déplacer**, **appui long d'une seconde puis sélection rectangulaire**, **sélection tactile gérée uniquement par Pointer Events avec capture du pointeur**, séquence de **deux touches pour attaquer**, mires bleues et rouges à durée de vie limitée, stabilité des menus, production et améliorations avec vrais GLB, collisions, **destruction des bâtiments par les deux factions** et **village orc bâti automatiquement**. Le test enregistre également des captures desktop et mobile.
 
 Un paramètre `?qa=1` active les contrôles d'injection de test `window.__fightersQA` et désactive l'IA autonome initialement pour des essais reproductibles; la partie normale active l'IA.
 
