@@ -62,7 +62,7 @@
     if(i+1===level.length){next.push(level[i]);continue;}
     const merged=union(level[i],level[i+1]);
     if(merged?.length)next.push(merged);
-    else next.push(level[i],level[i+1]);
+    else next.push([...level[i],...level[i+1]]);
    }
    level=next;
   }
