@@ -151,11 +151,36 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
   </div>
 </aside>
 <div class="start-overlay" id="overlay"><div class="start-card"><div class="stamp">FIGHTERS · PROTOTYPE RTS</div><h2 id="overlay-title">SORCIÈRES CONTRE ORCS</h2><p id="overlay-desc">Sélectionnez une ou plusieurs sorcières puis touchez le terrain pour donner un ordre de déplacement. Les unités combattent automatiquement les ennemis proches. Touchez la maison pour entraîner d’autres sorcières; passez aux orcs pour construire.</p><button class="primary" id="start" disabled>Chargement des unités…</button><div class="load-progress"><div id="load-bar"></div></div></div></div>
-</div></section></div><script type="module">
+</div></section></div><script>
+(function(){
+  // This runs before ES modules. If a dependency fails to import, the module's
+  // load() function never runs and its normal catch block cannot show an error.
+  function showBootError(message){
+    if(window.__fightersModuleStarted)return;
+    const title=document.getElementById('overlay-title');
+    const desc=document.getElementById('overlay-desc');
+    const start=document.getElementById('start');
+    if(!title||!start)return;
+    title.textContent='Chargement impossible';
+    desc.textContent=message;
+    start.textContent='↻ Réessayer';start.disabled=false;
+    start.onclick=()=>location.reload();
+    const bar=document.getElementById('load-bar');
+    if(bar)bar.style.width='0%';
+  }
+  window.addEventListener('error',event=>{
+    if(!window.__fightersModuleStarted)
+      showBootError('Une dépendance du jeu ne se charge pas. Vérifiez la connexion, puis réessayez.');
+  },true);
+  setTimeout(()=>showBootError('Le démarrage a dépassé 20 secondes. Touchez Réessayer.'),20000);
+})();
+</script>
+<script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
+window.__fightersModuleStarted=true;
 const $ = id => document.getElementById(id);
 const viewport = $('viewport');
 const gltfRoot = 'https://raw.githubusercontent.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/5821923af517ac5fdc82505faa92a0d575fc1b1a/test/';
@@ -1902,42 +1927,53 @@ const loadingProfile={
   startedAt:performance.now(),readyMs:null,characters:{},downloadMs:null,
   compressed:false,steps:[]
 };
+async function fetchAsset(url,{compressed=false,timeout=18000}={}){
+  const controller=new AbortController();
+  const timeoutId=setTimeout(()=>controller.abort(),timeout);
+  try{
+    const response=await fetch(url,{signal:controller.signal,cache:'default'});
+    if(!response.ok)throw Error('HTTP '+response.status+' : '+url);
+    const wireBytes=Number(response.headers.get('Content-Length')||0);
+    const body=compressed?
+      new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer():
+      response.arrayBuffer();
+    const data=await body;
+    if(data.byteLength<20)throw Error('Fichier incomplet : '+url);
+    return {data,wireBytes};
+  }finally{clearTimeout(timeoutId);}
+}
 async function getBinary(file,onProgress=()=>{}){
-  const started=performance.now(),isCharacter=/^human_(female|male)\.(?:rts\.)?glb$/.test(file);
+  const started=performance.now(),isCharacter=/^human_(female|male)\\.(?:rts\\.)?glb$/.test(file);
   const rawUrl='./models/'+file;
   if(isCharacter&&typeof DecompressionStream==='function'){
     try{
-      const response=await fetch(rawUrl+'.gz');
-      if(response.ok&&response.body){
-        const wireBytes=Number(response.headers.get('Content-Length')||0);
-        const decompressed=await new Response(
-          response.body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
-        if(new DataView(decompressed).getUint32(0,false)!==0x676c5446)
-          throw Error('Incorrect decompressed glTF header');
-        loadingProfile.characters[file]={transport:'gzip',wireBytes,decodedBytes:decompressed.byteLength,
-          downloadAndDecodeMs:Math.round(performance.now()-started)};
-        loadingProfile.compressed=true;onProgress(100);
-        return decompressed;
-      }
+      const result=await fetchAsset(rawUrl+'.gz',{compressed:true,timeout:20000});
+      if(new DataView(result.data).getUint32(0,false)!==0x676c5446)
+        throw Error('En-tête GLB invalide : '+file);
+      loadingProfile.characters[file]={
+        transport:'gzip',wireBytes:result.wireBytes,decodedBytes:result.data.byteLength,
+        downloadAndDecodeMs:Math.round(performance.now()-started)
+      };
+      loadingProfile.compressed=true;onProgress(100);
+      return result.data;
     }catch(error){
-      // Safari/older browsers without streaming decompression can still use
-      // the original, byte-identical native rig. No animation is dropped.
-      console.warn('Character gzip fallback:',file,error);
+      console.warn('Repli vers modèle RTS non compressé:',file,error);
     }
   }
-  let response=await fetch(rawUrl);
-  if(!response.ok){
-    response=await fetch(isCharacter?gltfRoot+file:
-      'https://www.pixeltriks.com/characters/humans/'+
-      (file.includes('Peasant')?'outfits/':'hair/')+file);
+  let result;
+  try{result=await fetchAsset(rawUrl,{timeout:20000});}
+  catch(error){
+    if(isCharacter)throw Error('Modèle RTS indisponible ('+file+'). Réessayez le chargement.');
+    const fallback='https://www.pixeltriks.com/characters/humans/'+
+      (file.includes('Peasant')?'outfits/':'hair/')+file;
+    result=await fetchAsset(fallback,{timeout:20000});
   }
-  if(!response.ok)throw Error(file+' HTTP '+response.status);
-  const result=await response.arrayBuffer();
   if(isCharacter)loadingProfile.characters[file]={
-    transport:'raw',wireBytes:result.byteLength,decodedBytes:result.byteLength,
+    transport:'raw',wireBytes:result.wireBytes||result.data.byteLength,
+    decodedBytes:result.data.byteLength,
     downloadAndDecodeMs:Math.round(performance.now()-started)
   };
-  onProgress(100);return result;
+  onProgress(100);return result.data;
 }
 async function load(){
   try{
