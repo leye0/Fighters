@@ -96,64 +96,76 @@ function buildModel(input,output){
  }
  gltf.accessors=accessorIDs.map(id=>oldAccessors[id]);
 
- const requiredViews=new Set();
- const addView=id=>{
-  if(id===undefined||id===null)return;
-  assert(Number.isInteger(id)&&oldViews[id],input+': invalid bufferView '+id);
-  requiredViews.add(id);
- };
- for(const accessor of gltf.accessors){
-  addView(accessor.bufferView);
-  if(accessor.sparse){
-   addView(accessor.sparse.indices.bufferView);
-   addView(accessor.sparse.values.bufferView);
-  }
+ // Source Quaternius GLBs use a small number of HUGE bufferViews,
+ // with 30,000+ tightly packed animation accessors inside them. Keeping the
+ // original view whole preserves almost all unwanted animation bytes.
+ // Each retained accessor MUST therefore be packed at byte-range granularity.
+ const parts=[],newViews=[];
+ let binSize=0;
+ const componentBytes={5120:1,5121:1,5122:2,5123:2,5125:4,5126:4};
+ const components={SCALAR:1,VEC2:2,VEC3:3,VEC4:4,MAT2:4,MAT3:9,MAT4:16};
+ function copyBytes(template,start,length){
+  assert(Number.isInteger(start)&&Number.isInteger(length)&&length>0&&
+   start>=0&&start+length<=bin.length,input+': referenced data out of bounds');
+  binSize=round4(binSize);
+  const index=newViews.length;
+  newViews.push({...template,buffer:0,byteOffset:binSize,byteLength:length});
+  parts.push({offset:binSize,data:bin.subarray(start,start+length)});
+  binSize+=length;
+  return index;
  }
- for(const image of gltf.images||[])addView(image.bufferView);
- for(const mesh of gltf.meshes||[])for(const primitive of mesh.primitives||[])
-  addView(primitive.extensions?.KHR_draco_mesh_compression?.bufferView);
- // Fail closed instead of creating a GLB containing missing extension data.
- for(const view of oldViews){
-  assert(!view.extensions?.EXT_meshopt_compression,
-   input+': EXT_meshopt_compression needs a separate packing path');
- }
- const viewIDs=[...requiredViews].sort((a,b)=>a-b);
- const viewMap=new Map(viewIDs.map((id,i)=>[id,i]));
- const toView=id=>{
-  if(id===null||id===undefined)return id;
-  const next=viewMap.get(id);
-  assert(next!==undefined,input+': dropped live bufferView '+id);
+ const fullViewMap=new Map();
+ function preserveWholeView(id){
+  if(id===undefined||id===null)return id;
+  if(fullViewMap.has(id))return fullViewMap.get(id);
+  const view=oldViews[id];
+  assert(view&&view.buffer===0,input+': unexpected buffer reference '+id);
+  const next=copyBytes(view,view.byteOffset||0,view.byteLength);
+  fullViewMap.set(id,next);
   return next;
- };
+ }
  for(const accessor of gltf.accessors){
-  if(accessor.bufferView!==undefined)accessor.bufferView=toView(accessor.bufferView);
+  if(accessor.bufferView!==undefined&&accessor.bufferView!==null){
+   const view=oldViews[accessor.bufferView];
+   assert(view&&view.buffer===0,input+': invalid accessor view');
+   const componentSize=componentBytes[accessor.componentType];
+   const quantity=components[accessor.type];
+   assert(componentSize&&quantity&&accessor.count>0,
+    input+': invalid accessor element layout');
+   // Special glTF 4-byte matrix column alignment only affects tiny integer
+   // matrices. Their full view is retained rather than risking corruption.
+   const specialMatrix=accessor.type.startsWith('MAT')&&componentSize<4;
+   if(specialMatrix){
+    accessor.bufferView=preserveWholeView(accessor.bufferView);
+   }else{
+    const itemSize=componentSize*quantity;
+    const stride=view.byteStride||itemSize;
+    assert(stride>=itemSize,input+': undersized accessor stride');
+    const countBytes=(accessor.count-1)*stride+itemSize;
+    const offset=(view.byteOffset||0)+(accessor.byteOffset||0);
+    assert(offset+countBytes<=(view.byteOffset||0)+view.byteLength,
+     input+': accessor escapes its source bufferView');
+    accessor.bufferView=copyBytes(view,offset,countBytes);
+    accessor.byteOffset=0;
+   }
+  }
   if(accessor.sparse){
-   accessor.sparse.indices.bufferView=toView(accessor.sparse.indices.bufferView);
-   accessor.sparse.values.bufferView=toView(accessor.sparse.values.bufferView);
+   accessor.sparse.indices.bufferView=preserveWholeView(
+    accessor.sparse.indices.bufferView);
+   accessor.sparse.values.bufferView=preserveWholeView(
+    accessor.sparse.values.bufferView);
   }
  }
  for(const image of gltf.images||[])if(image.bufferView!==undefined)
-  image.bufferView=toView(image.bufferView);
+  image.bufferView=preserveWholeView(image.bufferView);
  for(const mesh of gltf.meshes||[])for(const primitive of mesh.primitives||[]){
   const draco=primitive.extensions?.KHR_draco_mesh_compression;
-  if(draco)draco.bufferView=toView(draco.bufferView);
- }
- const parts=[],newViews=[];
- let binSize=0;
- for(const id of viewIDs){
-  const view=oldViews[id];
-  assert(view.buffer===0,input+': external or multi-buffer view '+id);
-  assert(view.byteOffset>=0&&view.byteLength>0&&view.byteOffset+view.byteLength<=bin.length,
-   input+': invalid view bounds '+id);
-  binSize=round4(binSize);
-  const updated={...view,buffer:0,byteOffset:binSize};
-  newViews.push(updated);
-  parts.push({offset:binSize,data:bin.subarray(view.byteOffset,view.byteOffset+view.byteLength)});
-  binSize+=view.byteLength;
+  if(draco)draco.bufferView=preserveWholeView(draco.bufferView);
  }
  const packed=Buffer.alloc(round4(binSize),0);
  for(const part of parts)part.data.copy(packed,part.offset);
- gltf.bufferViews=newViews;gltf.buffers[0].byteLength=packed.length;
+ gltf.bufferViews=newViews;
+ gltf.buffers[0].byteLength=packed.length;
  gltf.extras={...(gltf.extras||{}),fightersRuntime:true,fullSourceClipCount:86};
  // Verify every original bone index is still present and in the same order.
  for(let i=0;i<oldSkinJoints.length;i++)
@@ -185,7 +197,7 @@ function buildModel(input,output){
   source:input,output,sourceBytes:original.length,runtimeBytes:result.length,
   runtimeGzipBytes:zipped.length,clips:RUNTIME_CLIPS,sourceClips:86,
   originalAccessors:oldAccessors.length,runtimeAccessors:accessorIDs.length,
-  originalViews:oldViews.length,runtimeViews:viewIDs.length,
+  originalViews:oldViews.length,runtimeViews:newViews.length,
   bones:gltf.skins.reduce((n,skin)=>Math.max(n,skin.joints.length),0),
   sha256:hash(result),integrity:'PASS'
  }));
