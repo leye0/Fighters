@@ -41,11 +41,13 @@ jobs:
           cp witch_house.glb docs/models/witch_house.glb
           cat orc_rts_building_set_-_proto_series.glb.part1 orc_rts_building_set_-_proto_series.glb.part2 > docs/models/orc_rts_building_set_-_proto_series.glb
           node -e "const fs=require('fs');const p='docs/models/orc_rts_building_set_-_proto_series.glb';const b=fs.readFileSync(p);if(b.toString('ascii',0,4)!=='glTF'||b.readUInt32LE(8)!==b.length)process.exit(1);console.log('Orc GLB validated:',b.length,'bytes')"
-          npm install --no-save --no-package-lock --no-audit --no-fund @gltf-transform/core@4.2.1 @gltf-transform/functions@4.2.1 three@0.180.0 @gltf-transform/extensions@4.2.1 sharp@0.34.4
+          npm install --no-save --no-package-lock --no-audit --no-fund @gltf-transform/core@4.2.1 @gltf-transform/functions@4.2.1 three@0.180.0 @gltf-transform/extensions@4.2.1 sharp@0.34.4 polygon-clipping@0.15.7
           mkdir -p docs/vendor/three
           cp node_modules/three/build/three.module.js docs/vendor/three/three.module.js
           cp node_modules/three/build/three.core.js docs/vendor/three/three.core.js
           cp -R node_modules/three/examples/jsm docs/vendor/three/addons
+          mkdir -p docs/vendor
+          cp node_modules/polygon-clipping/dist/polygon-clipping.umd.js docs/vendor/polygon-clipping.umd.js
           node scripts/split-orc-buildings.mjs docs/models/orc_rts_building_set_-_proto_series.glb docs/models/orc-buildings
           curl --fail --location --silent --show-error --retry 3 \
             "https://raw.githubusercontent.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/5821923af517ac5fdc82505faa92a0d575fc1b1a/test/human_male.glb" \
