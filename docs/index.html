@@ -384,6 +384,24 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
   .hud .score strong{font-size:11px!important}
 }
 
+/* On a phone the score is a row of labeled, full-size resource chips.
+   Short badges are clearer than microscopic "OR SORCIÈRES" paragraphs. */
+@media(max-width:820px),(max-height:540px){
+  .hud .score{gap:5px!important}
+  .hud .score>div{display:flex;align-items:center;gap:3px!important;
+    padding:3px 5px;border:1px solid #53685e;border-radius:5px;
+    background:#111c19b5;min-height:25px}
+  .hud .score small{font-size:0!important;line-height:0!important;
+    display:inline-block;flex:none}
+  .hud .score small::before{font:850 11px/1 system-ui,sans-serif;
+    display:inline;color:#e3dcb8}
+  .hud .score>div:nth-child(1) small::before{content:"S";color:#a8e4c0}
+  .hud .score>div:nth-child(2) small::before{content:"O";color:#f8bd86}
+  .hud .score>div:nth-child(3) small::before{content:"⚔";color:#cdd8f0}
+  .hud .score strong{font:800 14px/1 system-ui,sans-serif!important;
+    letter-spacing:0}
+}
+
 </style>
 <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
 <script src="./rts-footprint.js"></script>
@@ -397,7 +415,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 <div class="game-shell"><section class="arcade">
 <div class="hud">
   <div class="hero-hud"><div class="hud-kicker">FIGHTERS · RTS</div><strong id="faction-title">SORCIÈRES</strong><small id="selection-summary">Sélectionnez une unité ou la maison</small><small id="ai-status" class="ai-status">Village orc · en développement</small></div>
-  <div class="score"><div><small>OR SORCIÈRES</small><strong id="witch-gold">2000</strong></div><div><small>OR ORCS</small><strong id="orc-gold">900</strong></div><div><small>UNITÉS</small><strong id="unit-count">0 : 0</strong></div></div>
+  <div class="score"><div title="Or des sorcières"><small>OR SORCIÈRES</small><strong id="witch-gold">2000</strong></div><div title="Or des orcs"><small>OR ORCS</small><strong id="orc-gold">900</strong></div><div title="Unités des sorcières et des orcs"><small>UNITÉS</small><strong id="unit-count">0 : 0</strong></div></div>
   <button id="pause" class="pause-compact" aria-label="Pause" title="Pause (P)" disabled>Ⅱ</button>
 </div>
 <div id="viewport" class="viewport" aria-label="Carte de stratégie en temps réel"><div class="scanlines"></div><div id="banner" class="banner"></div><div id="selection-rectangle" hidden></div><div id="order-pings" aria-hidden="true"></div><div id="order-prompt" role="status" aria-live="polite" hidden></div>
