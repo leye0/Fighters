@@ -457,9 +457,13 @@ const ORC_NAMES={barrack:'Caserne',hut:'Hutte',mine:'Mine',cauldron:'Chaudron',f
 const units=[],selected=new Set();
 let female=null,male=null,swordModel=null,clothingFemale=null,clothingMale=null,hairBuns=null,hairBuzzed=null,hairParted=null;
 const sharedClipCatalog=new Map(),sharedCostumeMaterials=new Map();
-const sharedSelectionGeometry=new THREE.RingGeometry(.62,.72,28);
-const sharedSelectionMaterials={witch:new THREE.MeshBasicMaterial({color:0xb4ed91,side:THREE.DoubleSide,depthWrite:false}),
-  orc:new THREE.MeshBasicMaterial({color:0xf18d66,side:THREE.DoubleSide,depthWrite:false})};
+// One shared, bright ground-level ring per selected unit. Disable depth testing
+// so paved streets, model feet and shallow building surfaces cannot bury it.
+const sharedSelectionGeometry=new THREE.RingGeometry(.71,.88,40);
+const sharedSelectionMaterials={witch:new THREE.MeshBasicMaterial({
+    color:0xbaff68,side:THREE.DoubleSide,depthTest:false,depthWrite:false,toneMapped:false}),
+  orc:new THREE.MeshBasicMaterial({
+    color:0xffd279,side:THREE.DoubleSide,depthTest:false,depthWrite:false,toneMapped:false})};
 let ready=false,running=false,paused=false,activeFaction='witch',gold={witch:2000,orc:900},buildMode=null;
 let selectedBuilding=null,nextUnitId=1,qaPassive=false,orcSpawned=false;
 let rallyMode=false,constructionTab=false,lastHudSignature='';
@@ -482,14 +486,15 @@ const fogShader=new THREE.ShaderMaterial({
   uniforms:{
     mask:{value:fogTexture},origin:{value:new THREE.Vector2()},
     right:{value:new THREE.Vector2()},up:{value:new THREE.Vector2()},
-    halfSize:{value:ARENA_HALF},worldSize:{value:ARENA_SIZE}
+    halfSize:{value:ARENA_HALF},worldSize:{value:ARENA_SIZE},
+    exploredBrightness:{value:1.0}
   },
   vertexShader:`varying vec2 vUv;
     void main(){vUv=uv;gl_Position=vec4(position.xy,0.0,1.0);}`,
   fragmentShader:`varying vec2 vUv;
     uniform sampler2D mask;
     uniform vec2 origin,right,up;
-    uniform float halfSize,worldSize;
+    uniform float halfSize,worldSize,exploredBrightness;
     void main(){
       vec2 world=origin+right*vUv.x+up*vUv.y;
       vec2 uv=(world+vec2(halfSize))/worldSize;
@@ -497,8 +502,9 @@ const fogShader=new THREE.ShaderMaterial({
         gl_FragColor=vec4(0.0,0.0,0.0,1.0);return;
       }
       vec2 coverage=texture2D(mask,uv).rg;
-      // Never visited: pitch black. Explored: dim memory. In sight: clear.
-      float light=max(coverage.g,coverage.r*0.32);
+      // Never visited: black. Once explored, terrain remains fully revealed.
+      // The live-sight channel is still tracked separately for enemy targeting.
+      float light=max(coverage.g,coverage.r*exploredBrightness);
       gl_FragColor=vec4(0.0,0.0,0.0,1.0-light);
     }`
 });
@@ -1062,7 +1068,8 @@ function spawnUnit(kind,x,z,index=0,role='melee'){
   visual.position.set(-center.x,-bounds.min.y,-center.z);
   root.add(visual);root.position.set(x,0,z);scene.add(root);
   const marker=new THREE.Mesh(sharedSelectionGeometry,sharedSelectionMaterials[kind]);
-  marker.rotation.x=-Math.PI/2;marker.position.y=.035;marker.visible=false;root.add(marker);
+  marker.rotation.x=-Math.PI/2;marker.position.y=.11;
+  marker.renderOrder=20;marker.visible=false;root.add(marker);
   const actor={
     id:nextUnitId++,kind,role,profile,root,visual,radius:UNIT_RADIUS,
     mixer:new THREE.AnimationMixer(visual),actions:new Map(),
@@ -2649,7 +2656,10 @@ window.__fightersQA={
   snapshot:()=>({
     loading:{...loadingProfile,characters:{...loadingProfile.characters}},
     ready,running,paused,activeFaction,cameraZoom,cameraCenter:{...cameraFollow},
-    fog:{activeFaction,...fogOfWar.stats(activeFaction)},
+    fog:{activeFaction,...fogOfWar.stats(activeFaction),
+      exploredBrightness:fogShader.uniforms.exploredBrightness.value},
+    selectionRingStyle:{depthTest:sharedSelectionMaterials[activeFaction].depthTest,
+      renderOrder:units.find(u=>u.kind===activeFaction)?.selectionRing.renderOrder??null},
     orcAI:orcDirector.snapshot(),qaPassiveKind,
     twoFingerSelection:twoFingerBox?{a:{...twoFingerBox.a},b:{...twoFingerBox.b}}:null,
     mining:{completedMiningCycles,totalMinedGold,workers:units.filter(u=>u.mineJob&&!u.dead).map(u=>({
