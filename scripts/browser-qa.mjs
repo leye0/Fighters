@@ -293,14 +293,16 @@ async function run(){
  await until('window.__fightersQA.snapshot().blueprints.length===5',
   'Five real orc building blueprints',100000);
  s=await evaluate('window.__fightersQA.snapshot()');
- check(s.buildings.filter(b=>b.clanId==='orcs').length===5&&
-  s.buildings.some(b=>b.id==='neutral-gold-mine'),
-  'Five orc buildings plus neutral witch-side gold deposit');
+ const deposits=s.buildings.filter(b=>b.type==='mine');
+ check(s.buildings.filter(b=>b.clanId==='orcs').length===4&&
+  deposits.length===2&&deposits.every(b=>b.clanId==='neutral'&&
+    !b.destructible&&!b.destroyed&&b.healthbarParent===null&&b.queue.length===0),
+  'Both natural deposits must be neutral, permanent resources outside clan infrastructure');
  check(s.buildings.every(b=>b.hitbox.maxX>b.hitbox.minX&&b.hitbox.maxZ>b.hitbox.minZ),
   'Every orc structure must have a real 3D collider');
- check(s.buildings.every(b=>b.healthbarParent==='scene'),
+ check(s.buildings.filter(b=>b.type!=='mine').every(b=>b.healthbarParent==='scene'),
    'Orc HP bars must not inherit a building rotation/scale');
- check(s.buildings.every(b=>b.healthbarPosition[1]>b.hitbox.maxY),
+ check(s.buildings.filter(b=>b.type!=='mine').every(b=>b.healthbarPosition[1]>b.hitbox.maxY),
    'Orc HP bars must be above building top');
  // Enemy HP must drain from the right. Its left edge must never move,
  // and a damaged building in the enemy's unseen territory cannot leak intel.
@@ -318,6 +320,21 @@ async function run(){
  await evaluate("window.__fightersQA.setBuildingHealth("+
    JSON.stringify(hpBuilding.id)+","+hpBuilding.maxHealth+")");
 
+ // Direct damage, synthetic HP updates and upgrade orders cannot change a deposit.
+ const mineBefore=s.buildings.find(b=>b.id==='neutral-gold-mine-01');
+ await evaluate("window.__fightersQA.damageBuilding('neutral-gold-mine-01',999999);"+
+   "window.__fightersQA.setBuildingHealth('neutral-gold-mine-01',1)");
+ const mineAfter=(await evaluate('window.__fightersQA.snapshot()')).buildings.find(b=>b.id==='neutral-gold-mine-01');
+ check(mineAfter&&!mineAfter.destroyed&&mineAfter.health===mineBefore.health&&
+   !await evaluate("window.__fightersQA.attackBuilding('neutral-gold-mine-01')")&&
+   !await evaluate("window.__fightersQA.upgradeBuilding('neutral-gold-mine-01')")&&
+   !await evaluate("window.__fightersQA.upgradeBuilding('neutral-gold-mine')"),
+   'Neutral gold deposits must never be damaged, upgraded or attacked');
+ await evaluate("window.__fightersQA.selectBuildingById('neutral-gold-mine-01')");
+ check(await evaluate("document.querySelector('#command-info').textContent.includes('indestructible')&&"+
+   "!document.querySelector('#command-health').textContent.includes('PV')&&"+
+   "!Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.textContent.includes('Améliorer'))"),
+   'Natural deposit HUD must describe a neutral resource without health or upgrades');
  await evaluate("window.__fightersQA.setFaction('orc');window.__fightersQA.selectOrcBarrack()");
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.selectedBuilding==='barrack','Orc barrack contextual selection');
@@ -602,8 +619,13 @@ async function run(){
  check(!await evaluate("window.__fightersQA.orderMine('witch',0,'neutral-gold-mine')"),
   'Melee fighter must not mine gold');
  await evaluate("window.__fightersQA.selectUnit('witch',0)");
- check(!await evaluate("window.__fightersQA.attackBuilding('neutral-gold-mine')"),
-  'Neutral mineral deposits must not become hostile combat targets');
+ check(!await evaluate("window.__fightersQA.attackBuilding('neutral-gold-mine')")&&
+  !await evaluate("window.__fightersQA.attackBuilding('neutral-gold-mine-01')"),
+  'Neither neutral deposit may become a hostile combat target');
+ check(await evaluate("window.__fightersQA.orderMine('witch',1,'neutral-gold-mine-01')")&&
+  await evaluate("window.__fightersQA.orderMine('orc',1,'neutral-gold-mine')"),
+  'Both clans must be able to mine either neutral deposit');
+ await evaluate("window.__fightersQA.orderMine('orc',1,'neutral-gold-mine-01')");
  const witchGoldBefore=s.gold.witch;
  check(await evaluate("window.__fightersQA.orderMine('witch',1,'neutral-gold-mine')"),
   'Witch worker could not take a mine job');
@@ -780,9 +802,19 @@ async function run(){
   'Orc director never recruited troops');
  check(s.buildings.filter(b=>!b.destroyed).length>=6,
   'Orc village did not grow: '+JSON.stringify(s.buildings.map(b=>b.type)));
- check(s.buildings.filter(b=>!b.destroyed).every(b=>b.healthbarParent==='scene'),
+ check(s.buildings.filter(b=>!b.destroyed&&b.type!=='mine')
+  .every(b=>b.healthbarParent==='scene'),
   'Autonomously built HP bars inherited building transforms');
  await screenshot('rts-orc-autonomous-village');
+ // Victory requires destroying only clan buildings. Both neutral deposits
+ // must survive the end of the match and remain navigational obstacles.
+ const orcStructures=s.buildings.filter(b=>b.clanId==='orcs').map(b=>b.id);
+ for(const id of orcStructures)
+  await evaluate("window.__fightersQA.damageBuilding("+JSON.stringify(id)+",999999)");
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(!s.running&&s.buildings.filter(b=>b.type==='mine').length===2&&
+  s.buildings.filter(b=>b.type==='mine').every(b=>!b.destroyed&&b.clanId==='neutral'),
+  'Victory must ignore neutral gold deposits while keeping them intact');
 
  // Unit disks must separate even if a legacy spawn leaves identical positions.
  await evaluate("window.__fightersQA.reset();window.__fightersQA.passive('orc')");
