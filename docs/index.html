@@ -273,6 +273,10 @@ function buildingBounds(root,type=''){
   }
   if(!polygons?.length)throw Error('Impossible de projeter la base polygonale du bâtiment: '+type);
   const footprint=FP.makeFootprint(polygons,visual.min.y,visual.max.y);
+  console.info('Real GLB polygon footprint',type,
+    {triangles:getTriangles(.38).length,polygons:footprint.polygons.length,
+     edges:FP.outlineEdges(footprint).length,
+     bounds:[footprint.minX,footprint.maxX,footprint.minZ,footprint.maxZ]});
   if(!Number.isFinite(footprint.minX)||!Number.isFinite(footprint.maxZ))
     throw Error('Contour GLB invalide: '+type);
   return footprint;
@@ -296,7 +300,11 @@ function drawBuildingSelection(){
   // The selection outline displays the SAME physical polygon used by A*
   // and the fighters. No rectangular selection outline.
   buildingSelectionRing=new THREE.Group();
-  for(const polygon of footprint.polygons)for(const ring of polygon){
+  const loops=footprint.polygons||[[[
+    [footprint.minX,footprint.minZ],[footprint.maxX,footprint.minZ],
+    [footprint.maxX,footprint.maxZ],[footprint.minX,footprint.maxZ]
+  ]]];
+  for(const polygon of loops)for(const ring of polygon){
     const points=ring.map(p=>new THREE.Vector3(p[0],.08,p[1]));
     if(points.length<3)continue;
     points.push(points[0].clone());
@@ -464,7 +472,11 @@ async function loadWitchHouse(){
   witchBuilding.visualHitbox=buildingVisualBounds(anchor);
   updateNavObstacles();drawBuildingSelection();refreshHUD();
 }
-loadWitchHouse().catch(err=>console.warn('Witch house GLB unavailable:',err));
+const witchHouseReady=loadWitchHouse().then(()=>true,error=>{
+  console.error('Witch house polygon generation failed:',error);
+  window.__witchHouseLoadError=String(error?.message||error);
+  return false;
+});
 
 // Declarative building catalog. Economic/technology values are intentionally unset
 // until RTS balancing is designed; no construction or combat rules are enabled.
@@ -2140,6 +2152,12 @@ async function load(){
     loadingProfile.readyMs=Math.round(performance.now()-loadingProfile.startedAt);
     loadingProfile.steps.push('characters_8_native_clips_parallel','native_rig_verified',
       'costumes_complete','sword_complete');
+    // Never start a match against a guessed temporary AABB; a fully
+    // polygonized witch-house model must be ready before gameplay begins.
+    $('overlay-desc').textContent='Calcul des collisions polygonales…';
+    if(!await witchHouseReady||witchBuilding.hitbox.shape!=='polygon')
+      throw Error('Contour polygonal de la maison indisponible : '+
+        (window.__witchHouseLoadError||'GLB incomplet'));
     ready=true;$('load-bar').style.width='100%';$('start').disabled=false;
     $('start').textContent='▶ COMMENCER';
     $('overlay-desc').textContent='Sélectionnez vos sorcières puis touchez le terrain. Les orcs développent leur village pendant la partie.';
