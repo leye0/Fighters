@@ -4,7 +4,9 @@ on:
     branches: [main]
     paths:
       - 'docs/index.html'
+      - 'docs/rts-footprint.js'
       - 'docs/rts-navigation.js'
+      - 'scripts/test-rts-footprint.mjs'
       - 'docs/rts-unit-physics.js'
       - 'scripts/test-rts-unit-physics.mjs'
       - 'docs/orc-strategy.js'
@@ -17,6 +19,8 @@ on:
       - 'witch_house.glb'
       - 'orc_rts_building_set_-_proto_series.glb.part*'
       - 'scripts/split-orc-buildings.mjs'
+      - 'scripts/generate-building-footprints.mjs'
+      - 'scripts/union-xz-triangles.py'
       - 'scripts/download-costumes.sh'
       - 'scripts/download-sword.sh'
       - 'scripts/decompress-sword.mjs'
@@ -35,8 +39,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Test deterministic navigation and orc strategic planning
         run: |
+          node scripts/test-rts-footprint.mjs
           node scripts/test-rts-navigation.mjs
           node scripts/test-rts-unit-physics.mjs
           node scripts/test-orc-strategy.mjs
@@ -51,6 +59,8 @@ jobs:
           cp node_modules/three/build/three.core.js docs/vendor/three/three.core.js
           cp -R node_modules/three/examples/jsm docs/vendor/three/addons
           node scripts/split-orc-buildings.mjs docs/models/orc_rts_building_set_-_proto_series.glb docs/models/orc-buildings
+          python3 -m pip install --disable-pip-version-check shapely==2.1.2
+          node scripts/generate-building-footprints.mjs docs/models/witch_house.glb docs/models/orc-buildings
           curl -fLsS --retry 3 https://raw.githubusercontent.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/5821923af517ac5fdc82505faa92a0d575fc1b1a/test/human_male.glb -o docs/models/human_male.glb
           curl -fLsS --retry 3 https://raw.githubusercontent.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/5821923af517ac5fdc82505faa92a0d575fc1b1a/test/human_female.glb -o docs/models/human_female.glb
           node scripts/verify-glb.mjs docs/models/human_male.glb docs/models/human_female.glb

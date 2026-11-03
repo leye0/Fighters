@@ -81,6 +81,17 @@ async function run(){
 
  check(s.house.hitbox.maxX>s.house.hitbox.minX&&s.house.hitbox.maxZ>s.house.hitbox.minZ,
   'House requires actual 3D bounding volume');
+ // Exact GLB projection, not a rough bounding rectangle.
+ const housePolygon=s.house.hitbox;
+ check(housePolygon.shape==='polygon'&&housePolygon.vertexCount>=30&&
+   housePolygon.polygons.length>=1,
+   'House must have a genuine projected glTF mesh contour: '+
+   JSON.stringify({shape:housePolygon.shape,vertices:housePolygon.vertexCount}));
+ const polygonProof=await evaluate("(()=>{const b=window.__fightersQA.snapshot().house.hitbox,g=window.FightersFootprints;for(let i=1;i<20;i++)for(let j=1;j<20;j++){const p={x:b.minX+(b.maxX-b.minX)*i/20,z:b.minZ+(b.maxZ-b.minZ)*j/20};if(g.distanceTo(p,b)>.5&&window.__fightersQA.isClear(p.x,p.z))return p;}return null})()");
+ check(polygonProof&&polygonProof.x>housePolygon.minX&&polygonProof.x<housePolygon.maxX,
+   'Empty space INSIDE the old rectangular hitbox must now be navigable');
+ console.log('PASS AUTHENTIC GLB FOOTPRINT: '+housePolygon.vertexCount+
+   ' outline vertices, real concave open space '+JSON.stringify(polygonProof));
  check(s.gold.witch===2000&&s.gold.orc===900,'Starting resources');
  check(s.selectedBuilding==='witch-house','Starting house selection');
  check(s.projection==='orthographic','Expected RTS orthographic camera');
@@ -208,6 +219,8 @@ async function run(){
  check(await evaluate("window.__fightersQA.beginBuild('hut')"),'Hut placement action refused');
  check(await evaluate("!!window.__fightersQA.build('hut',8,-10)"),'Orc hut construction failed');
  s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.buildings.every(b=>b.hitbox.shape==='polygon'&&b.hitbox.vertexCount>10),
+   'Orc buildings must all use real GLB-projected multi-polygons');
  check(s.buildings.length===6&&s.buildings.filter(b=>b.type==='hut').length===2,
   'Second hut must be a unique placed building');
  check(!await evaluate("!!window.__fightersQA.build('hut',8,-10)"),
@@ -420,8 +433,10 @@ async function run(){
  const attackingWitch=s.witches[0];
  const h=hutBefore.hitbox,dx=(h.minX+h.maxX)/2-attackingWitch.x,
    dz=(h.minZ+h.maxZ)/2-attackingWitch.z,
-   actorToWall=Math.hypot(Math.max(h.minX-attackingWitch.x,0,attackingWitch.x-h.maxX),
-     Math.max(h.minZ-attackingWitch.z,0,attackingWitch.z-h.maxZ));
+   actorToWall=await evaluate("window.FightersFootprints.distanceTo("+
+     JSON.stringify({x:attackingWitch.x,z:attackingWitch.z})+","+
+     "window.__fightersQA.snapshot().buildings.find(b=>b.id==="+
+     JSON.stringify(hutId)+").hitbox)");
  check(actorToWall<.98,
    'Witch is still striking metres away from the hut border: '+JSON.stringify({attackingWitch,h}));
  check((dx*attackingWitch.heading.x+dz*attackingWitch.heading.z)/Math.hypot(dx,dz)>.93,
@@ -501,8 +516,10 @@ async function run(){
  for(const worker of s.mining.workers.filter(w=>w.progress>.1)){
    const mine=s.buildings.find(b=>b.id===worker.mineId),h=mine?.hitbox;
    check(!!h,'Mine worker has no physical deposit');
-   const gap=Math.hypot(Math.max(h.minX-worker.x,0,worker.x-h.maxX),
-     Math.max(h.minZ-worker.z,0,worker.z-h.maxZ));
+   const gap=await evaluate("window.FightersFootprints.distanceTo("+
+     JSON.stringify({x:worker.x,z:worker.z})+","+
+     "window.__fightersQA.snapshot().buildings.find(b=>b.id==="+
+     JSON.stringify(worker.mineId)+").hitbox)");
    check(gap<.85,'Miner collected gold far from physical mine boundary: '+
      JSON.stringify({worker,mine:h,gap}));
  }
@@ -546,6 +563,10 @@ async function run(){
  await evaluate("window.__fightersQA.selectWitches();window.__fightersQA.move(-8,-4)");
  s=await evaluate('window.__fightersQA.snapshot()');
  const crowd=s.witches,goals=crowd.map(w=>w.destination);
+ if(goals.some(goal=>!goal)){
+   const stranded=await evaluate("window.__fightersQA.snapshot().witches.filter(w=>!w.destination).map(w=>({id:w.id,x:w.x,z:w.z,clear:window.__fightersQA.isClear(w.x,w.z),canReachCentre:!!window.__fightersQA.route({x:w.x,z:w.z},{x:0,z:0})}))");
+   console.log('UNREACHABLE FORMATION STARTS:',JSON.stringify(stranded));
+ }
  check(goals.length===20&&goals.every(g=>g&&Number.isFinite(g.x))&&
    new Set(goals.map(p=>p.x.toFixed(3)+','+p.z.toFixed(3))).size===20,
    'Multiple witches were assigned the same formation location: '+JSON.stringify(goals));

@@ -1,58 +1,57 @@
 #!/usr/bin/env node
-/* Exact mesh-projected footprint regression: concavity, holes and actual edges. */
+/** Concave, hollow and multi-island building projection collision tests. */
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-const clipping=require('polygon-clipping');
-const {clipTriangleBelow,unionTriangles,makeFootprint,translateFootprint}=require('../docs/rts-footprint.js');
-const {Navigator,distanceToFootprint,insideFootprint,segmentHitsFootprint,
-  footprintsOverlap,closestFootprintPoint}=require('../docs/rts-navigation.js');
-const triangle=(a,b,c)=>[a,b,c].map(p=>({x:p[0],y:0,z:p[1]}));
-const square=(minX,minZ,maxX,maxZ)=>[
- triangle([minX,minZ],[maxX,minZ],[maxX,maxZ]),
- triangle([minX,minZ],[maxX,maxZ],[minX,maxZ])
-];
-const clipped=clipTriangleBelow([
- {x:0,y:-1,z:0},{x:3,y:1,z:0},{x:0,y:-1,z:3}
-],0);
-assert.equal(clipped.length,4,'3D triangle must be clipped to the structural elevation');
-assert(clipped.every(p=>p.y<=0),'Projected triangle contains roof geometry above section');
-const triangles=[...square(0,0,4,1),...square(0,1,1,4)];
-const polygons=unionTriangles(triangles,clipping.union);
-const l=makeFootprint(polygons);
-assert.equal(l.shape,'polygon');
-assert(polygons[0][0].length>=6,'True L-shaped outline must preserve its concave corner');
-assert(insideFootprint(l,.5,3),'Vertical section is a solid foundation');
-assert(insideFootprint(l,3,.5),'Horizontal section is a solid foundation');
-assert(!insideFootprint(l,3,3),'Concave empty courtyard is not a building wall');
-assert(Math.abs(distanceToFootprint({x:3,z:3},l)-2)<1e-7,
- 'Closest distance must follow concave polygon edges, not AABB');
-const nav=new Navigator({halfSize:12,radius:.15,cellSize:.5});
-nav.setObstacles([l]);
-assert(nav.pointClear({x:3,z:3}),'A* must allow walking inside empty concavity');
-assert(!nav.pointClear({x:.5,z:2}),'A* must block true foundation');
-assert(nav.segmentClear({x:2,z:2},{x:3,z:3}),
- 'Direct path across open concavity must stay free');
-assert(!nav.segmentClear({x:-1,z:.5},{x:5,z:.5}),
- 'Swept character may not cross real projected wall');
-assert(segmentHitsFootprint({x:-1,z:.5},{x:5,z:.5},l,.15),
- 'Segment collision must test polygon boundary');
-const near=closestFootprintPoint({x:3,z:3},l);
-assert(Math.abs(Math.hypot(near.x-3,near.z-3)-2)<1e-7,
- 'Melee candidate nearest boundary must use actual polygon edge');
-const freeSquare=makeFootprint([[[[2,2],[3,2],[3,3],[2,3],[2,2]]]]);
-const wallSquare=makeFootprint([[[[.2,2],[.8,2],[.8,3],[.2,3],[.2,2]]]]);
-assert(!footprintsOverlap(l,freeSquare),'Unrelated concave empty part of AABB is buildable');
-assert(footprintsOverlap(l,wallSquare),'New polygon cannot overlap real masonry');
-const translated=translateFootprint(l,6,-2);
-assert(insideFootprint(translated,6.5,1)&&!insideFootprint(translated,9,1),
- 'Template polygons must translate exactly during construction');
-const withHole=makeFootprint([[
- [[0,0],[5,0],[5,5],[0,5],[0,0]],
- [[1,1],[1,4],[4,4],[4,1],[1,1]]
+const G=require('../docs/rts-footprint.js');
+const {Navigator}=require('../docs/rts-navigation.js');
+const L=G.shapeFromPolygons([[[[0,0],[4,0],[4,1],[1,1],[1,4],[0,4]]]]);
+assert.equal(L.shape,'polygon');
+assert(G.inside({x:.6,z:3},L),'solid building wing');
+assert(!G.inside({x:2.5,z:2.5},L),'real concave empty corner');
+assert(Math.abs(G.distanceTo({x:2.5,z:2.5},L)-1.5)<1e-8,
+ 'Distance is measured to actual silhouette, not its enclosing rectangle');
+assert(!G.pointBlocked({x:2.5,z:2.5},L,.35));
+assert(G.pointBlocked({x:1.2,z:2.5},L,.25));
+assert(G.segmentBlocked({x:3,z:2},{x:.5,z:2},L,.22),
+ 'Swept unit circle hits the polygon wing');
+assert(!G.segmentBlocked({x:3,z:2},{x:2,z:3},L,.25),
+ 'Units can cut through the concave notch despite overlapping AABB');
+const nav=new Navigator({halfSize:8,cellSize:.5,radius:.25});
+nav.setObstacles([L]);
+assert(nav.pointClear({x:2.5,z:2.5}),'Navigator must accept concavity');
+assert(!nav.pointClear({x:.5,z:2.5}),'Navigator must reject true wall');
+assert(nav.segmentClear({x:3,z:2},{x:2,z:3}),
+ 'Line of sight through open concave area');
+assert(!nav.segmentClear({x:3,z:2},{x:.5,z:2}),
+ 'Line of sight blocked by building wing');
+assert(nav.cellBlocked(nav.cell({x:.5,z:2.5})),
+ 'Wall cell must be blocked by the true silhouette');
+assert(!nav.cellBlocked(nav.cell({x:2.5,z:2.5})),
+ 'Open concavity cell must remain navigable');
+
+const hollow=G.shapeFromPolygons([[
+ [[-4,-4],[4,-4],[4,4],[-4,4]],
+ [[-1,-1],[-1,1],[1,1],[1,-1]]
 ]]);
-assert(!insideFootprint(withHole,2,2),'Real internal courtyard is walkable');
-assert(insideFootprint(withHole,.5,.5),'Masonry around courtyard blocks movement');
-assert(distanceToFootprint({x:2,z:2},withHole)>0,
- 'Inside a true polygon hole must have positive boundary distance');
-console.log('PASS projected X/Z polygons: concave GLB bases, holes, true edge distance, swept collision, build intersections, translation.');
+assert(!G.inside({x:0,z:0},hollow),'Hole is physically open');
+assert(G.inside({x:2,z:0},hollow),'Outer material is solid');
+assert(G.distanceTo({x:0,z:0},hollow)>.9,'Hole floor has clearance');
+assert(G.segmentBlocked({x:0,z:0},{x:3,z:0},hollow,.15),'Crosses hole wall');
+assert(!G.segmentBlocked({x:-.5,z:0},{x:.5,z:0},hollow,.15),
+ 'Can move inside a large enough hole');
+
+const other=G.shapeFromPolygons([[[[2,2],[3,2],[3,3],[2,3]]]]);
+assert(!G.polygonsOverlap(L,other),'The empty L-corner does not collide');
+assert(G.polygonsOverlap(L,G.translated(other,-2,0)),
+ 'Overlap uses true polygon geometry');
+const separate=G.shapeFromPolygons([
+ [[[0,0],[1,0],[1,1],[0,1]]],
+ [[[4,0],[5,0],[5,1],[4,1]]]
+]);
+assert(!G.inside({x:2.5,z:.5},separate),'Disconnected fragments stay separate');
+assert(G.inside({x:4.5,z:.5},separate),'Disconnected mesh island is included');
+const shifted=G.translated(L,10,-2);
+assert(G.inside({x:10.5,z:0},shifted),'Translated GLB silhouette follows building transform');
+console.log('PASS exact XZ polygons: true concavity, multi-islands, hole, unit-radius sweeps, A* cells and overlapping contours.');
+
