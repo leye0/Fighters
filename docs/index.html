@@ -1360,39 +1360,68 @@ function nearestHostile(actor,maxDistance=Infinity){
   }
   return nearest?{target:nearest,distance}:null;
 }
+const BUILDING_CONTACT=.78;
+function faceBuildingCenter(actor,building){
+  const b=building.hitbox;
+  faceDirection(actor,(b.minX+b.maxX)/2-actor.root.position.x,
+    (b.minZ+b.maxZ)/2-actor.root.position.z);
+}
 function approachBuilding(actor,building){
   const b=building.hitbox,p=actor.root.position,pad=UNIT_RADIUS+.14;
-  if(actor.approachCache?.id===building.id&&actor.approachCache.version===navigatorRTS.version&&
+  if(actor.approachCache?.id===building.id&&
+    actor.approachCache.version===navigatorRTS.version&&
     actor.approachAge<2.5&&navigatorRTS.pointClear(actor.approachCache.point))
     return actor.approachCache.point;
-  const mx=(b.minX+b.maxX)/2,mz=(b.minZ+b.maxZ)/2;
+  const from={x:p.x,z:p.z};
+  const candidates=[];
+  const push=(x,z)=>{
+    const point={x,z};
+    if(navigatorRTS.pointClear(point)&&
+      !candidates.some(c=>Math.hypot(c.x-x,c.z-z)<.25))
+      candidates.push(point);
+  };
+  // Sample the whole physical perimeter, not just four corners. Attackers
+  // reserve different nearby spots so they surround the building rather than
+  // forming a single pile of units beating one another.
+  const across=(lo,hi)=>{
+    const length=hi-lo,n=Math.max(1,Math.ceil(length/1.15));
+    return Array.from({length:n+1},(_,i)=>lo+length*i/n);
+  };
+  for(const z of across(b.minZ,b.maxZ)){
+    push(b.minX-pad,z);push(b.maxX+pad,z);
+  }
+  for(const x of across(b.minX,b.maxX)){
+    push(x,b.minZ-pad);push(x,b.maxZ+pad);
+  }
   const x=THREE.MathUtils.clamp(p.x,b.minX,b.maxX);
   const z=THREE.MathUtils.clamp(p.z,b.minZ,b.maxZ);
-  const outward={x:p.x-x,z:p.z-z};
-  const len=Math.hypot(outward.x,outward.z);
-  const preferred=len>.1?{x:x+pad*outward.x/len,z:z+pad*outward.z/len}:
-    {x:mx-pad,z:mz};
-  const candidates=[
-    preferred,{x:b.minX-pad,z:THREE.MathUtils.clamp(p.z,b.minZ,b.maxZ)},
-    {x:b.maxX+pad,z:THREE.MathUtils.clamp(p.z,b.minZ,b.maxZ)},
-    {x:THREE.MathUtils.clamp(p.x,b.minX,b.maxX),z:b.minZ-pad},
-    {x:THREE.MathUtils.clamp(p.x,b.minX,b.maxX),z:b.maxZ+pad},
-    ...[-1,1].flatMap(sx=>[-1,1].map(sz=>({
-      x:(sx<0?b.minX:b.maxX)+sx*pad,z:(sz<0?b.minZ:b.maxZ)+sz*pad
-    })))
-  ].filter(point=>navigatorRTS.pointClear(point));
-  // Search alternatives only when necessary; route smoothing preserves efficiency.
-  candidates.sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z));
+  const outward={x:p.x-x,z:p.z-z},length=Math.hypot(outward.x,outward.z);
+  if(length>.01)push(x+pad*outward.x/length,z+pad*outward.z/length);
+  const coworkers=units.filter(other=>other!==actor&&!other.dead&&
+    (other.attackOrder===building||other.attack?.target===building||
+      other.mineJob?.mineId===building.id));
+  candidates.sort((a,b)=>{
+    const score=goal=>{
+      let cost=Math.hypot(goal.x-p.x,goal.z-p.z);
+      for(const other of coworkers){
+        const site=other.approachCache?.id===building.id?
+          other.approachCache.point:other.root.position;
+        const gap=Math.hypot(goal.x-site.x,goal.z-site.z);
+        if(gap<1.4)cost+=(1.4-gap)*4;
+      }
+      return cost;
+    };
+    return score(a)-score(b);
+  });
   for(const candidate of candidates){
-    if(navigatorRTS.segmentClear({x:p.x,z:p.z},candidate)||
-      navigatorRTS.plan({x:p.x,z:p.z},candidate)){
-      actor.approachCache={id:building.id,point:candidate,version:navigatorRTS.version};
+    if(navigatorRTS.segmentClear(from,candidate)||
+      navigatorRTS.plan(from,candidate)){
+      actor.approachCache={id:building.id,point:candidate,
+        version:navigatorRTS.version};
       actor.approachAge=0;return candidate;
     }
   }
-  const fallback=navigatorRTS.findSafeGoal(preferred);
-  if(fallback){actor.approachCache={id:building.id,point:fallback,version:navigatorRTS.version};actor.approachAge=0;}
-  return fallback;
+  return null;
 }
 function orderAttack(actors,target){
   if(!target||target.destroyed||target.dead)return false;
@@ -1571,7 +1600,7 @@ function tickMineWorker(actor,dt){
   const enemies=nearestHostile(actor,4.2);
   if(enemies)return false; // Worker defends himself when threatened.
   const reach=targetDistance(actor,mine);
-  if(reach>1.65){
+  if(reach>BUILDING_CONTACT){
     const goal=approachBuilding(actor,mine);
     if(!goal)return false;
     const status=navigateActor(actor,goal,dt,'order');
@@ -1580,6 +1609,7 @@ function tickMineWorker(actor,dt){
   }
   // Gold is earned ONLY here, while an actual orc stands beside a mine.
   // A mine with no worker produces precisely zero gold.
+  faceBuildingCenter(actor,mine);
   actor.mineJob.progress+=dt;
   actor.workAnimationClock+=dt;
   if(actor.workAnimationClock>.85){
@@ -1605,9 +1635,14 @@ function tickUnit(actor,dt){
     // action reference so an in-flight impact never dereferences a cleared slot.
     const action=actor.attack;
     action.elapsed+=dt;
+    if(enemyOf(actor,action.target)){
+      if(isBuilding(action.target))faceBuildingCenter(actor,action.target);
+      else faceTarget(actor,action.target);
+    }
     if(!action.landed&&action.elapsed>=action.impact){
       action.landed=true;
-      const target=action.target,range=actor.weapon?2.35:1.85;
+      const target=action.target;
+      const range=isBuilding(target)?BUILDING_CONTACT+.22:actor.weapon?2.35:1.85;
       if(enemyOf(actor,target)&&targetDistance(actor,target)<range)
         dealDamage(target,actor.kind==='witch'?17:14,actor);
     }
@@ -1623,12 +1658,17 @@ function tickUnit(actor,dt){
   const explicit=actor.attackOrder;
   const target=explicit||(nearby&&(!actor.destination||nearby.distance<2.7)?nearby.target:null);
   if(target){
-    const distance=targetDistance(actor,target),range=actor.weapon?2.1:1.65;
-    if(distance<=range&&actor.cooldown<=0){
-      if(isBuilding(target)){
-        const goal=approachBuilding(actor,target);
-        if(goal)faceDirection(actor,goal.x-actor.root.position.x,goal.z-actor.root.position.z);
-      }else faceTarget(actor,target);
+    const distance=targetDistance(actor,target),
+      range=isBuilding(target)?BUILDING_CONTACT:actor.weapon?2.1:1.65;
+    if(distance<=range){
+      // Even while the attack cooldown ticks, stay at the physical wall.
+      // Never advance to a stale goal or face another orc beside the target.
+      if(isBuilding(target))faceBuildingCenter(actor,target);
+      else faceTarget(actor,target);
+      if(actor.cooldown>0){
+        animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop');
+        return;
+      }
       const clipName=actor.weapon&&actor.clipCatalog.has('Sword_Attack')?'Sword_Attack':'Punch_Jab';
       const clip=actor.clipCatalog.get(clipName);
       if(clip){
