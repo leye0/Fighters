@@ -984,6 +984,30 @@ async function run(){
  }));
  await screenshot('rts-human-play-recruit-and-move');
 
+ // Regression for the actual WebGL leak: new skinned characters allocate
+ // their OWN skeleton bone texture. A reset must return texture count to
+ // baseline; merely detaching meshes leaves the GPU allocation alive.
+ await evaluate("window.__fightersQA.enableOrcAI(false);window.__fightersQA.reset()");
+ await sleep(350);
+ const gpuBaseline=(await evaluate('window.__fightersQA.snapshot()')).gpu.textures;
+ const gpuLifecycles=[];
+ for(let cycle=0;cycle<3;cycle++){
+   check(await evaluate('window.__fightersQA.spawnWitches(20)')===20,
+     'Cannot populate GPU skeleton-lifecycle test');
+   await sleep(450);
+   const peak=(await evaluate('window.__fightersQA.snapshot()')).gpu.textures;
+   await evaluate('window.__fightersQA.reset()');
+   await sleep(450);
+   const restored=(await evaluate('window.__fightersQA.snapshot()')).gpu.textures;
+   gpuLifecycles.push({peak,restored});
+   check(restored<=gpuBaseline+2,
+     'GPU skeleton bone textures leaked after actor reset: '+
+       JSON.stringify({baseline:gpuBaseline,gpuLifecycles}));
+ }
+ console.log('GPU_BONE_TEXTURE_LIFECYCLE',JSON.stringify({
+   baseline:gpuBaseline,gpuLifecycles
+ }));
+
  await evaluate('window.__fightersQA.enableOrcAI(false);window.__fightersQA.reset()');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.witches.length===3&&s.orcs.length===4&&
