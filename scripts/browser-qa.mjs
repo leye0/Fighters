@@ -169,11 +169,6 @@ async function run(){
  check(!await evaluate("window.__fightersQA.beginBuild('mine')")&&
    !await evaluate("window.__fightersQA.build('mine',9,7)"),
    'A natural mine must NEVER be constructible by a player');
- await evaluate("document.querySelector('#command-buttons button[title*='Construire']')?.click()");
- check(!await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.textContent.includes('Mine'))"),
-   'Construction palette must not offer mine deposits');
- await evaluate("document.querySelector('#quick-cancel').click();window.__fightersQA.selectOrcBarrack()");
-
  // Routine RTS messages are tiny white-on-black toasts literally at the
  // screen bottom and never overlaid in giant typography on the battlefield.
  const notice=await evaluate("(()=>{const el=document.querySelector('#banner'),s=getComputedStyle(el),r=el.getBoundingClientRect();return {text:el.textContent,font:parseFloat(s.fontSize),color:s.color,bg:s.backgroundColor,bottom:innerHeight-r.bottom,z:Number(s.zIndex),opacity:parseFloat(s.opacity)}})()");
@@ -189,6 +184,16 @@ async function run(){
  // animation finishes rather than treating CI scheduling as user-visible time.
  await until("parseFloat(getComputedStyle(document.querySelector('#banner')).opacity)<.02",
    'CSS notification fade-out',6000);
+
+ check(await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.textContent.includes('Construire'))"),
+   'Orc construct command missing');
+ await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).find(b=>b.textContent.includes('Construire'))?.click()");
+ check(await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.textContent.includes('Hutte'))"),
+   'Build catalog did not open');
+ check(!await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.textContent.includes('Mine'))"),
+   'Construction palette must not offer mine deposits');
+ await evaluate("document.querySelector('#quick-cancel').click();window.__fightersQA.selectOrcBarrack()");
+
 
 
  check(await evaluate("window.__fightersQA.beginBuild('hut')"),'Hut placement action refused');
