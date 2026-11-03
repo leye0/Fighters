@@ -109,6 +109,18 @@ async function run(){
    ' outline vertices, real concave open space '+JSON.stringify(polygonProof));
  check(s.gold.witch===2000&&s.gold.orc===900,'Starting resources');
  check(s.selectedBuilding==='witch-house','Starting house selection');
+ const warcraftHud=await evaluate("(()=>{const p=document.querySelector('#command-panel').getBoundingClientRect(),m=document.querySelector('#war2-minimap').getBoundingClientRect(),top=document.querySelector('.hud').getBoundingClientRect(),buttons=[...document.querySelectorAll('#command-buttons button')].map(b=>b.getBoundingClientRect().toJSON());return {panel:p.toJSON(),minimap:m.toJSON(),top:top.toJSON(),buttons}})()");
+ check(warcraftHud.panel.left<=1&&warcraftHud.panel.width<=215&&
+   warcraftHud.panel.top>=30&&warcraftHud.panel.height>450&&
+   warcraftHud.minimap.width>=110&&warcraftHud.minimap.height>=110&&
+   warcraftHud.top.height<=42&&warcraftHud.buttons.every(b=>b.width<=65&&b.height<=52),
+  'Warcraft II HUD must be a compact left sidebar, not a huge bottom panel: '+
+  JSON.stringify(warcraftHud));
+ const miniPan=await evaluate("(()=>{const c=document.querySelector('#war2-minimap'),r=c.getBoundingClientRect();c.dispatchEvent(new MouseEvent('click',{clientX:r.left+r.width*.25,clientY:r.top+r.height*.25,bubbles:true}));return window.__fightersQA.snapshot().cameraCenter})()");
+ check(Math.abs(miniPan.x+14)<1&&Math.abs(miniPan.z+14)<1,
+  'Clicking the minimap must recenter the camera: '+JSON.stringify(miniPan));
+ await evaluate("window.__fightersQA.centerCamera(-18,-14)");
+ console.log('PASS WARCRAFT II DESKTOP HUD: left minimap/sidebar, thin resource bar, icon commands.');
  check(s.projection==='orthographic','Expected RTS orthographic camera');
  check(await evaluate("document.querySelector('#command-title').textContent.includes('Maison des sorcières')"),
   'Building info panel missing');
@@ -346,8 +358,16 @@ async function run(){
  });
  await sleep(450);
  const mobile=await evaluate("(()=>{const p=document.querySelector('#command-panel').getBoundingClientRect();const q=document.querySelector('#pause').getBoundingClientRect();return {width:innerWidth,height:innerHeight,panel:p.toJSON(),pause:q.toJSON(),scrollWidth:document.documentElement.scrollWidth}})()");
- check(mobile.panel.width<=mobile.width&&mobile.panel.bottom<=mobile.height+1,
-  'Mobile command panel exceeds viewport');
+ check(mobile.panel.width<=mobile.width&&mobile.panel.bottom<=mobile.height+1&&
+   mobile.panel.height<=168&&mobile.panel.top>=mobile.height-170,
+  'Mobile command panel must be a compact strip, not a huge sheet: '+
+  JSON.stringify(mobile.panel));
+ const mobileMini=await evaluate("(()=>{const m=document.querySelector('#war2-minimap').getBoundingClientRect(),buttons=[...document.querySelectorAll('#command-buttons button')].map(b=>b.getBoundingClientRect().toJSON());return {map:m.toJSON(),buttons}})()");
+ check(mobileMini.map.width>=40&&mobileMini.map.height>=40&&
+   mobileMini.buttons.every(b=>b.width>=32&&b.height<=35&&
+     b.left>=0&&b.right<=mobile.width),
+   'Mobile minimap or icon grid overflowed: '+JSON.stringify(mobileMini));
+ console.log('PASS WARCRAFT II MOBILE HUD: compact bottom strip, tappable minimap, three-column icons.');
  check(mobile.pause.width>0,'Compact pause button missing');
  await screenshot('rts-mobile-command-panel');
  const framing=await evaluate("(()=>{const hero=document.querySelector('.hero-hud').getBoundingClientRect();const score=document.querySelector('.score').getBoundingClientRect();const pause=document.querySelector('#pause').getBoundingClientRect();return {hero:{right:hero.right,bottom:hero.bottom},score:{left:score.left,right:score.right},pause:{left:pause.left,right:pause.right}}})()");

@@ -13,12 +13,12 @@ Fighters est un prototype de **stratégie en temps réel** en 3D isométrique. L
 | Déplacement / formation | Sélectionner puis cliquer au sol | Sélectionner puis toucher le terrain |
 | Attaquer une unité ou un bâtiment ennemi | **Deux clics :** sélectionner une sorcière puis cliquer directement le bâtiment ou l'unité ennemie | **Deux touches :** sorcière puis bâtiment ennemi, sans passer par un mode supplémentaire |
 | Zoom | **Fixe, aucune commande de zoom** | **Fixe, aucun pincement de zoom** |
-| Déplacer la caméra | Glisser avec bouton central ou droit | **Glisser avec un doigt** |
+| Déplacer la caméra | Glisser avec bouton central ou droit, **ou cliquer la mini-carte** | **Glisser avec un doigt ou toucher la mini-carte** |
 | Pause | Touche **P** ou bouton Ⅱ discret | Bouton Ⅱ discret |
 
 **Deux doigts servent uniquement à sélectionner des unités** : leurs positions forment les coins du rectangle vert visible immédiatement; soulever le premier doigt confirme la sélection, et le deuxième doigt ne produit aucune commande parasite. Le pincement ne change plus l'échelle, fixée à un grossissement de **3× celui de l'ancien démarrage** (hauteur orthographique 35 → 35/3). La partie commence près des trois sorcières, et non au milieu d'une carte désormais trop grande pour tenir sur l'écran. Un anneau bleu apparaît brièvement après un ordre de déplacement; une mire rouge confirme un ordre d'attaque. Les marqueurs disparaissent automatiquement et leur nombre simultané est plafonné.
 
-Le groupe **🧙 / ⚔ / + / −** qui occupait la barre supérieure a été retiré. La carte conserve seulement les ressources, un état résumé de l'IA orc et un petit bouton pause. Les véritables commandes sont dans la barre inférieure contextuelle, inspirée des RTS classiques.
+La barre supérieure n'affiche plus que la faction active, les ressources, le total d'unités et le bouton pause. L'interface reprend maintenant la disposition de **Warcraft II** : petite console à gauche sur ordinateur et bande compacte en bas sur téléphone.
 
 ## Brouillard de guerre
 
@@ -26,14 +26,13 @@ La carte débute **noire hors du champ de vision des unités**. Chaque sorcière
 
 La visibilité repose sur une grille de **112 × 112 cases (0,5 unité)**, commune à toutes les unités d'un clan. Les deux clans utilisent environ **147 Kio de données** au total, et un seul masque GPU couvrant l'écran; la grille est actualisée huit fois par seconde au maximum, sans ajout de modèles ou textures lourdes.
 
-## Interface RTS
+## Interface RTS — style Warcraft II
 
-La **barre inférieure** est divisée en **deux zones séparées**. La première contient cinq **raccourcis permanents** (Maison, Armée, Attaquer, Stop, Annuler) qui restent en place même lorsqu'un mode d'attaque, une construction ou un bâtiment est sélectionné. La seconde affiche le portrait, le nom et le niveau du bâtiment sélectionné, les points de vie, une barre de santé et une grille de commandes contextuelles (**entraînement, amélioration, point de rassemblement et annulation/remboursement**). Un indicateur flottant donne les instructions de placement ou de ciblage **sans masquer les raccourcis**. La sélection rectangulaire mobile utilise un seul parcours `pointerdown` → minuterie d'une seconde → `pointermove` → `pointerup`, sans bouton auxiliaire ni deuxième gestionnaire tactile.
+Sur ordinateur, l'écran de jeu reste majoritaire : **console verticale de 198 px à gauche**, mini-carte de 112 × 112 pixels mise à l'échelle, portrait de l'unité sélectionnée, points de vie et **grille de commandes carrées 3 × 3**. La barre de ressources tient sur une seule ligne de 36 px en haut. Une touche sur la mini-carte recentre la caméra.
 
-- La maison des sorcières entraîne une sorcière pour **120 pièces d’or** en **3,5 s** au niveau 1. Les améliorations augmentent ses PV et accélèrent la formation. La file contient jusqu'à huit commandes.
-- La caserne orc forme des soldats pour **100 pièces d’or** en **4,5 s** au niveau 1; toutes les structures peuvent être améliorées jusqu'au niveau 3. Les niveaux 2 et 3 utilisent les véritables GLB existants du kit de bâtiments.
-- Le point de rassemblement fait marcher les nouvelles unités vers une destination spécifiée.
-- Les sorcières commencent avec **2 000 pièces d’or**, sans gisement de ressources sur leur territoire. L'économie est encore provisoire.
+Sur téléphone, les mêmes commandes tiennent dans une **bande de 141 px en bas** (plus la zone de sécurité du système) : mini-carte miniature à gauche, portrait/statistiques au centre et actions en icônes à droite. Les noms des actions restent disponibles dans leurs attributs d'accessibilité, mais ne grossissent plus les boutons. Les cinq raccourcis permanents (Maison, Armée, Attaquer, Stop, Annuler) occupent une seule rangée. Les coûts demeurent visibles en petit dans les boutons. La mini-carte réemploie le brouillard de guerre déjà calculé et un unique tampon CPU de ~49 Kio; elle ne charge aucune autre texture ou GLB.
+
+La maison des sorcières et la caserne orc permettent d'entraîner trois rôles par clan (ouvrier, combattant de mêlée et combattant à distance), avec des coûts distincts et une file de huit commandes. Seul un ouvrier peut miner ou construire. Les améliorations de bâtiments, le ralliement et l'annulation/remboursement restent disponibles depuis la même grille.
 
 ## Performance et gestion des ressources
 
