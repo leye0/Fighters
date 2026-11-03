@@ -110,10 +110,10 @@ async function run(){
  check(s.gold.witch===2000&&s.gold.orc===900,'Starting resources');
  check(s.selectedBuilding==='witch-house','Starting house selection');
  const warcraftHud=await evaluate("(()=>{const p=document.querySelector('#command-panel').getBoundingClientRect(),m=document.querySelector('#war2-minimap').getBoundingClientRect(),top=document.querySelector('.hud').getBoundingClientRect(),buttons=[...document.querySelectorAll('#command-buttons button')].map(b=>b.getBoundingClientRect().toJSON());return {panel:p.toJSON(),minimap:m.toJSON(),top:top.toJSON(),buttons}})()");
- check(warcraftHud.panel.left<=1&&warcraftHud.panel.width<=215&&
+ check(warcraftHud.panel.left<=1&&warcraftHud.panel.width<=235&&
    warcraftHud.panel.top>=30&&warcraftHud.panel.height>450&&
    warcraftHud.minimap.width>=110&&warcraftHud.minimap.height>=110&&
-   warcraftHud.top.height<=42&&warcraftHud.buttons.every(b=>b.width<=65&&b.height<=52),
+   warcraftHud.top.height<=42&&warcraftHud.buttons.every(b=>b.width<=78&&b.height<=70),
   'Warcraft II HUD must be a compact left sidebar, not a huge bottom panel: '+
   JSON.stringify(warcraftHud));
  const miniPan=await evaluate("(()=>{const c=document.querySelector('#war2-minimap'),r=c.getBoundingClientRect();c.dispatchEvent(new MouseEvent('click',{clientX:r.left+r.width*.25,clientY:r.top+r.height*.25,bubbles:true}));return window.__fightersQA.snapshot().cameraCenter})()");
@@ -390,15 +390,30 @@ async function run(){
  await sleep(450);
  const mobile=await evaluate("(()=>{const p=document.querySelector('#command-panel').getBoundingClientRect();const q=document.querySelector('#pause').getBoundingClientRect();return {width:innerWidth,height:innerHeight,panel:p.toJSON(),pause:q.toJSON(),scrollWidth:document.documentElement.scrollWidth}})()");
  check(mobile.panel.width<=mobile.width&&mobile.panel.bottom<=mobile.height+1&&
-   mobile.panel.height<=168&&mobile.panel.top>=mobile.height-170,
+   mobile.panel.height<=180&&mobile.panel.top>=mobile.height-182,
   'Mobile command panel must be a compact strip, not a huge sheet: '+
   JSON.stringify(mobile.panel));
- const mobileMini=await evaluate("(()=>{const m=document.querySelector('#war2-minimap').getBoundingClientRect(),buttons=[...document.querySelectorAll('#command-buttons button')].map(b=>b.getBoundingClientRect().toJSON());return {map:m.toJSON(),buttons}})()");
+ const mobileMini=await evaluate("(()=>{const m=document.querySelector('#war2-minimap').getBoundingClientRect(),buttons=[...document.querySelectorAll('#command-buttons button:not([hidden])')].map(b=>b.getBoundingClientRect().toJSON());return {map:m.toJSON(),buttons}})()");
  check(mobileMini.map.width>=40&&mobileMini.map.height>=40&&
-   mobileMini.buttons.every(b=>b.width>=32&&b.height<=35&&
+   mobileMini.buttons.length<=6&&mobileMini.buttons.every(b=>b.width>=56&&b.height>=44&&
      b.left>=0&&b.right<=mobile.width),
    'Mobile minimap or icon grid overflowed: '+JSON.stringify(mobileMini));
- console.log('PASS WARCRAFT II MOBILE HUD: compact bottom strip, tappable minimap, three-column icons.');
+ // Phone legibility, touch sizes and secondary command page are acceptance criteria.
+ const mobileUsability=await evaluate("(()=>{const p=document.querySelector('#command-panel'),t=document.querySelector('#command-title'),i=document.querySelector('.command-identity'),g=document.querySelector('#command-buttons'),q=document.querySelector('#training-progress'),b=[...g.querySelectorAll('button:not([hidden])')];const title=getComputedStyle(t);const titles=b.map(x=>({name:x.querySelector('.action-name')?.textContent,visible:getComputedStyle(x.querySelector('.action-name')).display}));return {name:t.textContent,font:parseFloat(title.fontSize),nameVisible:t.scrollWidth<=t.clientWidth+1,identity:i.getBoundingClientRect().toJSON(),commands:b.map(x=>x.getBoundingClientRect().toJSON()),labels:titles,queue:q.getBoundingClientRect().toJSON(),queueVisible:getComputedStyle(q).display!=='none',hasNext:!!g.querySelector('.command-page-next'),panel:p.getBoundingClientRect().toJSON()}})()");
+ check(mobileUsability.font>=12&&mobileUsability.nameVisible&&
+   mobileUsability.commands.length===6&&mobileUsability.hasNext&&
+   mobileUsability.labels.every(x=>x.visible!=='none')&&
+   mobileUsability.commands.every(x=>x.top>=mobileUsability.identity.bottom&&
+     x.bottom<=mobileUsability.panel.bottom-7&&x.height>=44)&&
+   !mobileUsability.queueVisible,
+   'Mobile HUD must show legible unit title, labeled touch commands, and no queue overlap: '+
+   JSON.stringify(mobileUsability));
+ const page2=await evaluate("(()=>{document.querySelector('.command-page-next').click();return [...document.querySelectorAll('#command-buttons button:not([hidden])')].map(x=>x.querySelector('.action-name')?.textContent)})()");
+ check(page2.includes('Ralliement')&&page2.includes('Annuler prochain'),
+   'Mobile command page 2 must expose remaining building actions: '+JSON.stringify(page2));
+ await screenshot('rts-mobile-command-page-two');
+ await evaluate("document.querySelector('.command-page-next').click()");
+ console.log('PASS WARCRAFT II MOBILE HUD: legible building header, 44px labeled actions, second command page, no overflow.');
  check(mobile.pause.width>0,'Compact pause button missing');
  await screenshot('rts-mobile-command-panel');
  const framing=await evaluate("(()=>{const hero=document.querySelector('.hero-hud').getBoundingClientRect();const score=document.querySelector('.score').getBoundingClientRect();const pause=document.querySelector('#pause').getBoundingClientRect();return {hero:{right:hero.right,bottom:hero.bottom},score:{left:score.left,right:score.right},pause:{left:pause.left,right:pause.right}}})()");

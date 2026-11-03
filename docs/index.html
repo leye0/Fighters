@@ -239,6 +239,169 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
   .hud .score small{font-size:6px!important}
 }
 
+/* HUD V2: a legible game control surface. Buttons stay ≥44px on phones.
+   The minimap and command grid never compete with the unit name or queue. */
+:root{--war2-sidebar:216px;--war2-topbar:38px;--war2-mobile:166px}
+.hud{height:var(--war2-topbar);padding:3px 9px;gap:9px;
+  background:linear-gradient(180deg,#27312f,#192320);border-bottom:1px solid #84988d;
+  box-shadow:0 2px 12px #0009}
+.hud .hero-hud strong{font:750 13px/1 system-ui,-apple-system,sans-serif;
+  letter-spacing:.045em;color:#f4e4ad}
+.hud .score small{font:700 10px/1 system-ui,-apple-system,sans-serif;color:#aabbb0}
+.hud .score strong{font:800 14px/1.1 system-ui,-apple-system,sans-serif;color:#f8cd78}
+.hud .pause-compact{border:1px solid #87958b;border-radius:5px;background:#2c3b36}
+.command-panel{top:var(--war2-topbar);width:var(--war2-sidebar);
+  height:calc(100% - var(--war2-topbar));padding:9px;gap:9px;
+  border:0;border-right:2px solid #80978a;
+  background:linear-gradient(115deg,#34433e,#202f2c 60%,#293832);
+  box-shadow:3px 0 15px #0009,inset 1px 0 #72877d}
+.minimap-frame{height:193px;border:2px solid #8da095;border-radius:7px;
+  padding:5px;background:#111d1b;box-shadow:0 3px 8px #0004}
+.minimap-frame canvas{border-radius:3px}
+.minimap-caption{font:700 9px/1 system-ui,sans-serif;letter-spacing:.12em;color:#bdcbb7}
+.command-panel .command-identity{grid-template-columns:43px minmax(0,1fr);
+  gap:8px;padding:7px;min-height:65px;
+  border:1px solid #72877b;border-radius:7px;background:#182724}
+.command-panel .command-portrait{width:42px;height:42px;border:1px solid #9bae8f;
+  border-radius:5px;font-size:25px;background:#283e35}
+.command-panel #command-title.command-title{font:750 13px/1.15 system-ui,-apple-system,sans-serif;
+  letter-spacing:0;color:#f6ebca;text-shadow:none;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+.command-panel .command-health{font:650 11px/1.2 system-ui,sans-serif;color:#e1ead7}
+.command-panel .hp-track{height:5px;border:0;border-radius:3px;overflow:hidden;background:#3d342b}
+.command-panel .hp-fill{border-radius:3px}
+.command-panel .quick-commands{gap:4px;padding-bottom:7px;border-bottom:1px solid #61776b}
+.command-panel .quick-commands button{height:34px;min-height:34px;border:1px solid #677e70;
+  border-radius:6px;background:#263e34;color:#eaf5dc;box-shadow:0 1px 0 #a0b49621;
+  font-size:17px}
+.command-panel .quick-commands button:disabled{opacity:.3}
+.command-panel #command-buttons.command-grid{grid-template-columns:repeat(3,minmax(0,1fr));
+  grid-auto-rows:65px;gap:5px}
+.command-panel #command-buttons.command-grid button{height:65px;min-height:65px;
+  padding:4px 3px 5px;gap:2px;border:1px solid #647d6d;border-radius:7px;
+  background:linear-gradient(180deg,#344c3c,#22372e);
+  box-shadow:0 2px 3px #0003,inset 0 1px #b4ceb132}
+.command-panel #command-buttons.command-grid button:hover:not(:disabled){border-color:#e5c578}
+.command-panel #command-buttons .action-symbol{font-size:24px;line-height:1}
+.command-panel #command-buttons .action-name{display:-webkit-box;-webkit-box-orient:vertical;
+  -webkit-line-clamp:2;overflow:hidden;font:650 9px/1.1 system-ui,sans-serif;
+  color:#e2eedf;max-width:100%;white-space:normal}
+.command-panel #command-buttons .action-cost{bottom:auto;top:2px;right:3px;
+  padding:2px 3px;background:#152b21d9;border-radius:3px;
+  font:750 9px/1 system-ui,sans-serif;color:#ffd47c;text-shadow:none}
+.command-panel .production-progress{margin-top:auto;min-height:18px;max-height:96px;
+  border-top:1px solid #607668;color:#d9e3d0;font:600 10px/1.3 system-ui,sans-serif}
+.command-panel .production-jobs button{border-radius:3px}
+#order-prompt{left:calc(50% + 108px)}
+.banner{left:calc(50% + 108px)}
+.command-panel #command-buttons button[hidden]{display:none!important}
+@media(max-width:820px),(max-height:540px){
+  .hud{height:34px;gap:4px;padding:3px 7px;min-width:0}
+  .hud .hero-hud{max-width:86px!important;flex:0 1 auto}
+  .hud .hero-hud strong{font:800 11px/1 system-ui,sans-serif!important}
+  .hud .score{gap:7px!important;min-width:0}
+  .hud .score>div{gap:3px}
+  .hud .score small{font:750 8px/1 system-ui,sans-serif!important;color:#adc0b5}
+  .hud .score strong{font:800 13px/1 system-ui,sans-serif!important}
+  .hud #pause{width:26px;height:26px;flex:0 0 26px;border-radius:5px}
+  .command-panel{position:absolute;top:auto;bottom:0;left:0;right:0;
+    width:100%;height:calc(var(--war2-mobile) + env(safe-area-inset-bottom,0px));
+    display:grid;grid-template-columns:84px minmax(0,1fr);
+    grid-template-rows:41px minmax(0,1fr);gap:5px 8px;
+    padding:7px 8px calc(7px + env(safe-area-inset-bottom,0px));
+    border:0;border-top:2px solid #b4c19d;border-radius:0;
+    overflow:hidden;box-shadow:0 -5px 20px #0009;
+    background:linear-gradient(180deg,#34443a 0%,#25342e 52%,#202d2c 100%)}
+  .command-panel .command-identity{grid-column:1/-1;grid-row:1;
+    min-height:0;display:grid;grid-template-columns:32px minmax(0,1fr);
+    align-items:center;gap:8px;overflow:hidden;padding:2px 103px 2px 2px;
+    border:0;border-bottom:1px solid #586f60;border-radius:0;background:transparent;
+    text-align:left}
+  .command-panel .command-portrait{width:32px;height:32px;font-size:19px;
+    border:1px solid #8c9e80;border-radius:5px}
+  .command-panel .command-description{width:100%;min-width:0;overflow:hidden}
+  .command-panel #command-title.command-title{font:750 14px/1.2 system-ui,-apple-system,sans-serif;
+    white-space:nowrap;display:block;-webkit-line-clamp:unset;
+    overflow:hidden;text-overflow:ellipsis;max-height:none}
+  .command-panel .command-health{font:650 11px/1.1 system-ui,sans-serif;
+    margin-top:3px;white-space:nowrap}
+  .command-panel .hp-track{height:4px;margin-top:3px}
+  .command-panel .command-info{display:none}
+  .minimap-frame{grid-column:1;grid-row:2;width:84px;height:103px;
+    padding:4px;border:1px solid #789287;border-radius:6px;gap:3px;
+    align-self:start;box-shadow:none}
+  .minimap-frame canvas{width:100%;min-height:0;flex:1;border-radius:2px}
+  .minimap-caption{display:block;font:750 9px/1 system-ui,sans-serif;
+    letter-spacing:.1em;color:#d0d8bd}
+  .command-panel .command-operations{grid-column:2;grid-row:2;
+    min-height:0;display:flex;flex-direction:column;gap:0;overflow:visible}
+  .command-panel .quick-commands{position:absolute;top:9px;right:8px;
+    display:flex;width:auto;gap:4px;padding:0;border:0;z-index:1}
+  .command-panel .quick-commands button{width:31px;height:31px;min-height:31px;
+    padding:0;border:1px solid #798e76;border-radius:6px;
+    font-size:16px;flex-direction:row}
+  .command-panel .quick-commands button span{display:none}
+  .command-panel #quick-attack,.command-panel #quick-stop,
+  .command-panel #quick-cancel:disabled{display:none}
+  .command-panel #command-buttons.command-grid{display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    grid-template-rows:repeat(2,44px);grid-auto-rows:44px;
+    gap:5px;min-height:0;max-height:93px;overflow:hidden;align-content:start}
+  .command-panel #command-buttons.command-grid button{height:44px;min-height:44px;
+    min-width:0;padding:3px 2px 2px;gap:0;border:1px solid #738976;
+    border-radius:6px;justify-content:center;box-shadow:0 1px 2px #0004;
+    background:linear-gradient(180deg,#3c5645,#2a4135)}
+  .command-panel #command-buttons .action-symbol{font-size:19px;line-height:1.05}
+  .command-panel #command-buttons .action-name{font:700 10px/1.1 system-ui,sans-serif;
+    white-space:nowrap;display:block;max-width:100%;overflow:hidden;
+    text-overflow:ellipsis;-webkit-line-clamp:unset;margin-top:2px}
+  .command-panel #command-buttons .action-cost{top:1px;right:2px;
+    font:750 9px/1 system-ui,sans-serif;padding:1px 2px}
+  .command-panel #command-buttons .command-page-next{border-color:#d9b765!important;
+    background:linear-gradient(180deg,#675538,#423b2b)!important;color:#f8e7b2}
+  .command-panel .production-progress{display:none}
+  .command-panel.has-queue .production-progress{display:block;position:absolute;
+    bottom:calc(3px + env(safe-area-inset-bottom,0px));
+    left:100px;right:8px;height:12px;min-height:0;max-height:12px;
+    overflow:hidden;white-space:nowrap;padding:0;border:0;
+    font:700 9px/1.1 system-ui,sans-serif;color:#e3dcaa}
+  .command-panel .production-progress .production-heading{overflow:hidden;
+    white-space:nowrap;text-overflow:ellipsis}
+  .command-panel .production-progress .production-meter,
+  .command-panel .production-progress .production-jobs{display:none}
+  #order-prompt{bottom:calc(var(--war2-mobile) + env(safe-area-inset-bottom,0px) + 8px);
+    left:50%;font:700 11px/1.25 system-ui,sans-serif;max-width:92vw}
+  .banner{bottom:calc(var(--war2-mobile) + env(safe-area-inset-bottom,0px) + 4px);
+    left:50%}
+}
+@media(max-width:355px){
+  :root{--war2-mobile:169px}
+  .command-panel{grid-template-columns:73px minmax(0,1fr);gap:5px;padding-inline:6px}
+  .minimap-frame{width:73px;height:96px}
+  .command-panel .command-identity{padding-right:69px}
+  .command-panel .quick-commands button{width:29px;height:29px;min-height:29px}
+  .hud .score small{font-size:7px!important}
+  .hud .score strong{font-size:11px!important}
+}
+
+/* On a phone the score is a row of labeled, full-size resource chips.
+   Short badges are clearer than microscopic "OR SORCIÈRES" paragraphs. */
+@media(max-width:820px),(max-height:540px){
+  .hud .score{gap:5px!important}
+  .hud .score>div{display:flex;align-items:center;gap:3px!important;
+    padding:3px 5px;border:1px solid #53685e;border-radius:5px;
+    background:#111c19b5;min-height:25px}
+  .hud .score small{font-size:0!important;line-height:0!important;
+    display:inline-block;flex:none}
+  .hud .score small::before{font:850 11px/1 system-ui,sans-serif;
+    display:inline;color:#e3dcb8}
+  .hud .score>div:nth-child(1) small::before{content:"S";color:#a8e4c0}
+  .hud .score>div:nth-child(2) small::before{content:"O";color:#f8bd86}
+  .hud .score>div:nth-child(3) small::before{content:"⚔";color:#cdd8f0}
+  .hud .score strong{font:800 14px/1 system-ui,sans-serif!important;
+    letter-spacing:0}
+}
+
 </style>
 <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
 <script src="./rts-footprint.js"></script>
@@ -252,7 +415,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 <div class="game-shell"><section class="arcade">
 <div class="hud">
   <div class="hero-hud"><div class="hud-kicker">FIGHTERS · RTS</div><strong id="faction-title">SORCIÈRES</strong><small id="selection-summary">Sélectionnez une unité ou la maison</small><small id="ai-status" class="ai-status">Village orc · en développement</small></div>
-  <div class="score"><div><small>OR SORCIÈRES</small><strong id="witch-gold">2000</strong></div><div><small>OR ORCS</small><strong id="orc-gold">900</strong></div><div><small>UNITÉS</small><strong id="unit-count">0 : 0</strong></div></div>
+  <div class="score"><div title="Or des sorcières"><small>OR SORCIÈRES</small><strong id="witch-gold">2000</strong></div><div title="Or des orcs"><small>OR ORCS</small><strong id="orc-gold">900</strong></div><div title="Unités des sorcières et des orcs"><small>UNITÉS</small><strong id="unit-count">0 : 0</strong></div></div>
   <button id="pause" class="pause-compact" aria-label="Pause" title="Pause (P)" disabled>Ⅱ</button>
 </div>
 <div id="viewport" class="viewport" aria-label="Carte de stratégie en temps réel"><div class="scanlines"></div><div id="banner" class="banner"></div><div id="selection-rectangle" hidden></div><div id="order-pings" aria-hidden="true"></div><div id="order-prompt" role="status" aria-live="polite" hidden></div>
@@ -1593,6 +1756,41 @@ $('quick-attack').onclick=()=>{if([...selected].some(roles.isFighter)){
 }};
 $('quick-stop').onclick=stopSelectedUnits;
 $('quick-cancel').onclick=cancelTransientMode;
+// Small-screen command pages: five 46px actions plus a reachable "Suite"
+// control. Keep every real button in the DOM, including its event handler,
+// so paging allocates no duplicate actions and never loses command state.
+let mobileCommandPage=0;
+const commandPageButton=document.createElement('button');
+commandPageButton.type='button';
+commandPageButton.className='command-page-next';
+commandPageButton.title='Afficher les commandes suivantes';
+commandPageButton.setAttribute('aria-label','Afficher les commandes suivantes');
+commandPageButton.innerHTML='<span class="action-symbol">⋯</span><span class="action-name">Suite</span><span class="action-cost"></span>';
+function layoutCommandPages(){
+  const grid=$('command-buttons');
+  const actions=[...grid.children].filter(button=>button!==commandPageButton);
+  const compact=matchMedia('(max-width:820px), (max-height:540px)').matches;
+  if(!compact||actions.length<=6){
+    for(const action of actions)action.hidden=false;
+    commandPageButton.remove();return;
+  }
+  const total=Math.ceil(actions.length/5);
+  mobileCommandPage%=total;
+  for(let i=0;i<actions.length;i++)
+    actions[i].hidden=i<mobileCommandPage*5||i>=(mobileCommandPage+1)*5;
+  const count=commandPageButton.querySelector('.action-cost');
+  count.textContent=(mobileCommandPage+1)+'/'+total;
+  commandPageButton.title='Commandes : page '+(mobileCommandPage+1)+' sur '+total;
+  commandPageButton.setAttribute('aria-label',commandPageButton.title+'. Afficher la suite');
+  grid.appendChild(commandPageButton);
+}
+commandPageButton.onclick=event=>{
+  event.stopPropagation();
+  const actions=[...$('command-buttons').children].filter(button=>button!==commandPageButton);
+  mobileCommandPage=(mobileCommandPage+1)%Math.ceil(actions.length/5);
+  layoutCommandPages();
+};
+window.addEventListener('resize',layoutCommandPages);
 function refreshHUD(){
   setText('witch-gold',gold.witch);
   setText('orc-gold',gold.orc);
@@ -1611,6 +1809,7 @@ function refreshHUD(){
     constructionTab,constructionTab?buildingBlueprints.size:0].join('|');
 
   if(context!==lastHudSignature){
+    mobileCommandPage=0;
     lastHudSignature=context;buttons.replaceChildren();health.replaceChildren();
     uiStats.commandRebuilds++;
     const add=(symbol,name,cost,action,disabled=false,tooltip='')=>{
@@ -1645,7 +1844,7 @@ function refreshHUD(){
       const icons={'witch-house':'🏡',barrack:'🏰',hut:'🛖',mine:'⛏️',
         cauldron:'⚗️',factory:'🏭'};
       portrait.textContent=icons[b.type]||'🏠';
-      title.textContent=(names[b.type]||'Bâtiment')+' · niveau '+b.level;
+      title.textContent=names[b.type]||'Bâtiment';
       const friendly=b.clanId===(activeFaction==='orc'?'orcs':'witch');
       info.textContent=!friendly?'Bâtiment ennemi · sélectionnez vos unités pour l’attaquer.':b.clanId==='witch'?
         'Bâtiment de production des sorcières · améliorations : formation plus rapide, davantage de PV.':
@@ -1654,7 +1853,7 @@ function refreshHUD(){
       const track=document.createElement('div');track.className='hp-track';
       const fill=document.createElement('div');fill.className='hp-fill';
       fill.style.width=100*b.health/b.maxHealth+'%';track.appendChild(fill);
-      health.append(document.createTextNode('PV '+Math.ceil(b.health)+' / '+b.maxHealth),track);
+      health.append(document.createTextNode('Niv. '+b.level+' · PV '+Math.ceil(b.health)+' / '+b.maxHealth),track);
       if(friendly&&(b.type==='witch-house'||b.type==='barrack')){
         const clan=b.clanId==='witch'?'witch':'orc';
         for(const role of ROLE_IDS){
@@ -1670,10 +1869,10 @@ function refreshHUD(){
         cost===null||pending||gold[faction]<cost||b.queue.length>=MAX_QUEUE||paused,
         cost===null?'Niveau maximal':pending?'Amélioration déjà dans la file':
         'Améliorer au niveau '+(b.level+1));
-      if(friendly)add('🚩','Ralliement','',beginRally,paused,'Définir le point de rassemblement');
       if(friendly)
         add('🏗️','Construire','',()=>{constructionTab=true;refreshHUD();},
           !builderAvailable(activeFaction),'Choisir un plan pour un ouvrier');
+      if(friendly)add('🚩','Ralliement','',beginRally,paused,'Définir le point de rassemblement');
       if(friendly)add('✖','Annuler prochain','',()=>cancelOrder(b,0),b.queue.length===0);
     }else if(alive.length){
       const single=alive.length===1?alive[0]:null;
@@ -1735,7 +1934,7 @@ function refreshHUD(){
   // the ResizeObserver/render-layout feedback that slowed long battles.
   if(b){
     const hp=health.firstChild,fill=health.querySelector('.hp-fill');
-    const text='PV '+Math.ceil(b.health)+' / '+b.maxHealth;
+    const text='Niv. '+b.level+' · PV '+Math.ceil(b.health)+' / '+b.maxHealth;
     if(hp?.nodeType===Node.TEXT_NODE&&hp.textContent!==text)hp.textContent=text;
     if(fill)fill.style.width=(100*b.health/b.maxHealth)+'%';
   }else if(alive.length){
@@ -1806,6 +2005,8 @@ function refreshHUD(){
       queueUI.textContent=b?'File de production vide · max. '+MAX_QUEUE+' commandes':'Sélectionnez un bâtiment pour ses commandes';
     }
   }
+  $('command-panel').classList.toggle('has-queue',!!b?.queue.length);
+  layoutCommandPages();
   if(b?.queue.length){
     const order=b.queue[0],progress=clamp(b.progress/order.duration,0,1);
     const header=queueUI.querySelector('.production-heading');
