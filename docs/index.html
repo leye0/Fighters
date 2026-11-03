@@ -114,6 +114,131 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 /* iOS: never hand a long press to native text selection or callout. */
 .viewport,.viewport canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:none;overscroll-behavior:none}
 
+
+/* Warcraft II-inspired command console — stone frame, left-side minimap,
+   compact portrait/stats and a 3×3 icon command pad. The playfield wins. */
+:root{--war2-sidebar:198px;--war2-topbar:36px;--war2-mobile:141px}
+.hud{height:var(--war2-topbar);padding:3px 8px;display:flex;gap:10px;align-items:center!important;
+  background:linear-gradient(180deg,#6b706a,#333c3c 21%,#252b2e);
+  border-bottom:3px ridge #919889;box-shadow:0 2px 10px #0009;color:#f6ebcb}
+.hud .hero-hud{width:auto;min-width:0;max-width:none;display:flex;align-items:center}
+.hud .hud-kicker,.hud #selection-summary,.hud #ai-status{display:none!important}
+.hud .hero-hud strong{font:700 13px/1.1 Georgia,serif;color:#f6e5ad;
+  letter-spacing:.04em;margin:0;white-space:nowrap}
+.hud .score{margin-left:auto;gap:14px;align-items:center;text-align:right}
+.hud .score>div{display:flex;gap:4px;align-items:baseline;min-width:0}
+.hud .score small{color:#c9c6ad;font:700 9px/1 monospace;letter-spacing:0;white-space:nowrap}
+.hud .score strong{display:inline;color:#ffdf73;font:800 14px/1 monospace}
+.hud .pause-compact{height:25px;width:25px;margin:0;border-radius:1px;
+  border:2px ridge #989a8a;background:#4b514c;font-size:14px;align-self:center}
+.command-panel{position:absolute;top:var(--war2-topbar);bottom:0;left:0;right:auto;
+  width:var(--war2-sidebar);height:calc(100% - var(--war2-topbar));max-width:none;
+  max-height:none;min-height:0;padding:8px 8px 9px;display:flex;flex-direction:column;gap:8px;
+  border:0;border-right:5px ridge #9c9b85;border-radius:0;
+  background:linear-gradient(100deg,#555952,#444b48 8%,#323b3d 60%,#4a5149);
+  box-shadow:4px 0 12px #0008,inset 2px 0 #9a9d8e;overflow:hidden;
+  color:#f4eed3;backdrop-filter:none}
+.minimap-frame{height:192px;flex:0 0 auto;padding:5px 5px 2px;
+  border:4px ridge #a2a08c;background:#171f24;display:flex;flex-direction:column;
+  gap:3px;align-items:center;min-width:0}
+.minimap-frame canvas{display:block;width:100%;aspect-ratio:1;flex:1;min-height:0;
+  background:#08110d;cursor:crosshair;touch-action:manipulation;image-rendering:pixelated}
+.minimap-caption{font:700 9px/1 monospace;letter-spacing:.1em;color:#c7c3a9}
+.command-panel .command-identity{display:grid;grid-template-columns:49px minmax(0,1fr);
+  gap:7px;align-items:center;min-width:0;flex:0 0 auto;padding:3px;
+  border:3px ridge #8e9585;background:#252f30}
+.command-panel .command-portrait{width:46px;height:46px;border:2px ridge #b6ad8a;
+  border-radius:0;background:#182524;box-shadow:inset 0 0 10px #000c;
+  font-size:29px;line-height:1}
+.command-panel .command-description{min-width:0;overflow:hidden}
+.command-panel .command-title{font:700 12px/1.1 Georgia,serif;color:#f7e8ba;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.command-panel .command-info{display:none}
+.command-panel .command-health{font:700 10px/1.2 monospace;color:#dce3cc;margin-top:4px}
+.command-panel .hp-track{height:5px;margin-top:3px;width:100%;border:1px solid #948968}
+.command-panel .command-operations{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
+.command-panel .quick-commands{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:3px;padding:0 0 6px;border-bottom:2px groove #939a88}
+.command-panel .quick-commands button{height:32px;min-height:32px;min-width:0;
+  padding:1px 0;border:2px ridge #a3a994;border-radius:0;
+  background:linear-gradient(#53645a,#26382e);color:#f4e8c4;font-size:17px;line-height:1}
+.command-panel .quick-commands button span{display:none}
+.command-panel .quick-commands button:disabled{opacity:.38}
+.command-panel .quick-commands button[aria-pressed="true"]{border-color:#fbe39b;background:#665637}
+.command-panel #command-buttons.command-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));
+  grid-auto-rows:48px;align-content:start;gap:4px;min-height:0}
+.command-panel #command-buttons.command-grid button{position:relative;height:48px;min-height:48px;
+  padding:1px;border:3px ridge #9ca794;border-radius:0;
+  background:linear-gradient(#526155,#29362e);color:#f5eacb;
+  box-shadow:inset 0 1px #d9d8b23b;white-space:nowrap}
+.command-panel #command-buttons.command-grid button:active:not(:disabled),
+.command-panel .quick-commands button:active:not(:disabled){filter:brightness(1.35)}
+.command-panel #command-buttons .action-symbol{font-size:23px;line-height:1}
+.command-panel #command-buttons .action-name{display:none}
+.command-panel #command-buttons .action-cost{position:absolute;bottom:0;right:2px;
+  font:700 8px/1 monospace;color:#ffe09b;text-shadow:0 1px #000}
+.command-panel .production-progress{margin-top:auto;min-height:18px;max-height:83px;overflow:auto;
+  border-top:2px groove #929a89;padding-top:3px;font:700 10px/1.25 monospace;
+  color:#e0d6b6;scrollbar-width:thin}
+.command-panel .production-meter{height:5px;margin:3px 0}
+.command-panel .production-jobs button{padding:2px 4px;border:1px ridge #a2aa91;
+  background:#354238;color:#e7e0c8;font-size:11px}
+#order-prompt{bottom:24px;left:calc(50% + var(--war2-sidebar)/2);font-size:11px;
+  padding:5px 8px;border-radius:0;white-space:normal;max-width:55vw}
+.banner{bottom:7px;left:calc(50% + var(--war2-sidebar)/2)}
+@media(max-width:820px),(max-height:540px){
+  .hud{height:32px;padding:2px 5px;gap:4px;display:flex!important;
+    grid-template-columns:none!important;grid-template-rows:none!important}
+  .hud .hero-hud{display:flex!important;min-width:0!important;width:auto!important;
+    max-width:100px!important}
+  .hud .hero-hud strong{font-size:10px!important}
+  .hud .score{display:flex!important;gap:5px!important;margin-left:auto!important}
+  .hud .score>div{display:flex;gap:2px;min-width:0!important}
+  .hud .score small{font-size:7px!important}
+  .hud .score strong{font-size:11px!important}
+  .hud #pause{width:23px;height:23px;font-size:13px;grid-area:auto!important}
+  .command-panel{top:auto;left:0;right:0;bottom:0;width:100%;
+    height:calc(var(--war2-mobile) + env(safe-area-inset-bottom,0px));
+    max-width:none;max-height:none;min-height:0;overflow:hidden;
+    grid-template-columns:71px 83px minmax(0,1fr);grid-template-rows:1fr;
+    display:grid;gap:5px;padding:5px 6px calc(4px + env(safe-area-inset-bottom,0px));
+    border:0;border-top:4px ridge #a0a18f;box-shadow:0 -4px 14px #000b}
+  .minimap-frame{width:70px;height:76px;padding:3px;border-width:3px;gap:0}
+  .minimap-frame canvas{width:100%;height:100%}
+  .minimap-caption{display:none}
+  .command-panel .command-identity{display:flex;flex-direction:column;justify-content:flex-start;
+    gap:3px;min-height:0;padding:3px 1px;border-width:2px;text-align:center}
+  .command-panel .command-portrait{width:39px;height:39px;font-size:23px;border-width:2px}
+  .command-panel .command-description{width:100%}
+  .command-panel .command-title{font:700 10px/1.1 Georgia,serif;
+    -webkit-line-clamp:2;max-height:24px;overflow:hidden}
+  .command-panel .command-health{font:700 9px/1.1 monospace;margin-top:2px}
+  .command-panel .hp-track{height:4px}
+  .command-panel .command-operations{gap:3px}
+  .command-panel .quick-commands{gap:2px;padding-bottom:3px;border-bottom-width:1px}
+  .command-panel .quick-commands button{height:25px;min-height:25px;font-size:15px;
+    padding:0;flex-direction:row}
+  .command-panel #command-buttons.command-grid{grid-template-columns:repeat(3,minmax(0,1fr));
+    grid-auto-rows:30px;gap:2px;min-height:0}
+  .command-panel #command-buttons.command-grid button{height:30px;min-height:30px;
+    padding:0;border-width:2px}
+  .command-panel #command-buttons .action-symbol{font-size:17px}
+  .command-panel #command-buttons .action-cost{font-size:7px}
+  .command-panel .production-progress{min-height:12px;max-height:17px;overflow:hidden;
+    padding-top:1px;font-size:8px;border-top-width:1px}
+  .command-panel .production-meter{height:3px;margin:1px 0}
+  .command-panel .production-jobs{display:none}
+  #order-prompt{bottom:calc(var(--war2-mobile) + env(safe-area-inset-bottom,0px) + 7px);
+    left:50%;max-width:90vw;font-size:10px}
+  .banner{bottom:calc(var(--war2-mobile) + env(safe-area-inset-bottom,0px) + 3px);left:50%}
+}
+@media(max-width:355px){
+  .command-panel{grid-template-columns:59px 68px minmax(0,1fr);gap:3px;padding-inline:3px}
+  .minimap-frame{width:59px;height:65px}
+  .command-panel .command-portrait{width:33px;height:33px;font-size:20px}
+  .hud .score small{font-size:6px!important}
+}
+
 </style>
 <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
 <script src="./rts-footprint.js"></script>
@@ -132,6 +257,11 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 </div>
 <div id="viewport" class="viewport" aria-label="Carte de stratégie en temps réel"><div class="scanlines"></div><div id="banner" class="banner"></div><div id="selection-rectangle" hidden></div><div id="order-pings" aria-hidden="true"></div><div id="order-prompt" role="status" aria-live="polite" hidden></div>
 <aside class="command-panel" id="command-panel" aria-label="Panneau de commandes RTS">
+  <div class="minimap-frame" aria-label="Mini-carte du champ de bataille">
+    <canvas id="war2-minimap" width="112" height="112" tabindex="0"
+      role="button" aria-label="Mini-carte. Touchez pour déplacer la caméra."></canvas>
+    <span class="minimap-caption">CARTE · VISION</span>
+  </div>
   <div class="command-identity">
     <div id="command-icon" class="command-portrait" aria-hidden="true">🏰</div>
     <div class="command-description">
@@ -405,6 +535,69 @@ function visibleToPlayer(x,z){
   return fogOfWar.visibleAt(x,z,activeFaction);
 }
 
+// Warcraft II's always-visible minimap. One 112×112 CPU buffer is reused;
+// it consumes ~49 KiB, without textures, GLBs or a second WebGL renderer.
+const minimap=$('war2-minimap'),minimapContext=minimap.getContext('2d',{alpha:false});
+const minimapRaster=document.createElement('canvas');
+minimapRaster.width=fogOfWar.size;minimapRaster.height=fogOfWar.size;
+const minimapRasterContext=minimapRaster.getContext('2d',{alpha:false});
+const minimapImage=minimapRasterContext.createImageData(fogOfWar.size,fogOfWar.size);
+let minimapElapsed=0;
+function miniX(x){return (x+ARENA_HALF)/ARENA_SIZE*minimap.width;}
+function miniZ(z){return (z+ARENA_HALF)/ARENA_SIZE*minimap.height;}
+function drawMinimap(){
+  const fog=fogOfWar.maps[activeFaction],paint=minimapImage.data;
+  for(let i=0,j=0;i<fog.explored.length;i++,j+=4){
+    const light=Math.max(fog.visible[i],fog.explored[i]*.28)/255;
+    paint[j]=Math.round(7+46*light);
+    paint[j+1]=Math.round(10+90*light);
+    paint[j+2]=Math.round(11+54*light);
+    paint[j+3]=255;
+  }
+  minimapRasterContext.putImageData(minimapImage,0,0);
+  minimapContext.imageSmoothingEnabled=false;
+  minimapContext.drawImage(minimapRaster,0,0,minimap.width,minimap.height);
+  for(const b of liveBuildings()){
+    if(!b.hitbox)continue;
+    const box=b.hitbox,x=(box.minX+box.maxX)/2,z=(box.minZ+box.maxZ)/2;
+    const visibility=fogOfWar.sample(x,z,activeFaction);
+    if(visibility.explored<.2)continue;
+    minimapContext.fillStyle=b.type==='mine'?'#d4c36e':
+      b.clanId===(activeFaction==='witch'?'witch':'orcs')?'#b2d3ce':'#c16c57';
+    minimapContext.fillRect(miniX(box.minX),miniZ(box.minZ),
+      Math.max(2,miniX(box.maxX)-miniX(box.minX)),
+      Math.max(2,miniZ(box.maxZ)-miniZ(box.minZ)));
+  }
+  for(const actor of units){
+    if(actor.dead||actor.kind!==activeFaction&&!fogOfWar.visibleAt(
+      actor.root.position.x,actor.root.position.z,activeFaction))continue;
+    minimapContext.fillStyle=actor.kind===activeFaction?'#c6f4a3':'#ff7b76';
+    minimapContext.fillRect(miniX(actor.root.position.x)-1,miniZ(actor.root.position.z)-1,3,3);
+  }
+  minimapContext.strokeStyle='#f6f1c3';
+  minimapContext.lineWidth=1;
+  const x=miniX(cameraFollow.x),y=miniZ(cameraFollow.z);
+  minimapContext.strokeRect(x-6,y-6,12,12);
+}
+function minimapCenterAt(clientX,clientY){
+  const rect=minimap.getBoundingClientRect();
+  if(!rect.width||!rect.height)return;
+  cameraFollow.x=clamp((clientX-rect.left)/rect.width*ARENA_SIZE-ARENA_HALF,-26,26);
+  cameraFollow.z=clamp((clientY-rect.top)/rect.height*ARENA_SIZE-ARENA_HALF,-26,26);
+  positionCamera();drawMinimap();
+}
+minimap.addEventListener('pointerdown',event=>event.stopPropagation());
+minimap.addEventListener('click',event=>{
+  event.stopPropagation();if(running&&!paused)minimapCenterAt(event.clientX,event.clientY);
+});
+minimap.addEventListener('keydown',event=>{
+  const offsets={ArrowLeft:[-4,0],ArrowRight:[4,0],ArrowUp:[0,-4],ArrowDown:[0,4]};
+  const step=offsets[event.key];if(!step||!running||paused)return;
+  event.preventDefault();event.stopPropagation();
+  cameraFollow.x=clamp(cameraFollow.x+step[0],-26,26);
+  cameraFollow.z=clamp(cameraFollow.z+step[1],-26,26);
+  positionCamera();drawMinimap();
+});
 let cameraFollow={x:0,z:0};
 const cameraLook=new THREE.Vector3(0,1.15,0);
 const clock=new THREE.Clock();
@@ -710,12 +903,16 @@ function beginOrcVillageLoad(){
 function resize(){
   const w=viewport.clientWidth,h=viewport.clientHeight;
   const aspect=w/Math.max(1,h),halfHeight=cameraZoom;
-  // Frame the map in the playable space ABOVE the Warcraft command bar.
-  const bar=$('command-panel');
-  const panelHeight=bar?Math.min(h*.46,bar.getBoundingClientRect().height):0;
-  const offset=clamp(panelHeight/Math.max(1,h),0,.46);
-  camera.left=-halfHeight*aspect;camera.right=halfHeight*aspect;
-  camera.top=halfHeight*(1-offset);camera.bottom=-halfHeight*(1+offset);
+  // The original Warcraft II reserves a narrow LEFT strip on desktop.
+  // A mobile screen reserves only a short BOTTOM strip. Neither changes zoom.
+  const panel=$('command-panel'),frame=panel?.getBoundingClientRect();
+  const sidebar=matchMedia('(min-width:821px) and (min-height:541px)').matches;
+  const cutX=sidebar?clamp((frame?.width||0)/Math.max(w,1),0,.4):0;
+  const cutY=sidebar?0:clamp((frame?.height||0)/Math.max(h,1),0,.42);
+  camera.left=-halfHeight*aspect*(1+cutX);
+  camera.right=halfHeight*aspect*(1-cutX);
+  camera.top=halfHeight*(1-cutY);
+  camera.bottom=-halfHeight*(1+cutY);
   camera.updateProjectionMatrix();
   renderer.setSize(w,h,false);
 }
@@ -935,8 +1132,7 @@ function pickUnit(x,y,includeEnemies=false){
     y:rect.top+(1-p.y)*rect.height/2
   });
   for(const actor of units){
-    // Our units are the vision sources: fog must never make them untappable,
-    // including the short interval before a new visibility-grid update.
+    // Friendly units always remain tappable, even between fog grid updates.
     if(actor.dead||(!includeEnemies&&actor.kind!==activeFaction)||
       (actor.kind!==activeFaction&&
        !visibleToPlayer(actor.root.position.x,actor.root.position.z)))continue;
@@ -2126,6 +2322,8 @@ function frame(){
     positionFogOverlay();
     renderer.autoClear=false;renderer.render(fogScene,fogCamera);renderer.autoClear=true;
   }
+  minimapElapsed+=dt;
+  if(minimapElapsed>=.18){minimapElapsed=0;drawMinimap();}
 }
 frame();
 function touchAt(x,y,append=false){
@@ -2151,8 +2349,8 @@ function touchAt(x,y,append=false){
   if(attackMode){
     showBanner('CIBLE ENNEMIE REQUISE');return;
   }
-  // A character's projected 3D silhouette wins over a building behind it.
-  // The building still requires an EXACT X/Z polygon hit when no unit was hit.
+  // The character silhouette wins over an overlapping house, while empty
+  // space continues to use the building's exact flat X/Z footprint.
   if(friend){selectUnits([friend],append);return;}
   if(building){selectBuilding(building);return;}
   if(selected.size){issueMove(pos);return;}
