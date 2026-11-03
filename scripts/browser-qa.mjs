@@ -535,7 +535,7 @@ async function run(){
  // First tap selects a witch, second tap directly attacks the enemy building.
  const hutId=(await evaluate('window.__fightersQA.snapshot()')).buildings.find(b=>b.type==='hut').id;
  await evaluate("window.__fightersQA.reset();window.__fightersQA.centerCamera(-18,-14)");
- const witchPoint=await evaluate("window.__fightersQA.unitScreenPoint('witch',0)");
+ const witchPoint=await evaluate("window.__fightersQA.unitScreenPoint('witch',1)");
  check(witchPoint&&Number.isFinite(witchPoint.x),'Cannot project witch');
  await evaluate("window.__fightersQA.tap("+witchPoint.x+","+witchPoint.y+")");
  let tapState=await evaluate('window.__fightersQA.snapshot()');
@@ -547,7 +547,7 @@ async function run(){
  tapState=await evaluate('window.__fightersQA.snapshot()');
  check(tapState.witches.find(u=>u.id===tapState.selectedIds[0])?.attackTargetId!==hutId,
    'Invisible enemy building must not be targetable through black fog');
- await evaluate("window.__fightersQA.moveUnitTo('witch',0,18.5,21)");
+ await evaluate("window.__fightersQA.moveUnitTo('witch',1,18.5,21)");
  check((await evaluate('window.__fightersQA.fogAt(22,21)')).visible>.2,
    'Scout next to enemy hut must reveal the target');
  await evaluate("window.__fightersQA.tap("+targetPoint.x+","+targetPoint.y+")");
@@ -560,15 +560,15 @@ async function run(){
  await evaluate('window.__fightersQA.reset()');
 
  // Real native animation, target acquisition, damage and destruction.
- await evaluate("window.__fightersQA.passive('orc');window.__fightersQA.selectUnit('witch',0)");
+ await evaluate("window.__fightersQA.passive('orc');window.__fightersQA.selectUnit('witch',1)");
 
- await evaluate("window.__fightersQA.moveUnitTo('witch',0,18.5,21)");
+ await evaluate("window.__fightersQA.moveUnitTo('witch',1,18.5,21)");
  check(await evaluate("window.__fightersQA.attackBuilding("+JSON.stringify(hutId)+")"),
   'Attack-building order was rejected');
  await evaluate('window.__fightersQA.advance(4)');
  s=await evaluate('window.__fightersQA.snapshot()');
  const hutBefore=s.buildings.find(b=>b.id===hutId);
- const attackingWitch=s.witches[0];
+ const attackingWitch=s.witches[1];
  const h=hutBefore.hitbox,dx=(h.minX+h.maxX)/2-attackingWitch.x,
    dz=(h.minZ+h.maxZ)/2-attackingWitch.z,
    actorToWall=await evaluate("window.FightersFootprints.distanceTo("+
@@ -601,7 +601,7 @@ async function run(){
   const state=await evaluate('window.__fightersQA.snapshot()');
   const target=state.buildings.find(b=>b.type==='hut'&&!b.destroyed);
   if(!await evaluate("window.__fightersQA.isClear("+from.x+","+from.z+")"))continue;
-  await evaluate("window.__fightersQA.moveUnitTo('witch',0,"+from.x+","+from.z+");window.__fightersQA.selectUnit('witch',0)");
+  await evaluate("window.__fightersQA.moveUnitTo('witch',1,"+from.x+","+from.z+");window.__fightersQA.selectUnit('witch',1)");
   check(await evaluate("window.__fightersQA.attackBuilding("+JSON.stringify(target.id)+")"),
     'Attack order failed for '+JSON.stringify(from));
   await evaluate("window.__fightersQA.advance("+((from.x<0)?37:17)+")");
@@ -610,7 +610,7 @@ async function run(){
   check(updated.health<target.health,
     'Witch remained idle outside enemy building attack range from '+JSON.stringify(from)+
     ' before='+target.health+' after='+updated.health+
-    ' witch='+JSON.stringify(after.witches[0]));
+    ' witch='+JSON.stringify(after.witches[1]));
   attempted++;
  }
  check(attempted>=6,'Expected at least 6 distinct valid attack-angle trials, got '+attempted);
