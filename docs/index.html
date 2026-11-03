@@ -962,7 +962,10 @@ function buildingPerimeterSites(building,clearance=UNIT_RADIUS+.08){
   const key=clearance.toFixed(4)+':'+navigatorRTS.version;
   if(building.perimeterCache?.key===key)return building.perimeterCache.sites;
   const collider=building.hitbox,sites=[],spacing=UNIT_RADIUS*2.25;
-  for(const poly of collider.polygons)for(const ring of poly){
+  // Use exterior rings only: holes can be isolated interior courtyards.
+  // Spawning or attacking from an unreachable hole traps actors near walls.
+  for(const poly of collider.polygons){
+    const ring=poly[0];
     let remaining=spacing*.5;
     for(let k=0;k<ring.length;k++){
       const a=ring[k],b=ring[(k+1)%ring.length],dx=b[0]-a[0],dz=b[1]-a[1];

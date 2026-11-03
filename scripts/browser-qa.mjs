@@ -563,6 +563,10 @@ async function run(){
  await evaluate("window.__fightersQA.selectWitches();window.__fightersQA.move(-8,-4)");
  s=await evaluate('window.__fightersQA.snapshot()');
  const crowd=s.witches,goals=crowd.map(w=>w.destination);
+ if(goals.some(goal=>!goal)){
+   const stranded=await evaluate("window.__fightersQA.snapshot().witches.filter(w=>!w.destination).map(w=>({id:w.id,x:w.x,z:w.z,clear:window.__fightersQA.isClear(w.x,w.z),canReachCentre:!!window.__fightersQA.route({x:w.x,z:w.z},{x:0,z:0})}))");
+   console.log('UNREACHABLE FORMATION STARTS:',JSON.stringify(stranded));
+ }
  check(goals.length===20&&goals.every(g=>g&&Number.isFinite(g.x))&&
    new Set(goals.map(p=>p.x.toFixed(3)+','+p.z.toFixed(3))).size===20,
    'Multiple witches were assigned the same formation location: '+JSON.stringify(goals));
