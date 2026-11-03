@@ -12,7 +12,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {NodeIO} from '@gltf-transform/core';
-import polygonClipping from 'polygon-clipping';
+import {execFileSync} from 'node:child_process';
+import {tmpdir} from 'node:os';
 
 const [housePath,orcDir]=process.argv.slice(2);
 if(!housePath||!orcDir)throw Error(
@@ -20,7 +21,7 @@ if(!housePath||!orcDir)throw Error(
 const io=new NodeIO();
 const destination=path.join(path.dirname(housePath),'footprints');
 await fs.mkdir(destination,{recursive:true});
-const round=x=>Math.round(x*1e6)/1e6;
+const round=x=>Math.round(x*1e7)/1e7;
 const signedArea=ring=>ring.reduce((sum,p,i)=>{
  const q=ring[(i+1)%ring.length];return sum+p[0]*q[1]-q[0]*p[1];
 },0)*.5;
@@ -54,7 +55,7 @@ async function extract(file,out){
       coords.push(transform(vertices[ix*3],vertices[ix*3+1],vertices[ix*3+2]));
      }
      if(Math.abs(signedArea(coords))<1e-10)continue;
-     triangles.push([[coords]]);
+     triangles.push(coords);
     }
    }
   }
@@ -62,25 +63,20 @@ async function extract(file,out){
  }
  for(const scene of scenes)for(const node of scene.listChildren())visit(node);
  if(!triangles.length)throw Error(file+': no solid projected triangles');
- // Piecewise unions control peak JS memory: source models can include many
- // thousands of triangles, while the published output contains only loops.
- let groups=[];
- for(let i=0;i<triangles.length;i+=160){
-  const union=polygonClipping.union(...triangles.slice(i,i+160));
-  if(union?.length)groups.push(union);
- }
- while(groups.length>1){
-  const next=[];
-  for(let i=0;i<groups.length;i+=16)
-   next.push(polygonClipping.union(...groups.slice(i,i+16)));
-  groups=next.filter(group=>group?.length);
- }
- const full=groups[0]||[];
- if(!full.length)throw Error(file+': triangle union produced no footprint');
- const polygons=full.map(poly=>poly.map(ring=>{
-  const vertices=ring.slice(0,-1); // output rings are closed
-  return vertices.map(([x,z])=>[x,z]);
- })).filter(poly=>poly[0].length>=3);
+ // GEOS performs robust full 2D unions in compiled code. A fixed 1e-6
+ // precision grid avoids floating-point topology failures from tiny sliver
+ // triangles, without substituting any hand-estimated building footprint.
+ const temporary=await fs.mkdtemp(path.join(tmpdir(),'fighters-xz-'));
+ let polygons;
+ try{
+  const inputFile=path.join(temporary,'triangles.json');
+  const outputFile=path.join(temporary,'outline.json');
+  await fs.writeFile(inputFile,JSON.stringify(triangles));
+  execFileSync('python3',['scripts/union-xz-triangles.py',inputFile,outputFile],
+   {stdio:['ignore','inherit','inherit'],timeout:180000});
+  polygons=JSON.parse(await fs.readFile(outputFile,'utf8'));
+ }finally{await fs.rm(temporary,{recursive:true,force:true});}
+ if(!polygons.length)throw Error(file+': projected triangle union empty');
  let nVertices=0,area=0,minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;
  for(const poly of polygons){
   for(let r=0;r<poly.length;r++){
