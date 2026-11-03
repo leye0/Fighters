@@ -130,18 +130,20 @@ async function run(){
   'Upgrade action missing from contextual panel');
  check(await evaluate("document.querySelector('#command-icon').textContent.length>0"),
   'Contextual building portrait missing');
- // Shortcuts must keep their DOM identity throughout a long simulated match.
- check(await evaluate("['quick-home','quick-army','quick-attack','quick-stop','quick-cancel'].every(id=>!!document.getElementById(id))"),
-  'Permanent quick-command bar not found');
- check(await evaluate("document.querySelector('#quick-select')===null"),'Unwanted Selection button was not removed');
- await evaluate("window.__stableQuick=document.querySelector('#quick-home');window.__stableTrain=document.querySelector('#command-buttons button')");
+ // Warcraft II has one contextual command grid, not global select-army/home
+ // shortcuts. Building production icons are available without an extra menu.
+ check(await evaluate("document.querySelector('#quick-commands,#quick-home,#quick-army,#quick-attack,#quick-stop,#quick-cancel,.command-page-next')===null"),
+   'Warcraft II HUD must not expose invented global shortcuts or extra pages');
+ check(await evaluate("![...document.querySelectorAll('#command-buttons button')].some(b=>/Toutes les unités|Construire/.test(b.querySelector('.action-name')?.textContent))"),
+   'A production building must not offer army shortcuts or worker construction');
+ await evaluate("window.__stableTrain=document.querySelector('#command-buttons button')");
  const steady=await evaluate('window.__fightersQA.snapshot()');
  await evaluate('window.__fightersQA.advance(70)');
  const postSteady=await evaluate('window.__fightersQA.snapshot()');
  check(postSteady.ui.commandRebuilds-steady.ui.commandRebuilds<=1,
    'HUD rebuilt during idle match: '+JSON.stringify([steady.ui,postSteady.ui]));
- check(await evaluate("window.__stableQuick===document.querySelector('#quick-home')&&window.__stableTrain===document.querySelector('#command-buttons button')"),
-   'Quick/context button DOM identity was not preserved');
+ check(await evaluate("window.__stableTrain===document.querySelector('#command-buttons button')"),
+   'Contextual command button DOM identity was not preserved');
 
 
  check(await evaluate("document.querySelector('#witch-faction,#orc-faction,#zoom-in,#zoom-out,.zoom-controls,#touch-hold-indicator')===null"),
@@ -344,16 +346,25 @@ async function run(){
  await until("parseFloat(getComputedStyle(document.querySelector('#banner')).opacity)<.02",
    'CSS notification fade-out',6000);
 
- check(await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.textContent.includes('Construire'))"),
-   'Orc construct command missing');
- await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).find(b=>b.textContent.includes('Construire'))?.click()");
+ // Original worker commands: distinct Basic and Advanced Build submenus.
+ // Production buildings show unit icons directly; never a construction action.
+ check(!await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.querySelector('.action-name')?.textContent?.startsWith('Construire'))"),
+   'Orc barracks must not construct buildings (worker-only action)');
+ await evaluate("window.__fightersQA.selectUnit('orc',1)");
+ check(await evaluate("['Construire base','Construire avancé'].every(n=>Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.querySelector('.action-name')?.textContent===n))"),
+   'Orc worker needs distinct Warcraft II Basic/Advanced build commands');
+ await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).find(b=>b.querySelector('.action-name')?.textContent==='Construire base')?.click()");
  check(await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.textContent.includes('Hutte'))"),
-   'Build catalog did not open');
+   'Basic Build submenu did not open');
  check(!await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.textContent.includes('Mine'))"),
    'Construction palette must not offer mine deposits');
- await evaluate("document.querySelector('#quick-cancel').click();window.__fightersQA.selectOrcBarrack()");
-
-
+ check(await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.querySelector('.action-name')?.textContent==='Retour')"),
+   'Warcraft II Build submenu needs its Back command');
+ await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).find(b=>b.querySelector('.action-name')?.textContent==='Retour')?.click()");
+ await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).find(b=>b.querySelector('.action-name')?.textContent==='Construire avancé')?.click()");
+ check(await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.textContent.includes('Chaudron')||b.textContent.includes('Usine'))"),
+   'Advanced Build submenu did not open');
+ await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).find(b=>b.querySelector('.action-name')?.textContent==='Retour')?.click();window.__fightersQA.selectOrcBarrack()");
 
  check(await evaluate("window.__fightersQA.beginBuild('hut')"),'Hut placement action refused');
  check(await evaluate("!!window.__fightersQA.build('hut',8,-10)"),'Orc hut construction failed');
@@ -413,24 +424,35 @@ async function run(){
    mobileMini.buttons.length<=6&&mobileMini.buttons.every(b=>b.width>=56&&b.height>=44&&
      b.left>=0&&b.right<=mobile.width),
    'Mobile minimap or icon grid overflowed: '+JSON.stringify(mobileMini));
- // Phone legibility, touch sizes and secondary command page are acceptance criteria.
- const mobileUsability=await evaluate("(()=>{const p=document.querySelector('#command-panel'),t=document.querySelector('#command-title'),i=document.querySelector('.command-identity'),g=document.querySelector('#command-buttons'),q=document.querySelector('#training-progress'),b=[...g.querySelectorAll('button:not([hidden])')];const title=getComputedStyle(t);const titles=b.map(x=>({name:x.querySelector('.action-name')?.textContent,visible:getComputedStyle(x.querySelector('.action-name')).display}));return {name:t.textContent,font:parseFloat(title.fontSize),nameVisible:t.scrollWidth<=t.clientWidth+1,identity:i.getBoundingClientRect().toJSON(),commands:b.map(x=>x.getBoundingClientRect().toJSON()),labels:titles,queue:q.getBoundingClientRect().toJSON(),queueVisible:getComputedStyle(q).display!=='none',hasNext:!!g.querySelector('.command-page-next'),panel:p.getBoundingClientRect().toJSON()}})()");
+ // War II original: only context commands, direct training icons on a
+ // building, worker construction submenu and no invented army shortcuts.
+ const mobileUsability=await evaluate("(()=>{const p=document.querySelector('#command-panel'),t=document.querySelector('#command-title'),i=document.querySelector('.command-identity'),g=document.querySelector('#command-buttons'),q=document.querySelector('#training-progress'),b=[...g.querySelectorAll('button:not([hidden])')];const title=getComputedStyle(t);return {name:t.textContent,font:parseFloat(title.fontSize),nameVisible:t.scrollWidth<=t.clientWidth+1,identity:i.getBoundingClientRect().toJSON(),commands:b.map(x=>x.getBoundingClientRect().toJSON()),labels:b.map(x=>({name:x.querySelector('.action-name')?.textContent,visible:getComputedStyle(x.querySelector('.action-name')).display})),queueVisible:getComputedStyle(q).display!=='none',hasNext:!!g.querySelector('.command-page-next'),hasShortcuts:!!document.querySelector('#quick-commands'),panel:p.getBoundingClientRect().toJSON()}})()");
  check(mobileUsability.font>=12&&mobileUsability.nameVisible&&
-   mobileUsability.commands.length===6&&mobileUsability.hasNext&&
+   mobileUsability.commands.length>=3&&mobileUsability.commands.length<=6&&
+   !mobileUsability.hasNext&&!mobileUsability.hasShortcuts&&
    mobileUsability.labels.every(x=>x.visible!=='none')&&
    mobileUsability.commands.every(x=>x.top>=mobileUsability.identity.bottom&&
-     x.bottom<=mobileUsability.panel.bottom-7&&x.height>=44)&&
+     x.bottom<=mobileUsability.panel.bottom-6&&x.height>=44)&&
    !mobileUsability.queueVisible,
-   'Mobile HUD must show legible unit title, labeled touch commands, and no queue overlap: '+
+   'Mobile HUD must preserve readable contextual Warcraft II commands only: '+
    JSON.stringify(mobileUsability));
- const page2=await evaluate("(()=>{document.querySelector('.command-page-next').click();return [...document.querySelectorAll('#command-buttons button:not([hidden])')].map(x=>x.querySelector('.action-name')?.textContent)})()");
- check(page2.includes('Ralliement')&&page2.includes('Annuler prochain'),
-   'Mobile command page 2 must expose remaining building actions: '+JSON.stringify(page2));
- await screenshot('rts-mobile-command-page-two');
- await evaluate("document.querySelector('.command-page-next').click()");
- console.log('PASS WARCRAFT II MOBILE HUD: legible building header, 44px labeled actions, second command page, no overflow.');
+ check(mobileUsability.labels.some(x=>x.name==='Ouvrière')&&
+   mobileUsability.labels.some(x=>x.name==='Garde'),
+   'Witch house must expose training icons directly');
+ console.log('PASS WARCRAFT II MOBILE HUD: 44px direct train icons and no invented shortcut row.');
  check(mobile.pause.width>0,'Compact pause button missing');
  await screenshot('rts-mobile-command-panel');
+ await evaluate("window.__fightersQA.selectUnit('witch',1)");
+ check(await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.querySelector('.action-name')?.textContent==='Construire')"),
+   'Witch worker needs its contextual Build icon');
+ await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).find(b=>b.querySelector('.action-name')?.textContent==='Construire')?.click()");
+ check(await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.querySelector('.action-name')?.textContent==='Nouvelle maison')"),
+   'Witch Build submenu must expose construction type');
+ check(await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.querySelector('.action-name')?.textContent==='Retour')"),
+   'Build submenu must expose a Back command');
+ await screenshot('rts-mobile-worker-build-submenu');
+ await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).find(b=>b.querySelector('.action-name')?.textContent==='Retour')?.click();window.__fightersQA.selectHouse()");
+
  const framing=await evaluate("(()=>{const hero=document.querySelector('.hero-hud').getBoundingClientRect();const score=document.querySelector('.score').getBoundingClientRect();const pause=document.querySelector('#pause').getBoundingClientRect();return {hero:{right:hero.right,bottom:hero.bottom},score:{left:score.left,right:score.right},pause:{left:pause.left,right:pause.right}}})()");
  check(framing.hero.right<=framing.score.left+3&&framing.score.right<=framing.pause.left+4&&
   framing.pause.right<=mobile.width+1,'Compact mobile HUD overlaps: '+JSON.stringify(framing));
