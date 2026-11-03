@@ -1081,7 +1081,7 @@ function refreshHUD(){
     title=$('command-title'),info=$('command-info'),health=$('command-health'),
     portrait=$('command-icon'),buttons=$('command-buttons'),queueUI=$('training-progress');
   const context=[activeFaction,b?.id||'',b?.level||0,alive.map(u=>u.id).join(','),
-    constructionTab,buildingBlueprints.size].join('|');
+    constructionTab,constructionTab?buildingBlueprints.size:0].join('|');
 
   if(context!==lastHudSignature){
     lastHudSignature=context;buttons.replaceChildren();health.replaceChildren();
