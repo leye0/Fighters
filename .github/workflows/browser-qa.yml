@@ -46,6 +46,7 @@ jobs:
           npm install --no-save --no-package-lock --no-audit --no-fund @gltf-transform/core@4.2.1 @gltf-transform/functions@4.2.1 three@0.180.0
           mkdir -p docs/vendor/three
           cp node_modules/three/build/three.module.js docs/vendor/three/three.module.js
+          cp node_modules/three/build/three.core.js docs/vendor/three/three.core.js
           cp -R node_modules/three/examples/jsm docs/vendor/three/addons
           node scripts/split-orc-buildings.mjs docs/models/orc_rts_building_set_-_proto_series.glb docs/models/orc-buildings
           curl -fLsS --retry 3 https://raw.githubusercontent.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/5821923af517ac5fdc82505faa92a0d575fc1b1a/test/human_male.glb -o docs/models/human_male.glb
