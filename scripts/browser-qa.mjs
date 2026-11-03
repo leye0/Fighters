@@ -79,8 +79,9 @@ async function run(){
  check(s.loading.readyMs>0&&s.loading.downloadMs>0,'Missing startup measurements');
  console.log('LOAD PROFILE (real Chrome):',JSON.stringify(s.loading));
 
- check(s.house.hitbox.maxX>s.house.hitbox.minX&&s.house.hitbox.maxZ>s.house.hitbox.minZ,
-  'House requires actual 3D bounding volume');
+ check(s.house.hitbox.shape==='polygon'&&s.house.hitbox.polygons?.length>0&&
+  s.house.hitbox.polygons[0][0].length>=4,
+  'Witch house needs a GLB-derived collision polygon, not a box');
  check(s.gold.witch===2000&&s.gold.orc===900,'Starting resources');
  check(s.selectedBuilding==='witch-house','Starting house selection');
  check(s.projection==='orthographic','Expected RTS orthographic camera');
@@ -159,8 +160,9 @@ async function run(){
   'Five real orc building blueprints',100000);
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.buildings.length===5,'Five default orc buildings');
- check(s.buildings.every(b=>b.hitbox.maxX>b.hitbox.minX&&b.hitbox.maxZ>b.hitbox.minZ),
-  'Every orc structure must have a real 3D collider');
+ check(s.buildings.every(b=>b.hitbox.shape==='polygon'&&
+   b.hitbox.polygons?.length>0&&b.hitbox.polygons[0][0].length>=4),
+   'Orc structures must have GLB-derived collision polygons');
  check(s.buildings.every(b=>b.healthbarParent==='scene'),
    'Orc HP bars must not inherit a building rotation/scale');
  check(s.buildings.every(b=>b.healthbarPosition[1]>b.hitbox.maxY),
@@ -501,8 +503,10 @@ async function run(){
  for(const worker of s.mining.workers.filter(w=>w.progress>.1)){
    const mine=s.buildings.find(b=>b.id===worker.mineId),h=mine?.hitbox;
    check(!!h,'Mine worker has no physical deposit');
-   const gap=Math.hypot(Math.max(h.minX-worker.x,0,worker.x-h.maxX),
-     Math.max(h.minZ-worker.z,0,worker.z-h.maxZ));
+   const gap=await evaluate("window.FightersNavigation.distanceToFootprint("+
+     JSON.stringify({x:worker.x,z:worker.z})+","+
+     "window.__fightersQA.snapshot().buildings.find(b=>b.id==="+
+     JSON.stringify(worker.mineId)+").hitbox)");
    check(gap<.85,'Miner collected gold far from physical mine boundary: '+
      JSON.stringify({worker,mine:h,gap}));
  }
