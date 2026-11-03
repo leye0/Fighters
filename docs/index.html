@@ -1855,6 +1855,7 @@ viewport.addEventListener('touchstart',event=>{
   }
 },{passive:false});
 viewport.addEventListener('touchmove',event=>{
+  if(event.target.closest('.command-panel')||event.target.closest('.hud'))return;
   if(!running||paused)return;
   event.preventDefault();
   syncActiveTouches(event);
@@ -1868,6 +1869,7 @@ viewport.addEventListener('touchmove',event=>{
   }
 },{passive:false});
 viewport.addEventListener('touchend',event=>{
+  if(event.target.closest('.command-panel')||event.target.closest('.hud'))return;
   if(!running)return;
   event.preventDefault();
   syncActiveTouches(event);
