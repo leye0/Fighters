@@ -263,22 +263,24 @@ function updateNavObstacles(){
 }
 function drawBuildingSelection(){
   if(buildingSelectionRing){
-    scene.remove(buildingSelectionRing);buildingSelectionRing.geometry.dispose();
-    buildingSelectionRing.material.dispose();buildingSelectionRing=null;
+    scene.remove(buildingSelectionRing);
+    buildingSelectionRing.traverse(node=>{
+      node.geometry?.dispose();node.material?.dispose();
+    });
+    buildingSelectionRing=null;
   }
   if(!selectedBuilding?.hitbox)return;
-  const b=selectedBuilding.hitbox,width=b.maxX-b.minX+.36,depth=b.maxZ-b.minZ+.36;
-  const geometry=new THREE.BufferGeometry().setFromPoints([
-    new THREE.Vector3(-width/2,0,-depth/2),new THREE.Vector3(width/2,0,-depth/2),
-    new THREE.Vector3(width/2,0,depth/2),new THREE.Vector3(-width/2,0,depth/2),
-    new THREE.Vector3(-width/2,0,-depth/2)
-  ]);
-  const material=new THREE.LineBasicMaterial({
-    color:selectedBuilding.clanId==='witch'?0xc2f5a3:0xf8c47f,depthTest:false
-  });
-  buildingSelectionRing=new THREE.Line(geometry,material);
-  buildingSelectionRing.position.set((b.minX+b.maxX)/2,.08,(b.minZ+b.maxZ)/2);
-  buildingSelectionRing.renderOrder=10;scene.add(buildingSelectionRing);
+  const group=new THREE.Group(),shape=selectedBuilding.hitbox;
+  const color=selectedBuilding.clanId==='witch'?0xc2f5a3:0xf8c47f;
+  for(const poly of shape.polygons)for(const ring of poly){
+    const points=ring.map(([x,z])=>new THREE.Vector3(x,.08,z));
+    if(points.length<3)continue;
+    points.push(points[0].clone());
+    const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),
+      new THREE.LineBasicMaterial({color,depthTest:false}));
+    line.renderOrder=10;group.add(line);
+  }
+  buildingSelectionRing=group;scene.add(buildingSelectionRing);
 }
 
 const INV_SQRT2=Math.SQRT1_2;
@@ -953,18 +955,38 @@ function cancelOrder(building,index){
   if(index===0)building.progress=0;
   refreshHUD();return true;
 }
+function buildingPerimeterSites(building,clearance=UNIT_RADIUS+.08){
+  const collider=building.hitbox,sites=[],geometry=window.FightersFootprints;
+  for(const poly of collider.polygons)for(const ring of poly){
+    for(let k=0;k<ring.length;k++){
+      const a=ring[k],b=ring[(k+1)%ring.length],dx=b[0]-a[0],dz=b[1]-a[1];
+      const length=Math.hypot(dx,dz);
+      if(length<1e-7)continue;
+      const n=Math.max(1,Math.ceil(length/(UNIT_RADIUS*2.25)));
+      for(let i=0;i<n;i++){
+        const t=(i+.5)/n,x=a[0]+dx*t,z=a[1]+dz*t;
+        for(const sign of [-1,1]){
+          const p={x:x+sign*(-dz/length)*clearance,
+            z:z+sign*(dx/length)*clearance};
+          if(geometry.distanceTo(p,collider)+1e-5<clearance)continue;
+          if(navigatorRTS.pointClear(p))sites.push(p);
+        }
+      }
+    }
+  }
+  return sites;
+}
 function safeSpawnNear(building){
-  const box=building.hitbox,cx=(box.minX+box.maxX)/2,cz=(box.minZ+box.maxZ)/2;
-  const radius=Math.max(box.maxX-box.minX,box.maxZ-box.minZ)/2+1.4;
-  for(let ring=0;ring<7;ring++)for(let i=0;i<16;i++){
-    const a=i*Math.PI/8,point={x:cx+Math.cos(a)*(radius+ring*.7),
-      z:cz+Math.sin(a)*(radius+ring*.7)};
-    if(!navigatorRTS.pointClear(point))continue;
+  const sites=buildingPerimeterSites(building,UNIT_RADIUS+.14);
+  for(const point of sites){
     if(units.some(u=>!u.dead&&Math.hypot(u.root.position.x-point.x,
-      u.root.position.z-point.z)<.95))continue;
+      u.root.position.z-point.z)<UNIT_RADIUS*2.3))continue;
     return point;
   }
-  return navigatorRTS.findSafeSpawn(building.rally||{x:cx+radius,z:cz+radius});
+  const b=building.hitbox;
+  return navigatorRTS.findSafeSpawn(building.rally||{
+    x:(b.minX+b.maxX)/2,z:b.maxZ+UNIT_RADIUS*3
+  });
 }
 function finishTraining(building,kind){
   const position=safeSpawnNear(building);
@@ -1050,18 +1072,17 @@ function beginBuild(type){
   buildMode=type;rallyMode=false;constructionTab=false;refreshHUD();return true;
 }
 function validBuildPosition(x,z,type='hut'){
-  if(!ORC_COSTS[type]||!buildingBlueprints.has(type))return false;
-  const half=1.95;
-  const proposed={minX:x-half,maxX:x+half,minZ:z-half,maxZ:z+half};
-  if(proposed.minX<0||proposed.maxX>ARENA_HALF-.35||
-    proposed.minZ<-ARENA_HALF+.35||proposed.maxZ>ARENA_HALF-.35)return false;
-  const margin=.8;
-  if(liveBuildings().some(b=>
-    proposed.minX<b.hitbox.maxX+margin&&proposed.maxX>b.hitbox.minX-margin&&
-    proposed.minZ<b.hitbox.maxZ+margin&&proposed.maxZ>b.hitbox.minZ-margin))return false;
+  const template=buildingBlueprints.get(type);
+  if(!ORC_COSTS[type]||!template?.collisionLocal)return false;
+  const geometry=window.FightersFootprints;
+  const proposed=geometry.translated(template.collisionLocal,x,z);
+  if(proposed.minX<0||proposed.maxX>ARENA_HALF||
+    proposed.minZ<-ARENA_HALF||proposed.maxZ>ARENA_HALF)return false;
+  // Collision uses the projected model polygons (concavities and holes too),
+  // not rectangular guessed footprints or fixed world-unit padding.
+  if(liveBuildings().some(b=>geometry.polygonsOverlap(proposed,b.hitbox)))return false;
   return units.every(actor=>actor.dead||
-    actor.root.position.x<proposed.minX-.6||actor.root.position.x>proposed.maxX+.6||
-    actor.root.position.z<proposed.minZ-.6||actor.root.position.z>proposed.maxZ+.6);
+    !geometry.pointBlocked(actor.root.position,proposed,UNIT_RADIUS));
 }
 function buildOrc(type,x,z,{byAI=false}={}){
   if(!ORC_COSTS[type]||!buildingBlueprints.has(type)||gold.orc<ORC_COSTS[type]||!validBuildPosition(x,z,type))return false;
@@ -1358,8 +1379,7 @@ function enemyOf(actor,target){
 function targetDistance(actor,target){
   const p=actor.root.position;
   if(!isBuilding(target))return Math.hypot(target.root.position.x-p.x,target.root.position.z-p.z);
-  const b=target.hitbox;
-  return Math.hypot(Math.max(b.minX-p.x,0,p.x-b.maxX),Math.max(b.minZ-p.z,0,p.z-b.maxZ));
+  return window.FightersFootprints.distanceTo(p,target.hitbox);
 }
 function nearestHostile(actor,maxDistance=Infinity){
   let nearest=null,distance=maxDistance,priority=Infinity;
@@ -1387,30 +1407,17 @@ function approachBuilding(actor,building){
     actor.approachAge<2.5&&navigatorRTS.pointClear(actor.approachCache.point))
     return actor.approachCache.point;
   const from={x:p.x,z:p.z};
-  const candidates=[];
-  const push=(x,z)=>{
-    const point={x,z};
-    if(navigatorRTS.pointClear(point)&&
-      !candidates.some(c=>Math.hypot(c.x-x,c.z-z)<.25))
-      candidates.push(point);
-  };
-  // Sample the whole physical perimeter, not just four corners. Attackers
-  // reserve different nearby spots so they surround the building rather than
-  // forming a single pile of units beating one another.
-  const across=(lo,hi)=>{
-    const length=hi-lo,n=Math.max(1,Math.ceil(length/1.15));
-    return Array.from({length:n+1},(_,i)=>lo+length*i/n);
-  };
-  for(const z of across(b.minZ,b.maxZ)){
-    push(b.minX-pad,z);push(b.maxX+pad,z);
+  const candidates=buildingPerimeterSites(building,pad);
+  // Find the closest point on the *actual polygon* and project outward.
+  const closest=window.FightersFootprints.closestBoundary(from,b);
+  if(closest.closest){
+    const q=closest.closest,dx=p.x-q.x,dz=p.z-q.z;
+    const length=Math.hypot(dx,dz);
+    if(length>.01){
+      const point={x:q.x+pad*dx/length,z:q.z+pad*dz/length};
+      if(navigatorRTS.pointClear(point))candidates.unshift(point);
+    }
   }
-  for(const x of across(b.minX,b.maxX)){
-    push(x,b.minZ-pad);push(x,b.maxZ+pad);
-  }
-  const x=THREE.MathUtils.clamp(p.x,b.minX,b.maxX);
-  const z=THREE.MathUtils.clamp(p.z,b.minZ,b.maxZ);
-  const outward={x:p.x-x,z:p.z-z},length=Math.hypot(outward.x,outward.z);
-  if(length>.01)push(x+pad*outward.x/length,z+pad*outward.z/length);
   const coworkers=units.filter(other=>other!==actor&&!other.dead&&
     (other.attackOrder===building||other.attack?.target===building||
       other.mineJob?.mineId===building.id));
