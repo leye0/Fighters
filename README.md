@@ -67,7 +67,11 @@ Cette IA est **un moteur de décisions tactiques et économiques par règles**, 
 
 ## Modèles et déploiement
 
-Les personnages conservent leurs **86 animations Quaternius natives**, leur squelette de **65 os**, leurs costumes et coiffures adaptés au squelette original et leurs épées montées sur l'os de la main, sans retargeting. Le serveur publie des copies **gzip sans perte** des deux GLB, téléchargées en parallèle et vérifiées octet pour octet au déploiement; les clips ne sont reliés au mixer que lorsqu'ils sont joués. Le chargement du village orc est différé jusqu'à ce que les personnages soient prêts. `witch_house.glb` est un véritable modèle 3D. Les cinq types orcs (caserne, hutte, mine, chaudron et atelier) sont extraits du GLB fourni pendant la préparation du déploiement Pages, sans remplacement procédural des modèles.
+Le **jeu RTS** utilise désormais deux modèles GLB légers dérivés du même kit Quaternius, avec leur **squelette natif de 65 os**, leur géométrie, leur skinning et les **8 animations natives utiles au combat** conservées avec leurs données de keyframes intactes : Idle, Walk, Jog, Punch, Hit, Death et deux animations d'épée. Aucune animation n'est retargetée. Les deux **GLB originaux à 86 animations** restent disponibles sans modification dans le laboratoire `docs/motion-lab.html`.
+
+Pour un premier chargement sur mobile, `scripts/build-runtime-characters.mjs` produit des textures matérielles **WebP 1024 px**, et le déploiement publie des fichiers `.rts.glb.gz` compacts. Vérification Chrome en CI : **1 369 646 octets** pour la sorcière et **1 319 478 octets** pour l'orc, soit **2,69 Mo contre 41,68 Mo précédemment** (−93,6 %). Three.js et ses dépendances sont servis localement dans le site, sans CDN tiers. Les téléchargements sont parallèles, les requêtes ont un délai maximal et une solution de repli vers le GLB runtime non compressé, et les problèmes d'import de modules affichent un bouton de rechargement plutôt que laisser un écran bloqué. Le chargement du village orc reste différé jusqu'à la préparation des personnages.
+
+`witch_house.glb` est un véritable modèle 3D. Les cinq types orcs (caserne, hutte, mine, chaudron et atelier) sont extraits du GLB fourni pendant la préparation du déploiement Pages, sans remplacement procédural des modèles.
 
 ## Tests
 
