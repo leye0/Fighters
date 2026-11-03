@@ -285,7 +285,8 @@ loader.setMeshoptDecoder(MeshoptDecoder);
 
 const clamp=THREE.MathUtils.clamp;
 const TRAIN_COST=120, TRAIN_DURATION=3.5;
-const ORC_COSTS={barrack:180,hut:120,mine:140,cauldron:200,factory:250};
+const ORC_COSTS={barrack:180,hut:120,cauldron:200,factory:250};
+// Deposits are fixed map resources, not structures that players or the AI can build.
 const ORC_NAMES={barrack:'Caserne',hut:'Hutte',mine:'Mine',cauldron:'Chaudron',factory:'Atelier'};
 const units=[],selected=new Set();
 let female=null,male=null,swordModel=null,clothingFemale=null,clothingMale=null,hairBuns=null,hairBuzzed=null,hairParted=null;
@@ -1014,7 +1015,7 @@ function beginBuild(type){
   buildMode=type;rallyMode=false;constructionTab=false;refreshHUD();return true;
 }
 function validBuildPosition(x,z,type='hut'){
-  if(!buildingBlueprints.has(type))return false;
+  if(!ORC_COSTS[type]||!buildingBlueprints.has(type))return false;
   const half=1.95;
   const proposed={minX:x-half,maxX:x+half,minZ:z-half,maxZ:z+half};
   if(proposed.minX<0||proposed.maxX>ARENA_HALF-.35||
