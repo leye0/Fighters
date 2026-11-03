@@ -1804,7 +1804,7 @@ function refreshHUD(){
       for(const type of types){
         const cost=constructionCost(type);
         add(({barrack:'🏰',hut:'🛖',cauldron:'⚗️',factory:'🏭','witch-house':'🏡'})[type],
-          type==='witch-house'?'Nouvelle maison':ORC_NAMES[type],cost,()=>beginBuild(type),
+          type==='witch-house'?'Maison':ORC_NAMES[type],cost,()=>beginBuild(type),
           gold[activeFaction]<cost||!builderAvailable(activeFaction)||
             (type!=='witch-house'&&!buildingBlueprints.has(type)),
           'Confier '+(type==='witch-house'?'une maison':ORC_NAMES[type])+' à un ouvrier');
@@ -1849,7 +1849,7 @@ function refreshHUD(){
       portrait.textContent=single?single.profile.icon:activeFaction==='witch'?'🧙':'👹';
       title.textContent=single?single.profile.name:alive.length+' unités '+(activeFaction==='witch'?'sorcières':'orcs');
       info.textContent=single?.role==='worker'?
-        'Ouvrier : touchez une mine pour extraire l’or ou choisissez Construire. Aucun combat.':
+        'Ouvrier : touchez une mine pour l’or ou utilisez la construction de base ou avancée. Aucun combat.':
         single?.role==='ranged'?'Combattant à distance : attaque de loin, plus fragile.':
         'Déplacement : touchez le terrain. Les combattants engagent les ennemis proches.';
       const average=Math.round(alive.reduce((sum,u)=>sum+u.health/u.maxHealth,0)/alive.length*100);
@@ -1869,10 +1869,10 @@ function refreshHUD(){
             Math.min(...workers.map(w=>targetDistance(w,b))));
           if(!orderMine(workers,mines[0]))showBanner('AUCUNE MINE DISPONIBLE');
         });
-        add('🏗️',activeFaction==='witch'?'Construire':'Construire base','',()=>{
+        add('🏗️',activeFaction==='witch'?'Construire':'Bât. base','',()=>{
           constructionTab='basic';refreshHUD();
         });
-        if(activeFaction==='orc')add('🏭','Construire avancé','',()=>{
+        if(activeFaction==='orc')add('🏭','Bât. avancé','',()=>{
           constructionTab='advanced';refreshHUD();
         });
       }
