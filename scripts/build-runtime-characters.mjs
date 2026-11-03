@@ -5,7 +5,9 @@
  * The full 86-clip original models remain untouched for motion-lab.html.
  */
 import {NodeIO} from '@gltf-transform/core';
-import {prune} from '@gltf-transform/functions';
+import {prune,textureCompress} from '@gltf-transform/functions';
+import {EXTTextureWebP} from '@gltf-transform/extensions';
+import sharp from 'sharp';
 import {readFileSync,writeFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {gzipSync,gunzipSync} from 'node:zlib';
@@ -16,7 +18,7 @@ const RUNTIME_CLIPS=['Idle_Loop','Walk_Loop','Jog_Fwd_Loop',
   'Punch_Jab','Hit_Chest','Death01','Sword_Idle','Sword_Attack'];
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 const assert=(ok,message)=>{if(!ok)throw Error(message);};
-const io=new NodeIO();
+const io=new NodeIO().registerExtensions([EXTTextureWebP]);
 
 function fingerprintAnimation(animation){
  return animation.listSamplers().map(sampler=>{
@@ -62,7 +64,24 @@ for(const gender of ['female','male']){
   for(const sampler of [...animation.listSamplers()])sampler.dispose();
   animation.dispose();
  }
- await doc.transform(prune());
+ await doc.transform(
+  prune(),
+  // At isometric RTS scale, 2048px source textures are excessive. The full
+  // 86-clip models retain their original 2048px PNGs for the motion lab.
+  // This only converts runtime material images; bone/keyframe arrays remain
+  // byte-for-byte identical, as verified below.
+  textureCompress({
+   encoder:sharp,targetFormat:'webp',resize:[1024,1024],
+   quality:88,effort:5
+  })
+ );
+ console.log('RUNTIME_TEXTURES '+JSON.stringify({
+  gender,
+  textures:root.listTextures().map(t=>({
+   name:t.getName(),bytes:t.getImage()?.byteLength||0,
+   size:t.getSize?.(),mime:t.getMimeType?.()
+  }))
+ }));
  const reduced=root.listAnimations();
  assert(reduced.length===RUNTIME_CLIPS.length,'Incorrect runtime clip count');
  for(const clip of reduced)
