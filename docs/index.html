@@ -1371,8 +1371,7 @@ function enemyOf(actor,target){
 function targetDistance(actor,target){
   const p=actor.root.position;
   if(!isBuilding(target))return Math.hypot(target.root.position.x-p.x,target.root.position.z-p.z);
-  const b=target.hitbox;
-  return Math.hypot(Math.max(b.minX-p.x,0,p.x-b.maxX),Math.max(b.minZ-p.z,0,p.z-b.maxZ));
+  return window.FightersNavigation.distanceToFootprint(p,target.hitbox);
 }
 function nearestHostile(actor,maxDistance=Infinity){
   let nearest=null,distance=maxDistance,priority=Infinity;
@@ -1388,10 +1387,29 @@ function nearestHostile(actor,maxDistance=Infinity){
   return nearest?{target:nearest,distance}:null;
 }
 const BUILDING_CONTACT=.78;
+function footprintCenter(b){
+  // Area-weighted centroid of the actual foundation, not an AABB midpoint.
+  let weight=0,x=0,z=0;
+  for(const polygon of b.polygons||[])for(let k=0;k<polygon.length;k++){
+    const ring=polygon[k];let crossSum=0,cx=0,cz=0;
+    for(let i=0;i<ring.length;i++){
+      const a=ring[i],v=ring[(i+1)%ring.length];
+      const cross=a[0]*v[1]-v[0]*a[1];
+      crossSum+=cross;cx+=(a[0]+v[0])*cross;cz+=(a[1]+v[1])*cross;
+    }
+    if(Math.abs(crossSum)<1e-9)continue;
+    const sign=k===0?1:-1,area=Math.abs(crossSum)/2;
+    x+=sign*area*cx/(3*crossSum);
+    z+=sign*area*cz/(3*crossSum);
+    weight+=sign*area;
+  }
+  return weight>1e-7?{x:x/weight,z:z/weight}:
+    {x:(b.minX+b.maxX)/2,z:(b.minZ+b.maxZ)/2};
+}
 function faceBuildingCenter(actor,building){
-  const b=building.hitbox;
-  faceDirection(actor,(b.minX+b.maxX)/2-actor.root.position.x,
-    (b.minZ+b.maxZ)/2-actor.root.position.z);
+  const centre=footprintCenter(building.hitbox);
+  faceDirection(actor,centre.x-actor.root.position.x,
+    centre.z-actor.root.position.z);
 }
 function approachBuilding(actor,building){
   const b=building.hitbox,p=actor.root.position,pad=UNIT_RADIUS+.14;
@@ -1399,31 +1417,32 @@ function approachBuilding(actor,building){
     actor.approachCache.version===navigatorRTS.version&&
     actor.approachAge<2.5&&navigatorRTS.pointClear(actor.approachCache.point))
     return actor.approachCache.point;
-  const from={x:p.x,z:p.z};
-  const candidates=[];
-  const push=(x,z)=>{
-    const point={x,z};
+  const from={x:p.x,z:p.z},candidates=[],Nav=window.FightersNavigation;
+  const push=point=>{
     if(navigatorRTS.pointClear(point)&&
-      !candidates.some(c=>Math.hypot(c.x-x,c.z-z)<.25))
+      !candidates.some(c=>Math.hypot(c.x-point.x,c.z-point.z)<.25))
       candidates.push(point);
   };
-  // Sample the whole physical perimeter, not just four corners. Attackers
-  // reserve different nearby spots so they surround the building rather than
-  // forming a single pile of units beating one another.
-  const across=(lo,hi)=>{
-    const length=hi-lo,n=Math.max(1,Math.ceil(length/1.15));
-    return Array.from({length:n+1},(_,i)=>lo+length*i/n);
-  };
-  for(const z of across(b.minZ,b.maxZ)){
-    push(b.minX-pad,z);push(b.maxX+pad,z);
+  // Sample the REAL edges, including concave recesses, rather than the four
+  // faces of a guessed bounding rectangle. Check both normal directions
+  // because rings can have opposite winding for holes.
+  for(const [a,c] of window.FightersFootprint.outlineEdges(b)){
+    const dx=c.x-a.x,dz=c.z-a.z,len=Math.hypot(dx,dz);
+    if(len<1e-8)continue;
+    const nx=-dz/len,nz=dx/len;
+    const samples=Math.max(1,Math.ceil(len/1.05));
+    for(let i=0;i<=samples;i++){
+      const t=(i+.0001)/(samples+.0002);
+      const x=a.x+dx*t,z=a.z+dz*t;
+      push({x:x+pad*nx,z:z+pad*nz});
+      push({x:x-pad*nx,z:z-pad*nz});
+    }
   }
-  for(const x of across(b.minX,b.maxX)){
-    push(x,b.minZ-pad);push(x,b.maxZ+pad);
+  const contact=Nav.closestFootprintPoint(from,b);
+  if(contact){
+    const dx=from.x-contact.x,dz=from.z-contact.z,len=Math.hypot(dx,dz);
+    if(len>1e-8)push({x:contact.x+pad*dx/len,z:contact.z+pad*dz/len});
   }
-  const x=THREE.MathUtils.clamp(p.x,b.minX,b.maxX);
-  const z=THREE.MathUtils.clamp(p.z,b.minZ,b.maxZ);
-  const outward={x:p.x-x,z:p.z-z},length=Math.hypot(outward.x,outward.z);
-  if(length>.01)push(x+pad*outward.x/length,z+pad*outward.z/length);
   const coworkers=units.filter(other=>other!==actor&&!other.dead&&
     (other.attackOrder===building||other.attack?.target===building||
       other.mineJob?.mineId===building.id));
