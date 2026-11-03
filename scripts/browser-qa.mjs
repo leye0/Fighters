@@ -136,6 +136,24 @@ async function run(){
    'Wheel or debug API must not modify the locked camera scale');
  await evaluate('window.__fightersQA.reset()');
 
+ // Building taps must hit the actual flat X/Z polygon, never the larger
+ // projected 3D visual AABB or a roof overhang.
+ await evaluate("window.__fightersQA.centerCamera("+
+   ((housePolygon.minX+housePolygon.maxX)/2)+","+
+   ((housePolygon.minZ+housePolygon.maxZ)/2)+")");
+ const miss=await evaluate("window.__fightersQA.groundScreenPoint("+
+   polygonProof.x+","+polygonProof.z+")");
+ await evaluate("window.__fightersQA.tap("+miss.x+","+miss.y+")");
+ check((await evaluate('window.__fightersQA.snapshot()')).selectedBuildingId!==s.house.id,
+   'Tap inside old AABB but outside real GLB footprint selected the house');
+ const hit=await evaluate("window.__fightersQA.buildingScreenPoint("+JSON.stringify(s.house.id)+")");
+ check(hit&&Number.isFinite(hit.x),'Cannot project an interior point of the real footprint');
+ await evaluate("window.__fightersQA.tap("+hit.x+","+hit.y+")");
+ check((await evaluate('window.__fightersQA.snapshot()')).selectedBuildingId===s.house.id,
+   'Tap inside true GLB X/Z footprint must select the house');
+ await evaluate("window.__fightersQA.centerCamera(-18,-14)");
+ console.log('PASS PRECISE BUILDING TAPS: inside actual X/Z polygon selects; empty former AABB does not.');
+
  check(await evaluate('window.__fightersQA.train()'),'Witch training refused');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.gold.witch===1880&&s.trainingCount===1,'Witch production queue must charge gold');
@@ -241,9 +259,9 @@ async function run(){
  check(travel.blocked===0,'A moving orc crossed a building collider: '+JSON.stringify(travel));
  check(travel.end.x>11,'Orc did not navigate around hut to destination: '+JSON.stringify(travel));
 
- // Click the raised 3D hitbox, not just a world-ground distance circle.
+ // Tap the projected real ground polygon, never the oversized 3D roof AABB.
  const clicked=await evaluate("(function(){const s=window.__fightersQA.snapshot();const b=s.buildings.find(b=>!b.initial);const p=window.__fightersQA.buildingScreenPoint(b.id);window.__fightersQA.tap(p.x,p.y);return window.__fightersQA.snapshot().selectedBuildingId===b.id})()");
- check(clicked,'Building roof/hitbox picking failed');
+ check(clicked,'Exact building X/Z polygon picking failed');
  await screenshot('rts-orc-building-panel');
 
  await evaluate("window.__fightersQA.selectOrcBarrack()");

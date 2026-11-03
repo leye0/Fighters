@@ -822,6 +822,12 @@ function worldPoint(clientX,clientY){
   const point=new THREE.Vector3();
   return ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),0),point)?{x:point.x,z:point.z}:null;
 }
+function screenGroundPoint(x,z){
+  const projected=new THREE.Vector3(x,0,z).project(camera);
+  const rect=viewport.getBoundingClientRect();
+  return {x:rect.left+(projected.x+1)*rect.width/2,
+    y:rect.top+(1-projected.y)*rect.height/2};
+}
 function screenPoint(actor){
   const point=actor.root.position.clone();point.y=1;point.project(camera);
   const rect=viewport.getBoundingClientRect();
@@ -849,26 +855,12 @@ function pickUnit(x,y,includeEnemies=false){
   }
   return found;
 }
-function pickBuilding(clientX,clientY){
-  // True 3D volume selection: the roof hits the building even when the
-  // 2D ground-plane point is far behind the building's footprint.
-  const rect=viewport.getBoundingClientRect();
-  const ndc=new THREE.Vector2((clientX-rect.left)/rect.width*2-1,
-    -(clientY-rect.top)/rect.height*2+1);
-  const ray=new THREE.Raycaster();ray.setFromCamera(ndc,camera);
-  let best=null,bestDistance=Infinity;
-  for(const building of liveBuildings()){
-    if(!building.root)continue;
-    // Roof clicks use the FULL visual AABB; navigation and melee use the
-    // smaller physical foundation footprint. These must be separate.
-    const b=building.visualHitbox||building.hitbox,volume=new THREE.Box3(
-      new THREE.Vector3(b.minX,b.minY,b.minZ),new THREE.Vector3(b.maxX,b.maxY,b.maxZ));
-    const point=ray.ray.intersectBox(volume,new THREE.Vector3());
-    if(!point)continue;
-    const distance=point.distanceTo(ray.ray.origin);
-    if(distance<bestDistance){bestDistance=distance;best=building;}
-  }
-  return best;
+function pickBuilding(groundPoint){
+  // A tap selects only the projected GLB X/Z footprint shown by the outline.
+  // Roofs and the 3D visual AABB must not enlarge the interactive area.
+  if(!groundPoint)return null;
+  return liveBuildings().find(building=>building.root&&building.hitbox&&
+    window.FightersFootprints.inside(groundPoint,building.hitbox))||null;
 }
 const activeOrderPings=new Set();
 function removeOrderPing(el){
@@ -1827,11 +1819,11 @@ function touchAt(x,y,append=false){
   if(rallyMode){if(!setRally(selectedBuilding,pos))showBanner('EMPLACEMENT INVALIDE');return;}
   if(buildMode){if(!buildOrc(buildMode,pos.x,pos.z))
     showBanner('EMPLACEMENT INVALIDE / OR INSUFFISANT');return;}
-  const friend=pickUnit(x,y,false),building=pickBuilding(x,y);
+  const friend=pickUnit(x,y,false),building=pickBuilding(pos);
   const unit=pickUnit(x,y,true);
   const faction=activeFaction==='witch'?'witch':'orcs';
-  // A selected unit needs only one more tap on a hostile building: no
-  // separate target mode, and roofs win over nearby unit-selection circles.
+  // A selected unit needs only one more tap inside the hostile GLB footprint:
+  // no separate target mode, and the polygon wins over nearby unit circles.
   if(selected.size){
     if(building&&targetFaction(building)!==faction){
       orderAttack([...selected],building);return;
@@ -1843,9 +1835,8 @@ function touchAt(x,y,append=false){
   if(attackMode){
     showBanner('CIBLE ENNEMIE REQUISE');return;
   }
-  // A true ray hit on the building's 3D roof is more precise than the
-  // enlarged 2D unit touch radius. Do not accidentally select a nearby orc
-  // instead of the building that was tapped.
+  // The exact X/Z polygon wins inside its boundary; outside it, an enlarged
+  // unit touch target must not accidentally select a building.
   if(building){selectBuilding(building);return;}
   if(friend){selectUnits([friend],append);return;}
   if(selected.size){issueMove(pos);return;}
@@ -2262,14 +2253,24 @@ window.__fightersQA={
   setFaction:changeFaction,beginBuild,build:(type,x,z)=>buildOrc(type,x,z),
   setRally:(x,z)=>setRally(selectedBuilding,{x,z}),
   pan:(x,y)=>panCamera(x,y),
+  groundScreenPoint:screenGroundPoint,
   buildingScreenPoint:(id)=>{
-    const b=liveBuildings().find(v=>v.id===id);
-    if(!b)return null;
-    const h=b.hitbox,p=new THREE.Vector3((h.minX+h.maxX)/2,(h.minY+h.maxY)/2,(h.minZ+h.maxZ)/2);
-    p.project(camera);
-    const rect=viewport.getBoundingClientRect();
-    return {x:rect.left+(p.x+1)*rect.width/2,
-      y:rect.top+(1-p.y)*rect.height/2};
+    const building=liveBuildings().find(v=>v.id===id);
+    if(!building)return null;
+    const h=building.hitbox,geometry=window.FightersFootprints;
+    const midX=(h.minX+h.maxX)/2,midZ=(h.minZ+h.maxZ)/2;
+    let target=geometry.inside({x:midX,z:midZ},h)?{x:midX,z:midZ}:null;
+    if(!target){
+      let closest=Infinity;
+      for(let i=1;i<40;i++)for(let j=1;j<40;j++){
+        const x=h.minX+(h.maxX-h.minX)*i/40;
+        const z=h.minZ+(h.maxZ-h.minZ)*j/40;
+        if(!geometry.inside({x,z},h))continue;
+        const d=Math.hypot(x-midX,z-midZ);
+        if(d<closest){closest=d;target={x,z};}
+      }
+    }
+    return target?screenGroundPoint(target.x,target.z):null;
   },
   advance:(seconds)=>{
     const n=Math.ceil(seconds/FIXED_DT);
