@@ -40,8 +40,13 @@
    batch.length=0;
   };
   for(const triangle of triangles){
-   const ring=triangle.map(p=>Array.isArray(p)?p:[p.x,p.z]);
-   if(ring.length<3||Math.abs(signedArea(ring))<1e-10)continue;
+   // glTF matrices produce many near-coincident projected vertices
+   // (~1e-10 apart). Snap only numerical noise at sub-millimetric resolution,
+   // not a hand-chosen collision padding or an AABB approximation.
+   const snap=v=>Math.round(v*100000)/100000;
+   const ring=triangle.map(p=>Array.isArray(p)?
+     [snap(p[0]),snap(p[1])]:[snap(p.x),snap(p.z)]);
+   if(ring.length<3||Math.abs(signedArea(ring))<1e-8)continue;
    batch.push([ring]);
    if(batch.length>=64)flush();
   }
