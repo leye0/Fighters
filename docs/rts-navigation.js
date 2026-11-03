@@ -188,6 +188,7 @@
    constructor({halfSize=28,cellSize=1,radius=.38}={}){
      this.halfSize=halfSize;this.cellSize=cellSize;this.radius=radius;this.version=0;this.obstacles=[];
      this.side=Math.ceil(2*halfSize/cellSize);
+     this._blocked=null;
    }
    setObstacles(obstacles){
      if(!Array.isArray(obstacles)||obstacles.some(b=>
@@ -200,7 +201,20 @@
        const copy={...b};
        if(copy.shape==='polygon')copy._edges=polygonEdges(copy);
        return copy;
-     });this.version++;
+     });
+     // Polygon-edge/cell intersections are expensive. Compute conservative
+     // occupancy only when the building set changes, NOT during every A* step.
+     const blocked=new Uint8Array(this.side*this.side);
+     for(let z=0;z<this.side;z++)for(let x=0;x<this.side;x++){
+       const minX=-this.halfSize+x*this.cellSize;
+       const minZ=-this.halfSize+z*this.cellSize;
+       const square={minX,maxX:minX+this.cellSize,
+         minZ,maxZ:minZ+this.cellSize};
+       if(this.obstacles.some(b=>cellHitsFootprint(square,b,this.radius+.04)))
+         blocked[this.index(x,z)]=1;
+     }
+     this._blocked=blocked;
+     this.version++;
    }
    clamp(p){
      const edge=this.halfSize-this.radius-.08;
@@ -209,7 +223,11 @@
    pointClear(p){
      const limit=this.halfSize-this.radius-.05;
      return Math.abs(p.x)<=limit&&Math.abs(p.z)<=limit&&
-       !this.obstacles.some(b=>distanceToFootprint(p,b)<=this.radius);
+       !this.obstacles.some(b=>{
+         if(p.x<b.minX-this.radius||p.x>b.maxX+this.radius||
+            p.z<b.minZ-this.radius||p.z>b.maxZ+this.radius)return false;
+         return distanceToFootprint(p,b)<=this.radius;
+       });
    }
    segmentClear(from,to){
      if(!this.pointClear(from)||!this.pointClear(to))return false;
@@ -226,11 +244,7 @@
    inside(c){return c.x>=0&&c.z>=0&&c.x<this.side&&c.z<this.side;}
    cellBlocked(c){
      if(!this.inside(c))return true;
-     // Treat cell squares as blocked when they intersect a padded building.
-     const x=-this.halfSize+c.x*this.cellSize,z=-this.halfSize+c.z*this.cellSize;
-     const pad=this.radius+.04;
-     const square={minX:x,maxX:x+this.cellSize,minZ:z,maxZ:z+this.cellSize};
-     return this.obstacles.some(b=>cellHitsFootprint(square,b,pad));
+     return this._blocked?this._blocked[this.index(c.x,c.z)]===1:false;
    }
    findSafeGoal(request){
      const goal=this.clamp(request),raw=this.cell(goal);
