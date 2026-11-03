@@ -9,8 +9,8 @@
  else root.FightersOrcStrategy=api;
 })(typeof globalThis==='object'?globalThis:this,function(){
  'use strict';
- const TYPES=['barrack','hut','mine','cauldron','factory'];
- const COST={barrack:180,hut:120,mine:140,cauldron:200,factory:250};
+ const TYPES=['barrack','hut','cauldron','factory'];
+ const COST={barrack:180,hut:120,cauldron:200,factory:250};
  const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
  const near=(a,b,r)=>dist(a,b)<=r;
  function boxCentre(b){
@@ -90,13 +90,10 @@
        this.clock<30?100:30)){
     orders.push({type:'train',buildingId:barrack.id,reason:own.length<6?'reinforce':'prepare_raid'});
    }
-   // Mine income funds sustained autonomous expansion.
-   if(mines.length<2&&canSpend(COST.mine,110)&&this.clock>8){
-    const site=planSite('mine',buildings,valid);
-    if(site)orders.push({type:'build',building:'mine',x:site.x,z:site.z,reason:'income'});
-   }
-   const wishlist=['hut','barrack','cauldron','factory','hut','mine'];
-   const desired={hut:2,barrack:2,cauldron:2,factory:2,mine:3};
+   // Natural deposits are fixed world resources. The AI may train miners and
+   // upgrade an existing mine, but NEVER create or place an additional mine.
+   const wishlist=['hut','barrack','cauldron','factory','hut'];
+   const desired={hut:2,barrack:2,cauldron:2,factory:2};
    if(this.clock>18&&buildings.length<12){
     for(const type of wishlist){
      if(buildings.filter(b=>b.type===type).length>=desired[type])continue;
