@@ -95,6 +95,7 @@ async function run(){
  // Shortcuts must keep their DOM identity throughout a long simulated match.
  check(await evaluate("['quick-home','quick-army','quick-attack','quick-stop','quick-cancel'].every(id=>!!document.getElementById(id))"),
   'Permanent quick-command bar not found');
+ check(await evaluate("document.querySelector('#quick-select')===null"),'Unwanted Selection button was not removed');
  await evaluate("window.__stableQuick=document.querySelector('#quick-home');window.__stableTrain=document.querySelector('#command-buttons button')");
  const steady=await evaluate('window.__fightersQA.snapshot()');
  await evaluate('window.__fightersQA.advance(70)');
@@ -312,39 +313,27 @@ async function run(){
  check(held.selectedIds.length===1&&held.visibleSelectionRings===1,
    'Stationary one-second hold should select the character under the finger');
  console.log('PASS MOBILE LONG-PRESS: 1s hold then drag selected 3/3 real witches, stationary hold selected 1 witch.');
- // A physical iPhone needs a reliable alternative when Safari cancels hold.
- // The permanent Selection shortcut makes one-finger drag immediately
- // select a real group, WITHOUT a one-second delay or accidental map pan.
- await evaluate("window.__fightersQA.reset();window.__fightersQA.centerCamera(-18,-14);document.querySelector('#quick-select').click()");
- let mode=await evaluate('window.__fightersQA.snapshot()');
- check(mode.selectionMode&&
-   await evaluate("document.querySelector('#quick-select').getAttribute('aria-pressed')==='true'"),
-   'Permanent Selection button did not enter selection mode');
- const groupPoints=await evaluate("Array.from({length:3},(_,i)=>window.__fightersQA.unitScreenPoint('witch',i))");
- const box={x1:Math.max(12,Math.floor(Math.min(...groupPoints.map(p=>p.x))-20)),
-   y1:Math.max(100,Math.floor(Math.min(...groupPoints.map(p=>p.y))-20)),
-   x2:Math.min(378,Math.ceil(Math.max(...groupPoints.map(p=>p.x))+20)),
-   y2:Math.ceil(Math.max(...groupPoints.map(p=>p.y))+20)};
- const cameraBeforeBox={...mode.cameraCenter};
- await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[touch(7,box.x1,box.y1)]});
- mode=await evaluate('window.__fightersQA.snapshot()');
- check(mode.touchGesture==='select'&&mode.selectionRectangleVisible,
-   'Selection shortcut must show an immediate box without waiting one second');
- await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[touch(7,box.x2,box.y2)]});
+ // Verify the EXACT pointerdown -> 1000ms -> pointerup path on a phone.
+ await evaluate("window.__fightersQA.reset();window.__fightersQA.centerCamera(-18,-14)");
+ const beforePointerHold=await evaluate('window.__fightersQA.snapshot()');
+ const pointerCoords=await evaluate("window.__fightersQA.unitScreenPoint('witch',0)");
+ await call('Input.dispatchTouchEvent',{type:'touchStart',
+   touchPoints:[touch(7,pointerCoords.x,pointerCoords.y)]});
+ const pointerStart=await evaluate('window.__fightersQA.snapshot()');
+ check(pointerStart.activeTouches===1&&pointerStart.touchGesture==='waiting'&&
+   pointerStart.touchGestureCounters.starts>beforePointerHold.touchGestureCounters.starts,
+   'Touch gesture did not begin on pointerdown: '+
+     JSON.stringify({before:beforePointerHold.touchGestureCounters,after:pointerStart}));
+ await sleep(1200);
+ const heldPointer=await evaluate('window.__fightersQA.snapshot()');
+ check(heldPointer.touchGesture==='select'&&heldPointer.selectionRectangleVisible,
+   'Pointerdown + one-second timeout did not activate selection: '+JSON.stringify(heldPointer));
  await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
- mode=await evaluate('window.__fightersQA.snapshot()');
- check(mode.selectedIds.length===3&&mode.visibleSelectionRings===3&&!mode.selectionMode,
-   'Selection shortcut failed to select 3 real witches: '+JSON.stringify({box,groupPoints,
-    selected:mode.selectedIds,rings:mode.visibleSelectionRings,counters:mode.touchGestureCounters}));
- check(Math.hypot(mode.cameraCenter.x-cameraBeforeBox.x,mode.cameraCenter.z-cameraBeforeBox.z)<.08,
-   'Explicit box selection must not pan the map');
- check(!mode.selectionRectangleVisible&&
-   await evaluate("document.querySelector('#quick-select').getAttribute('aria-pressed')==='false'"),
-   'Selection shortcut should clear itself and rectangle after choosing units');
- check(await evaluate("(()=>{const b=document.querySelector('#banner').getBoundingClientRect();return b.left>=-1&&b.right<=innerWidth+1&&b.height<95})()"),
-   'Mobile selection confirmation banner is clipped or obscures the map');
- await screenshot('rts-mobile-reliable-selection');
- console.log('PASS MOBILE EXPLICIT SELECTION: quick-select + immediate touch-drag selected 3/3 witches.');
+ const releasedPointer=await evaluate('window.__fightersQA.snapshot()');
+ check(releasedPointer.selectedIds.length===1&&
+   releasedPointer.visibleSelectionRings===1&&releasedPointer.activeTouches===0,
+   'Pointerup must retain selection and release pointer capture: '+JSON.stringify(releasedPointer));
+ console.log('PASS POINTER-ONLY SELECTION: pointerdown, 1000ms timer, pointerup, 1 selected witch.');
 
  await call('Emulation.setTouchEmulationEnabled',{enabled:false});
  await screenshot('rts-mobile-pinch-zoom');
