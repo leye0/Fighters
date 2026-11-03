@@ -15,144 +15,6 @@
  function pointInside(box,x,z,padding=0){
    return x>=box.minX-padding&&x<=box.maxX+padding&&z>=box.minZ-padding&&z<=box.maxZ+padding;
  }
- // 2D geometry is expressed solely in the original GLB world X/Z plane.
- // Each polygon consists of exterior and optional hole rings; no rectangular
- // approximation is used for solid building contours.
- function ringContains(ring,x,z){
-   let inside=false;
-   for(let i=0,j=ring.length-1;i<ring.length;j=i++){
-     const a=ring[i],b=ring[j];
-     if((a[1]>z)!==(b[1]>z)&&
-       x<(b[0]-a[0])*(z-a[1])/(b[1]-a[1])+a[0])inside=!inside;
-   }
-   return inside;
- }
- function insideFootprint(b,x,z){
-   if(b.shape!=='polygon')return pointInside(b,x,z);
-   if(x<b.minX||x>b.maxX||z<b.minZ||z>b.maxZ)return false;
-   return b.polygons.some(poly=>ringContains(poly[0],x,z)&&
-     !poly.slice(1).some(hole=>ringContains(hole,x,z)));
- }
- function nearestSegmentPoint(p,a,b){
-   const dx=b.x-a.x,dz=b.z-a.z;
-   const length=dx*dx+dz*dz;
-   const t=length?clamp(((p.x-a.x)*dx+(p.z-a.z)*dz)/length,0,1):0;
-   return {x:a.x+dx*t,z:a.z+dz*t};
- }
- function polygonEdges(b){
-   if(b._edges)return b._edges;
-   const edges=[];
-   for(const poly of b.polygons||[])for(const ring of poly)
-     for(let i=0;i<ring.length;i++){
-       const v=ring[i],w=ring[(i+1)%ring.length];
-       if(v[0]!==w[0]||v[1]!==w[1])
-         edges.push([{x:v[0],z:v[1]},{x:w[0],z:w[1]}]);
-     }
-   return edges;
- }
- function closestFootprintPoint(p,b){
-   if(b.shape!=='polygon'){
-     const x=clamp(p.x,b.minX,b.maxX),z=clamp(p.z,b.minZ,b.maxZ);
-     if(x!==p.x||z!==p.z)return {x,z};
-     const faces=[
-       {x:b.minX,z:p.z},{x:b.maxX,z:p.z},
-       {x:p.x,z:b.minZ},{x:p.x,z:b.maxZ}];
-     return faces.reduce((best,q)=>distance(p,q)<distance(p,best)?q:best);
-   }
-   let best=null,d2=Infinity;
-   for(const [a,c] of polygonEdges(b)){
-     const q=nearestSegmentPoint(p,a,c);
-     const d=(q.x-p.x)**2+(q.z-p.z)**2;
-     if(d<d2){d2=d;best=q;}
-   }
-   return best;
- }
- function boundaryDistance(p,b){
-   const closest=closestFootprintPoint(p,b);
-   return closest?distance(p,closest):Infinity;
- }
- function distanceToFootprint(p,b){
-   if(b.shape!=='polygon')
-     return Math.hypot(Math.max(b.minX-p.x,0,p.x-b.maxX),
-       Math.max(b.minZ-p.z,0,p.z-b.maxZ));
-   if(p.x<b.minX-1||p.x>b.maxX+1||p.z<b.minZ-1||p.z>b.maxZ+1){
-     // Cheap broadphase, but still use the exact edge distance as result.
-   }
-   return insideFootprint(b,p.x,p.z)?0:boundaryDistance(p,b);
- }
- function cross(a,b,c){
-   return (b.x-a.x)*(c.z-a.z)-(b.z-a.z)*(c.x-a.x);
- }
- function segmentsIntersect(a,b,c,d){
-   const p=cross(a,b,c),q=cross(a,b,d),r=cross(c,d,a),s=cross(c,d,b);
-   const eps=1e-10;
-   if(((p>eps&&q<-eps)||(p<-eps&&q>eps))&&
-      ((r>eps&&s<-eps)||(r<-eps&&s>eps)))return true;
-   if(Math.abs(p)<eps&&distance(nearestSegmentPoint(c,a,b),c)<eps)return true;
-   if(Math.abs(q)<eps&&distance(nearestSegmentPoint(d,a,b),d)<eps)return true;
-   if(Math.abs(r)<eps&&distance(nearestSegmentPoint(a,c,d),a)<eps)return true;
-   if(Math.abs(s)<eps&&distance(nearestSegmentPoint(b,c,d),b)<eps)return true;
-   return false;
- }
- function segmentGap(a,b,c,d){
-   if(segmentsIntersect(a,b,c,d))return 0;
-   return Math.min(distance(a,nearestSegmentPoint(a,c,d)),
-     distance(b,nearestSegmentPoint(b,c,d)),
-     distance(c,nearestSegmentPoint(c,a,b)),
-     distance(d,nearestSegmentPoint(d,a,b)));
- }
- function segmentHitsFootprint(from,to,b,radius=0){
-   if(b.shape!=='polygon')return segmentHitsBox(from,to,b,radius);
-   const minX=Math.min(from.x,to.x)-radius,maxX=Math.max(from.x,to.x)+radius;
-   const minZ=Math.min(from.z,to.z)-radius,maxZ=Math.max(from.z,to.z)+radius;
-   if(maxX<b.minX||minX>b.maxX||maxZ<b.minZ||minZ>b.maxZ)return false;
-   if(insideFootprint(b,from.x,from.z)||insideFootprint(b,to.x,to.z))
-     return true;
-   for(const [a,c] of polygonEdges(b))
-     if(segmentGap(from,to,a,c)<=radius+1e-9)return true;
-   return false;
- }
- function cellHitsFootprint(cell,b,radius){
-   if(b.shape!=='polygon')
-     return cell.minX<=b.maxX+radius&&cell.maxX>=b.minX-radius&&
-       cell.minZ<=b.maxZ+radius&&cell.maxZ>=b.minZ-radius;
-   if(cell.maxX<b.minX-radius||cell.minX>b.maxX+radius||
-      cell.maxZ<b.minZ-radius||cell.minZ>b.maxZ+radius)return false;
-   const corners=[
-     {x:cell.minX,z:cell.minZ},{x:cell.maxX,z:cell.minZ},
-     {x:cell.maxX,z:cell.maxZ},{x:cell.minX,z:cell.maxZ}];
-   if(corners.some(p=>distanceToFootprint(p,b)<=radius))return true;
-   for(const [a,c] of polygonEdges(b)){
-     if([a,c].some(p=>p.x>=cell.minX-radius&&p.x<=cell.maxX+radius&&
-       p.z>=cell.minZ-radius&&p.z<=cell.maxZ+radius))return true;
-     for(let i=0;i<4;i++)
-       if(segmentGap(a,c,corners[i],corners[(i+1)%4])<=radius)return true;
-   }
-   return false;
- }
- function footprintsOverlap(a,b,margin=0){
-   if(a.maxX+margin<b.minX||b.maxX+margin<a.minX||
-      a.maxZ+margin<b.minZ||b.maxZ+margin<a.minZ)return false;
-   const polygonVertices=region=>region.shape==='polygon'?
-     region.polygons.flatMap(poly=>poly[0].map(p=>({x:p[0],z:p[1]}))):
-     [{x:region.minX,z:region.minZ},{x:region.maxX,z:region.minZ},
-      {x:region.maxX,z:region.maxZ},{x:region.minX,z:region.maxZ}];
-   if(polygonVertices(a).some(p=>distanceToFootprint(p,b)<=margin)||
-      polygonVertices(b).some(p=>distanceToFootprint(p,a)<=margin))return true;
-   const edgesA=a.shape==='polygon'?polygonEdges(a):[
-     [{x:a.minX,z:a.minZ},{x:a.maxX,z:a.minZ}],
-     [{x:a.maxX,z:a.minZ},{x:a.maxX,z:a.maxZ}],
-     [{x:a.maxX,z:a.maxZ},{x:a.minX,z:a.maxZ}],
-     [{x:a.minX,z:a.maxZ},{x:a.minX,z:a.minZ}]];
-   const edgesB=b.shape==='polygon'?polygonEdges(b):[
-     [{x:b.minX,z:b.minZ},{x:b.maxX,z:b.minZ}],
-     [{x:b.maxX,z:b.minZ},{x:b.maxX,z:b.maxZ}],
-     [{x:b.maxX,z:b.maxZ},{x:b.minX,z:b.maxZ}],
-     [{x:b.minX,z:b.maxZ},{x:b.minX,z:b.minZ}]];
-   return edgesA.some(([a0,a1])=>edgesB.some(([b0,b1])=>
-     segmentGap(a0,a1,b0,b1)<=margin));
- }
-
  // Swept circle against expanded obstacle AABB, WarConquer's slab intersection.
  function segmentHitsBox(from,to,box,radius){
    let near=0,far=1;
@@ -188,33 +50,11 @@
    constructor({halfSize=28,cellSize=1,radius=.38}={}){
      this.halfSize=halfSize;this.cellSize=cellSize;this.radius=radius;this.version=0;this.obstacles=[];
      this.side=Math.ceil(2*halfSize/cellSize);
-     this._blocked=null;
    }
    setObstacles(obstacles){
-     if(!Array.isArray(obstacles)||obstacles.some(b=>
-       ![b.minX,b.maxX,b.minZ,b.maxZ].every(Number.isFinite)||
-       b.minX>=b.maxX||b.minZ>=b.maxZ||
-       b.shape==='polygon'&&(!Array.isArray(b.polygons)||!b.polygons.length||
-         b.polygons.some(poly=>!poly.length||!poly[0].length))))
-       throw Error('Each obstacle needs a valid nonempty polygon or legacy AABB');
-     this.obstacles=obstacles.map(b=>{
-       const copy={...b};
-       if(copy.shape==='polygon')copy._edges=polygonEdges(copy);
-       return copy;
-     });
-     // Polygon-edge/cell intersections are expensive. Compute conservative
-     // occupancy only when the building set changes, NOT during every A* step.
-     const blocked=new Uint8Array(this.side*this.side);
-     for(let z=0;z<this.side;z++)for(let x=0;x<this.side;x++){
-       const minX=-this.halfSize+x*this.cellSize;
-       const minZ=-this.halfSize+z*this.cellSize;
-       const square={minX,maxX:minX+this.cellSize,
-         minZ,maxZ:minZ+this.cellSize};
-       if(this.obstacles.some(b=>cellHitsFootprint(square,b,this.radius+.04)))
-         blocked[this.index(x,z)]=1;
-     }
-     this._blocked=blocked;
-     this.version++;
+     if(!Array.isArray(obstacles)||obstacles.some(b=>![b.minX,b.maxX,b.minZ,b.maxZ].every(Number.isFinite)||b.minX>=b.maxX||b.minZ>=b.maxZ))
+       throw Error('Each obstacle needs a finite nonempty world-space AABB');
+     this.obstacles=obstacles.map(b=>({...b}));this.version++;
    }
    clamp(p){
      const edge=this.halfSize-this.radius-.08;
@@ -222,16 +62,11 @@
    }
    pointClear(p){
      const limit=this.halfSize-this.radius-.05;
-     return Math.abs(p.x)<=limit&&Math.abs(p.z)<=limit&&
-       !this.obstacles.some(b=>{
-         if(p.x<b.minX-this.radius||p.x>b.maxX+this.radius||
-            p.z<b.minZ-this.radius||p.z>b.maxZ+this.radius)return false;
-         return distanceToFootprint(p,b)<=this.radius;
-       });
+     return Math.abs(p.x)<=limit&&Math.abs(p.z)<=limit&&!this.obstacles.some(b=>pointInside(b,p.x,p.z,this.radius));
    }
    segmentClear(from,to){
      if(!this.pointClear(from)||!this.pointClear(to))return false;
-     return !this.obstacles.some(b=>segmentHitsFootprint(from,to,b,this.radius));
+     return !this.obstacles.some(b=>segmentHitsBox(from,to,b,this.radius));
    }
    index(x,z){return z*this.side+x;}
    coord(i){return {x:i%this.side,z:Math.floor(i/this.side)};}
@@ -244,7 +79,11 @@
    inside(c){return c.x>=0&&c.z>=0&&c.x<this.side&&c.z<this.side;}
    cellBlocked(c){
      if(!this.inside(c))return true;
-     return this._blocked?this._blocked[this.index(c.x,c.z)]===1:false;
+     // Treat cell squares as blocked when they intersect a padded building.
+     const x=-this.halfSize+c.x*this.cellSize,z=-this.halfSize+c.z*this.cellSize;
+     const pad=this.radius+.04;
+     return this.obstacles.some(b=>x<=b.maxX+pad&&x+this.cellSize>=b.minX-pad&&
+       z<=b.maxZ+pad&&z+this.cellSize>=b.minZ-pad);
    }
    findSafeGoal(request){
      const goal=this.clamp(request),raw=this.cell(goal);
@@ -353,7 +192,5 @@
      return this.findSafeGoal(position);
    }
  }
- return {Navigator,pointInside,segmentHitsBox,insideFootprint,closestFootprintPoint,
-   boundaryDistance,distanceToFootprint,segmentHitsFootprint,
-   footprintsOverlap,cellHitsFootprint};
+ return {Navigator,pointInside,segmentHitsBox};
 });
