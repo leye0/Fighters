@@ -243,6 +243,9 @@ async function run(){
    'Two-finger drag must not pan the camera');
  await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
 
+ // Center the map before checking panning: zoom anchoring may have brought
+ // the camera to its ±26 coordinate boundary, where further panning clamps.
+ await evaluate('window.__fightersQA.centerCamera(0,0)');
  const beforeSinglePan=await evaluate('window.__fightersQA.snapshot()');
  await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[touch(4,155,310)]});
  await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[touch(4,220,355)]});
@@ -250,7 +253,10 @@ async function run(){
  const afterSinglePan=await evaluate('window.__fightersQA.snapshot()');
  check(Math.hypot(afterSinglePan.cameraCenter.x-beforeSinglePan.cameraCenter.x,
    afterSinglePan.cameraCenter.z-beforeSinglePan.cameraCenter.z)>.2,
-   'One-finger drag must pan the camera');
+   'One-finger drag must pan the camera: '+JSON.stringify({
+    before:beforeSinglePan.cameraCenter,after:afterSinglePan.cameraCenter,
+    gesture:afterSinglePan.touchGesture,pinch:afterSinglePan.pinch
+   }));
  check(afterSinglePan.selectedIds.join(',')===beforeSinglePan.selectedIds.join(','),
    'One-finger drag inadvertently selected units');
  await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
