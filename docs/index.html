@@ -2893,6 +2893,8 @@ window.__fightersQA={
       x:u.root.position.x,z:u.root.position.z}))},
     construction:pendingBuilds.map(job=>({type:job.type,x:job.x,z:job.z,
       progress:job.progress,cost:job.cost,workerId:units.find(u=>u.constructJob===job)?.id||null})),
+    gpu:{geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,
+      drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles},
     assets:{sourceRigs:sharedClipCatalog.size,sharedMaterials:sharedCostumeMaterials.size,
       sharedProjectiles:boltPool.length+activeBolts.length,activeProjectiles:activeBolts.length,
       roleModelsLoaded:0},
