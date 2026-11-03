@@ -863,6 +863,163 @@ async function run(){
    'Crowd is still walking/oscillating after arrival: '+JSON.stringify(s.witches));
  console.log('PASS twenty witches: 20 distinct goals, complete arrival, idle and stable positions.');
 
+ // Opt-in only: prevent 270 simulated seconds from running (and billing)
+ // on every normal pull request. Run locally with FIGHTERS_LONG_PLAY=1.
+ if(process.env.FIGHTERS_LONG_PLAY==='1'){
+ // Real-match soak: training, a large moving army, physical mining,
+ // autonomous scouting/construction and live WebGL rendering all stay active.
+ // Repeated GC checkpoints distinguish retained JS heap from expected
+ // temporary allocations and raw game-tick CPU growth.
+ await evaluate("window.__fightersQA.reset();window.__fightersQA.enableOrcAI(true);"+
+   "window.__fightersQA.selectHouse();"+
+   "window.__fightersQA.trainRole('witch','worker');"+
+   "window.__fightersQA.trainRole('witch','melee');"+
+   "window.__fightersQA.trainRole('witch','ranged')");
+ await evaluate('window.__fightersQA.advance(22)');
+ const armySize=await evaluate('window.__fightersQA.spawnWitches(20)');
+ check(armySize===20,'Long-play test could not assemble twenty witches: '+armySize);
+ await evaluate("(()=>{const points=[[-16,8],[-14,14],[-10,-12],[-5,8]];"+
+   "const at=points.find(p=>window.__fightersQA.canBuild(p[0],p[1],'witch-house'));"+
+   "if(at)window.__fightersQA.orderBuild('witch-house',at[0],at[1]);})()");
+ await call('HeapProfiler.enable');
+ const longPlay=[];
+ for(const [index,goal] of [[-7,-13],[-13,3],[-6,13],[-12,-8]].entries()){
+   if(await evaluate('window.__fightersQA.snapshot().running')){
+     await evaluate("window.__fightersQA.selectWitches();window.__fightersQA.move("+
+       goal.join(',')+")");
+   }
+   const start=Date.now();
+   await evaluate('window.__fightersQA.advance(20)');
+   const cpuMs=Date.now()-start;
+   // Let the actual requestAnimationFrame/WebGL pipeline catch up after
+   // fast-forwarding game time; the separate RAF render is not faked.
+   await sleep(1250);
+   await call('HeapProfiler.collectGarbage');
+   const heap=await call('Runtime.getHeapUsage');
+   const snap=await evaluate('window.__fightersQA.snapshot()');
+   const sample={phase:index+1,elapsedGameSeconds:(index+1)*20+22,
+     cpuMs,retainedHeapMiB:Math.round(heap.usedSize/1048576*100)/100,
+     totalHeapMiB:Math.round(heap.totalSize/1048576*100)/100,
+     witches:snap.witches.length,orcs:snap.orcs.length,
+     buildings:snap.buildings.filter(b=>!b.destroyed).length,
+     gold:snap.gold,explored:snap.fog.exploredCells,
+     gpu:snap.gpu,aiMode:snap.orcAI.mode,running:snap.running};
+   longPlay.push(sample);
+   console.log('REAL_GAMEPLAY_SOAK',JSON.stringify(sample));
+ }
+ check(longPlay.some(p=>p.orcs>4)&&longPlay.some(p=>p.explored>0),
+   'Long-play did not exercise enemy production and exploration');
+ const tail=longPlay.slice(-2);
+ const driftMiB=tail[1].retainedHeapMiB-tail[0].retainedHeapMiB;
+ console.log('REAL_GAMEPLAY_SOAK_SUMMARY',JSON.stringify({
+   gameSeconds:102,heapDriftMiBLast20Seconds:driftMiB,
+   cpuMsPer20GameSeconds:longPlay.map(p=>p.cpuMs),
+   gpu:longPlay.map(p=>p.gpu)
+ }));
+ await screenshot('rts-real-gameplay-soak');
+
+ // More faithful human session: recruit over time THROUGH the actual HUD
+ // buttons and send dozens of actual pointer clicks to ground points across
+ // the map. This catches leaks in commands, rebuilding, animations and paths
+ // that a one-shot unit spawn cannot exercise.
+ await evaluate('window.__fightersQA.reset();window.__fightersQA.enableOrcAI(true)');
+ const destinations=[[-21,-9],[-14,4],[-6,-3],[-19,15],[-3,15],[9,8],
+   [-10,-15],[15,-10],[-4,21],[-23,3],[5,-18],[-9,18],
+   [18,13],[-16,-19],[2,2],[-3,-24]];
+ let trainingClicks=0,moveClicks=0;
+ const humanSamples=[];
+ for(let cycle=0;cycle<8;cycle++){
+   await evaluate('window.__fightersQA.selectHouse()');
+   for(let recruit=0;recruit<4;recruit++){
+     const slot=[0,1,2,1][(cycle+recruit)%4];
+     const queued=await evaluate("(()=>{const buttons=[...document.querySelectorAll('#command-buttons button')]"+
+       ".filter(b=>b.title.startsWith('Former '));"+
+       "const button=buttons["+slot+"];if(!button||button.disabled)return false;"+
+       "button.click();return true})()");
+     if(queued)trainingClicks++;
+   }
+   const cpuStart=Date.now();
+   await evaluate('window.__fightersQA.advance(9)');
+   for(let move=0;move<6;move++){
+     if(!await evaluate('window.__fightersQA.snapshot().running'))break;
+     const target=destinations[(cycle*6+move)%destinations.length];
+     await evaluate('window.__fightersQA.selectWitches();'+
+       'window.__fightersQA.centerCamera('+target.join(',')+')');
+     const point=await evaluate('window.__fightersQA.groundScreenPoint('+
+       target.join(',')+')');
+     if(!point||!Number.isFinite(point.x)||!Number.isFinite(point.y))continue;
+     // Dispatch genuine browser mouse events through the same handlers as a
+     // player's tap; this does NOT call the test-only move helper.
+     await call('Input.dispatchMouseEvent',{type:'mousePressed',x:point.x,y:point.y,
+       button:'left',buttons:1,clickCount:1});
+     await call('Input.dispatchMouseEvent',{type:'mouseReleased',x:point.x,y:point.y,
+       button:'left',buttons:0,clickCount:1});
+     moveClicks++;
+     await evaluate('window.__fightersQA.advance(2)');
+   }
+   const cpuMs=Date.now()-cpuStart;
+   await sleep(900);
+   await call('HeapProfiler.collectGarbage');
+   const memory=await call('Runtime.getHeapUsage');
+   const game=await evaluate('window.__fightersQA.snapshot()');
+   const sample={cycle:cycle+1,gameSeconds:(cycle+1)*21,
+     trainingClicks,moveClicks,cpuMs,
+     heapMiB:Math.round(memory.usedSize/1048576*100)/100,
+     witches:game.witches.length,orcs:game.orcs.length,
+     buildingCount:game.buildings.filter(b=>!b.destroyed).length,
+     gpu:game.gpu,running:game.running};
+   humanSamples.push(sample);
+   console.log('HUMAN_PLAY_RECRUIT_AND_CLICKS',JSON.stringify(sample));
+   if(!game.running){
+     // A victory/defeat is a real outcome; begin another match to exercise
+     // resource disposal and memory across consecutive played sessions.
+     await evaluate('window.__fightersQA.reset();window.__fightersQA.enableOrcAI(true)');
+   }
+ }
+ check(trainingClicks>=10&&moveClicks>=30,
+   'Long-play scenario did not actually recruit and click repeatedly: '+
+   JSON.stringify({trainingClicks,moveClicks}));
+ console.log('HUMAN_PLAY_SUMMARY',JSON.stringify({
+   simulatedSeconds:168,trainingClicks,moveClicks,
+   retainedHeap:humanSamples.map(p=>p.heapMiB),
+   cpuMs:humanSamples.map(p=>p.cpuMs),
+   gpuTextures:humanSamples.map(p=>p.gpu.textures)
+ }));
+ await screenshot('rts-human-play-recruit-and-move');
+
+ }
+ // Regression for the actual WebGL leak: new skinned characters allocate
+ // their OWN skeleton bone texture. A reset must return texture count to
+ // baseline; merely detaching meshes leaves the GPU allocation alive.
+ await evaluate("window.__fightersQA.enableOrcAI(false);window.__fightersQA.reset()");
+ await sleep(350);
+ const gpuBaseline=(await evaluate('window.__fightersQA.snapshot()')).gpu.textures;
+ const gpuLifecycles=[];
+ for(let cycle=0;cycle<3;cycle++){
+   check(await evaluate('window.__fightersQA.spawnWitches(20)')===20,
+     'Cannot populate GPU skeleton-lifecycle test');
+   await sleep(450);
+   const peak=(await evaluate('window.__fightersQA.snapshot()')).gpu.textures;
+   await evaluate('window.__fightersQA.reset()');
+   await sleep(450);
+   const restored=(await evaluate('window.__fightersQA.snapshot()')).gpu.textures;
+   gpuLifecycles.push({peak,restored});
+   console.log('GPU_BONE_TEXTURE_CYCLE',JSON.stringify({
+     baseline:gpuBaseline,cycle:cycle+1,peak,restored
+   }));
+   check(peak>=restored+10,
+     'GPU did not release per-actor skinning textures after reset: '+
+       JSON.stringify({baseline:gpuBaseline,gpuLifecycles}));
+   // The FIRST cycle can initialize still-unseen material/texture variants.
+   // A true per-unit leak keeps increasing after that warm-up cycle.
+   if(cycle>0)check(restored<=gpuLifecycles[0].restored+2,
+     'GPU texture count grows across repeated identical unit lifecycles: '+
+       JSON.stringify({baseline:gpuBaseline,gpuLifecycles}));
+ }
+ console.log('GPU_BONE_TEXTURE_LIFECYCLE',JSON.stringify({
+   baseline:gpuBaseline,gpuLifecycles
+ }));
+
  await evaluate('window.__fightersQA.enableOrcAI(false);window.__fightersQA.reset()');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.witches.length===3&&s.orcs.length===4&&
