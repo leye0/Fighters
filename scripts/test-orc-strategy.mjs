@@ -8,7 +8,6 @@ const {FogGrid}=require('../docs/rts-fog.js');
 const valid=(x,z)=>x>=3&&x<=25&&z>=3&&z<=25&&!(x>=14&&x<=19&&z>=14&&z<=20);
 const starting=[
  {id:'b',type:'barrack',x:15,z:20,level:1,queue:[],maxHealth:100,health:100},
- {id:'m',type:'mine',x:8,z:24,level:1,queue:[],maxHealth:100,health:100},
  {id:'h',type:'hut',x:22,z:21,level:1,queue:[],maxHealth:100,health:100},
  {id:'c',type:'cauldron',x:16,z:13,level:1,queue:[],maxHealth:100,health:100},
  {id:'f',type:'factory',x:23,z:13,level:1,queue:[],maxHealth:100,health:100}
@@ -38,6 +37,10 @@ assert.deepEqual(waypoint,fog.frontier('orc',{x:19,z:18},()=>true),
  'Scouting targets must be deterministic');
 assert.equal(fog.frontier('orc',{x:19,z:18},()=>false),null,
  'No scouting waypoint may violate path/navigation constraints');
+
+// The director receives clan infrastructure only; world deposits have no owner.
+assert(starting.every(b=>b.type!=='mine'),
+ 'Natural deposits must not be part of the clan settlement state');
 
 const director=new Director();
 let state={

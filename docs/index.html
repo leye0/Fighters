@@ -950,27 +950,33 @@ const buildingBlueprints=new Map();
 const orcLevelEntries=new Map(),orcLevelCache=new Map();
 function createBuildingInstance(entry,type,level,anchor,footprint,model,projection){
   const spec=BUILDING_TYPES[type].levels[level];
-  const id='orc-'+type+'-'+String([...buildingInstances.keys()].filter(key=>key.startsWith('orc-'+type+'-')).length+1).padStart(2,'0');
+  const id=type==='mine'?
+    'neutral-gold-mine-'+String([...buildingInstances.values()].filter(b=>b.type==='mine').length+1).padStart(2,'0'):
+    'orc-'+type+'-'+String([...buildingInstances.keys()].filter(key=>key.startsWith('orc-'+type+'-')).length+1).padStart(2,'0');
   const instance={
     id,modelId:entry.id,sourceNode:entry.sourceNode||entry.name,
-    type,level,clanId:'orcs',health:spec.maxHealth,maxHealth:spec.maxHealth,
+    type,level,clanId:type==='mine'?'neutral':'orcs',
+    health:spec.maxHealth,maxHealth:spec.maxHealth,
     constructionCost:spec.constructionCost,requiredTechnology:spec.requiredTechnology,
     hitbox:buildingBounds(model,projection),visualHitbox:buildingVisualBounds(anchor),
     queue:[],progress:0,rally:null,rallyMarker:null,
     root:anchor,footprintProjection:projection,visualLevel:1,initial:false,destroyed:false
   };
-  const bar=new THREE.Group();
-  bar.name='healthbar-world-'+id;
-  const background=new THREE.Mesh(new THREE.PlaneGeometry(2.3,.24),
-    new THREE.MeshBasicMaterial({color:0x292929,depthTest:false,side:THREE.DoubleSide}));
-  const fill=new THREE.Mesh(new THREE.PlaneGeometry(2.2,.17),
-    new THREE.MeshBasicMaterial({color:0x65c957,depthTest:false,side:THREE.DoubleSide}));
-  fill.position.z=.01;
-  bar.add(background,fill);
-  // World-space billboard: never inherit the rotated/scaled orc GLB transform.
-  instance.healthBar={root:bar,fill};
-  scene.add(bar);
-  updateHealthBar(instance);
+  // Deposits are permanent world resources. No HP bar or per-mine UI meshes.
+  if(type!=='mine'){
+    const bar=new THREE.Group();
+    bar.name='healthbar-world-'+id;
+    const background=new THREE.Mesh(new THREE.PlaneGeometry(2.3,.24),
+      new THREE.MeshBasicMaterial({color:0x292929,depthTest:false,side:THREE.DoubleSide}));
+    const fill=new THREE.Mesh(new THREE.PlaneGeometry(2.2,.17),
+      new THREE.MeshBasicMaterial({color:0x65c957,depthTest:false,side:THREE.DoubleSide}));
+    fill.position.z=.01;
+    bar.add(background,fill);
+    // World-space billboard: never inherit the rotated/scaled orc GLB transform.
+    instance.healthBar={root:bar,fill};
+    scene.add(bar);
+    updateHealthBar(instance);
+  }
   buildingInstances.set(id,instance);
   updateNavObstacles();
   return instance;
@@ -1103,10 +1109,10 @@ async function loadOrcVillage(limit=3){
       const mirrorModel=mirror.children[0]?.children[0];
       if(mirrorModel){
         const deposit=createBuildingInstance(entries[i],type,1,mirror,target,mirrorModel,projection);
-        deposit.clanId='neutral';deposit.initial=true;deposit.id='neutral-gold-mine';
-        buildingInstances.delete('orc-mine-02');
+        const generatedId=deposit.id;
+        deposit.initial=true;deposit.id='neutral-gold-mine';
+        buildingInstances.delete(generatedId);
         buildingInstances.set(deposit.id,deposit);
-        deposit.healthBar.root.name='healthbar-world-'+deposit.id;
         village.add(mirror);updateNavObstacles();
       }
     }
@@ -1440,10 +1446,12 @@ function trainingDuration(building,kind,role='melee'){
   return (kind==='orc'?ORC_TRAIN_DURATION:TRAIN_DURATION)*(1-.2*(building.level-1))*factor;
 }
 function upgradeCost(building){
+  if(!building||building.type==='mine'||building.clanId==='neutral')return null;
   return building.level>=3?null:(building.clanId==='witch'?230:160)+building.level*100;
 }
 function queueOrder(building,kind,role='melee'){
-  if(!running||paused||!building||building.destroyed||building.queue.length>=MAX_QUEUE)return false;
+  if(!running||paused||!building||building.destroyed||building.clanId==='neutral'||
+    building.type==='mine'||building.queue.length>=MAX_QUEUE)return false;
   const faction=building.clanId==='witch'?'witch':'orc';
   if(kind==='witch'&&(faction!=='witch'||building.type!=='witch-house')||
      kind==='orc'&&(faction!=='orc'||building.type!=='barrack'))return false;
@@ -1566,7 +1574,7 @@ async function useOrcLevelModel(building,level){
   updateNavObstacles();drawBuildingSelection();refreshHUD();
 }
 function finishUpgrade(building){
-  if(building.level>=3)return;
+  if(building.type==='mine'||building.clanId==='neutral'||building.level>=3)return;
   const prev=building.maxHealth;building.level++;
   building.maxHealth=building.clanId==='witch'?500+250*(building.level-1):
     BUILDING_TYPES[building.type].levels[building.level].maxHealth;
@@ -1588,7 +1596,7 @@ function stepProduction(dt){
   }
 }
 function setRally(building,location){
-  if(!building)return false;
+  if(!building||building.clanId==='neutral')return false;
   const point=navigatorRTS.findSafeGoal(location);if(!point)return false;
   building.rally=point;rallyMode=false;
   if(building.rallyMarker){
@@ -1817,14 +1825,18 @@ function refreshHUD(){
       portrait.textContent=icons[b.type]||'🏠';
       title.textContent=names[b.type]||'Bâtiment';
       const friendly=b.clanId===(activeFaction==='orc'?'orcs':'witch');
-      info.textContent=!friendly?'Bâtiment ennemi · sélectionnez vos unités pour l’attaquer.':b.clanId==='witch'?
+      info.textContent=b.type==='mine'?
+        'Gisement d’or neutre et indestructible · exploitable par les ouvriers des deux clans.':
+        !friendly?'Bâtiment ennemi · sélectionnez vos unités pour l’attaquer.':b.clanId==='witch'?
         'Bâtiment de production des sorcières · améliorations : formation plus rapide, davantage de PV.':
         b.type==='barrack'?'Caserne orc · formation de combattants et améliorations.':
         'Bâtiment orc · améliorer la structure et définir un point de rassemblement.';
-      const track=document.createElement('div');track.className='hp-track';
-      const fill=document.createElement('div');fill.className='hp-fill';
-      fill.style.width=100*b.health/b.maxHealth+'%';track.appendChild(fill);
-      health.append(document.createTextNode('Niv. '+b.level+' · PV '+Math.ceil(b.health)+' / '+b.maxHealth),track);
+      if(b.type!=='mine'){
+        const track=document.createElement('div');track.className='hp-track';
+        const fill=document.createElement('div');fill.className='hp-fill';
+        fill.style.width=100*b.health/b.maxHealth+'%';track.appendChild(fill);
+        health.append(document.createTextNode('Niv. '+b.level+' · PV '+Math.ceil(b.health)+' / '+b.maxHealth),track);
+      }
       if(friendly&&(b.type==='witch-house'||b.type==='barrack')){
         const clan=b.clanId==='witch'?'witch':'orc';
         for(const role of ROLE_IDS){
@@ -1836,7 +1848,7 @@ function refreshHUD(){
         }
       }
       const cost=upgradeCost(b),pending=b.queue.some(item=>item.kind==='upgrade');
-      if(friendly)add('⬆️','Améliorer',cost,()=>issueUpgrade(b),
+      if(friendly&&b.type!=='mine')add('⬆️','Améliorer',cost,()=>issueUpgrade(b),
         cost===null||pending||gold[faction]<cost||b.queue.length>=MAX_QUEUE||paused,
         cost===null?'Niveau maximal':pending?'Amélioration déjà dans la file':
         'Améliorer au niveau '+(b.level+1));
@@ -1862,8 +1874,7 @@ function refreshHUD(){
       if(alive.some(roles.isWorker)){
         add('⛏️','Miner','',()=>{
           const mines=[...buildingInstances.values()].filter(b=>b.type==='mine'&&
-            !b.destroyed&&(b.clanId==='neutral'||b.clanId===(
-              activeFaction==='orc'?'orcs':'witch')));
+            b.clanId==='neutral'&&!b.destroyed);
           const workers=alive.filter(roles.isWorker);
           mines.sort((a,b)=>Math.min(...workers.map(w=>targetDistance(w,a)))-
             Math.min(...workers.map(w=>targetDistance(w,b))));
@@ -1886,13 +1897,14 @@ function refreshHUD(){
       add('↩','Annuler','',cancelTransientMode,false,'Annuler l’ordre en cours');
     $('selection-summary').textContent=buildMode?'Poser '+(ORC_NAMES[buildMode]||'maison'):
       rallyMode?'Choisir un point de rassemblement':b?
+      b.type==='mine'?'Gisement d’or · neutre':
       (b.type==='witch-house'?'Maison des sorcières':ORC_NAMES[b.type])+' · niveau '+b.level:
       alive.length+' unité(s) sélectionnée(s)';
   }
   // Mutable health, gold and AI income never rebuild the command DOM.
   // Reusing the exact buttons prevents flicker, focus loss, GC pressure and
   // the ResizeObserver/render-layout feedback that slowed long battles.
-  if(b){
+  if(b&&b.type!=='mine'){
     const hp=health.firstChild,fill=health.querySelector('.hp-fill');
     const text='Niv. '+b.level+' · PV '+Math.ceil(b.health)+' / '+b.maxHealth+
       (b.queue.length?' · ⏳ '+Math.floor(100*clamp(b.progress/b.queue[0].duration,0,1))+'%':'');
@@ -1951,7 +1963,9 @@ function refreshHUD(){
       });
       queueUI.appendChild(jobs);
     }else{
-      queueUI.textContent=b?'File de production vide · max. '+MAX_QUEUE+' commandes':'Sélectionnez un bâtiment pour ses commandes';
+      queueUI.textContent=b?.type==='mine'?'Ressource neutre · aucune production':
+        b?'File de production vide · max. '+MAX_QUEUE+' commandes':
+        'Sélectionnez un bâtiment pour ses commandes';
     }
   }
   $('command-panel').classList.toggle('has-queue',!!b?.queue.length);
@@ -2149,7 +2163,7 @@ function isSceneDescendant(node){
   return false;
 }
 function destroyBuilding(building){
-  if(building.destroyed)return;
+  if(building.type==='mine'||building.clanId==='neutral'||building.destroyed)return;
   building.destroyed=true;building.health=0;building.queue.length=0;
   building.progress=0;
   building.root.parent?.remove(building.root);
@@ -2171,7 +2185,7 @@ function destroyBuilding(building){
     b=>!b.destroyed&&b.clanId==='orcs'))endBattle(true);
 }
 function damageBuilding(building,amount,attacker){
-  if(building.destroyed)return;
+  if(building.type==='mine'||building.clanId==='neutral'||building.destroyed)return;
   building.health=Math.max(0,building.health-amount);
   if(building.healthBar){
     building.healthBar.fill.material.color.setHex(0x72cb6a);
@@ -2249,7 +2263,7 @@ const MINING_SECONDS=4.5,MINING_PAY=22;
 function assignMiners(){
   if(!orcDirector.enabled||!running)return;
   const mines=[...buildingInstances.values()].filter(b=>b.type==='mine'&&
-    b.clanId==='orcs'&&!b.destroyed);
+    b.clanId==='neutral'&&!b.destroyed);
   const orcs=units.filter(u=>u.kind==='orc'&&roles.isWorker(u)&&!u.dead&&!u.constructJob);
   const limit=Math.min(mines.length,Math.max(1,Math.floor(orcs.length/3)));
   let assigned=orcs.filter(u=>u.mineJob&&mines.some(b=>b.id===u.mineJob.mineId));
@@ -2271,8 +2285,8 @@ function assignMiners(){
   }
 }
 function canMine(actor,mine){
-  return roles.isWorker(actor)&&mine?.type==='mine'&&!mine.destroyed&&
-    (mine.clanId==='neutral'||mine.clanId===unitFaction(actor));
+  return roles.isWorker(actor)&&mine?.type==='mine'&&
+    mine.clanId==='neutral'&&!mine.destroyed;
 }
 function orderMine(actors,mine){
   if(!mine||mine.type!=='mine')return false;
@@ -2922,13 +2936,14 @@ window.__fightersQA={
       id:b.id,type:b.type,clanId:b.clanId,level:b.level,visualLevel:b.visualLevel,
       x:b.root.position.x,z:b.root.position.z,hitbox:{...b.hitbox},
       queue:b.queue.map(j=>({...j})),initial:b.initial,destroyed:b.destroyed,
+      destructible:b.type!=='mine'&&b.clanId!=='neutral',
       health:b.health,maxHealth:b.maxHealth,
-      healthbarParent:b.healthBar.root.parent===scene?'scene':'incorrect',
-      healthbarQuaternion:b.healthBar.root.quaternion.toArray(),
-      healthbarPosition:b.healthBar.root.position.toArray(),
-      healthbarVisible:b.healthBar.root.visible,
-      healthbarFillScale:b.healthBar.fill.scale.x,
-      healthbarFillOffset:b.healthBar.fill.position.x
+      healthbarParent:b.healthBar?(b.healthBar.root.parent===scene?'scene':'incorrect'):null,
+      healthbarQuaternion:b.healthBar?b.healthBar.root.quaternion.toArray():null,
+      healthbarPosition:b.healthBar?b.healthBar.root.position.toArray():null,
+      healthbarVisible:b.healthBar?.root.visible??false,
+      healthbarFillScale:b.healthBar?.fill.scale.x??null,
+      healthbarFillOffset:b.healthBar?.fill.position.x??null
     })),
     blueprints:[...buildingBlueprints.keys()],witchHouseLoaded:!!witchHouse
   }),
@@ -2976,14 +2991,22 @@ window.__fightersQA={
   },
   setBuildingHealth:(id,value)=>{
     const b=[witchBuilding,...buildingInstances.values()].find(v=>v.id===id);
-    if(b&&!b.destroyed){b.health=Math.max(1,Math.min(b.maxHealth,value));updateHealthBar(b);}
+    if(b&&!b.destroyed&&b.clanId!=='neutral'&&b.type!=='mine'){
+      b.health=Math.max(1,Math.min(b.maxHealth,value));updateHealthBar(b);
+    }
   },
   passive:kind=>{qaPassiveKind=kind||null;},
   enableOrcAI:value=>{orcDirector.enabled=!!value;orcDirector.reset();orcIncomeFraction=0;refreshHUD();},
   upgradeHouse:()=>issueUpgrade(witchBuilding),
   upgradeSelected:()=>issueUpgrade(selectedBuilding),
+  upgradeBuilding:id=>issueUpgrade([witchBuilding,...buildingInstances.values()]
+    .find(b=>b.id===id)),
   cancel:(index=0)=>cancelOrder(selectedBuilding,index),
   selectHouse:()=>selectBuilding(witchBuilding),
+  selectBuildingById:id=>{
+    const building=[witchBuilding,...buildingInstances.values()].find(b=>b.id===id);
+    if(building&&!building.destroyed)selectBuilding(building);
+  },
   selectWitches:()=>selectUnits(units.filter(a=>a.kind==='witch'&&!a.dead)),
   selectOrcs:()=>selectUnits(units.filter(a=>a.kind==='orc'&&!a.dead)),
   selectOrcBarrack:()=>{

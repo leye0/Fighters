@@ -70,7 +70,7 @@
    // An enemy base is a strategic target only after a real line-of-sight discovery.
    const enemyBaseKnown=state.enemyBaseKnown===true;
    const barrack=buildings.find(b=>b.type==='barrack');
-   const mines=buildings.filter(b=>b.type==='mine');
+   // Neutral deposits are handled by miners, never as clan infrastructure.
    const base={x:19,z:18};
    const attackers=enemy.filter(u=>u.role!=='worker'&&
     (near(u,base,16)||buildings.some(b=>near(u,boxCentre(b),6.5))));
