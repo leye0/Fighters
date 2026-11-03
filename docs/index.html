@@ -956,24 +956,31 @@ function cancelOrder(building,index){
   refreshHUD();return true;
 }
 function buildingPerimeterSites(building,clearance=UNIT_RADIUS+.08){
-  const collider=building.hitbox,sites=[],geometry=window.FightersFootprints;
+  // A source mesh can have thousands of microscopic contour edges. Sample
+  // by actual perimeter ARC LENGTH instead of once per vertex, and cache the
+  // result until a building changes. Collider detail is NEVER simplified.
+  const key=clearance.toFixed(4)+':'+navigatorRTS.version;
+  if(building.perimeterCache?.key===key)return building.perimeterCache.sites;
+  const collider=building.hitbox,sites=[],spacing=UNIT_RADIUS*2.25;
   for(const poly of collider.polygons)for(const ring of poly){
+    let remaining=spacing*.5;
     for(let k=0;k<ring.length;k++){
       const a=ring[k],b=ring[(k+1)%ring.length],dx=b[0]-a[0],dz=b[1]-a[1];
       const length=Math.hypot(dx,dz);
-      if(length<1e-7)continue;
-      const n=Math.max(1,Math.ceil(length/(UNIT_RADIUS*2.25)));
-      for(let i=0;i<n;i++){
-        const t=(i+.5)/n,x=a[0]+dx*t,z=a[1]+dz*t;
+      if(length<1e-8)continue;
+      while(remaining<=length){
+        const t=remaining/length,x=a[0]+dx*t,z=a[1]+dz*t;
         for(const sign of [-1,1]){
           const p={x:x+sign*(-dz/length)*clearance,
             z:z+sign*(dx/length)*clearance};
-          if(geometry.distanceTo(p,collider)+1e-5<clearance)continue;
           if(navigatorRTS.pointClear(p))sites.push(p);
         }
+        remaining+=spacing;
       }
+      remaining-=length;
     }
   }
+  building.perimeterCache={key,sites};
   return sites;
 }
 function safeSpawnNear(building){
