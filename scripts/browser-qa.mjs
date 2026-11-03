@@ -136,6 +136,35 @@ async function run(){
    'Wheel or debug API must not modify the locked camera scale');
  await evaluate('window.__fightersQA.reset()');
 
+ // Warcraft fog: unknown terrain is black, walking discovers it, memory persists,
+ // and restarting clears every previously explored tile.
+ const fogState=await evaluate('window.__fightersQA.snapshot().fog');
+ check(fogState.activeFaction==='witch'&&fogState.size===112&&
+   fogState.bytes===150528&&fogState.visibleCells>0&&
+   fogState.exploredCells<fogState.cells/3,
+   'Fog must use a compact, local starting discovery area: '+JSON.stringify(fogState));
+ const hidden=await evaluate('window.__fightersQA.fogAt(22,21)');
+ check(hidden.explored===0&&hidden.visible===0,
+   'The enemy side must be completely unknown at match start');
+ await screenshot('rts-fog-start');
+ const beforeExplore=await evaluate('window.__fightersQA.fogAt(-8,-8)');
+ check(beforeExplore.explored===0,'Distant central ground must begin black');
+ await evaluate("window.__fightersQA.selectUnit('witch',0);window.__fightersQA.move(-8,-8);window.__fightersQA.advance(8)");
+ const discovered=await evaluate('window.__fightersQA.fogAt(-8,-8)');
+ check(discovered.explored>.1,
+   'Walking toward a tile must reveal new terrain: '+JSON.stringify(discovered));
+ const exploredCount=await evaluate('window.__fightersQA.snapshot().fog.exploredCells');
+ check(exploredCount>fogState.exploredCells,'Exploration did not expand the visible map');
+ await evaluate("window.__fightersQA.moveUnitTo('witch',0,-8,-8);window.__fightersQA.moveUnitTo('witch',1,-8,-8);window.__fightersQA.moveUnitTo('witch',2,-8,-8)");
+ const remembered=await evaluate('window.__fightersQA.fogAt(-18,-13)');
+ check(remembered.explored>0&&remembered.visible===0,
+   'A previously visited tile should remain explored but darken after departure');
+ await screenshot('rts-fog-explored');
+ await evaluate('window.__fightersQA.reset()');
+ check((await evaluate('window.__fightersQA.fogAt(-8,-8)')).explored===0,
+   'Reset must discard exploration from the prior match');
+ console.log('PASS FOG OF WAR: black unknown, reveal by walking, remembered darkness, compact buffers, reset.');
+
  // Building taps must hit the actual flat X/Z polygon, never the larger
  // projected 3D visual AABB or a roof overhang.
  await evaluate("window.__fightersQA.centerCamera("+
@@ -430,6 +459,13 @@ async function run(){
  await evaluate("window.__fightersQA.centerCamera(22,21)");
  const targetPoint=await evaluate("window.__fightersQA.buildingScreenPoint("+JSON.stringify(hutId)+")");
  check(targetPoint&&Number.isFinite(targetPoint.x),'Cannot project hut');
+ await evaluate("window.__fightersQA.tap("+targetPoint.x+","+targetPoint.y+")");
+ tapState=await evaluate('window.__fightersQA.snapshot()');
+ check(tapState.witches.find(u=>u.id===tapState.selectedIds[0])?.attackTargetId!==hutId,
+   'Invisible enemy building must not be targetable through black fog');
+ await evaluate("window.__fightersQA.moveUnitTo('witch',0,18.5,21)");
+ check((await evaluate('window.__fightersQA.fogAt(22,21)')).visible>.2,
+   'Scout next to enemy hut must reveal the target');
  await evaluate("window.__fightersQA.tap("+targetPoint.x+","+targetPoint.y+")");
  tapState=await evaluate('window.__fightersQA.snapshot()');
  check(tapState.witches.find(u=>u.id===tapState.selectedIds[0])?.attackTargetId===hutId,

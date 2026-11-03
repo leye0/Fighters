@@ -20,6 +20,12 @@ Fighters est un prototype de **stratégie en temps réel** en 3D isométrique. L
 
 Le groupe **🧙 / ⚔ / + / −** qui occupait la barre supérieure a été retiré. La carte conserve seulement les ressources, un état résumé de l'IA orc et un petit bouton pause. Les véritables commandes sont dans la barre inférieure contextuelle, inspirée des RTS classiques.
 
+## Brouillard de guerre
+
+La carte débute **noire hors du champ de vision des unités**. Chaque sorcière ou orc découvre progressivement un rayon de 7,5 unités en marchant. Les zones déjà visitées restent connues, mais sont assombries quand aucun éclaireur n'y voit encore, comme dans Warcraft. Les ennemis cachés ne peuvent pas être ciblés par un clic ou un toucher, mais il est toujours possible d'ordonner un déplacement vers une zone inconnue. Chaque clan garde sa propre exploration; une nouvelle partie efface la découverte.
+
+La visibilité repose sur une grille de **112 × 112 cases (0,5 unité)**, commune à toutes les unités d'un clan. Les deux clans utilisent environ **147 Kio de données** au total, et un seul masque GPU couvrant l'écran; la grille est actualisée huit fois par seconde au maximum, sans ajout de modèles ou textures lourdes.
+
 ## Interface RTS
 
 La **barre inférieure** est divisée en **deux zones séparées**. La première contient cinq **raccourcis permanents** (Maison, Armée, Attaquer, Stop, Annuler) qui restent en place même lorsqu'un mode d'attaque, une construction ou un bâtiment est sélectionné. La seconde affiche le portrait, le nom et le niveau du bâtiment sélectionné, les points de vie, une barre de santé et une grille de commandes contextuelles (**entraînement, amélioration, point de rassemblement et annulation/remboursement**). Un indicateur flottant donne les instructions de placement ou de ciblage **sans masquer les raccourcis**. La sélection rectangulaire mobile utilise un seul parcours `pointerdown` → minuterie d'une seconde → `pointermove` → `pointerup`, sans bouton auxiliaire ni deuxième gestionnaire tactile.

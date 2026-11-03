@@ -120,6 +120,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 <script src="./rts-navigation.js"></script>
 <script src="./rts-unit-physics.js"></script>
 <script src="./orc-strategy.js"></script>
+<script src="./rts-fog.js"></script>
 </head>
 <body>
 <div class="game-shell"><section class="arcade">
@@ -332,6 +333,71 @@ orcDirector.enabled=autonomousOrcs;
 let orcIncomeFraction=0,attackMode=false,strategyAccumulator=0;
 let completedMiningCycles=0,totalMinedGold=0;
 let qaPassiveKind=null;
+// Warcraft-style map exploration: one 112×112 RGBA texture (49 KiB) is
+// rendered across the viewport; both factions' discovery grids use ~147 KiB.
+const fogOfWar=new window.FightersFog.FogGrid({halfSize:ARENA_HALF,cellSize:.5,radius:7.5,fade:1.25});
+const fogTexture=new THREE.DataTexture(fogOfWar.textureData('witch'),
+  fogOfWar.size,fogOfWar.size,THREE.RGBAFormat);
+fogTexture.minFilter=THREE.LinearFilter;fogTexture.magFilter=THREE.LinearFilter;
+fogTexture.generateMipmaps=false;fogTexture.needsUpdate=true;
+const fogShader=new THREE.ShaderMaterial({
+  transparent:true,depthTest:false,depthWrite:false,
+  uniforms:{
+    mask:{value:fogTexture},origin:{value:new THREE.Vector2()},
+    right:{value:new THREE.Vector2()},up:{value:new THREE.Vector2()},
+    halfSize:{value:ARENA_HALF},worldSize:{value:ARENA_SIZE}
+  },
+  vertexShader:`varying vec2 vUv;
+    void main(){vUv=uv;gl_Position=vec4(position.xy,0.0,1.0);}`,
+  fragmentShader:`varying vec2 vUv;
+    uniform sampler2D mask;
+    uniform vec2 origin,right,up;
+    uniform float halfSize,worldSize;
+    void main(){
+      vec2 world=origin+right*vUv.x+up*vUv.y;
+      vec2 uv=(world+vec2(halfSize))/worldSize;
+      if(uv.x<0.0||uv.y<0.0||uv.x>=1.0||uv.y>=1.0){
+        gl_FragColor=vec4(0.0,0.0,0.0,1.0);return;
+      }
+      vec2 coverage=texture2D(mask,uv).rg;
+      // Never visited: pitch black. Explored: dim memory. In sight: clear.
+      float light=max(coverage.g,coverage.r*0.32);
+      gl_FragColor=vec4(0.0,0.0,0.0,1.0-light);
+    }`
+});
+const fogScene=new THREE.Scene(),fogCamera=new THREE.Camera();
+const fogQuad=new THREE.Mesh(new THREE.PlaneGeometry(2,2),fogShader);
+fogQuad.frustumCulled=false;fogScene.add(fogQuad);
+const fogRay=new THREE.Raycaster(),fogNDC=new THREE.Vector2();
+const fogFloor=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+const fogBL=new THREE.Vector3(),fogBR=new THREE.Vector3(),fogTL=new THREE.Vector3();
+let fogStarted=false,fogElapsed=0;
+function fogSampleCorner(nx,ny,out){
+  fogNDC.set(nx,ny);fogRay.setFromCamera(fogNDC,camera);
+  fogRay.ray.intersectPlane(fogFloor,out);
+}
+function positionFogOverlay(){
+  camera.updateMatrixWorld();
+  fogSampleCorner(-1,-1,fogBL);
+  fogSampleCorner(1,-1,fogBR);
+  fogSampleCorner(-1,1,fogTL);
+  fogShader.uniforms.origin.value.set(fogBL.x,fogBL.z);
+  fogShader.uniforms.right.value.set(fogBR.x-fogBL.x,fogBR.z-fogBL.z);
+  fogShader.uniforms.up.value.set(fogTL.x-fogBL.x,fogTL.z-fogBL.z);
+}
+function updateVision(){
+  for(const [clan,kind] of [['witch','witch'],['orc','orc']]){
+    const scouts=units.filter(actor=>actor.kind===kind&&!actor.dead)
+      .map(actor=>({x:actor.root.position.x,z:actor.root.position.z}));
+    fogOfWar.update(clan,scouts);
+  }
+  fogTexture.image.data=fogOfWar.textureData(activeFaction);
+  fogTexture.needsUpdate=true;
+}
+function visibleToPlayer(x,z){
+  return fogOfWar.visibleAt(x,z,activeFaction);
+}
+
 let cameraFollow={x:0,z:0};
 const cameraLook=new THREE.Vector3(0,1.15,0);
 const clock=new THREE.Clock();
@@ -844,7 +910,8 @@ function pickUnit(x,y,includeEnemies=false){
     y:rect.top+(1-p.y)*rect.height/2
   });
   for(const actor of units){
-    if(actor.dead||(!includeEnemies&&actor.kind!==activeFaction))continue;
+    if(actor.dead||(!includeEnemies&&actor.kind!==activeFaction)||
+      !visibleToPlayer(actor.root.position.x,actor.root.position.z))continue;
     const world=actor.root.position;
     const base=screen(new THREE.Vector3(world.x,.05,world.z).project(camera));
     const top=screen(new THREE.Vector3(world.x,2.45,world.z).project(camera));
@@ -858,7 +925,7 @@ function pickUnit(x,y,includeEnemies=false){
 function pickBuilding(groundPoint){
   // A tap selects only the projected GLB X/Z footprint shown by the outline.
   // Roofs and the 3D visual AABB must not enlarge the interactive area.
-  if(!groundPoint)return null;
+  if(!groundPoint||!visibleToPlayer(groundPoint.x,groundPoint.z))return null;
   return liveBuildings().find(building=>building.root&&building.hitbox&&
     window.FightersFootprints.inside(groundPoint,building.hitbox))||null;
 }
@@ -1334,7 +1401,9 @@ function refreshHUD(){
 }
 function changeFaction(faction){
   if(faction!=='witch'&&faction!=='orc')return;
-  activeFaction=faction;buildMode=null;rallyMode=false;constructionTab=false;attackMode=false;clearSelection();refreshHUD();
+  activeFaction=faction;buildMode=null;rallyMode=false;constructionTab=false;attackMode=false;
+  fogTexture.image.data=fogOfWar.textureData(activeFaction);fogTexture.needsUpdate=true;
+  clearSelection();refreshHUD();
 }
 function showBanner(message){
   // Short, compositor-driven toast. A JS timeout can be delayed under heavy
@@ -1370,6 +1439,7 @@ function startSession(){
   }
   resize();
   gold={witch:2000,orc:900};buildMode=null;orcSpawned=false;
+  fogOfWar.reset();fogElapsed=0;fogStarted=true;
   orcDirector.reset();orcIncomeFraction=0;strategyAccumulator=0;attackMode=false;qaPassiveKind=null;
   completedMiningCycles=0;totalMinedGold=0;
   rallyMode=false;constructionTab=false;lastHudSignature='';
@@ -1382,7 +1452,7 @@ function startSession(){
   positionCamera();
   updateNavObstacles();
   spawnUnit('witch',-18,-13,0);spawnUnit('witch',-16.5,-15,1);spawnUnit('witch',-19,-16,2);
-  spawnOrcDefenders();selectBuilding(witchBuilding);
+  spawnOrcDefenders();updateVision();selectBuilding(witchBuilding);
   $('pause').disabled=false;$('pause').textContent='Ⅱ';$('overlay').hidden=true;
   showBanner('DÉBUT DE LA PARTIE');refreshHUD();
 }
@@ -1790,6 +1860,8 @@ function stepGame(dt){
   for(let i=units.length-1;i>=0;i--)if(units[i].dead&&units[i].deadTime<=0){
     releaseActor(units[i]);units.splice(i,1);
   }
+  fogElapsed+=dt;
+  if(fogElapsed>=.125){fogElapsed=0;updateVision();}
   uiElapsed+=dt;
   if(uiElapsed>.25){uiElapsed=0;refreshHUD();}
 }
@@ -1810,6 +1882,10 @@ function frame(){
   positionCamera();
   for(const building of buildingInstances.values())updateHealthBar(building);
   renderer.render(scene,camera);
+  if(fogStarted){
+    positionFogOverlay();
+    renderer.autoClear=false;renderer.render(fogScene,fogCamera);renderer.autoClear=true;
+  }
 }
 frame();
 function touchAt(x,y,append=false){
@@ -2134,6 +2210,7 @@ window.__fightersQA={
   snapshot:()=>({
     loading:{...loadingProfile,characters:{...loadingProfile.characters}},
     ready,running,paused,activeFaction,cameraZoom,cameraCenter:{...cameraFollow},
+    fog:{activeFaction,...fogOfWar.stats(activeFaction)},
     orcAI:orcDirector.snapshot(),qaPassiveKind,
     twoFingerSelection:twoFingerBox?{a:{...twoFingerBox.a},b:{...twoFingerBox.b}}:null,
     mining:{completedMiningCycles,totalMinedGold,workers:units.filter(u=>u.mineJob&&!u.dead).map(u=>({
@@ -2241,12 +2318,14 @@ window.__fightersQA={
     }
     return {start:first,end:{x:a.root.position.x,z:a.root.position.z},blocked,steps};
   },
+  fogAt:(x,z,clan=activeFaction)=>fogOfWar.sample(x,z,clan),
   moveUnitTo:(kind,index,x,z)=>{
     const u=units.filter(a=>a.kind===kind&&!a.dead)[index];
     if(!u)throw Error('QA unit not found');
     const point={x,z};
     if(!navigatorRTS.pointClear(point))throw Error('QA position blocked');
-    u.root.position.set(x,0,z);u.destination=null;u.route=null;return u.id;
+    u.root.position.set(x,0,z);u.destination=null;u.route=null;
+    updateVision();return u.id;
   },
   isClear:(x,z)=>navigatorRTS.pointClear({x,z}),
   route:(from,to)=>navigatorRTS.plan(from,to),
