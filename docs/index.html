@@ -1241,7 +1241,11 @@ function animation(actor,name,force=false){
   }
   const last=actor.action;
   if(last&&last!==next)last.fadeOut(.13);
-  next.reset().stopFading().setEffectiveWeight(1).setEffectiveTimeScale(1);
+  // One complete bend-pick-stand motion per wheat harvest (1.6s), even though
+  // the original Quaternius clip is 2.5s long. No resampling or new keyframes.
+  const rate=name===FARM_HARVEST?
+    next.getClip().duration/window.FightersFarming.HARVEST_SECONDS:1;
+  next.reset().stopFading().setEffectiveWeight(1).setEffectiveTimeScale(rate);
   const oneshot=name!==WORK_SWING&&name!==FARM_HARVEST&&
     !name.includes('Loop')&&!name.includes('Idle');
   next.setLoop(oneshot?THREE.LoopOnce:THREE.LoopRepeat,oneshot?1:Infinity);
