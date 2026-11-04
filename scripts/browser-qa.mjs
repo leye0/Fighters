@@ -137,6 +137,45 @@ async function run(){
  check(s.loading.readyMs>0&&s.loading.downloadMs>0,'Missing startup measurements');
  console.log('LOAD PROFILE (real Chrome):',JSON.stringify(s.loading));
 
+ await until('window.__fightersQA.snapshot().forest.woodBundleLoaded',
+   'real licensed low-poly log bundle model',30000);
+ // A real tap on a tree (not a building) orders either faction's worker to
+ // walk to its trunk, play the native chopping loop, and leave a real GLB pile.
+ for(const [kind,workerIndex,treeIndex] of [['witch',1,0],['orc',1,5]]){
+   await evaluate("window.__fightersQA.reset();window.__fightersQA.setFaction('"+kind+"')");
+   if(kind==='orc')await evaluate('window.__fightersQA.centerCamera(15,18)');
+   await evaluate("window.__fightersQA.selectUnit('"+kind+"',"+workerIndex+")");
+   const point=await evaluate('window.__fightersQA.treeScreenPoint('+treeIndex+')');
+   check(point&&Number.isFinite(point.x)&&Number.isFinite(point.y),
+     'Tree cannot be selected at its visible 3D trunk');
+   await evaluate('window.__fightersQA.tap('+point.x+','+point.y+')');
+   s=await evaluate('window.__fightersQA.snapshot()');
+   check(s.forestry.workers.some(w=>w.clan===kind&&w.index===treeIndex),
+     'Tapping the tree must order the '+kind+' worker to chop, not to mine or attack');
+   const chop=await evaluate("(()=>{let swinging=false;for(let i=0;i<320;i++){"+
+     "window.__fightersQA.advance(.25);const s=window.__fightersQA.snapshot();"+
+     "const w=s."+(kind==='witch'?'witches':'orcs')+"["+workerIndex+"];"+
+     "if(w?.animation==='TreeChopping_Loop'&&"+
+     (kind==='witch'?"w.chopToolVisible&&!w.workToolVisible":
+       "w.workToolVisible&&!w.chopToolVisible")+"&&!w.hammerToolVisible)swinging=true;"+
+     "if(s.forest.felled)return {swinging,forest:s.forest};"+
+     "}return {swinging,forest:window.__fightersQA.snapshot().forest};})()");
+   check(chop.swinging&&chop.forest.felled===1&&chop.forest.instances===54&&
+     chop.forest.obstacleCount===54&&chop.forest.logBundles===1&&
+     chop.forest.trees[treeIndex].felled,
+     'Felling must use a visible axe, remove exactly one tree obstacle and leave GLB logs: '+
+     JSON.stringify(chop));
+   s=await evaluate('window.__fightersQA.snapshot()');
+   check(s.buildings.every(b=>b.id!=='tree-'+treeIndex),
+     'Forest trees are terrain resources, not attackable buildings');
+   await evaluate('window.__fightersQA.reset()');
+   s=await evaluate('window.__fightersQA.snapshot()');
+   check(s.forest.instances===55&&s.forest.felled===0&&
+     s.forest.obstacleCount===55&&s.forest.logBundles===0,
+     'Reset must restore every tree and release all log bundle scene nodes');
+ }
+ console.log('PASS FORESTRY: both clans axe-fell actual CC0 trees to tiny CC0 log bundles; reset clears them.');
+
  check(s.house.hitbox.maxX>s.house.hitbox.minX&&s.house.hitbox.maxZ>s.house.hitbox.minZ,
   'House requires actual 3D bounding volume');
  // Exact GLB projection, not a rough bounding rectangle.

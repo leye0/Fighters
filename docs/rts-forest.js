@@ -70,9 +70,11 @@
     return trees;
   }
   function obstacles(layout){
-    return layout.map((t,i)=>({id:'tree-'+i,shape:'aabb',
+    // Keep stable IDs after harvesting; existing routes must not suddenly
+    // point to a different tree when one trunk disappears.
+    return layout.flatMap((t,i)=>t.felled?[]:[{id:'tree-'+i,shape:'aabb',
       minX:t.x-t.radius,maxX:t.x+t.radius,
-      minZ:t.z-t.radius,maxZ:t.z+t.radius}));
+      minZ:t.z-t.radius,maxZ:t.z+t.radius}]);
   }
   return {TYPES,createLayout,obstacles};
 });
