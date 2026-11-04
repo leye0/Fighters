@@ -8,6 +8,7 @@ const manifest={sounds:[
   {category:'short',path:'short/Orc_06.mp3'},
   {category:'long',path:'long/Orc_00.mp3'},
   {category:'loud',path:'loud/Orc_05.mp3'},
+  {category:'work',path:'work/Hammer.mp3'},
   {category:'short',path:'../../wrong.mp3'},
 ]};
 let currentTime=1000,downloads=0,starts=0,stops=0;
@@ -33,7 +34,7 @@ const engine=new Engine({fetcher,contextFactory:()=>new FakeAudioContext(),
 assert.equal(await engine.play('short',()=>true),false,'audio must stay locked before Start');
 assert.equal(engine.unlock(),true);
 await engine.load();
-assert.deepEqual(engine.snapshot().available,{short:2,long:1,loud:1});
+assert.deepEqual(engine.snapshot().available,{short:2,long:1,loud:1,work:1});
 assert.equal(await engine.play('short',()=>false),false,'hidden Orc must never be heard');
 assert.equal(downloads,0,'hidden Orc must not load an MP3');
 assert.equal(engine.snapshot().visibilityBlocked,1);
@@ -59,6 +60,18 @@ engine.reset();
 assert.equal(engine.snapshot().active,0,'reset must release every voice');
 assert.equal(engine.snapshot().pending,0,'reset must clear pending work');
 assert.equal(stops,3,'all active AudioBufferSources must stop on reset');
+const beforeHammerDownloads=downloads;
+assert.equal(await engine.play('work',()=>false),false,
+  'unseen construction must not make noise');
+assert.equal(downloads,beforeHammerDownloads,
+  'an invisible construction must never download the hammer sample');
+assert.equal(await engine.play('work',()=>true),true,
+  'visible construction plays one real hammer impact');
+assert.equal(await engine.play('work',()=>true),false,
+  'multiple workers cannot spam the hammer category in one frame');
+assert.equal(downloads,beforeHammerDownloads+1,
+  'hammer MP3 is decoded only when needed');
+engine.reset();
 
 // Visibility is checked again after asynchronous MP3 retrieval. A unit may
 // disappear into fog while its preview is still being fetched or decoded.
@@ -85,10 +98,11 @@ assert.equal(deferred.snapshot().active,0);
 const witchManifest={sounds:[
   {category:'interaction',path:'interaction/Witch_Interaction.mp3'},
   {category:'creation',path:'creation/Witch_Creation.mp3'},
+  {category:'work',path:'work/Hammer.mp3'},
   {category:'destruction',path:'../unlicensed-preview.mp3'},
 ]};
 const witch=new Engine({
-  categories:['interaction','creation','destruction'],
+  categories:['interaction','creation','destruction','work'],
   allowEmptyCategories:['destruction'],
   manifestUrl:'./sounds/witches/manifest.json',rootUrl:'./sounds/witches/',
   contextFactory:()=>new FakeAudioContext(),now:()=>10000,
@@ -98,7 +112,7 @@ const witch=new Engine({
 });
 assert.equal(witch.unlock(),true);
 await witch.load();
-assert.deepEqual(witch.snapshot().available,{interaction:1,creation:1,destruction:0},
+assert.deepEqual(witch.snapshot().available,{interaction:1,creation:1,destruction:0,work:1},
   'licensed Witch categories load, unsafe preview is not accepted');
 assert.equal(await witch.play('interaction',()=>false),false,
   'an unseen Witch must be inaudible');
@@ -106,6 +120,8 @@ assert.equal(await witch.play('interaction',()=>true),true,
   'Witch selection and orders play the whisper');
 assert.equal(await witch.play('creation',()=>true),true,
   'Witch training plays the laugh');
+assert.equal(await witch.play('work',()=>true),true,
+  'Witch construction reuses the short CC0 hammer effect');
 assert.equal(await witch.play('destruction',()=>true),false,
   'missing licensed death asset must fail silently');
 assert.equal(witch.snapshot().loadErrors,0,'missing optional Witch sound is not a network error');

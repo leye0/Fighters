@@ -38,6 +38,8 @@ La maison des sorcières et la caserne orc permettent d'entraîner trois rôles 
 
 Le panneau contextuel n'est plus reconstruit à chaque mise à jour d'or ou de points de vie : les boutons restent les mêmes objets DOM et seules les valeurs dynamiques changent. Les statistiques de développement exposent le nombre de reconstructions. La planification de l'IA orc est évaluée à cadence réduite plutôt que de recréer les mêmes tableaux soixante fois par seconde. Les unités mortes libèrent leurs marqueurs et leurs actions, tandis que les constructions retirées libèrent les animations et barres de vie dont elles sont propriétaires. Les mires bleues/rouges ont une durée de vie limitée et un plafond simultané. Les tests de régression contrôlent la stabilité des menus sur une partie simulée prolongée.
 
+Pendant une construction, chaque cycle du geste d'ouvrier peut déclencher un bref coup de marteau réel, partagé par les deux clans. Il se produit au moment de l'impact du geste, uniquement à proximité de la caméra et dans une zone explorée, avec une limite globale d'un coup toutes les 450 ms. Les moteurs audio déjà présents assurent le décodage paresseux, la pause et la libération des voix; le fichier MP3 de 4,8 Ko est sous licence CC0 ([source et détails](docs/sounds/WORK_ATTRIBUTION.md)).
+
 ## Combat contre les bâtiments
 
 Les **unités et les bâtiments ennemis** sont des cibles du même système de combat : ordre d'attaque, acquisition automatique à proximité, approche jusqu'à portée de frappe, animation native, dégâts et recharge entre attaques.

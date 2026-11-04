@@ -17,11 +17,21 @@
       "author": "NikoMyth",
       "title": "Witch's Laugh.wav",
       "license": "CC0"
+    },
+    {
+      "category": "work",
+      "name": "Hammer",
+      "path": "work/Hammer.mp3",
+      "source_url": "https://opengameart.org/content/blacksmiths-hammer",
+      "author": "VishwaJai",
+      "title": "Blacksmith's Hammer",
+      "license": "CC0"
     }
   ],
   "counts": {
     "interaction": 1,
     "creation": 1,
-    "destruction": 0
+    "destruction": 0,
+    "work": 1
   }
 }

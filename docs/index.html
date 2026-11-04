@@ -666,7 +666,7 @@ let qaPassiveKind=null;
 const fogOfWar=new window.FightersFog.FogGrid({halfSize:ARENA_HALF,cellSize:.5,radius:7.5,fade:1.25});
 const orcSound=new window.FightersSound.Engine();
 const witchSound=new window.FightersSound.Engine({
-  categories:['interaction','creation','destruction'],
+  categories:['interaction','creation','destruction','work'],
   allowEmptyCategories:['destruction'],
   manifestUrl:'./sounds/witches/manifest.json',
   rootUrl:'./sounds/witches/'
@@ -785,6 +785,21 @@ function playWitchVoice(category,position){
   const {x,z}=position;
   void witchSound.play(category,()=>running&&!paused&&visibleToPlayer(x,z));
   return true;
+}
+// A single hammer sound is shared by both clans and capped globally, so an
+// Orc building boom cannot drown the battlefield in overlapping impacts.
+let lastConstructionHitAt=-Infinity;
+function playConstructionHit(actor){
+  const {x,z}=actor.root.position;
+  if(!running||paused||!visibleToPlayer(x,z)||
+    Math.hypot(x-cameraFollow.x,z-cameraFollow.z)>22)return;
+  const now=performance.now();
+  if(now-lastConstructionHitAt<450)return;
+  lastConstructionHitAt=now;
+  const engine=actor.kind==='orc'?orcSound:witchSound;
+  // Recheck visibility and camera distance after the first lazy MP3 decode.
+  void engine.play('work',()=>running&&!paused&&visibleToPlayer(x,z)&&
+    Math.hypot(x-cameraFollow.x,z-cameraFollow.z)<=22);
 }
 function acknowledgeOrcOrder(actors){
   // A single voice for a whole squad, never one voice per unit.
@@ -1988,6 +2003,7 @@ function scheduleBuild(type,x,z,{byAI=false}={}){
   const job={type,x,z,cost,site,byAI,progress:0};
   pendingBuilds.push(job);gold[clan]-=cost;
   worker.mineJob=null;worker.farmJob=null;worker.constructJob=job;worker.destination=null;
+  worker.workHitTimer=0;
   worker.attackOrder=null;worker.route=null;worker.approachCache=null;
   if(clan==='orc'&&byAI)acknowledgeOrcAiOrder([worker]);
   else if(!byAI)acknowledgePlayerOrder([worker]);
@@ -2007,6 +2023,14 @@ function tickConstructWorker(actor,dt){
   }
   faceBuildingCenter(actor,job.site);
   animation(actor,WORK_SWING);
+  // The native Sword_Attack clip loops as Work_Swing. Strike only when its
+  // downward movement reaches the target, then once per full animation cycle.
+  const swingSeconds=Math.max(.35,actor.clipCatalog.get('Sword_Attack')?.duration||1);
+  actor.workHitTimer=(actor.workHitTimer||0)+dt;
+  if(actor.workHitTimer>=swingSeconds*.4){
+    actor.workHitTimer-=swingSeconds;
+    playConstructionHit(actor);
+  }
   job.progress+=dt;
   if(job.progress>=BUILD_SECONDS){
     cancelConstruction(actor,false);
@@ -3183,6 +3207,7 @@ $('pause').onclick=pauseGame;
 $('start').onclick=()=>{
   if(!ready){location.reload();return;}
   // Unlock inside the user's click before the simulation begins.
+  lastConstructionHitAt=-Infinity;
   orcSound.reset();witchSound.reset();
   orcSound.unlock();witchSound.unlock();startSession();
 };

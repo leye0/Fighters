@@ -9,11 +9,14 @@
   else root.FightersSound=api;
 })(typeof globalThis==='object'?globalThis:this,function(root){
   'use strict';
-  const DEFAULT_TYPES=['short','long','loud'];
+  const DEFAULT_TYPES=['short','long','loud','work'];
   const MIX={
     short:{gain:.34,cooldown:450},
     long:{gain:.40,cooldown:1050},
     loud:{gain:.38,cooldown:320},
+    // One short, quiet impact per nearby construction swing; category-wide
+    // cooldown complements the global throttle shared by both factions.
+    work:{gain:.22,cooldown:450},
     interaction:{gain:.34,cooldown:450},
     creation:{gain:.40,cooldown:1050},
     destruction:{gain:.38,cooldown:320}
