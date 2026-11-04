@@ -30,7 +30,7 @@ La visibilité repose sur une grille de **112 × 112 cases (0,5 unité)**, commu
 
 Le décor urbain provisoire a laissé place à des chemins de terre et à **55 vrais arbres 3D**, exclusivement des arbres tortueux rougeâtres et des arbres morts sombres. Les bosquets sont plus mystiques du côté des sorcières et plus austères du côté des orcs. Leur disposition est déterministe et préserve les bâtiments et les points de départ.
 
-Deux modèles du créateur **Quaternius**, sous licence **CC0**, sont intégrés localement et totalisent environ **800 Kio** après réduction des textures en WebP 256 px. Le rendu réemploie les géométries et matériaux dans des instances GPU; un petit obstacle représente seulement le tronc, et les unités peuvent passer sous les branches. Les arbres ne sont pas récoltables pour le moment. [Sources et licences](docs/models/forest/ASSET_LICENSES.md).
+Deux modèles d'arbres du créateur **Quaternius**, sous licence **CC0**, sont intégrés localement et totalisent environ **800 Kio** après réduction des textures en WebP 256 px. Le rendu réemploie les géométries et matériaux dans des instances GPU; un petit obstacle représente seulement le tronc, et les unités peuvent passer sous les branches. Une ouvrière sélectionnée peut toucher un arbre découvert : elle s'en approche, le coupe avec une hache et l'animation native `TreeChopping_Loop`, puis l'arbre laisse au sol une **petite brassée de bûches** (modèle Quaternius CC0 de 27 Ko). La coupe retire aussi la collision du tronc et une nouvelle partie restaure les arbres. Le transport et la consommation du bois viendront séparément. [Sources et licences](docs/models/forest/ASSET_LICENSES.md).
 
 ## Interface RTS — style Warcraft II
 

@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { createHash } from 'node:crypto';
 const require = createRequire(import.meta.url);
 const forest = require('../docs/rts-forest.js');
 const { Navigator } = require('../docs/rts-navigation.js');
@@ -30,6 +31,14 @@ const obstacles=forest.obstacles(layout);
 assert.equal(obstacles.length,layout.length);
 assert.ok(obstacles.every(tree=>tree.id.startsWith('tree-')&&!('hitbox' in tree)),
   'Trees are navigator obstacles, never attackable building entities');
+layout[0].felled=true;
+const harvestedObstacles=forest.obstacles(layout);
+assert.equal(harvestedObstacles.length,54,'Cutting a tree must free its collision');
+assert.ok(!harvestedObstacles.some(tree=>tree.id==='tree-0')&&
+  harvestedObstacles.some(tree=>tree.id==='tree-1'),
+  'Felling a tree must not renumber other obstacle IDs');
+layout[0].felled=false;
+assert.equal(forest.obstacles(layout).length,55,'Reset must restore the trunk');
 assert.ok(layout.every(tree=>Math.hypot(tree.x-8,tree.z+10)>=5),
   'Forest must preserve the standard orc construction site');
 const assets=path.join(path.dirname(fileURLToPath(import.meta.url)),'../docs/models/forest');
@@ -46,6 +55,15 @@ for(const kind of forest.TYPES){
   assert.ok(metadata.images.every(image=>image.mimeType==='image/webp'));
 }
 assert.ok(assetBytes<900_000,'forest assets exceed the lightweight download budget');
+const logs=fs.readFileSync(path.join(assets,'logs.glb'));
+assert.equal(logs.length,27_728,'Quaternius log bundle was altered');
+assert.equal(createHash('sha256').update(logs).digest('hex'),
+  '3c812b330302d0be91ad557e85a6be3ba268cf46ffc1196c9e35644366364177');
+assert.equal(logs.toString('ascii',0,4),'glTF');
+assert.equal(logs.readUInt32LE(8),logs.length);
+const logMetadata=JSON.parse(logs.toString('utf8',20,20+logs.readUInt32LE(12)));
+assert.ok(logMetadata.meshes?.length>0&&logMetadata.materials?.length===2,
+  'Use the genuine lightweight CC0 wood bundle, not a geometric placeholder');
 for(const unused of ['leafy','pine'])
   assert.ok(!fs.existsSync(path.join(assets,unused+'.glb')),
     'Unused green tree asset must not be bundled: '+unused);
