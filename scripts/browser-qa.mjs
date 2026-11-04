@@ -677,10 +677,10 @@ async function run(){
  check(framing.hero.right<=framing.score.left+3&&framing.score.right<=framing.pause.left+4&&
   framing.pause.right<=mobile.width+1,'Compact mobile HUD overlaps: '+JSON.stringify(framing));
  const resourceBadges=await evaluate("Array.from(document.querySelectorAll('.score>div'),d=>({icon:getComputedStyle(d.querySelector('small'),'::before').content,border:getComputedStyle(d).borderColor}))");
- check(resourceBadges.length===4&&resourceBadges.every((item,i)=>
-   item.icon.includes(['💰','🪵','🌾','⚔'][i]))&&
-   new Set(resourceBadges.map(v=>v.icon)).size===4,
-   'Mobile resource counters need four distinct resource pictograms: '+
+ check(resourceBadges.length===5&&resourceBadges.every((item,i)=>
+   item.icon.includes(['💰','🪵','🌾','🔮','⚔'][i]))&&
+   new Set(resourceBadges.map(v=>v.icon)).size===5,
+   'Mobile resource counters need five distinct resource pictograms: '+
    JSON.stringify(resourceBadges));
  // Two real simultaneous touch pointers form a rectangle immediately.
  // The old hold-to-select and pinch-to-zoom paths are intentionally gone.
@@ -885,6 +885,14 @@ async function run(){
  // block only their own small footprints, leaving the glowing middle walkable.
  await until('window.__fightersQA.snapshot().healing.modelLoaded',
    'bundled CC0 standing-stone model',30000);
+ check(!await evaluate("window.__fightersQA.beginBuild('stone-circle')")&&
+   !await evaluate("window.__fightersQA.trainRole('witch','ranged')"),
+   'Circle construction and Arcanist recruitment require their prerequisites');
+ check(await evaluate('window.__fightersQA.upgradeHouse()'),
+   'House must accept the upgrade that unlocks the stone circle');
+ await evaluate('window.__fightersQA.advance(8.1)');
+ check((await evaluate('window.__fightersQA.snapshot()')).souls.buildUnlocked,
+   'Upgraded house did not unlock stone-circle construction');
  const stoneSite=await evaluate("(()=>{for(let z=-11;z>=-25;z-=1)"+
    "for(let x=-8;x>=-24;x-=1)if(window.__fightersQA.canBuild(x,z,'stone-circle'))"+
    "return {x,z};return null})()");
@@ -959,6 +967,26 @@ async function run(){
  check((await evaluate('window.__fightersQA.snapshot().orcs[0].health'))===30,
    'The circle must never heal orcs');
  await evaluate('window.__fightersQA.passive(null)');
+ await evaluate('window.__fightersQA.moveUnitTo("orc",0,15,17)');
+ check(s.souls.arcanistUnlocked&&await evaluate("window.__fightersQA.trainRole('witch','ranged')"),
+   'Constructing the circle must unlock Arcanist training');
+ await evaluate('window.__fightersQA.advance(5)');
+ check((await evaluate('window.__fightersQA.snapshot()')).witches.filter(u=>u.role==='ranged').length>=2,
+   'Arcanist production must finish after sanctuary unlock');
+ const soulCorpseId=await evaluate('window.__fightersQA.spawnTestCorpseNearArcanist()');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.souls.corpses.some(c=>c.id===soulCorpseId&&c.remaining>110),
+   'Fallen characters must leave persistent bodies');
+ await evaluate('window.__fightersQA.advance(.8)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.souls.activeSpirits===1,
+   'Arcanist must raise one white spirit from the corpse: '+JSON.stringify(s.souls));
+ await evaluate('window.__fightersQA.advance(1.5)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.souls.magic===20&&s.souls.activeSpirits===0&&
+   s.souls.corpses.some(c=>c.id===soulCorpseId&&c.claimed&&c.remaining>100),
+   'Spirit must increase magic once while the body stays on the ground: '+JSON.stringify(s.souls));
+ console.log('PASS SOULS: house upgrade, circle unlock, Arcanist training, persistent corpse, white soul and magic gauge.');
  await evaluate('window.__fightersQA.damageBuilding('+JSON.stringify(sanctuary.id)+',500)');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.healing.circles.length===0&&s.buildings.every(b=>b.id!==sanctuary.id),
@@ -1304,8 +1332,7 @@ async function run(){
  await evaluate("window.__fightersQA.reset();window.__fightersQA.enableOrcAI(true);"+
    "window.__fightersQA.selectHouse();"+
    "window.__fightersQA.trainRole('witch','worker');"+
-   "window.__fightersQA.trainRole('witch','melee');"+
-   "window.__fightersQA.trainRole('witch','ranged')");
+   "window.__fightersQA.trainRole('witch','melee')");
  await evaluate('window.__fightersQA.advance(22)');
  const armySize=await evaluate('window.__fightersQA.spawnWitches(20)');
  check(armySize===20,'Long-play test could not assemble twenty witches: '+armySize);

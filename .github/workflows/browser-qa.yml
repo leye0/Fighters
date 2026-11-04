@@ -13,6 +13,7 @@ on:
       - 'docs/rts-berries.js'
       - 'docs/rts-ravens.js'
       - 'docs/rts-healing.js'
+      - 'docs/rts-souls.js'
       - 'docs/models/standing-stone.glb'
       - 'docs/models/STANDING_STONE_LICENSE.md'
       - 'docs/models/forest/**'
@@ -20,6 +21,7 @@ on:
       - 'scripts/test-rts-berries.mjs'
       - 'scripts/test-rts-ravens.mjs'
       - 'scripts/test-rts-healing.mjs'
+      - 'scripts/test-rts-souls.mjs'
       - 'scripts/test-rts-farming.mjs'
       - 'scripts/test-rts-sound.mjs'
       - 'scripts/test-rts-fog.mjs'
@@ -79,6 +81,7 @@ jobs:
           node scripts/test-rts-berries.mjs
           node scripts/test-rts-ravens.mjs
           node scripts/test-rts-healing.mjs
+          node scripts/test-rts-souls.mjs
       - name: Prepare complete RTS building assets and native character models
         run: |
           mkdir -p docs/models

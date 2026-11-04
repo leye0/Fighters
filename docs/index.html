@@ -405,7 +405,8 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
   .hud .score>div:nth-child(1) small::before{content:"💰"}
   .hud .score>div:nth-child(2) small::before{content:"🪵"}
   .hud .score>div:nth-child(3) small::before{content:"🌾"}
-  .hud .score>div:nth-child(4) small::before{content:"⚔️"}
+  .hud .score>div:nth-child(4) small::before{content:"🔮"}
+  .hud .score>div:nth-child(5) small::before{content:"⚔️"}
   .hud .score strong{font:800 14px/1 system-ui,sans-serif!important;
     letter-spacing:0}
 }
@@ -430,6 +431,16 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
   .minimap-frame{height:94px}
 }
 
+.hud .score #hud-magic-chip{display:flex;align-items:center;gap:4px}
+.hud-magic-track{width:46px;height:7px;border:1px solid #bda7e4;background:#25203a;flex-shrink:0}
+.hud-magic-track>div{height:100%;width:0;background:linear-gradient(90deg,#9260ec,#f5efff);transition:width .2s}
+@media(max-width:820px){
+  .hud .score{gap:3px!important}
+  .hud .score>div{padding:3px!important}
+  .hud .score #hud-magic-chip{gap:2px!important}
+  .hud .score #hud-magic{font-size:11px!important}
+  .hud-magic-track{width:17px;height:5px}
+}
 </style>
 <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
 <script src="./rts-footprint.js"></script>
@@ -444,12 +455,13 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 <script src="./rts-berries.js"></script>
 <script src="./rts-ravens.js"></script>
 <script src="./rts-healing.js"></script>
+<script src="./rts-souls.js"></script>
 </head>
 <body>
 <div class="game-shell"><section class="arcade">
 <div class="hud">
   <div class="hero-hud"><div class="hud-kicker">FIGHTERS · RTS</div><strong id="faction-title">SORCIÈRES</strong><small id="selection-summary">Sélectionnez une unité ou la maison</small><small id="ai-status" class="ai-status">Village orc · en développement</small></div>
-  <div class="score"><div id="hud-gold-chip" title="Or de la faction sélectionnée"><small>💰 OR</small><strong id="hud-gold">2000</strong></div><div id="hud-wood-chip" title="Bois rapporté par les ouvriers"><small>🪵 BOIS</small><strong id="hud-wood">250</strong></div><div title="Réserves de nourriture des sorcières"><small>🌾 VIVRES</small><strong id="hud-food">45</strong></div><div title="Unités des sorcières et des orcs"><small>⚔️ UNITÉS</small><strong id="unit-count">0 : 0</strong></div></div>
+  <div class="score"><div id="hud-gold-chip" title="Or de la faction sélectionnée"><small>💰 OR</small><strong id="hud-gold">2000</strong></div><div id="hud-wood-chip" title="Bois rapporté par les ouvriers"><small>🪵 BOIS</small><strong id="hud-wood">250</strong></div><div title="Réserves de nourriture des sorcières"><small>🌾 VIVRES</small><strong id="hud-food">45</strong></div><div id="hud-magic-chip" title="Magie accumulée en siphonnant les âmes"><small>🔮 MAGIE</small><strong id="hud-magic">0</strong><div class="hud-magic-track"><div id="hud-magic-fill"></div></div></div><div title="Unités des sorcières et des orcs"><small>⚔️ UNITÉS</small><strong id="unit-count">0 : 0</strong></div></div>
   <button id="pause" class="pause-compact" aria-label="Pause" title="Pause (P)" disabled>Ⅱ</button>
 </div>
 <div id="viewport" class="viewport" aria-label="Carte de stratégie en temps réel"><div class="scanlines"></div><div id="banner" class="banner"></div><div id="selection-rectangle" hidden></div><div id="order-pings" aria-hidden="true"></div><div id="order-prompt" role="status" aria-live="polite" hidden></div>
@@ -529,6 +541,7 @@ let witchHouse=null;
 const STONE_RING_RADIUS=2.45,STONE_RING_COUNT=6,STONE_RING_SLOTS=7,
   STONE_RING_START=-5*Math.PI/7,STONE_CIRCLE_HEALTH=280;
 const stoneHealing=window.FightersHealing;
+const soulRules=window.FightersSouls;
 let standingStoneModel=null,stoneCircleSerial=0,healingAssignmentElapsed=0;
 const witchBuilding={
   id:'witch-house-01',kind:'witch-house',type:'witch-house',clanId:'witch',level:1,
@@ -600,6 +613,8 @@ function prototypeBuildingBounds(projection,center,scale){
 }
 
 function liveBuildings(){return [witchBuilding,...buildingInstances.values()].filter(b=>!b.destroyed);}
+function circleUnlocked(){return soulRules.canBuildCircle(liveBuildings());}
+function arcanistUnlocked(){return soulRules.canTrainMage(liveBuildings());}
 function updateNavObstacles(){
   navigatorRTS.setObstacles([...forestObstacles,
     // Garden beds are walkable so workers can tend crops from inside the plot.
@@ -827,6 +842,8 @@ const ORC_COSTS={barrack:180,hut:120,cauldron:200,factory:250};
 // Deposits are fixed map resources, not structures that players or the AI can build.
 const ORC_NAMES={barrack:'Caserne',hut:'Hutte',mine:'Mine',cauldron:'Chaudron',factory:'Atelier'};
 const units=[],selected=new Set();
+const soulEffects=[];
+let magic=0,soulAssignmentElapsed=0,soulSilhouetteTexture=null;
 let female=null,male=null,swordModel=null,clothingFemale=null,clothingMale=null,hairBuns=null,hairBuzzed=null,hairParted=null;
 const sharedClipCatalog=new Map(),sharedCostumeMaterials=new Map();
 // One shared, bright ground-level ring per selected unit. Disable depth testing
@@ -954,7 +971,7 @@ function updateVision(){
   // the Orc clan's discovery never leaks into the Witch player's map.
   const ownership=activeFaction==='witch'?'witch':'orcs';
   for(const actor of units){
-    if(!actor.dead)actor.root.visible=actor.kind===activeFaction||
+    actor.root.visible=actor.kind===activeFaction||
       fogOfWar.exploredAt(actor.root.position.x,actor.root.position.z,activeFaction);
   }
   for(const b of structures){
@@ -1631,7 +1648,7 @@ function spawnUnit(kind,x,z,index=0,role='melee'){
     speed:profile.speed,destination:null,attackOrder:null,route:null,routeVersion:-1,
     routeGoal:null,routeAge:0,approachCache:null,approachAge:0,
     mineJob:null,constructJob:null,farmJob:null,treeJob:null,woodJob:null,carryBundle:null,berryJob:null,
-    healJob:null,healRetry:0,
+    healJob:null,healRetry:0,soulJob:null,soulClaimed:false,soulReservedBy:null,
     workTool:null,hammerTool:null,chopTool:null,
     weapon:null,selectionRing:marker,outfitInfo
   };
@@ -1815,6 +1832,7 @@ function pingAttackTarget(target){
 function issueMove(destination,{spacing=1.35,withinRadius=Infinity}={}){
   const actors=[...selected].filter(actor=>!actor.dead&&actor.kind===activeFaction);
   for(const actor of actors){cancelConstruction(actor);cancelWoodJob(actor);
+    cancelSoulJob(actor);
     actor.mineJob=null;actor.farmJob=null;actor.treeJob=null;actor.berryJob=null;
     actor.healJob=null;}
   // Make one reservation per soldier, BEFORE movement begins. The old grid
@@ -1872,6 +1890,7 @@ function queueOrder(building,kind,role='melee'){
   const faction=building.clanId==='witch'?'witch':'orc';
   if(kind==='witch'&&(faction!=='witch'||building.type!=='witch-house')||
      kind==='orc'&&(faction!=='orc'||building.type!=='barrack'))return false;
+  if(kind==='witch'&&role==='ranged'&&!arcanistUnlocked())return false;
   let cost,duration,woodCost=0;
   if(kind==='upgrade'){
     if(building.level+building.queue.filter(j=>j.kind==='upgrade').length>=3)return false;
@@ -2056,6 +2075,7 @@ function beginBuild(type){
   if(!running||paused||activeFaction!==clan||!cost||
     (clan==='orc'&&!buildingBlueprints.has(type))||
     (clan==='witch'&&type==='witch-house'&&!witchHouse)||
+    (type==='stone-circle'&&!circleUnlocked())||
     (type==='stone-circle'&&!standingStoneModel)||
     !canAffordConstruction(clan,type)||!builderAvailable(clan))return false;
   buildMode=type;rallyMode=false;constructionTab=false;refreshHUD();return true;
@@ -2071,6 +2091,7 @@ function buildShape(type,x,z){
 }
 function validBuildPosition(x,z,type='hut'){
   if(!constructionCost(type))return false;
+  if(type==='stone-circle'&&!circleUnlocked())return false;
   const proposed=buildShape(type,x,z);
   if(!proposed)return false;
   const clan=buildFaction(type),geometry=window.FightersFootprints;
@@ -2362,7 +2383,7 @@ function buildGarden(x,z,{prepaid=false}={}){
   updateHealthBar(building);updateNavObstacles();refreshHUD();return building;
 }
 function buildStoneCircle(x,z,{prepaid=false}={}){
-  if(!standingStoneModel||(!prepaid&&!canAffordConstruction('witch','stone-circle'))||
+  if(!circleUnlocked()||!standingStoneModel||(!prepaid&&!canAffordConstruction('witch','stone-circle'))||
     !validBuildPosition(x,z,'stone-circle'))return false;
   const id='witch-stone-circle-'+String(++stoneCircleSerial).padStart(2,'0');
   const {root,magic}=makeStoneCircleVisual();
@@ -2442,7 +2463,8 @@ function cancelConstruction(actor,refund=true){
 }
 function scheduleBuild(type,x,z,{byAI=false}={}){
   const clan=buildFaction(type),cost=constructionCost(type),woodCost=constructionWood(type);
-  if(!running||paused||!cost||!canAffordConstruction(clan,type)||
+  if(!running||paused||!cost||(type==='stone-circle'&&!circleUnlocked())||
+    !canAffordConstruction(clan,type)||
     !validBuildPosition(x,z,type))return false;
   const candidates=units.filter(u=>u.kind===clan&&roles.isWorker(u)&&!u.dead&&!u.constructJob);
   const preferred=candidates.filter(u=>selected.has(u));
@@ -2520,6 +2542,7 @@ function cancelTransientMode(){
 function stopSelectedUnits(){
   attackMode=false;
   for(const unit of selected){
+    cancelSoulJob(unit);
     cancelConstruction(unit);cancelWoodJob(unit);unit.treeJob=null;
     unit.mineJob=null;unit.farmJob=null;unit.berryJob=null;unit.healJob=null;
     unit.destination=null;unit.attackOrder=null;unit.route=null;
@@ -2531,6 +2554,8 @@ function refreshHUD(){
   setText('hud-gold',gold[activeFaction]);
   setText('hud-wood',wood[activeFaction]);
   setText('hud-food',activeFaction==='witch'?Math.ceil(farming.food):'—');
+  setText('hud-magic',magic+'/'+soulRules.MAX_MAGIC);
+  $('hud-magic-fill').style.width=100*magic/soulRules.MAX_MAGIC+'%';
   $('hud-gold-chip').title='Or des '+(activeFaction==='witch'?'sorcières':'orcs');
   $('hud-wood-chip').title='Bois des '+(activeFaction==='witch'?'sorcières':'orcs');
   setText('unit-count',units.filter(u=>u.kind==='witch'&&!u.dead).length+' : '+
@@ -2580,10 +2605,11 @@ function refreshHUD(){
             type==='stone-circle'?'Cercle de roches':ORC_NAMES[type],
           {gold:cost,wood:constructionWood(type)},()=>beginBuild(type),
           !canAffordConstruction(activeFaction,type)||!builderAvailable(activeFaction)||
-            (type==='stone-circle'&&!standingStoneModel)||
+            (type==='stone-circle'&&(!standingStoneModel||!circleUnlocked()))||
             (activeFaction==='orc'&&!buildingBlueprints.has(type)),
           'Confier '+(type==='witch-house'?'une maison':type==='garden'?'un potager':
-            type==='stone-circle'?'un cercle de guérison':ORC_NAMES[type])+' à un ouvrier');
+            type==='stone-circle'?'un cercle de guérison':ORC_NAMES[type])+' à un ouvrier'+
+            (type==='stone-circle'&&!circleUnlocked()?' · nécessite une maison niveau 2':''));
       }
       add('↩','Retour','',()=>{constructionTab=false;refreshHUD();});
     }else if(b){
@@ -2600,7 +2626,7 @@ function refreshHUD(){
         b.type==='mine'?
         'Gisement d’or neutre et indestructible · exploitable par les ouvriers des deux clans.':
         !friendly?'Bâtiment ennemi · sélectionnez vos unités pour l’attaquer.':b.clanId==='witch'?
-        'Bâtiment de production des sorcières · améliorations : formation plus rapide, davantage de PV.':
+        'Maison des sorcières : niveau 2 pour bâtir un cercle de roches; cercle requis pour entraîner des Arcanistes.':
         b.type==='barrack'?'Caserne orc · formation de combattants et améliorations.':
         'Bâtiment orc · améliorer la structure et définir un point de rassemblement.';
       if(b.type!=='mine'){
@@ -2614,9 +2640,11 @@ function refreshHUD(){
         for(const role of ROLE_IDS){
           const spec=roles.profile(clan,role);
           add(spec.icon,spec.name,spec.cost,()=>queueOrder(b,clan,role),
-            gold[clan]<spec.cost||b.queue.length>=MAX_QUEUE||paused,
+            gold[clan]<spec.cost||b.queue.length>=MAX_QUEUE||paused||
+              (clan==='witch'&&role==='ranged'&&!arcanistUnlocked()),
             'Former '+spec.name+' · '+(role==='worker'?'minage et construction':
-              role==='melee'?'combat rapproché':'attaque à distance'));
+              role==='melee'?'combat rapproché':'attaque à distance')+
+              (clan==='witch'&&role==='ranged'?' et siphonnage des âmes · cercle de roches requis':''));
         }
       }
       const cost=upgradeCost(b),pending=b.queue.some(item=>item.kind==='upgrade');
@@ -2717,7 +2745,8 @@ function refreshHUD(){
     let disabled=paused;
     const role=b&&['witch','orcs'].includes(b.clanId)?
       ROLE_IDS.find(id=>roles.profile(faction,id).name===action):null;
-    if(role)disabled||=gold[faction]<roles.profile(faction,role).cost||b?.queue.length>=MAX_QUEUE;
+    if(role)disabled||=gold[faction]<roles.profile(faction,role).cost||b?.queue.length>=MAX_QUEUE||
+      (faction==='witch'&&role==='ranged'&&!arcanistUnlocked());
     else if(action==='Améliorer')disabled||=upgradeCost(b)===null||
       b?.queue.some(item=>item.kind==='upgrade')||
       gold[faction]<upgradeCost(b)||wood[faction]<40||b?.queue.length>=MAX_QUEUE;
@@ -2727,7 +2756,7 @@ function refreshHUD(){
         action==='Cercle de roches'?'stone-circle':
         Object.keys(ORC_NAMES).find(key=>ORC_NAMES[key]===action);
       disabled||=!canAffordConstruction(activeFaction,type)||!builderAvailable(activeFaction)||
-        (type==='stone-circle'&&!standingStoneModel)||
+        (type==='stone-circle'&&(!standingStoneModel||!circleUnlocked()))||
         (activeFaction==='orc'&&!buildingBlueprints.has(type));
     }else if(action==='Construire')disabled||=!builderAvailable(activeFaction);
     else if(action==='Caserne')disabled||=![...buildingInstances.values()].some(v=>v.type==='barrack'&&!v.destroyed);
@@ -2796,6 +2825,8 @@ function showBanner(message){
 function startSession(){
   if(!ready)return;
   clearOrderPings();clearBolts();lastOrcAiVoice=-Infinity;
+  for(const effect of soulEffects)disposeSoulEffect(effect);
+  soulEffects.length=0;magic=0;soulAssignmentElapsed=0;
   for(const actor of units)releaseActor(actor);
   units.length=0;selected.clear();selectedBuilding=null;selectedRaven=null;nextUnitId=1;
   // Match reset removes constructed buildings while retaining the initial village.
@@ -2939,6 +2970,7 @@ function orderAttack(actors,target){
   let issued=0;
   for(const actor of actors){
     if(actor.dead||!roles.isFighter(actor)||!enemyOf(actor,target))continue;
+    cancelSoulJob(actor);
     actor.attackOrder=target;actor.destination=null;actor.route=null;actor.routeAge=0;
     actor.berryJob=null;
     actor.approachCache=null;
@@ -2953,6 +2985,8 @@ function removeRallyMarker(b){
   b.rallyMarker.material.dispose();b.rallyMarker=null;
 }
 function releaseActor(actor){
+  cancelSoulJob(actor);
+  if(actor.dead)for(const mage of units)if(mage.soulJob===actor)cancelSoulJob(mage);
   cancelConstruction(actor);cancelWoodJob(actor);
   selected.delete(actor);
   actor.mixer.stopAllAction();actor.mixer.uncacheRoot(actor.visual);
@@ -3052,13 +3086,113 @@ function dealDamage(target,amount,attacker){
   if(target.dead)return;
   target.health=Math.max(0,target.health-amount);target.stun=.24;
   if(!target.health){
+    cancelSoulJob(target);
     cancelConstruction(target);cancelWoodJob(target);
     if(target.kind==='orc')playOrcVoice('loud',target.root.position);
     else if(target.kind==='witch')playWitchVoice('destruction',target.root.position);
-    target.dead=true;target.deadTime=1.4;target.destination=null;target.attackOrder=null;
+    target.dead=true;target.deadTime=soulRules.CORPSE_SECONDS;
+    target.soulClaimed=false;target.soulReservedBy=null;
+    target.destination=null;target.attackOrder=null;
     selected.delete(target);target.selectionRing.visible=false;
     animation(target,'Death01',true);refreshHUD();
   }else animation(target,'Hit_Chest',true);
+}
+
+function cancelSoulJob(actor){
+  const corpse=actor.soulJob;
+  if(corpse?.soulReservedBy===actor.id)corpse.soulReservedBy=null;
+  actor.soulJob=null;
+}
+function soulTexture(){
+  if(soulSilhouetteTexture)return soulSilhouetteTexture;
+  const canvas=document.createElement('canvas');canvas.width=64;canvas.height=128;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#ffffff';ctx.strokeStyle='#ffffff';
+  ctx.shadowColor='#f3f4ff';ctx.shadowBlur=10;ctx.lineCap='round';ctx.lineJoin='round';
+  // One shared, soft humanoid silhouette billboard: no extra character rig.
+  ctx.beginPath();ctx.ellipse(32,20,12,14,0,0,2*Math.PI);ctx.fill();
+  ctx.beginPath();ctx.moveTo(24,36);ctx.lineTo(40,36);ctx.lineTo(46,76);
+  ctx.lineTo(18,76);ctx.closePath();ctx.fill();
+  ctx.lineWidth=10;ctx.beginPath();ctx.moveTo(23,42);ctx.lineTo(10,72);
+  ctx.moveTo(41,42);ctx.lineTo(54,72);ctx.moveTo(25,74);ctx.lineTo(23,113);
+  ctx.moveTo(39,74);ctx.lineTo(42,113);ctx.stroke();
+  soulSilhouetteTexture=new THREE.CanvasTexture(canvas);
+  return soulSilhouetteTexture;
+}
+function beginSoulEffect(corpse,mage){
+  const material=new THREE.SpriteMaterial({map:soulTexture(),color:0xf8faff,
+    transparent:true,opacity:.75,depthWrite:false,blending:THREE.AdditiveBlending,
+    toneMapped:false});
+  const sprite=new THREE.Sprite(material);
+  sprite.scale.set(1.08,2.15,1);sprite.renderOrder=9;
+  sprite.position.set(corpse.root.position.x,.65,corpse.root.position.z);
+  scene.add(sprite);
+  soulEffects.push({sprite,mage,source:corpse.root.position.clone(),elapsed:0});
+}
+function disposeSoulEffect(effect){
+  scene.remove(effect.sprite);effect.sprite.material.dispose();
+}
+function stepSoulEffects(dt){
+  for(let i=soulEffects.length-1;i>=0;i--){
+    const effect=soulEffects[i];effect.elapsed+=dt;
+    const t=clamp(effect.elapsed/soulRules.SOUL_SECONDS,0,1);
+    const flight=t*t*(3-2*t),target=effect.mage.root.position;
+    effect.sprite.position.set(
+      THREE.MathUtils.lerp(effect.source.x,target.x,flight),
+      .65+1.45*Math.sin(Math.PI*t*.82)+.6*flight,
+      THREE.MathUtils.lerp(effect.source.z,target.z,flight));
+    effect.sprite.scale.setScalar(1-.72*flight);
+    effect.sprite.scale.y*=2;
+    effect.sprite.material.opacity=.77*(1-t*.85);
+    if(t<1)continue;
+    if(!effect.mage.dead)magic=soulRules.magicAfterSoul(magic);
+    disposeSoulEffect(effect);soulEffects.splice(i,1);refreshHUD();
+  }
+}
+function assignSoulHarvesters(dt){
+  if(magic>=soulRules.MAX_MAGIC)return;
+  soulAssignmentElapsed+=dt;
+  if(soulAssignmentElapsed<.65)return;
+  soulAssignmentElapsed=0;
+  for(const mage of units){
+    if(mage.kind!=='witch'||mage.role!=='ranged'||mage.dead||mage.soulJob||
+      mage.destination||mage.attackOrder||mage.attack||mage.healJob||mage.berryJob||
+      nearestHostile(mage,5)?.target)continue;
+    const position=mage.root.position;
+    const available=units.filter(unit=>unit.dead).map(unit=>({
+      id:unit.id,x:unit.root.position.x,z:unit.root.position.z,
+      dead:true,deadTime:unit.deadTime,soulClaimed:unit.soulClaimed,
+      soulReservedBy:unit.soulReservedBy
+    }));
+    const nearest=soulRules.nearestSoul(position,available,corpse=>
+      fogOfWar.visibleAt(corpse.x,corpse.z,'witch')&&
+      (navigatorRTS.segmentClear(position,corpse)||!!navigatorRTS.plan(position,corpse)));
+    if(!nearest)continue;
+    const corpse=units.find(unit=>unit.id===nearest.id);
+    corpse.soulReservedBy=mage.id;mage.soulJob=corpse;
+  }
+}
+function tickSoulHarvester(actor,dt){
+  const corpse=actor.soulJob;
+  if(!corpse)return false;
+  if(corpse.deadTime<=0||!corpse.dead||corpse.soulClaimed||
+    actor.destination||actor.attackOrder||actor.attack||
+    nearestHostile(actor,5)?.target){cancelSoulJob(actor);return false;}
+  const position=corpse.root.position;
+  if(Math.hypot(actor.root.position.x-position.x,actor.root.position.z-position.z)>
+    soulRules.SOUL_APPROACH){
+    const status=navigateActor(actor,position,dt,'engage');
+    if(status==='blocked')cancelSoulJob(actor);
+    if(status!=='moving')animation(actor,'Idle_Loop');
+    return status!=='blocked';
+  }
+  faceDirection(actor,position.x-actor.root.position.x,
+    position.z-actor.root.position.z);
+  corpse.soulClaimed=true;cancelSoulJob(actor);
+  animation(actor,'Idle_Loop');
+  playWitchVoice('interaction',actor.root.position);
+  beginSoulEffect(corpse,actor);
+  return true;
 }
 
 function navigateActor(actor,target,dt,mode){
@@ -3424,7 +3558,7 @@ function assignBerryForagers(dt){
   // orders, garden work, mining, construction, tree felling or combat.
   const candidates=units.filter(u=>u.kind==='witch'&&!u.dead&&!u.attack&&
     !u.attackOrder&&!u.destination&&!u.constructJob&&!u.mineJob&&
-    !u.treeJob&&!u.woodJob&&!u.farmJob&&!u.berryJob);
+    !u.treeJob&&!u.woodJob&&!u.farmJob&&!u.berryJob&&!u.soulJob);
   let jobs=units.filter(u=>u.berryJob&&!u.dead).length;
   for(const bush of wildBerries.bushes){
     if(jobs>=2)break;
@@ -3520,6 +3654,7 @@ function stepHealing(dt){
       return navigatorRTS.segmentClear(from,goal)||!!navigatorRTS.plan(from,goal);
     });
     if(!choice)continue;
+    cancelSoulJob(witch);
     witch.berryJob=null;witch.healJob={id:choice.id};
     witch.route=null;witch.approachCache=null;
   }
@@ -3641,6 +3776,7 @@ function tickUnit(actor,dt){
   if(tickRavenDistraction(actor,dt))return;
   if(actor.attackOrder&&!enemyOf(actor,actor.attackOrder))actor.attackOrder=null;
   if(tickHealingRetreat(actor,dt))return;
+  if(tickSoulHarvester(actor,dt))return;
   if(tickBerryForager(actor,dt))return;
   if(roles.isWorker(actor)){
     if(tickConstructWorker(actor,dt)||tickMineWorker(actor,dt)||
@@ -3789,15 +3925,24 @@ function stepGame(dt){
   if(!ready||!running||paused)return;
   stepProduction(dt);
   stepHealing(dt);
+  assignSoulHarvesters(dt);
   stepFarming(dt);
   stepOrcStrategy(dt);
   if(ravenModelLoaded)
     ravenFlock.update(dt,units.filter(actor=>actor.kind==='orc'&&!actor.dead));
   for(const actor of units)tickUnit(actor,dt);
+  stepSoulEffects(dt);
   tickBolts(dt);
   window.FightersUnitPhysics.separate(units,navigatorRTS,UNIT_RADIUS,dt);
   for(let i=units.length-1;i>=0;i--)if(units[i].dead&&units[i].deadTime<=0){
     releaseActor(units[i]);units.splice(i,1);
+  }
+  const corpses=units.filter(unit=>unit.dead);
+  if(corpses.length>soulRules.MAX_CORPSES){
+    corpses.sort((a,b)=>a.deadTime-b.deadTime);
+    for(const corpse of corpses.slice(0,corpses.length-soulRules.MAX_CORPSES)){
+      releaseActor(corpse);units.splice(units.indexOf(corpse),1);
+    }
   }
   fogElapsed+=dt;
   if(fogElapsed>=.125){fogElapsed=0;updateVision();}
@@ -4262,6 +4407,13 @@ window.__fightersQA={
           stones:b.root.children.filter(n=>n.name.startsWith('standing-stone-')).length,
           navigableCenter:navigatorRTS.pointClear(b.root.position)})),
       retreating:units.filter(u=>!!u.healJob&&!u.dead).map(u=>({id:u.id,circleId:u.healJob.id}))},
+    souls:{magic,maxMagic:soulRules.MAX_MAGIC,perCorpse:soulRules.SOUL_VALUE,
+      corpseLifetime:soulRules.CORPSE_SECONDS,buildUnlocked:circleUnlocked(),
+      arcanistUnlocked:arcanistUnlocked(),activeSpirits:soulEffects.length,
+      corpses:units.filter(u=>u.dead).map(u=>({id:u.id,clan:u.kind,
+        x:u.root.position.x,z:u.root.position.z,remaining:u.deadTime,
+        claimed:u.soulClaimed,reservedBy:u.soulReservedBy})),
+      collecting:units.filter(u=>!!u.soulJob&&!u.dead).map(u=>({id:u.id,corpseId:u.soulJob.id}))},
     farming:{...farming.snapshot(),workers:units.filter(u=>u.farmJob&&!u.dead).map(u=>({
       id:u.id,gardenId:u.farmJob.gardenId,plotIndex:u.farmJob.plotIndex,
       progress:u.farmJob.progress,x:u.root.position.x,z:u.root.position.z}))},
@@ -4512,6 +4664,22 @@ window.__fightersQA={
     if(!witch)return false;
     witch.health=Math.max(1,Math.min(witch.maxHealth,Number(value)));
     return true;
+  },
+  spawnTestCorpseNearArcanist:()=>{
+    const arcanist=units.find(u=>u.kind==='witch'&&u.role==='ranged'&&!u.dead);
+    if(!arcanist)return null;
+    arcanist.destination=null;arcanist.attackOrder=null;arcanist.healJob=null;
+    arcanist.berryJob=null;cancelSoulJob(arcanist);
+    const origin=arcanist.root.position;
+    // The test fixture must not land inside a menhir or a house collider.
+    const place=Array.from({length:16},(_,i)=>({
+      x:origin.x+1.1*Math.cos(i*Math.PI/8),
+      z:origin.z+1.1*Math.sin(i*Math.PI/8)
+    })).find(point=>navigatorRTS.pointClear(point)&&
+      navigatorRTS.segmentClear(origin,point))||{x:origin.x,z:origin.z};
+    const actor=spawnUnit('orc',place.x,place.z,units.length,'worker');
+    dealDamage(actor,actor.maxHealth,null);
+    return actor.id;
   },
   passive:kind=>{qaPassiveKind=kind||null;},
   enableOrcAI:value=>{orcDirector.enabled=!!value;orcDirector.reset();orcIncomeFraction=0;refreshHUD();},

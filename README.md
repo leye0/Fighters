@@ -64,7 +64,7 @@ La maison des sorcières et la caserne orc permettent d'entraîner trois rôles 
 
 ## Performance et gestion des ressources
 
-Le panneau contextuel n'est plus reconstruit à chaque mise à jour d'or ou de points de vie : les boutons restent les mêmes objets DOM et seules les valeurs dynamiques changent. Les statistiques de développement exposent le nombre de reconstructions. La planification de l'IA orc est évaluée à cadence réduite plutôt que de recréer les mêmes tableaux soixante fois par seconde. Les unités mortes libèrent leurs marqueurs et leurs actions, tandis que les constructions retirées libèrent les animations et barres de vie dont elles sont propriétaires. Les mires bleues/rouges ont une durée de vie limitée et un plafond simultané. Les tests de régression contrôlent la stabilité des menus sur une partie simulée prolongée.
+Le panneau contextuel n'est plus reconstruit à chaque mise à jour d'or ou de points de vie : les boutons restent les mêmes objets DOM et seules les valeurs dynamiques changent. Les statistiques de développement exposent le nombre de reconstructions. La planification de l'IA orc est évaluée à cadence réduite plutôt que de recréer les mêmes tableaux soixante fois par seconde. Les unités mortes conservent leur animation de chute au sol pendant deux minutes, puis libèrent leurs squelettes et leurs actions; un plafond de 40 cadavres limite la mémoire durant les grandes batailles. Les constructions retirées libèrent les animations et barres de vie dont elles sont propriétaires. Les mires bleues/rouges ont une durée de vie limitée et un plafond simultané. Les tests de régression contrôlent la stabilité des menus sur une partie simulée prolongée.
 
 Pendant une construction, chaque cycle du geste d'ouvrier peut déclencher un bref coup de marteau réel, partagé par les deux clans. Il se produit au moment de l'impact du geste, uniquement à proximité de la caméra et dans une zone explorée, avec une limite globale d'un coup toutes les 450 ms. Les moteurs audio déjà présents assurent le décodage paresseux, la pause et la libération des voix; le fichier MP3 de 4,8 Ko est sous licence CC0 ([source et détails](docs/sounds/WORK_ATTRIBUTION.md)).
 
@@ -116,11 +116,16 @@ Le workflow `.github/workflows/browser-qa.yml` exécute :
 - `node scripts/test-rts-unit-physics.mjs` : préférence de séparation en terrain libre, **passage temporairement superposé** dans un corridor, réservations de **20 emplacements distincts**, dispersion progressive à l'arrêt et murs toujours solides.
 - `node scripts/test-orc-strategy.mjs` : construction cohérente, stratégie économique, recrutement, défense, raiders et réinitialisation.
 - `node scripts/test-rts-healing.mjs` : seuils de repos, sélection du sanctuaire, rayon et guérison plafonnée.
+- `node scripts/test-rts-souls.mjs` : maison niveau 2, déblocage des Arcanistes, persistance des cadavres, réservations d'âmes et magie plafonnée.
 - `node scripts/browser-qa.mjs` : vraie scène **Chrome WebGL SwiftShader**, **caméra à zoom fixe 3×**, **glisser à un doigt pour déplacer**, **sélection rectangulaire immédiate par deux doigts** et capture des pointeurs, séquence de **deux touches pour attaquer**, mires bleues et rouges à durée de vie limitée, stabilité des menus, production et améliorations avec vrais GLB, collisions, **destruction des bâtiments par les deux factions** et **village orc bâti automatiquement**. Le test enregistre également des captures desktop et mobile.
 
 Un paramètre `?qa=1` active les contrôles d'injection de test `window.__fightersQA` et désactive l'IA autonome initialement pour des essais reproductibles; la partie normale active l'IA.
 
 Le laboratoire d'animations `docs/motion-lab.html` est conservé. Ouvrir le jeu via HTTPS et non en `file://`.
+
+## Cercle de roches et magie
+
+Une **maison de sorcières de niveau 2** est nécessaire pour ordonner la construction d'un **cercle de roches**. Tant qu'un cercle existe, ses maisons peuvent former des **Arcanistes** (rôle à distance déjà présent). Les Arcanistes peuvent alors, même en dehors du cercle, détecter les cadavres proches pendant une accalmie, s'approcher et en siphonner une seule fois l'esprit. Le son d'interaction des sorcières accompagne le rituel et une silhouette blanche semi-transparente quitte le cadavre pour rejoindre l'Arcaniste. L'âme récoltée ajoute **20 points** à la jauge de magie commune (maximum **100**). La dépouille reste visible après la récolte jusqu'à l'expiration de sa durée normale.
 
 
 ## Potagers et nourriture des sorcières
