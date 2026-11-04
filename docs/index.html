@@ -1757,6 +1757,7 @@ function makeGardenVisual(){
 // are oriented/grounded once; every plot only clones references to GPU assets.
 const CROP_NAMES=['Tomatoe','Potatoe','Carrot','Wheat'];
 let cropCatalog=null,cropLoadPromise=null,cropLoadError=null;
+let cropTransport=null,cropWireBytes=0;
 function buildCropCatalog(gltf){
   const catalog=new Map();
   for(let species=0;species<CROP_NAMES.length;species++){
@@ -1797,11 +1798,26 @@ function installGardenCrops(building){
 }
 function beginCropLoad(){
   if(cropLoadPromise)return cropLoadPromise;
-  cropLoadPromise=loader.loadAsync('./models/crops.rts.glb').then(gltf=>{
+  cropLoadPromise=(async()=>{
+    let gltf=null;
+    if(typeof DecompressionStream==='function'){
+      try{
+        const result=await fetchAsset('./models/crops.rts.glb.gz',
+          {compressed:true,timeout:30000});
+        gltf=await loader.parseAsync(result.data,'');
+        cropTransport='gzip';cropWireBytes=result.wireBytes;
+      }catch(err){
+        console.warn('Compressed garden assets unavailable, trying GLB:',err);
+      }
+    }
+    if(!gltf){
+      gltf=await loader.loadAsync('./models/crops.rts.glb');
+      cropTransport='raw';cropWireBytes=0;
+    }
     cropCatalog=buildCropCatalog(gltf);
     for(const building of buildingInstances.values())
       if(building.type==='garden')installGardenCrops(building);
-  }).catch(err=>{
+  })().catch(err=>{
     cropLoadError=String(err?.message||err);
     console.warn('Could not load licensed garden crops:',err);
   });
@@ -3236,6 +3252,7 @@ window.__fightersQA={
     orcAI:orcDirector.snapshot(),qaPassiveKind,
     twoFingerSelection:twoFingerBox?{a:{...twoFingerBox.a},b:{...twoFingerBox.b}}:null,
     crops:{loaded:!!cropCatalog,loading:!!cropLoadPromise&&!cropCatalog&&!cropLoadError,
+      transport:cropTransport,wireBytes:cropWireBytes,
       error:cropLoadError,templates:cropCatalog?[...cropCatalog.values()].flat().length:0,
       plots:[...buildingInstances.values()].filter(b=>b.type==='garden'&&!b.destroyed)
         .flatMap(b=>b.cropVisuals.map(v=>({stage:v.stage,
