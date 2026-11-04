@@ -764,10 +764,20 @@ function playOrcVoice(category,position){
   return true;
 }
 function acknowledgeOrcOrder(actors){
-  // A single voice for a whole squad, never one voice per unit or per AI tick.
+  // A single voice for a whole squad, never one voice per unit.
   const actor=[...actors].find(a=>a.kind==='orc'&&!a.dead&&
     visibleToPlayer(a.root.position.x,a.root.position.z));
   if(actor)playOrcVoice('short',actor.root.position);
+}
+let lastOrcAiVoice=-Infinity;
+function acknowledgeOrcAiOrder(actors){
+  // Autonomous decisions can happen four times per second. Only announce
+  // meaningful NEW tasks, with an additional 3.5s AI-specific throttle.
+  const now=performance.now();
+  if(now-lastOrcAiVoice<3500)return;
+  const actor=[...actors].find(a=>a.kind==='orc'&&!a.dead&&
+    visibleToPlayer(a.root.position.x,a.root.position.z));
+  if(actor&&playOrcVoice('short',actor.root.position))lastOrcAiVoice=now;
 }
 
 // Warcraft II's always-visible minimap. One 112×112 CPU buffer is reused;
@@ -1746,7 +1756,10 @@ function scheduleBuild(type,x,z,{byAI=false}={}){
   pendingBuilds.push(job);gold[clan]-=cost;
   worker.mineJob=null;worker.constructJob=job;worker.destination=null;
   worker.attackOrder=null;worker.route=null;worker.approachCache=null;
-  if(clan==='orc'&&!byAI)acknowledgeOrcOrder([worker]);
+  if(clan==='orc'){
+    if(byAI)acknowledgeOrcAiOrder([worker]);
+    else acknowledgeOrcOrder([worker]);
+  }
   buildMode=null;
   if(!byAI)showBanner('OUVRIER EN CONSTRUCTION');
   refreshHUD();return true;
@@ -2018,7 +2031,7 @@ function showBanner(message){
 }
 function startSession(){
   if(!ready)return;
-  clearOrderPings();clearBolts();
+  clearOrderPings();clearBolts();lastOrcAiVoice=-Infinity;
   for(const actor of units)releaseActor(actor);
   units.length=0;selected.clear();selectedBuilding=null;nextUnitId=1;
   // Match reset removes constructed buildings while retaining the initial village.
@@ -2316,6 +2329,7 @@ function assignMiners(){
     miner.mineJob={mineId:mine.id,progress:0,cycles:0};
     miner.route=null;miner.approachCache=null;
     assigned.push(miner);
+    acknowledgeOrcAiOrder([miner]);
   }
 }
 function canMine(actor,mine){
@@ -2527,15 +2541,20 @@ function stepOrcStrategy(dt){
     }else if(action.type==='scout'&&!enemyBaseKnown){
       const actor=aliveOrcs.find(u=>u.id===action.unitId);
       if(actor&&roles.isFighter(actor)&&!actor.attackOrder){
+        const newGoal=!actor.destination||Math.hypot(
+          actor.destination.x-action.x,actor.destination.z-action.z)>1;
         actor.scouting=true;actor.destination={x:action.x,z:action.z};
         actor.route=null;actor.routeAge=0;
+        if(newGoal)acknowledgeOrcAiOrder([actor]);
       }
     }else if(action.type==='raid'&&enemyBaseKnown&&!witchBuilding.destroyed){
       const squad=aliveOrcs.filter(u=>roles.isFighter(u)&&action.unitIds.includes(u.id));
+      const newlyOrdered=squad.filter(actor=>actor.attackOrder!==witchBuilding);
       for(const actor of squad){
         actor.scouting=false;actor.attackOrder=witchBuilding;
         actor.destination=null;actor.route=null;
       }
+      if(newlyOrdered.length)acknowledgeOrcAiOrder(newlyOrdered);
     }else if(action.type==='defend'){
       const attackers=units.filter(u=>u.kind==='witch'&&!u.dead);
       for(const orc of aliveOrcs){
@@ -2544,7 +2563,7 @@ function stepOrcStrategy(dt){
         const enemy=attackers.filter(u=>fogOfWar.visibleAt(
           u.root.position.x,u.root.position.z,'orc')).sort((a,b)=>
           targetDistance(orc,a)-targetDistance(orc,b))[0];
-        if(enemy)orc.attackOrder=enemy;
+        if(enemy){orc.attackOrder=enemy;acknowledgeOrcAiOrder([orc]);}
       }
     }
   }
