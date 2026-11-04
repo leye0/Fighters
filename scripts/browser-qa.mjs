@@ -125,6 +125,36 @@ async function run(){
  check(s.assets.sharedMaterials<120,
   'Too many cosmetic materials: '+s.assets.sharedMaterials);
  console.log('PASS SIX CHARACTER ROLES: shared bodies and costume geometry, separate worker/melee/ranged stats.');
+ await until('window.__fightersQA.snapshot().crops.loaded',
+   'real six-stage source model for wheat and wild berry bushes',30000);
+ await evaluate('window.__fightersQA.reset()');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.crops.templates===6&&s.berries.count===28&&s.berries.real&&s.berries.batches>0&&
+   s.berries.bushes.every(b=>b.stage===1&&b.rendered),
+   'Wild shrubs must use instanced original Tomatoe_F1..F3 models: '+JSON.stringify(s.berries));
+ const initialBerry=s.berries.bushes[0];
+ check(await evaluate('window.__fightersQA.isClear('+initialBerry.x+','+(initialBerry.z-1.5)+')'),
+   'First wild berry should have a navigable approach from the witch glade');
+ await evaluate('window.__fightersQA.moveUnitTo("witch",0,'+initialBerry.x+','+
+   (initialBerry.z-1.5)+');window.__fightersQA.setBerryStage(0,3)');
+ const berryFeeding=await evaluate("(()=>{let bent=false,approached=false;for(let i=0;i<110;i++){"+
+   "window.__fightersQA.advance(.1);const s=window.__fightersQA.snapshot();"+
+   "const w=s.witches[0],b=s.berries.bushes[0];"+
+   "if(w?.berryTarget===0&&w.animation==='Farm_Harvest'&&!w.workToolVisible&&"+
+   "!w.hammerToolVisible){bent=true;approached ||= Math.hypot(w.x-b.x,w.z-b.z)<.8;}"+
+   "if(s.berries.eaten>0&&b.stage===1)return {bent,approached,s};"+
+   "}return {bent,approached,s:window.__fightersQA.snapshot()};})()");
+ check(berryFeeding.bent&&berryFeeding.approached&&berryFeeding.s.berries.eaten>0&&
+   berryFeeding.s.berries.bushes[0].stage===1&&
+   berryFeeding.s.farming.foragedFood>=3&&
+   berryFeeding.s.buildings.every(b=>!b.id.startsWith('berry-')),
+   'Witch must automatically reach, bend and eat ripe wild berries: '+JSON.stringify(berryFeeding));
+ await evaluate('window.__fightersQA.reset()');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.berries.eaten===0&&s.berries.foragers.length===0&&
+   s.berries.bushes.every(b=>b.stage===1&&b.rendered),
+   'Reset must restore all berry shrubs and their visual stages');
+ console.log('PASS WILD BERRIES: 3 real shrub variants, auto walk/bend/eat, food and reset.');
  check(s.loading.compressed,'Native characters should load from optimized gzip assets');
  const fullTransfer={female:20994430,male:20683626};
  const fullDecoded={female:35752840,male:35190592};
@@ -817,7 +847,7 @@ async function run(){
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.crops.transport==='gzip'&&s.crops.wireBytes>0,
    'Garden asset should use the precompressed GLB transfer');
- check(s.crops.templates===3&&s.crops.plots.length===6&&
+ check(s.crops.templates===6&&s.crops.plots.length===6&&
    s.crops.plots.every(p=>p.real&&p.visible===1&&p.model==='Wheat_F1'),
    'All six beds must use the real three-stage GLB variants: '+JSON.stringify(s.crops));
  const gardenId=s.buildings.find(b=>b.type==='garden')?.id;
