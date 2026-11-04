@@ -772,7 +772,7 @@ async function run(){
     "for(const u of s.witches)if(u.role==='worker'&&u.animation==='Farm_Harvest'&&"+
     "!u.workToolVisible&&!u.hammerToolVisible){seen=true;inside ||= " +
     "Math.abs(u.x-("+gardenSite.x+"))<1.2&&Math.abs(u.z-("+gardenSite.z+"))<1.6;}"+
-    "return {seen,inside};})()");
+    "}return {seen,inside};})()");
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.farming.harvests>0&&s.farming.producedFood>=8,
    'Worker never reached and harvested mature crops: '+JSON.stringify(s.farming));
