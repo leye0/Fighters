@@ -1,0 +1,27 @@
+{
+  "sounds": [
+    {
+      "category": "interaction",
+      "name": "Witch_Interaction",
+      "path": "interaction/Witch_Interaction.mp3",
+      "source_url": "https://freesound.org/people/InSintesi/sounds/349052/",
+      "author": "InSintesi",
+      "title": "Witch's whisper.wav",
+      "license": "CC BY 4.0"
+    },
+    {
+      "category": "creation",
+      "name": "Witch_Creation",
+      "path": "creation/Witch_Creation.mp3",
+      "source_url": "https://freesound.org/people/NikoMyth/sounds/348142/",
+      "author": "NikoMyth",
+      "title": "Witch's Laugh.wav",
+      "license": "CC0"
+    }
+  ],
+  "counts": {
+    "interaction": 1,
+    "creation": 1,
+    "destruction": 0
+  }
+}
