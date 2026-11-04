@@ -393,12 +393,18 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
     background:#111c19b5;min-height:25px}
   .hud .score small{font-size:0!important;line-height:0!important;
     display:inline-block;flex:none}
-  .hud .score small::before{font:850 11px/1 system-ui,sans-serif;
+  .hud .score small::before{font:850 13px/1 system-ui,sans-serif;
     display:inline;color:#e3dcb8}
-  .hud .score>div:nth-child(1) small::before{content:"S";color:#a8e4c0}
-  .hud .score>div:nth-child(2) small::before{content:"🌾";color:#e9d47e}
-  .hud .score>div:nth-child(3) small::before{content:"O";color:#f8bd86}
-  .hud .score>div:nth-child(4) small::before{content:"⚔";color:#cdd8f0}
+  /* The two coin pictograms belong to different factions: tint their chips. */
+  .hud .score>div:nth-child(1){border-color:#6ca58a;background:#173329c9}
+  .hud .score>div:nth-child(1) strong{color:#adf0ca}
+  .hud .score>div:nth-child(2){border-color:#b7a16a;background:#322d1dc9}
+  .hud .score>div:nth-child(3){border-color:#c28761;background:#38271ec9}
+  .hud .score>div:nth-child(3) strong{color:#ffd0a2}
+  .hud .score>div:nth-child(1) small::before{content:"🪙"}
+  .hud .score>div:nth-child(2) small::before{content:"🌾"}
+  .hud .score>div:nth-child(3) small::before{content:"🪙"}
+  .hud .score>div:nth-child(4) small::before{content:"⚔"}
   .hud .score strong{font:800 14px/1 system-ui,sans-serif!important;
     letter-spacing:0}
 }
