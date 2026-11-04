@@ -90,3 +90,12 @@ Le workflow `.github/workflows/browser-qa.yml` exécute :
 Un paramètre `?qa=1` active les contrôles d'injection de test `window.__fightersQA` et désactive l'IA autonome initialement pour des essais reproductibles; la partie normale active l'IA.
 
 Le laboratoire d'animations `docs/motion-lab.html` est conservé. Ouvrir le jeu via HTTPS et non en `file://`.
+
+
+## Potagers et nourriture des sorcières
+
+L'ouvrière peut construire un **potager** depuis **Construire → Potager** (175 or). Chaque potager contient six parcelles. Les quatre types de cultures sont tomate, pomme de terre, carotte et blé, avec **trois stades exacts** : jeune pousse, croissance, récoltable. Le **stade 3 reste en place sans mourir** jusqu'à ce que l'ouvrière le récolte. Une récolte donne huit unités de nourriture, remet la parcelle au stade 1 et démarre un nouveau cycle.
+
+Les ouvrières peuvent être assignées par clic sur le potager ou avec la commande **Récolter**; une ouvrière libre peut aussi commencer automatiquement une récolte arrivée à maturité. Elle doit physiquement rejoindre le jardin, puis travailler avant de créditer la réserve. La consommation de nourriture dépend du nombre de sorcières vivantes. À zéro, **toutes les sorcières perdent progressivement des PV**, jusqu'à pouvoir mourir de faim. La nourriture apparaît dans la barre de ressources compacte du HUD.
+
+Le rendu des plantes est **provisoire et géométrique** : il ne contient pas encore les maillages Sketchfab. Le modèle choisi est [Crops (low poly)](https://sketchfab.com/3d-models/crops-low-poly-637198c4b8be41e6aeaca8cea8fb81f4), de **Bumroker**, sous [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Son archive d'origine doit être fournie après téléchargement avec connexion Sketchfab pour intégrer les vrais maillages et textures. Conserver l'attribution à Bumroker lors de leur redistribution. Les trois états de l'économie et les tests sont définis dans docs/rts-farming.js et scripts/test-rts-farming.mjs.

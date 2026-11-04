@@ -1,0 +1,38 @@
+#!/usr/bin/env node
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url);
+const farming=require('../docs/rts-farming.js');
+const farm=new farming.Economy();
+assert.deepEqual(farming.SPECIES,['tomato','potato','carrot','wheat']);
+assert.equal(farm.addGarden('a'),true);
+assert.equal(farm.addGarden('a'),false);
+assert.deepEqual(farm.snapshot().gardens[0].stages,[1,1,1,1,1,1]);
+farm.step(12,3);
+assert.deepEqual(farm.snapshot().gardens[0].stages,[2,2,2,2,2,2]);
+assert.equal(farm.harvest('a',0),0,'Cannot collect before stage 3');
+farm.step(12,3);
+assert.deepEqual(farm.snapshot().gardens[0].stages,[3,3,3,3,3,3]);
+farm.step(100,0);
+assert.deepEqual(farm.snapshot().gardens[0].stages,[3,3,3,3,3,3],
+  'Stage 3 stays ripe; never show a dead crop');
+assert.equal(farm.firstReady('a',[0,1]),2);
+const before=farm.food;
+assert.equal(farm.harvest('a',2),8);
+assert.equal(farm.harvest('a',2),0,'No duplicate harvest');
+assert.equal(farm.food,before+8);
+assert.equal(farm.garden('a').plots[2].stage,1,'Replant after harvesting');
+farm.step(24,0);
+assert.equal(farm.garden('a').plots[2].stage,3,'Harvested crop regrows');
+farm.removeGarden('a');
+assert.equal(farm.firstReady('a'),-1);
+assert.equal(farm.harvest('a',0),0);
+const empty=new farming.Economy();
+const starving=empty.step(1000,3);
+assert(starving.starvedSeconds>0);
+assert.equal(empty.food,0);
+empty.reset();
+assert.equal(empty.food,farming.STARTING_FOOD);
+assert.equal(empty.snapshot().starvationSeconds,0);
+assert.equal(empty.snapshot().gardens.length,0);
+console.log('PASS farming: 3 growth stages, mature hold, worker harvest, regrowth, starvation and reset');

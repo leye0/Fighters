@@ -657,6 +657,50 @@ async function run(){
  check(await evaluate('window.__fightersQA.isClear(8,-10)'),
   'Reset must remove constructed building hitboxes');
 
+ // The free CC BY model has three distinct growth stages. Stage 3 stays ripe
+ // until a physical witch worker harvests, then the crop begins again at 1.
+ const gardenSite=await evaluate("(()=>{for(let z=-9;z>=-23;z-=2)for(let x=-8;x>=-24;x-=2)"+
+   "if(window.__fightersQA.canBuild(x,z,'garden'))return {x,z};return null})()");
+ check(gardenSite,'No buildable garden site on witch territory');
+ check(await evaluate('!!window.__fightersQA.buildGarden('+gardenSite.x+','+gardenSite.z+')'),
+   'Garden could not be constructed as a real building');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ const gardenId=s.buildings.find(b=>b.type==='garden')?.id;
+ check(gardenId&&s.farming.gardens.length===1&&
+   s.farming.gardens[0].stages.every(stage=>stage===1),
+   'Garden must start at stage 1');
+ await evaluate('window.__fightersQA.advance(12)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.farming.gardens[0].stages.every(stage=>stage===2),'Crops must visibly reach stage 2');
+ await evaluate('window.__fightersQA.advance(12)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.farming.gardens[0].stages.every(stage=>stage===3),
+   'Crops must reach the third and final harvestable stage');
+ // The worker can be explicitly assigned; the auto-harvester also works when idle.
+ check(await evaluate('window.__fightersQA.orderHarvest(1,'+JSON.stringify(gardenId)+')'),
+   'Witch worker could not be assigned to garden');
+ await evaluate('window.__fightersQA.advance(26)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.farming.harvests>0&&s.farming.producedFood>=8,
+   'Worker never reached and harvested mature crops: '+JSON.stringify(s.farming));
+ check(s.farming.gardens[0].stages.every(stage=>stage>=1&&stage<=3),
+   'Garden must never show dead or fourth-stage crops');
+ console.log('PASS GARDEN: stages 1→2→3, ripe hold, physical witch harvest and food income.');
+ await evaluate('window.__fightersQA.reset();window.__fightersQA.setFood(0)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ const healthBeforeStarvation=s.witches.map(w=>w.health);
+ await evaluate('window.__fightersQA.advance(2)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.farming.food===0&&s.witches.every((w,i)=>w.health<healthBeforeStarvation[i]),
+   'All witches must lose HP when no food remains');
+ check(s.buildings.every(b=>b.type!=='garden')&&s.farming.gardens.length===0,
+   'Reset must clear all gardens and worker assignments');
+ await evaluate('window.__fightersQA.reset()');
+ check((await evaluate('window.__fightersQA.snapshot()')).farming.food===45,
+   'New match must restore starting food');
+ console.log('PASS FAMINE: starvation damages witches and reset removes garden economy.');
+
+
  // First tap selects a witch, second tap directly attacks the enemy building.
  const hutId=(await evaluate('window.__fightersQA.snapshot()')).buildings.find(b=>b.type==='hut').id;
  await evaluate("window.__fightersQA.reset();window.__fightersQA.centerCamera(-18,-14)");
