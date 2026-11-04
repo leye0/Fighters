@@ -396,8 +396,9 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
   .hud .score small::before{font:850 11px/1 system-ui,sans-serif;
     display:inline;color:#e3dcb8}
   .hud .score>div:nth-child(1) small::before{content:"S";color:#a8e4c0}
-  .hud .score>div:nth-child(2) small::before{content:"O";color:#f8bd86}
-  .hud .score>div:nth-child(3) small::before{content:"⚔";color:#cdd8f0}
+  .hud .score>div:nth-child(2) small::before{content:"🌾";color:#e9d47e}
+  .hud .score>div:nth-child(3) small::before{content:"O";color:#f8bd86}
+  .hud .score>div:nth-child(4) small::before{content:"⚔";color:#cdd8f0}
   .hud .score strong{font:800 14px/1 system-ui,sans-serif!important;
     letter-spacing:0}
 }
@@ -437,7 +438,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 <div class="game-shell"><section class="arcade">
 <div class="hud">
   <div class="hero-hud"><div class="hud-kicker">FIGHTERS · RTS</div><strong id="faction-title">SORCIÈRES</strong><small id="selection-summary">Sélectionnez une unité ou la maison</small><small id="ai-status" class="ai-status">Village orc · en développement</small></div>
-  <div class="score"><div title="Or des sorcières"><small>OR SORCIÈRES</small><strong id="witch-gold">2000</strong></div><div title="Réserves de nourriture des sorcières"><small>🥕 VIVRES</small><strong id="witch-food">45</strong></div><div title="Or des orcs"><small>OR ORCS</small><strong id="orc-gold">900</strong></div><div title="Unités des sorcières et des orcs"><small>UNITÉS</small><strong id="unit-count">0 : 0</strong></div></div>
+  <div class="score"><div title="Or des sorcières"><small>OR SORCIÈRES</small><strong id="witch-gold">2000</strong></div><div title="Réserves de nourriture des sorcières"><small>🌾 VIVRES</small><strong id="witch-food">45</strong></div><div title="Or des orcs"><small>OR ORCS</small><strong id="orc-gold">900</strong></div><div title="Unités des sorcières et des orcs"><small>UNITÉS</small><strong id="unit-count">0 : 0</strong></div></div>
   <button id="pause" class="pause-compact" aria-label="Pause" title="Pause (P)" disabled>Ⅱ</button>
 </div>
 <div id="viewport" class="viewport" aria-label="Carte de stratégie en temps réel"><div class="scanlines"></div><div id="banner" class="banner"></div><div id="selection-rectangle" hidden></div><div id="order-pings" aria-hidden="true"></div><div id="order-prompt" role="status" aria-live="polite" hidden></div>
@@ -2026,7 +2027,7 @@ function refreshHUD(){
         constructionTab==='advanced'?['cauldron','factory']:['hut','barrack'];
       for(const type of types){
         const cost=constructionCost(type);
-        add(({barrack:'🏰',hut:'🛖',cauldron:'⚗️',factory:'🏭','witch-house':'🏡',garden:'🥕'})[type],
+        add(({barrack:'🏰',hut:'🛖',cauldron:'⚗️',factory:'🏭','witch-house':'🏡',garden:'🌾'})[type],
           type==='witch-house'?'Maison':type==='garden'?'Potager':ORC_NAMES[type],cost,()=>beginBuild(type),
           gold[activeFaction]<cost||!builderAvailable(activeFaction)||
             (activeFaction==='orc'&&!buildingBlueprints.has(type)),
@@ -2035,7 +2036,7 @@ function refreshHUD(){
       add('↩','Retour','',()=>{constructionTab=false;refreshHUD();});
     }else if(b){
       const names={'witch-house':'Maison des sorcières',garden:'Potager',...ORC_NAMES};
-      const icons={'witch-house':'🏡',garden:'🥕',barrack:'🏰',hut:'🛖',mine:'⛏️',
+      const icons={'witch-house':'🏡',garden:'🌾',barrack:'🏰',hut:'🛖',mine:'⛏️',
         cauldron:'⚗️',factory:'🏭'};
       portrait.textContent=icons[b.type]||'🏠';
       title.textContent=names[b.type]||'Bâtiment';
@@ -2089,7 +2090,7 @@ function refreshHUD(){
       if(alive.some(roles.isFighter))
         add('⚔️','Attaquer','',()=>{attackMode=true;refreshHUD();});
       if(alive.some(roles.isWorker)){
-        if(activeFaction==='witch')add('🥕','Récolter','',()=>{
+        if(activeFaction==='witch')add('🌾','Récolter','',()=>{
           const gardens=[...buildingInstances.values()].filter(b=>b.type==='garden'&&!b.destroyed);
           const workers=alive.filter(roles.isWorker);
           gardens.sort((a,b)=>Math.min(...workers.map(w=>targetDistance(w,a)))-

@@ -502,6 +502,11 @@ async function run(){
  const framing=await evaluate("(()=>{const hero=document.querySelector('.hero-hud').getBoundingClientRect();const score=document.querySelector('.score').getBoundingClientRect();const pause=document.querySelector('#pause').getBoundingClientRect();return {hero:{right:hero.right,bottom:hero.bottom},score:{left:score.left,right:score.right},pause:{left:pause.left,right:pause.right}}})()");
  check(framing.hero.right<=framing.score.left+3&&framing.score.right<=framing.pause.left+4&&
   framing.pause.right<=mobile.width+1,'Compact mobile HUD overlaps: '+JSON.stringify(framing));
+ const resourceBadges=await evaluate("Array.from(document.querySelectorAll('.score>div'),d=>getComputedStyle(d.querySelector('small'),'::before').content)");
+ check(resourceBadges.length===4&&resourceBadges.every((tag,i)=>
+   tag.includes(['S','🌾','O','⚔'][i])),
+   'Mobile resources must label sorceress gold, wheat food, orc gold and units in the correct order: '+
+   JSON.stringify(resourceBadges));
  // Two real simultaneous touch pointers form a rectangle immediately.
  // The old hold-to-select and pinch-to-zoom paths are intentionally gone.
  await call('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:2});
