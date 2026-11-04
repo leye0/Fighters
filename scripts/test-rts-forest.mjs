@@ -10,6 +10,8 @@ const { Navigator } = require('../docs/rts-navigation.js');
 const layout = forest.createLayout();
 assert.deepEqual(layout,forest.createLayout(),'forest must stay deterministic across resets');
 assert.equal(layout.length,55);
+assert.deepEqual(forest.TYPES,['twisted','dead'],
+  'Only red twisted trees and bare dead trees belong in this forest');
 const initialWitches=[{x:-18,z:-13},{x:-16.5,z:-15},{x:-19,z:-16}];
 const initialVisible=layout.filter(tree=>
   initialWitches.some(unit=>Math.hypot(tree.x-unit.x,tree.z-unit.z)<6.25)&&
@@ -40,12 +42,13 @@ for(const kind of forest.TYPES){
   const length=buffer.readUInt32LE(12);
   const metadata=JSON.parse(buffer.toString('utf8',20,20+length));
   assert.ok(metadata.meshes?.length>0,'actual model geometry absent: '+kind);
-  if(kind==='twisted'||kind==='dead'){
-    assert.ok(metadata.extensionsRequired?.includes('EXT_texture_webp'));
-    assert.ok(metadata.images.every(image=>image.mimeType==='image/webp'));
-  }
+  assert.ok(metadata.extensionsRequired?.includes('EXT_texture_webp'));
+  assert.ok(metadata.images.every(image=>image.mimeType==='image/webp'));
 }
-assert.ok(assetBytes<1_200_000,'forest assets exceed the lightweight download budget');
+assert.ok(assetBytes<900_000,'forest assets exceed the lightweight download budget');
+for(const unused of ['leafy','pine'])
+  assert.ok(!fs.existsSync(path.join(assets,unused+'.glb')),
+    'Unused green tree asset must not be bundled: '+unused);
 for(let i=0;i<layout.length;i++){
   const a=layout[i];
   assert.ok(Math.abs(a.x)<27&&Math.abs(a.z)<27);

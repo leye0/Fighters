@@ -8,29 +8,29 @@
   else root.FightersForest=api;
 })(typeof globalThis==='object'?globalThis:this,function(){
   'use strict';
-  const TYPES=['leafy','pine','twisted','dead'];
+  const TYPES=['twisted','dead'];
   // These four trunks are deliberately visible in the witches' starting glade.
   // The rest must also be discoverable while traversing the playable interior:
   // an edge-only layout looks like an empty map during normal exploration.
   const STARTING_GLADE=[
-    {x:-16.1,z:-10.2,type:'leafy',angle:.6,height:4.4,radius:.46},
+    {x:-16.1,z:-10.2,type:'twisted',angle:.6,height:4.4,radius:.46},
     {x:-13.4,z:-10.3,type:'twisted',angle:2.4,height:4.9,radius:.46},
-    {x:-11.6,z:-11.8,type:'pine',angle:4.3,height:4.1,radius:.46},
+    {x:-11.6,z:-11.8,type:'dead',angle:4.3,height:4.1,radius:.38},
     {x:-14.8,z:-7.9,type:'dead',angle:1.5,height:4.6,radius:.38}
   ];
   const ORC_STARTING_GLADE=[
-    {x:8.2,z:19.8,type:'pine',angle:2.2,height:4.9,radius:.46},
+    {x:8.2,z:19.8,type:'twisted',angle:2.2,height:4.9,radius:.46},
     {x:9.8,z:14.7,type:'dead',angle:4.7,height:4.6,radius:.38}
   ];
   const AREAS=[
     // The building clusters and starting units remain unobstructed.
-    {side:'west',count:9,range:[-7,25],types:['twisted','leafy','twisted','dead']},
-    {side:'north',count:7,range:[-25,-7],types:['leafy','twisted','pine']},
-    {side:'east',count:9,range:[-25,6],types:['pine','dead','pine','leafy']},
-    {side:'south',count:8,range:[-7,25],types:['pine','dead','pine']},
-    {side:'witch-glade',count:4,types:['twisted','leafy','dead']},
-    {side:'orc-glade',count:3,types:['pine','dead','pine']},
-    {side:'center-groves',count:9,types:['twisted','leafy','pine','dead']}
+    {side:'west',count:9,range:[-7,25],types:['twisted','twisted','dead']},
+    {side:'north',count:7,range:[-25,-7],types:['twisted','dead','twisted']},
+    {side:'east',count:9,range:[-25,6],types:['dead','twisted','dead']},
+    {side:'south',count:8,range:[-7,25],types:['dead','twisted','dead']},
+    {side:'witch-glade',count:4,types:['twisted','twisted','dead']},
+    {side:'orc-glade',count:3,types:['dead','twisted','dead']},
+    {side:'center-groves',count:9,types:['twisted','dead','twisted','dead']}
   ];
   const RESERVED=[[-23.5,-17.5,7.4],[-18,-14,4.8],[22,20,9.2],
     [15,20,7.8],[1,26,4.4],
@@ -62,7 +62,7 @@
         if(trees.some(t=>Math.hypot(t.x-x,t.z-z)<2.15))continue;
         const type=area.types[Math.floor(random()*area.types.length)];
         trees.push({x,z,type,angle:random()*Math.PI*2,
-          height:(type==='pine'?4.0:type==='dead'?4.8:type==='twisted'?5.4:4.6)*(.83+random()*.34),
+          height:(type==='dead'?4.8:5.4)*(.83+random()*.34),
           radius:type==='dead'?.38:.46});
         created++;
       }

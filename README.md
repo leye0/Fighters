@@ -28,9 +28,9 @@ La visibilité repose sur une grille de **112 × 112 cases (0,5 unité)**, commu
 
 ## Forêt fantastique
 
-Le décor urbain provisoire a laissé place à des chemins de terre et à **55 vrais arbres 3D** : feuillus, conifères, arbres tortueux rougeâtres et arbres morts sombres. Les bosquets sont plus mystiques du côté des sorcières et plus austères du côté des orcs. Leur disposition est déterministe et préserve les bâtiments et les points de départ.
+Le décor urbain provisoire a laissé place à des chemins de terre et à **55 vrais arbres 3D**, exclusivement des arbres tortueux rougeâtres et des arbres morts sombres. Les bosquets sont plus mystiques du côté des sorcières et plus austères du côté des orcs. Leur disposition est déterministe et préserve les bâtiments et les points de départ.
 
-Quatre modèles du créateur **Quaternius**, sous licence **CC0**, sont intégrés localement et totalisent environ **1 Mio** après réduction des textures en WebP 256 px. Le rendu réemploie les géométries et matériaux dans des instances GPU; un petit obstacle représente seulement le tronc, et les unités peuvent passer sous les branches. Les arbres ne sont pas récoltables pour le moment. [Sources et licences](docs/models/forest/ASSET_LICENSES.md).
+Deux modèles du créateur **Quaternius**, sous licence **CC0**, sont intégrés localement et totalisent environ **800 Kio** après réduction des textures en WebP 256 px. Le rendu réemploie les géométries et matériaux dans des instances GPU; un petit obstacle représente seulement le tronc, et les unités peuvent passer sous les branches. Les arbres ne sont pas récoltables pour le moment. [Sources et licences](docs/models/forest/ASSET_LICENSES.md).
 
 ## Interface RTS — style Warcraft II
 

@@ -64,8 +64,8 @@ async function run(){
  await call('Page.navigate',{url:root+'?qa=1'});
  await until('window.__fightersQA?.snapshot().running===true','RTS startup');
  await until('window.__fightersQA.snapshot().witchHouseLoaded','real witch house hitbox');
- await until('window.__fightersQA.snapshot().forest.loadedSpecies===4',
-   'four real CC0 tree GLBs with WebP textures',30000);
+ await until('window.__fightersQA.snapshot().forest.loadedSpecies===2',
+   'two real CC0 red/dead tree GLBs with WebP textures',30000);
  const forest=await evaluate('window.__fightersQA.snapshot().forest');
  check(forest.instances===55&&forest.obstacleCount===55&&forest.visibleInViewport>=3,
    'At least three real trees must be revealed and on screen at witch spawn: '+JSON.stringify(forest));
@@ -88,7 +88,17 @@ async function run(){
  check(orcForest.visibleInViewport>=1,
    'Actual orc start must reveal at least one tree, not an empty map: '+JSON.stringify(orcForest));
  await screenshot('rts-forest-orc');
- await until("window.__fightersQA.sound().played>0",'real decoded Orc interaction SFX',10000);
+ // SwiftShader can make the first MP3 decode exceed the voice engine's 1.8s
+ // freshness limit. Once decoded it stays cached; a subsequent genuine order
+ // should play. Reissue selection briefly instead of treating a cold decode
+ // dropped on purpose as a missing audio implementation.
+ await until("window.__fightersQA.sound().contextState==='running'",'user-unlocked Orc AudioContext',10000);
+ for(let retry=0;retry<4&&!await evaluate('window.__fightersQA.sound().played>0');retry++){
+   await sleep(1200);
+   await evaluate("window.__fightersQA.selectUnit('orc',0)");
+ }
+ check(await evaluate('window.__fightersQA.sound().played>0'),
+   'Real decoded Orc interaction SFX never played: '+JSON.stringify(await evaluate('window.__fightersQA.sound()')));
  console.log('PASS WEB AUDIO BROWSER SMOKE:',JSON.stringify(await evaluate(
    '({witch:window.__fightersQA.witchSound(),orc:window.__fightersQA.sound()})')));
  await evaluate("window.__fightersQA.reset()");
