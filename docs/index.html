@@ -915,19 +915,24 @@ function buildingInDiscoveredZone(building,clan){
     [h.maxX,h.minZ],[h.maxX,h.maxZ]]
     .some(([x,z])=>fogOfWar.exploredAt(x,z,clan));
 }
+function groundSightSources(clan,structures=liveBuildings()){
+  const ownership=clan==='witch'?'witch':'orcs';
+  const sources=units.filter(actor=>actor.kind===clan&&!actor.dead)
+    .map(actor=>({x:actor.root.position.x,z:actor.root.position.z}));
+  // Completed clan buildings have the same sight radius as a character.
+  // Natural gold mines are deposits, not watchtowers.
+  for(const b of structures){
+    if(b.clanId!==ownership||b.type==='mine'||!b.hitbox)continue;
+    sources.push({x:(b.hitbox.minX+b.hitbox.maxX)/2,
+      z:(b.hitbox.minZ+b.hitbox.maxZ)/2});
+  }
+  return sources;
+}
 function updateVision(){
   const structures=liveBuildings();
-  for(const [clan,kind,ownership] of [['witch','witch','witch'],['orc','orc','orcs']]){
-    const sources=units.filter(actor=>actor.kind===kind&&!actor.dead)
-      .map(actor=>({x:actor.root.position.x,z:actor.root.position.z}));
+  for(const [clan,ownership] of [['witch','witch'],['orc','orcs']]){
+    const sources=groundSightSources(clan,structures);
     if(clan==='witch'&&ravenModelLoaded)sources.push(...ravenFlock.visionSources());
-    // Completed clan buildings have the same sight radius as a character.
-    // Natural gold mines are deposits, not watchtowers.
-    for(const b of structures){
-      if(b.clanId!==ownership||b.type==='mine'||!b.hitbox)continue;
-      sources.push({x:(b.hitbox.minX+b.hitbox.maxX)/2,
-        z:(b.hitbox.minZ+b.hitbox.maxZ)/2});
-    }
     fogOfWar.update(clan,sources);
     for(const b of structures){
       if(b.clanId!==ownership&&b.clanId!=='neutral'&&buildingInDiscoveredZone(b,clan))
@@ -1017,13 +1022,18 @@ const minimapRaster=document.createElement('canvas');
 minimapRaster.width=fogOfWar.size;minimapRaster.height=fogOfWar.size;
 const minimapRasterContext=minimapRaster.getContext('2d',{alpha:false});
 const minimapImage=minimapRasterContext.createImageData(fogOfWar.size,fogOfWar.size);
+// Raven scouting permanently discovers terrain but never creates a moving
+// bright patch that would betray each bird's position on the minimap.
+const minimapGroundFog=new window.FightersFog.FogGrid();
 let minimapElapsed=0;
 function miniX(x){return (x+ARENA_HALF)/ARENA_SIZE*minimap.width;}
 function miniZ(z){return (z+ARENA_HALF)/ARENA_SIZE*minimap.height;}
 function drawMinimap(){
   const fog=fogOfWar.maps[activeFaction],paint=minimapImage.data;
+  minimapGroundFog.update(activeFaction,groundSightSources(activeFaction));
+  const groundVisible=minimapGroundFog.maps[activeFaction].visible;
   for(let i=0,j=0;i<fog.explored.length;i++,j+=4){
-    const light=Math.max(fog.visible[i],fog.explored[i]*.28)/255;
+    const light=Math.max(groundVisible[i],fog.explored[i]*.28)/255;
     paint[j]=Math.round(7+46*light);
     paint[j+1]=Math.round(10+90*light);
     paint[j+2]=Math.round(11+54*light);
@@ -4172,6 +4182,38 @@ window.__fightersQA={
       spawnUnit('witch',place.x,place.z,total);total++;
     }
     return total;
+  },
+  skeletonResources:()=>{
+    // Native rigged costumes share an actor's skeleton, but different actors
+    // must own independent Skeleton/DataTexture instances. Inspect the real
+    // render resources rather than inferring them from all scene textures.
+    const skeletons=new Set();
+    for(const actor of units)actor.visual.traverse(node=>{
+      if(node.isSkinnedMesh&&node.skeleton)skeletons.add(node.skeleton);
+    });
+    const boneTextures=[...skeletons].map(skeleton=>skeleton.boneTexture).filter(Boolean);
+    return {actors:units.length,skeletons:skeletons.size,
+      boneTextures:boneTextures.length,
+      uniqueBoneTextures:new Set(boneTextures).size};
+  },
+  minimapGroundVisibilityAt:(x,z)=>{
+    drawMinimap();
+    return minimapGroundFog.sample(x,z,activeFaction).visible;
+  },
+  prewarmSkeletonTextures:()=>{
+    // Test-only: force a real WebGL upload for every actor's bone texture.
+    // The live renderer allocates these lazily only for visible SkinnedMeshes;
+    // a camera-dependent leak test would miss off-screen characters.
+    const skeletons=new Set();
+    for(const actor of units)actor.visual.traverse(node=>{
+      if(node.isSkinnedMesh&&node.skeleton)skeletons.add(node.skeleton);
+    });
+    let allocated=0;
+    for(const skeleton of skeletons){
+      if(!skeleton.boneTexture){skeleton.computeBoneTexture();allocated++;}
+      renderer.initTexture(skeleton.boneTexture);
+    }
+    return {skeletons:skeletons.size,allocated};
   },
   spawnOrcSiege:()=>{
     // Multi-ranged raid from clear positions around the witch headquarters.
