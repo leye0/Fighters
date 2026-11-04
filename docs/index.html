@@ -1822,6 +1822,11 @@ function issueMove(destination,{spacing=1.35,withinRadius=Infinity}={}){
   const goals=window.FightersUnitPhysics.formationGoals(actors,destination,navigatorRTS,{spacing});
   actors.forEach((actor,i)=>{
     let goal=goals[i];
+    // Keep a requested sanctuary order even if the coarse formation planner
+    // cannot reserve a slot from the unit's current position. Movement can
+    // retry routing when the environment changes; the open centre is valid.
+    if(!goal&&withinRadius<Infinity&&navigatorRTS.pointClear(destination))
+      goal={...destination};
     if(goal&&Math.hypot(goal.x-destination.x,goal.z-destination.z)>withinRadius&&
       (navigatorRTS.segmentClear(actor.root.position,destination)||
         navigatorRTS.plan(actor.root.position,destination)))goal={...destination};
