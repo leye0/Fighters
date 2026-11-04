@@ -4,6 +4,7 @@ import {createRequire} from 'node:module';
 import assert from 'node:assert/strict';
 const require=createRequire(import.meta.url);
 const {Navigator,segmentHitsBox}=require('../docs/rts-navigation.js');
+const forest=require('../docs/rts-forest.js');
 
 const nav=new Navigator({halfSize:28,cellSize:1,radius:.36});
 const house={id:'witch-house',minX:-3,maxX:3,minZ:-3,maxZ:3};
@@ -77,4 +78,21 @@ for(const {from,goal} of standOffs){
   previous=waypoint;
  }
 }
+// Regression from the real 20-witch browser test: a unit next to a tree
+// stands on clear terrain, but its conservatively blocked A* cell used to
+// make every subsequent route fail, leaving the unit idle forever.
+const woodland=new Navigator({halfSize:28,cellSize:1,radius:.45});
+woodland.setObstacles(forest.obstacles(forest.createLayout()));
+const treeSide={x:-15.631796399896112,z:-7.714105476542033};
+const formationSlot={x:-12.05,z:-8.05};
+assert(woodland.pointClear(treeSide)&&woodland.cellBlocked(woodland.cell(treeSide)),
+ 'Reproduce legal unit position in a conservative blocked A* cell');
+const escape=woodland.plan(treeSide,formationSlot);
+assert(escape?.waypoints.length,'Legal starting point beside a tree must escape to formation slot');
+let current=treeSide;
+for(const waypoint of escape.waypoints){
+ assert(woodland.segmentClear(current,waypoint),'Escape path must not cut through a tree');
+ current=waypoint;
+}
+assert(Math.hypot(current.x-formationSlot.x,current.z-formationSlot.z)<.01);
 console.log('PASS RTS navigation: A* detours, safe clicked-building goals, swept-radius collisions, diagonal corners, real stepping, dynamic invalidation.');

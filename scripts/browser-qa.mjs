@@ -104,6 +104,7 @@ async function run(){
  await evaluate("window.__fightersQA.reset()");
  let s=await evaluate('window.__fightersQA.snapshot()');
  check(s.witches.length===3&&s.orcs.length===4,'Starting troops');
+ check(s.wood.witch===250&&s.wood.orc===350,'Wood reserve must belong to each faction');
  check(s.witches.map(u=>u.role).join(',')==='melee,worker,ranged',
   'Witches must start with worker, melee and ranged roles');
  check(s.orcs.map(u=>u.role).join(',')==='melee,worker,ranged,melee',
@@ -142,7 +143,8 @@ async function run(){
  // A real tap on a tree (not a building) orders either faction's worker to
  // walk to its trunk, play the native chopping loop, and leave a real GLB pile.
  for(const [kind,workerIndex,treeIndex] of [['witch',1,0],['orc',1,5]]){
-   await evaluate("window.__fightersQA.reset();window.__fightersQA.setFaction('"+kind+"')");
+   await evaluate("window.__fightersQA.reset();window.__fightersQA.enableOrcAI(false);"+
+     "window.__fightersQA.setFaction('"+kind+"')");
    if(kind==='orc')await evaluate('window.__fightersQA.centerCamera(15,18)');
    await evaluate("window.__fightersQA.selectUnit('"+kind+"',"+workerIndex+")");
    const point=await evaluate('window.__fightersQA.treeScreenPoint('+treeIndex+')');
@@ -165,6 +167,16 @@ async function run(){
      chop.forest.trees[treeIndex].felled,
      'Felling must use a visible axe, remove exactly one tree obstacle and leave GLB logs: '+
      JSON.stringify(chop));
+   const delivery=await evaluate("(()=>{let carried=false;for(let i=0;i<260;i++){"+
+     "window.__fightersQA.advance(.25);const s=window.__fightersQA.snapshot();"+
+     "carried ||= s.forestry.haulers.some(h=>h.clan==='"+kind+"'&&h.carrying);"+
+     "if(s.wood."+kind+">"+(kind==='witch'?250:350)+")return {carried,s};"+
+     "}return {carried,s:window.__fightersQA.snapshot()};})()");
+   check(delivery.carried&&delivery.s.wood[kind]===(kind==='witch'?330:430)&&
+     delivery.s.forestry.piles.length===0&&delivery.s.forest.logBundles===0&&
+     delivery.s.forestry.haulers.length===0,
+     'Only physically delivered wood may be credited to the correct clan: '+
+     JSON.stringify({wood:delivery.s.wood,forestry:delivery.s.forestry}));
    s=await evaluate('window.__fightersQA.snapshot()');
    check(s.buildings.every(b=>b.id!=='tree-'+treeIndex),
      'Forest trees are terrain resources, not attackable buildings');
@@ -175,6 +187,17 @@ async function run(){
      'Reset must restore every tree and release all log bundle scene nodes');
  }
  console.log('PASS FORESTRY: both clans axe-fell actual CC0 trees to tiny CC0 log bundles; reset clears them.');
+ const noWoodSite=await evaluate("(()=>{for(let z=-12;z>=-17;z-=2)"+
+   "for(let x=-8;x>=-16;x-=2)if(window.__fightersQA.canBuild(x,z,'witch-house'))"+
+   "return {x,z};return null})()");
+ check(noWoodSite,'Need a legal house site for the wood-cost regression');
+ await evaluate("window.__fightersQA.setWood('witch',0)");
+ check(!await evaluate('window.__fightersQA.orderBuild("witch-house",'+
+   noWoodSite.x+','+noWoodSite.z+')')&&
+   (await evaluate('window.__fightersQA.snapshot()')).construction.length===0,
+   'A house cannot be ordered with gold but no wood');
+ await evaluate('window.__fightersQA.reset()');
+ s=await evaluate('window.__fightersQA.snapshot()');
 
  check(s.house.hitbox.maxX>s.house.hitbox.minX&&s.house.hitbox.maxZ>s.house.hitbox.minZ,
   'House requires actual 3D bounding volume');
@@ -570,9 +593,9 @@ async function run(){
   framing.pause.right<=mobile.width+1,'Compact mobile HUD overlaps: '+JSON.stringify(framing));
  const resourceBadges=await evaluate("Array.from(document.querySelectorAll('.score>div'),d=>({icon:getComputedStyle(d.querySelector('small'),'::before').content,border:getComputedStyle(d).borderColor}))");
  check(resourceBadges.length===4&&resourceBadges.every((item,i)=>
-   item.icon.includes(['🪙','🌾','🪙','⚔'][i]))&&
-   resourceBadges[0].border!==resourceBadges[2].border,
-   'Mobile resource counters need only pictograms, with distinct witch/orc coin colors: '+
+   item.icon.includes(['💰','🪵','🌾','⚔'][i]))&&
+   new Set(resourceBadges.map(v=>v.icon)).size===4,
+   'Mobile resource counters need four distinct resource pictograms: '+
    JSON.stringify(resourceBadges));
  // Two real simultaneous touch pointers form a rectangle immediately.
  // The old hold-to-select and pinch-to-zoom paths are intentionally gone.
@@ -749,12 +772,14 @@ async function run(){
  // perimeter and creates the structure only after its work animation.
  const site=await evaluate("(()=>{for(let z=-12;z>=-17;z-=2)for(let x=-8;x>=-16;x-=2)if(window.__fightersQA.canBuild(x,z,'witch-house'))return {x,z};return null})()");
  check(site,'No safe witch house construction site');
- const buildingsBefore=s.buildings.length,goldBeforeBuild=s.gold.witch;
+ const buildingsBefore=s.buildings.length,goldBeforeBuild=s.gold.witch,
+  woodBeforeBuild=s.wood.witch;
  check(await evaluate('window.__fightersQA.orderBuild("witch-house",'+site.x+','+site.z+')'),
   'Witch worker could not start a construction job');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.buildings.length===buildingsBefore&&s.construction.length===1&&
-  s.gold.witch===goldBeforeBuild-230,'Construction must reserve resources and wait for worker');
+  s.gold.witch===goldBeforeBuild-230&&s.wood.witch===woodBeforeBuild-75,
+  'Construction must reserve both gold and wood and wait for worker');
   const constructionSwing=await evaluate("(()=>{let seen=false;for(let i=0;i<38;i++){"+
     "window.__fightersQA.advance(1);seen ||= window.__fightersQA.snapshot().witches.some(u=>"+
     "u.role==='worker'&&u.animation==='Work_Swing'&&u.hammerToolVisible&&"+
