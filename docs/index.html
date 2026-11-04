@@ -1209,13 +1209,16 @@ function resize(){
 new ResizeObserver(resize).observe(viewport);
 new ResizeObserver(resize).observe($('command-panel'));
 resize();
+// Worker motions reuse the native sword-swing skeleton clip, without loading
+// another rig or keeping dozens of additional per-character animation tracks.
+const WORK_SWING='Work_Swing';
 function animation(actor,name,force=false){
   if(!actor||(!force&&actor.current===name))return;
   // Initialize only clips ACTUALLY played. Previously every new unit allocated
   // 86 mixer actions and thousands of joint-track bindings at creation time.
   let next=actor.actions.get(name);
   if(!next){
-    const clip=actor.clipCatalog.get(name);
+    const clip=actor.clipCatalog.get(name===WORK_SWING?'Sword_Attack':name);
     if(!clip)return;
     next=actor.mixer.clipAction(clip);
     actor.actions.set(name,next);
@@ -1223,12 +1226,13 @@ function animation(actor,name,force=false){
   const last=actor.action;
   if(last&&last!==next)last.fadeOut(.13);
   next.reset().stopFading().setEffectiveWeight(1).setEffectiveTimeScale(1);
-  const oneshot=!name.includes('Loop')&&!name.includes('Idle');
+  const oneshot=name!==WORK_SWING&&!name.includes('Loop')&&!name.includes('Idle');
   next.setLoop(oneshot?THREE.LoopOnce:THREE.LoopRepeat,oneshot?1:Infinity);
   next.clampWhenFinished=oneshot;
   if(last&&last!==next)next.fadeIn(.13);
   next.play();
   actor.action=next;actor.current=name;
+  if(actor.workTool)actor.workTool.visible=name===WORK_SWING;
 }
 // The official Peasant meshes carry exactly the same named 65-bone Quaternius rig.
 // Skin the garments/hair with this actor's own skeleton, never copy foreign joints.
@@ -1305,18 +1309,46 @@ function costumeLayers(visual,kind,index,role){
   if(garmentMeshes<4||hairMeshes!==1)throw Error('Tenue civile incomplète');
   return {garmentMeshes,hairMeshes,headTriangles:body.geometry.getIndex()?.count/3||0,role};
 }
+// Both tools are built once from tiny primitives. Their clones share geometry
+// and materials across every worker; no worker-only GLB or texture is loaded.
+const toolWood=new THREE.MeshStandardMaterial({color:0x77502d,roughness:1});
+const toolIron=new THREE.MeshStandardMaterial({color:0xbac5bd,metalness:.65,roughness:.42,side:THREE.DoubleSide});
+function workToolTemplate(kind){
+  const tool=new THREE.Group();
+  tool.name=kind==='witch'?'Worker_Scythe':'Worker_Axe';
+  const length=kind==='witch'?1.14:.82;
+  const handle=new THREE.Mesh(new THREE.CylinderGeometry(.035,.046,length,7),toolWood);
+  handle.position.y=length*.34;tool.add(handle);
+  // Silhouette is deliberately chunky enough to read at Warcraft II zoom.
+  const blade=new THREE.Shape();
+  if(kind==='witch'){
+    blade.moveTo(-.03,.89);
+    blade.quadraticCurveTo(.5,1.08,.94,.75);
+    blade.quadraticCurveTo(.68,.86,.28,.77);
+    blade.quadraticCurveTo(.07,.75,-.03,.82);
+  }else{
+    blade.moveTo(.03,.55);
+    blade.lineTo(.30,.46);blade.lineTo(.48,.43);
+    blade.lineTo(.48,.89);blade.lineTo(.30,.84);
+    blade.lineTo(.03,.77);
+  }
+  blade.closePath();
+  const head=new THREE.Mesh(new THREE.ExtrudeGeometry(blade,{
+    depth:.065,bevelEnabled:false,curveSegments:5
+  }),toolIron);
+  head.position.z=-.0325;tool.add(head);
+  return tool;
+}
+const sharedWorkToolTemplates={witch:workToolTemplate('witch'),orc:workToolTemplate('orc')};
 // Adapted from asset-tooling/examples/weapons/derive-sockets.ts (CC0):
 // anatomy-driven grip from the actual Quaternius rig's finger bones, not
 // manual offset or an unrelated Ranger skeleton transform.
-// The authored sword mesh has an identity 'grip' node at its origin.
-function mountNativeSword(actor){
-  if(actor.role!=='melee'||!swordModel)throw Error('Épée indisponible pour cet combattant');
-  if(actor.weapon)return;
-  const hand=actor.visual.getObjectByName('hand_r');
-  const finger=name=>actor.visual.getObjectByName(name+'_r');
+function nativeRightHandSocket(visual){
+  const hand=visual.getObjectByName('hand_r');
+  const finger=name=>visual.getObjectByName(name+'_r');
   const fingertips=['index_01','middle_01','ring_01','pinky_01','thumb_03'].map(finger);
   if(!hand||fingertips.some(b=>!b))throw Error('Os de préhension Quaternius incomplets');
-  actor.visual.updateWorldMatrix(true,true);
+  visual.updateWorldMatrix(true,true);
   const point=b=>hand.worldToLocal(b.getWorldPosition(new THREE.Vector3()));
   const [index,middle,ring,pinky,thumb]=fingertips.map(point);
   const fingers=middle.clone().normalize();
@@ -1335,10 +1367,25 @@ function mountNativeSword(actor){
   socket.name='hand_r.weapon';socket.position.copy(grip);
   socket.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x,y,z));
   hand.add(socket);
+  return socket;
+}
+// The authored sword mesh has an identity 'grip' node at its origin.
+function mountNativeSword(actor){
+  if(actor.role!=='melee'||!swordModel)throw Error('Épée indisponible pour cet combattant');
+  if(actor.weapon)return;
+  const socket=nativeRightHandSocket(actor.visual);
   const sword=swordModel.scene.clone(true);
   sword.name='Quaternius_Gripped_Sword';
   socket.add(sword);
-  actor.weapon={socket,mesh:sword,hand};
+  actor.weapon={socket,mesh:sword,hand:socket.parent};
+}
+function mountWorkTool(actor){
+  if(actor.role!=='worker')return;
+  const socket=nativeRightHandSocket(actor.visual);
+  const tool=sharedWorkToolTemplates[actor.kind].clone(true);
+  socket.name='hand_r.work-tool';
+  tool.visible=false;socket.add(tool);
+  actor.workTool=tool;
 }
 
 function spawnUnit(kind,x,z,index=0,role='melee'){
@@ -1362,11 +1409,12 @@ function spawnUnit(kind,x,z,index=0,role='melee'){
     heading:{x:kind==='witch'?1:-1,z:0},facing:1,attack:null,stun:0,cooldown:rand(.25,1),dead:false,deadTime:0,
     speed:profile.speed,destination:null,attackOrder:null,route:null,routeVersion:-1,
     routeGoal:null,routeAge:0,approachCache:null,approachAge:0,
-    mineJob:null,constructJob:null,farmJob:null,workAnimationClock:0,weapon:null,selectionRing:marker,outfitInfo
+    mineJob:null,constructJob:null,farmJob:null,workTool:null,weapon:null,selectionRing:marker,outfitInfo
   };
   // A single sword asset is cloned as a lightweight scene node for melee orcs.
   // Workers and ranged units never allocate weapons.
   if(kind==='orc'&&role==='melee'&&swordModel)mountNativeSword(actor);
+  if(role==='worker')mountWorkTool(actor);
   animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop',true);applyFacing(actor);
   units.push(actor);refreshHUD();
   return actor;
@@ -1958,10 +2006,8 @@ function tickConstructWorker(actor,dt){
     return true;
   }
   faceBuildingCenter(actor,job.site);
-  job.progress+=dt;actor.workAnimationClock+=dt;
-  if(actor.workAnimationClock>.95){
-    actor.workAnimationClock=0;animation(actor,'Punch_Jab',true);
-  }
+  animation(actor,WORK_SWING);
+  job.progress+=dt;
   if(job.progress>=BUILD_SECONDS){
     cancelConstruction(actor,false);
     const built=job.type==='witch-house'?buildWitchHouse(job.x,job.z,{prepaid:true}):
@@ -2584,12 +2630,8 @@ function tickMineWorker(actor,dt){
   // Gold is earned ONLY here, while an actual orc stands beside a mine.
   // A mine with no worker produces precisely zero gold.
   faceBuildingCenter(actor,mine);
+  animation(actor,WORK_SWING);
   actor.mineJob.progress+=dt;
-  actor.workAnimationClock+=dt;
-  if(actor.workAnimationClock>.85){
-    actor.workAnimationClock=0;
-    animation(actor,actor.clipCatalog.has('Punch_Jab')?'Punch_Jab':'Idle_Loop',true);
-  }
   if(actor.mineJob.progress>=MINING_SECONDS){
     actor.mineJob.progress-=MINING_SECONDS;
     actor.mineJob.cycles++;
@@ -2654,11 +2696,8 @@ function tickGardenWorker(actor,dt){
     job.progress=0;
   }
   if(job.plotIndex<0){animation(actor,'Idle_Loop');return true;}
-  job.progress+=dt;actor.workAnimationClock+=dt;
-  if(actor.workAnimationClock>.85){
-    actor.workAnimationClock=0;
-    animation(actor,actor.clipCatalog.has('Punch_Jab')?'Punch_Jab':'Idle_Loop',true);
-  }
+  animation(actor,WORK_SWING);
+  job.progress+=dt;
   if(job.progress>=window.FightersFarming.HARVEST_SECONDS){
     const yieldAmount=farming.harvest(garden.id,job.plotIndex);
     job.plotIndex=-1;job.progress=0;
@@ -3301,6 +3340,7 @@ window.__fightersQA={
     cameraQuaternion:camera.quaternion.toArray(),
     witches:units.filter(a=>a.kind==='witch'&&!a.dead).map(a=>({
       id:a.id,role:a.role,x:a.root.position.x,z:a.root.position.z,radius:a.radius,health:a.health,animation:a.current,
+      workTool:a.workTool?.name||null,workToolVisible:!!a.workTool?.visible,
       visible:a.root.visible,
       heading:{...a.heading},combatTargetId:a.attack?.target?.id||null,
       destination:a.destination?{...a.destination}:null,pathLength:a.route?.waypoints.length??0,
@@ -3310,6 +3350,7 @@ window.__fightersQA={
     })),
     orcs:units.filter(a=>a.kind==='orc'&&!a.dead).map(a=>({
       id:a.id,role:a.role,x:a.root.position.x,z:a.root.position.z,health:a.health,animation:a.current,
+      workTool:a.workTool?.name||null,workToolVisible:!!a.workTool?.visible,
       visible:a.root.visible,
       heading:{...a.heading},combatTargetId:a.attack?.target?.id||null,
       attackTargetId:a.attackOrder?.id||null,miningTargetId:a.mineJob?.mineId||null,
