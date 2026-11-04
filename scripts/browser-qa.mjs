@@ -1352,6 +1352,9 @@ async function run(){
    await evaluate('window.__fightersQA.reset();'+
      'window.__fightersQA.centerCamera(-23.5,-17.5)');
    await sleep(450);
+   // Compare like for like: the seven reset actors can be outside the
+   // camera frustum, so upload their skeleton textures before sampling.
+   await evaluate('window.__fightersQA.prewarmSkeletonTextures()');
    const restored=(await evaluate('window.__fightersQA.snapshot()')).gpu.textures;
    const restoredSkeletons=await evaluate('window.__fightersQA.skeletonResources()');
    gpuLifecycles.push({upload,peak,restored,peakSkeletons,restoredSkeletons});
