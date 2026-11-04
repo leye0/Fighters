@@ -87,7 +87,14 @@ async function run(){
  await until("window.__fightersQA.witchSound().available.interaction>0",'Witch MP3 manifest',10000);
  await until("window.__fightersQA.sound().available.short>0",'Orc MP3 manifest',10000);
  await evaluate("window.__fightersQA.selectUnit('witch',0)");
- await until("window.__fightersQA.witchSound().played>0",'real decoded Witch interaction SFX',10000);
+ // On cold SwiftShader runs, the first MP3 decode can arrive after the
+ // engine's 1.8s freshness window. Reissue the real selection, as for Orcs.
+ for(let retry=0;retry<4&&!await evaluate('window.__fightersQA.witchSound().played>0');retry++){
+   await sleep(1200);
+   await evaluate("window.__fightersQA.selectUnit('witch',0)");
+ }
+ check(await evaluate('window.__fightersQA.witchSound().played>0'),
+   'Real decoded Witch interaction SFX never played: '+JSON.stringify(await evaluate('window.__fightersQA.witchSound()')));
  await evaluate("window.__fightersQA.setFaction('orc');window.__fightersQA.selectUnit('orc',0)");
  await evaluate("window.__fightersQA.centerCamera(15,18)");
  const orcForest=await evaluate('window.__fightersQA.snapshot().forest');
