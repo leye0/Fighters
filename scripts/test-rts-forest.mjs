@@ -17,9 +17,19 @@ const initialVisible=layout.filter(tree=>
   Math.abs((tree.x+18)-(tree.z+14))/Math.SQRT2<4.5);
 assert.ok(initialVisible.length>=3,
   'Opening viewport must visibly contain a witch-side forest glade');
+const initialOrcs=[{x:15,z:17},{x:21,z:17},{x:19,z:23},{x:12,z:22}];
+assert.ok(layout.filter(tree=>initialOrcs.some(unit=>
+  Math.hypot(tree.x-unit.x,tree.z-unit.z)<7.1)).length>=2,
+  'Orc scouts must also discover trees near their starting village');
+assert.ok(layout.filter(tree=>Math.abs(tree.x)<16&&Math.abs(tree.z)<16).length>=12,
+  'The playable map interior needs real groves, not only perimeter trees');
 assert.deepEqual([...new Set(layout.map(t=>t.type))].sort(),forest.TYPES.slice().sort());
 const obstacles=forest.obstacles(layout);
 assert.equal(obstacles.length,layout.length);
+assert.ok(obstacles.every(tree=>tree.id.startsWith('tree-')&&!('hitbox' in tree)),
+  'Trees are navigator obstacles, never attackable building entities');
+assert.ok(layout.every(tree=>Math.hypot(tree.x-8,tree.z+10)>=5),
+  'Forest must preserve the standard orc construction site');
 const assets=path.join(path.dirname(fileURLToPath(import.meta.url)),'../docs/models/forest');
 let assetBytes=0;
 for(const kind of forest.TYPES){

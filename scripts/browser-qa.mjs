@@ -83,6 +83,11 @@ async function run(){
  await evaluate("window.__fightersQA.selectUnit('witch',0)");
  await until("window.__fightersQA.witchSound().played>0",'real decoded Witch interaction SFX',10000);
  await evaluate("window.__fightersQA.setFaction('orc');window.__fightersQA.selectUnit('orc',0)");
+ await evaluate("window.__fightersQA.centerCamera(15,18)");
+ const orcForest=await evaluate('window.__fightersQA.snapshot().forest');
+ check(orcForest.visibleInViewport>=1,
+   'Actual orc start must reveal at least one tree, not an empty map: '+JSON.stringify(orcForest));
+ await screenshot('rts-forest-orc');
  await until("window.__fightersQA.sound().played>0",'real decoded Orc interaction SFX',10000);
  console.log('PASS WEB AUDIO BROWSER SMOKE:',JSON.stringify(await evaluate(
    '({witch:window.__fightersQA.witchSound(),orc:window.__fightersQA.sound()})')));
