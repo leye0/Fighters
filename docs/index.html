@@ -4160,6 +4160,21 @@ window.__fightersQA={
       boneTextures:boneTextures.length,
       uniqueBoneTextures:new Set(boneTextures).size};
   },
+  prewarmSkeletonTextures:()=>{
+    // Test-only: force a real WebGL upload for every actor's bone texture.
+    // The live renderer allocates these lazily only for visible SkinnedMeshes;
+    // a camera-dependent leak test would miss off-screen characters.
+    const skeletons=new Set();
+    for(const actor of units)actor.visual.traverse(node=>{
+      if(node.isSkinnedMesh&&node.skeleton)skeletons.add(node.skeleton);
+    });
+    let allocated=0;
+    for(const skeleton of skeletons){
+      if(!skeleton.boneTexture){skeleton.computeBoneTexture();allocated++;}
+      renderer.initTexture(skeleton.boneTexture);
+    }
+    return {skeletons:skeletons.size,allocated};
+  },
   spawnOrcSiege:()=>{
     // Multi-ranged raid from clear positions around the witch headquarters.
     // Unlike a one-unit near-wall test, this exercises concurrent navigation.

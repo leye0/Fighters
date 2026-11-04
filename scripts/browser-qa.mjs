@@ -1293,21 +1293,21 @@ async function run(){
  await screenshot('rts-human-play-recruit-and-move');
 
  }
- // Regression for the actual WebGL leak. The camera must see the newly
- // spawned skeletons before measuring GPU textures: WebGLRenderer allocates
- // bone textures lazily when a skinned mesh is first rendered. The previous
- // test looked away from the Witch base and falsely observed peak=restored.
+ // Regression for actual GPU skeleton leaks. All actors must upload their
+ // bone textures to real WebGL, including off-screen actors that Three.js
+ // would normally skip until first rendered. Otherwise a camera-dependent
+ // test would mistakenly see peak=restored despite spawning many witches.
  await evaluate("window.__fightersQA.enableOrcAI(false);window.__fightersQA.reset();"+
    "window.__fightersQA.centerCamera(-23.5,-17.5)");
  await sleep(350);
+ const initialUpload=await evaluate('window.__fightersQA.prewarmSkeletonTextures()');
  const gpuBaseline=(await evaluate('window.__fightersQA.snapshot()')).gpu.textures;
  const skeletonBaseline=await evaluate('window.__fightersQA.skeletonResources()');
  const gpuLifecycles=[];
  for(let cycle=0;cycle<3;cycle++){
    check(await evaluate('window.__fightersQA.spawnWitches(20)')===20,
      'Cannot populate GPU skeleton-lifecycle test');
-   await evaluate('window.__fightersQA.centerCamera(-23.5,-17.5)');
-   await sleep(450);
+   const upload=await evaluate('window.__fightersQA.prewarmSkeletonTextures()');
    const peak=(await evaluate('window.__fightersQA.snapshot()')).gpu.textures;
    const peakSkeletons=await evaluate('window.__fightersQA.skeletonResources()');
    await evaluate('window.__fightersQA.reset();'+
@@ -1315,9 +1315,9 @@ async function run(){
    await sleep(450);
    const restored=(await evaluate('window.__fightersQA.snapshot()')).gpu.textures;
    const restoredSkeletons=await evaluate('window.__fightersQA.skeletonResources()');
-   gpuLifecycles.push({peak,restored,peakSkeletons,restoredSkeletons});
+   gpuLifecycles.push({upload,peak,restored,peakSkeletons,restoredSkeletons});
    console.log('GPU_BONE_TEXTURE_CYCLE',JSON.stringify({
-     baseline:gpuBaseline,skeletonBaseline,cycle:cycle+1,
+     baseline:gpuBaseline,initialUpload,skeletonBaseline,cycle:cycle+1,
      peak,restored,peakSkeletons,restoredSkeletons
    }));
    check(peakSkeletons.uniqueBoneTextures>=restoredSkeletons.uniqueBoneTextures+10&&
