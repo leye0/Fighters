@@ -683,6 +683,8 @@ async function run(){
  await until("window.__fightersQA.snapshot().crops.loaded",
    'real licensed crop GLB after first garden',30000);
  s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.crops.transport==='gzip'&&s.crops.wireBytes>0,
+   'Garden asset should use the precompressed GLB transfer');
  check(s.crops.templates===12&&s.crops.plots.length===6&&
    s.crops.plots.every(p=>p.real&&p.visible===1&&p.model?.endsWith('_F1')),
    'All six beds must use the real three-stage GLB variants: '+JSON.stringify(s.crops));
