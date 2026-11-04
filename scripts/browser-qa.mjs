@@ -64,8 +64,8 @@ async function run(){
  await call('Page.navigate',{url:root+'?qa=1'});
  await until('window.__fightersQA?.snapshot().running===true','RTS startup');
  await until('window.__fightersQA.snapshot().witchHouseLoaded','real witch house hitbox');
- await until('window.__fightersQA.snapshot().forest.loadedSpecies===4',
-   'four real CC0 tree GLBs with WebP textures',30000);
+ await until('window.__fightersQA.snapshot().forest.loadedSpecies===2',
+   'two real CC0 red/dead tree GLBs with WebP textures',30000);
  const forest=await evaluate('window.__fightersQA.snapshot().forest');
  check(forest.instances===55&&forest.obstacleCount===55&&forest.visibleInViewport>=3,
    'At least three real trees must be revealed and on screen at witch spawn: '+JSON.stringify(forest));

@@ -632,7 +632,7 @@ const loader = new GLTFLoader();
 // The authored CC0 sword uses EXT_meshopt_compression, unlike the two character GLBs.
 // Register decoder before parsing ANY GLTF so equipping a sword cannot abort startup.
 loader.setMeshoptDecoder(MeshoptDecoder);
-// Four shared CC0 GLBs; even dozens of trees render in only a handful of
+// Two shared CC0 GLBs (red and dead); dozens of trees render in a handful of
 // instanced draw calls. Loaded after the characters to protect mobile startup.
 let forestLoadedSpecies=0,forestPromise=null;
 function loadForest(){
