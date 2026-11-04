@@ -772,9 +772,14 @@ function buildingInDiscoveredZone(building,clan){
   const h=building.hitbox;
   if(!h)return false;
   const midX=(h.minX+h.maxX)/2,midZ=(h.minZ+h.maxZ)/2;
-  // A large building can be spotted at its edges before its centre is in range.
+  // Large/irregular buildings are discovered by their perimeter as well as
+  // their centre. Five axis samples alone could leave the model invisible
+  // while a nearby soldier was already attacking the exposed corner.
   return [[midX,midZ],[h.minX,midZ],[h.maxX,midZ],
-    [midX,h.minZ],[midX,h.maxZ]].some(([x,z])=>fogOfWar.exploredAt(x,z,clan));
+    [midX,h.minZ],[midX,h.maxZ],
+    [h.minX,h.minZ],[h.minX,h.maxZ],
+    [h.maxX,h.minZ],[h.maxX,h.maxZ]]
+    .some(([x,z])=>fogOfWar.exploredAt(x,z,clan));
 }
 function updateVision(){
   const structures=liveBuildings();
@@ -1522,7 +1527,7 @@ function pickBuilding(groundPoint){
   // A tap selects only the projected GLB X/Z footprint shown by the outline.
   // Roofs and the 3D visual AABB must not enlarge the interactive area.
   if(!groundPoint||!visibleToPlayer(groundPoint.x,groundPoint.z))return null;
-  return liveBuildings().find(building=>building.root&&building.hitbox&&
+  return liveBuildings().find(building=>building.root?.visible&&building.hitbox&&
     window.FightersFootprints.inside(groundPoint,building.hitbox))||null;
 }
 const activeOrderPings=new Set();
@@ -2378,6 +2383,9 @@ function nearestHostile(actor,maxDistance=Infinity){
   const candidates=[...units,...liveBuildings()];
   for(const target of candidates){
     if(!enemyOf(actor,target))continue;
+    // Player-controlled troops must never automatically swing at a hidden
+    // building. Enemy AI still reasons with its own faction's fog/strategy.
+    if(isBuilding(target)&&actor.kind===activeFaction&&!target.root?.visible)continue;
     const d=targetDistance(actor,target);
     const typePriority=isBuilding(target)?1:0;
     if(d<distance-.5||(Math.abs(d-distance)<=.5&&typePriority<priority)){
