@@ -153,13 +153,17 @@ async function run(){
  await evaluate('window.__fightersQA.reset()');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.crops.templates===6&&s.berries.count===28&&s.berries.real&&s.berries.batches>0&&
-   s.berries.bushes.every(b=>b.stage===1&&b.rendered),
+   s.berries.forageSight===3&&
+   s.berries.bushes.every(b=>b.stage===1&&b.rendered&&b.scale>=.48&&b.scale<.63),
    'Wild shrubs must use instanced original Tomatoe_F1..F3 models: '+JSON.stringify(s.berries));
  const initialBerry=s.berries.bushes[0];
  check(await evaluate('window.__fightersQA.isClear('+initialBerry.x+','+(initialBerry.z-1.5)+')'),
    'First wild berry should have a navigable approach from the witch glade');
+ await evaluate('window.__fightersQA.setBerryStage(0,3);window.__fightersQA.advance(1.2)');
+ check((await evaluate('window.__fightersQA.snapshot().berries.foragers')).length===0,
+   'Wild berry must not lure idle witches from beyond the 3-unit foraging radius');
  await evaluate('window.__fightersQA.moveUnitTo("witch",0,'+initialBerry.x+','+
-   (initialBerry.z-1.5)+');window.__fightersQA.setBerryStage(0,3)');
+   (initialBerry.z-1.5)+')');
  const berryFeeding=await evaluate("(()=>{let bent=false,approached=false;for(let i=0;i<110;i++){"+
    "window.__fightersQA.advance(.1);const s=window.__fightersQA.snapshot();"+
    "const w=s.witches[0],b=s.berries.bushes[0];"+
@@ -177,7 +181,28 @@ async function run(){
  check(s.berries.eaten===0&&s.berries.foragers.length===0&&
    s.berries.bushes.every(b=>b.stage===1&&b.rendered),
    'Reset must restore all berry shrubs and their visual stages');
- console.log('PASS WILD BERRIES: 3 real shrub variants, auto walk/bend/eat, food and reset.');
+ console.log('PASS WILD BERRIES: small shrubs, 3-unit auto-detection, walk/bend/eat, food and reset.');
+ // A visible orc should not pull grouped witch fighters away from one another.
+ await evaluate("window.__fightersQA.passive('orc');window.__fightersQA.enableOrcAI(false)");
+ const guardSpot=await evaluate("(()=>{for(const [x,z] of [[-14,-13],[-14,-12],[-15,-11],[-13,-13]])"+
+   "if(window.__fightersQA.isClear(x,z))return {x,z};return null})()");
+ check(guardSpot,'No clear enemy observation point near the witch formation');
+ await evaluate("window.__fightersQA.moveUnitTo('orc',0,"+guardSpot.x+","+guardSpot.z+")");
+ const guardBefore=await evaluate('window.__fightersQA.snapshot()');
+ await evaluate('window.__fightersQA.advance(1.5)');
+ const guardAfter=await evaluate('window.__fightersQA.snapshot()');
+ check(guardAfter.witches.filter(u=>u.role!=='worker').every(u=>{
+   const start=guardBefore.witches.find(v=>v.id===u.id);
+   return Math.hypot(u.x-start.x,u.z-start.z)<.35;
+ }), 'Grouped witch fighters must hold ground when they spot an enemy');
+ await evaluate("window.__fightersQA.selectUnit('witch',0);window.__fightersQA.attackUnit("+
+   guardAfter.orcs[0].id+");window.__fightersQA.advance(.5)");
+ const ordered=await evaluate('window.__fightersQA.snapshot()');
+ check(Math.hypot(ordered.witches[0].x-guardAfter.witches[0].x,
+   ordered.witches[0].z-guardAfter.witches[0].z)>.3,
+   'An explicit attack order must override defensive holding');
+ await evaluate("window.__fightersQA.reset();window.__fightersQA.passive(null);window.__fightersQA.enableOrcAI(true)");
+ console.log('PASS WITCH GROUP DEFENSE: hold on sight, attack on command.');
  check(s.loading.compressed,'Native characters should load from optimized gzip assets');
  const fullTransfer={female:20994430,male:20683626};
  const fullDecoded={female:35752840,male:35190592};

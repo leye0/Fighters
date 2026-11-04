@@ -3285,7 +3285,7 @@ function assignBerryForagers(dt){
   for(const bush of wildBerries.bushes){
     if(jobs>=2)break;
     if(bush.stage!==3||units.some(u=>u.berryJob?.index===bush.id&&!u.dead))continue;
-    let closest=null,dist=6;
+    let closest=null,dist=window.FightersBerries.FORAGE_SIGHT;
     for(const actor of candidates){
       if(actor.berryJob)continue;
       const d=Math.hypot(actor.root.position.x-bush.x,actor.root.position.z-bush.z);
@@ -3453,6 +3453,12 @@ function tickUnit(actor,dt){
   // detailed contour 60 times/second for each raider is wasted CPU work.
   const nearby=explicit?null:nearestHostile(actor,actor.profile.sight);
   const target=explicit||(nearby&&(!actor.destination||nearby.distance<2.7)?nearby.target:null);
+  // A group of witches holds its ground on sight of an enemy. Only direct
+  // attack orders can start a chase; explicit movement remains unaffected.
+  const groupDefense=actor.kind==='witch'&&!explicit&&!actor.destination&&
+    nearby&&units.some(ally=>ally!==actor&&ally.kind==='witch'&&!ally.dead&&
+      Math.hypot(ally.root.position.x-actor.root.position.x,
+        ally.root.position.z-actor.root.position.z)<=5.5);
   if(target){
     const distance=targetDistance(actor,target),
       range=actor.role==='ranged'?actor.profile.range:
@@ -3474,6 +3480,12 @@ function tickUnit(actor,dt){
         actor.cooldown=duration+rand(.45,.85);animation(actor,clipName,true);
         if(actor.role==='ranged')fireBolt(actor,target,duration*.4);
       }
+      return;
+    }
+    if(groupDefense){
+      if(isBuilding(target))faceBuildingCenter(actor,target);
+      else faceTarget(actor,target);
+      animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop');
       return;
     }
     const location=isBuilding(target)?approachBuilding(actor,target):target.root.position;
@@ -4009,7 +4021,8 @@ window.__fightersQA={
           real:!!v.variants,visible:v.variants?v.variants.filter(n=>n.visible).length:0,
           model:v.variants?v.variants.find(n=>n.visible)?.children[0]?.name:null})))},
     berries:{...wildBerries.snapshot(),real:!!cropCatalog?.get(1),batches:berryBatches.length,
-      bushes:wildBerries.bushes.map(b=>({id:b.id,x:b.x,z:b.z,stage:b.stage,
+      forageSight:window.FightersBerries.FORAGE_SIGHT,
+      bushes:wildBerries.bushes.map(b=>({id:b.id,x:b.x,z:b.z,scale:b.scale,stage:b.stage,
         rendered:berryVisualStages[b.id]===b.stage})),
       foragers:units.filter(u=>u.berryJob&&!u.dead).map(u=>({id:u.id,
         index:u.berryJob.index,progress:u.berryJob.progress}))},

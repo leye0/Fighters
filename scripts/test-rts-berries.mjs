@@ -12,11 +12,13 @@ assert.ok(layout.filter(b=>Math.hypot(b.x+18,b.z+13)<5).length>=2,
   'Two wild shrubs must be discoverable close to the starting witches');
 for(const [i,bush] of layout.entries()){
   assert.equal(bush.stage,1);
+  assert.ok(bush.scale>=.48&&bush.scale<.63,'Wild shrubs must remain small');
   assert.ok(Math.abs(bush.x)<26&&Math.abs(bush.z)<26);
   assert.ok(trees.every(t=>Math.hypot(t.x-bush.x,t.z-bush.z)>=1.55),
     'A berry must not grow inside a forest trunk');
   assert.ok(layout.slice(0,i).every(other=>Math.hypot(other.x-bush.x,other.z-bush.z)>=2.35));
 }
+assert.equal(berry.FORAGE_SIGHT,3,'Idle witches only notice ripe berries within half the old range');
 const patch=new berry.WildBerries(trees),economy=new farming.Economy();
 assert.equal(patch.eat(0),0,'Unripe berries cannot be eaten');
 patch.step(berry.GROWTH_SECONDS);
