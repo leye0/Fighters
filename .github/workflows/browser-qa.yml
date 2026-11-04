@@ -7,6 +7,8 @@ on:
       - 'docs/rts-footprint.js'
       - 'docs/rts-navigation.js'
       - 'docs/rts-fog.js'
+      - 'docs/rts-sound.js'
+      - 'scripts/test-rts-sound.mjs'
       - 'scripts/test-rts-fog.mjs'
       - 'scripts/test-rts-footprint.mjs'
       - 'docs/rts-unit-physics.js'
@@ -51,6 +53,7 @@ jobs:
           node scripts/test-rts-footprint.mjs
           node scripts/test-rts-navigation.mjs
           node scripts/test-rts-fog.mjs
+          node scripts/test-rts-sound.mjs
           node scripts/test-rts-unit-physics.mjs
           node scripts/test-orc-strategy.mjs
           node scripts/test-rts-roles.mjs
