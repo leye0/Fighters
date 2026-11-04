@@ -977,16 +977,19 @@ async function run(){
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.souls.corpses.some(c=>c.id===soulCorpseId&&c.remaining>110),
    'Fallen characters must leave persistent bodies');
- await evaluate('window.__fightersQA.advance(.8)');
- s=await evaluate('window.__fightersQA.snapshot()');
- check(s.souls.activeSpirits===1,
-   'Arcanist must raise one white spirit from the corpse: '+JSON.stringify(s.souls));
+ const spirit=await evaluate("(()=>{for(let i=0;i<24;i++){"+
+   "window.__fightersQA.advance(.2);const s=window.__fightersQA.snapshot();"+
+   "if(s.souls.activeSpirits)return s.souls.spirits[0];}return null;})()");
+ check(spirit&&spirit.sameGeometry&&spirit.samePose&&spirit.sameTransform&&
+   spirit.meshCount>=spirit.skinnedCount&&spirit.skinnedCount>0&&spirit.scale<1,
+   'Soul must be the exact frozen 3D corpse, not a billboard: '+JSON.stringify(spirit));
+ await screenshot('rts-soul-corpse-clone');
  await evaluate('window.__fightersQA.advance(1.5)');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.souls.magic===20&&s.souls.activeSpirits===0&&
    s.souls.corpses.some(c=>c.id===soulCorpseId&&c.claimed&&c.remaining>100),
    'Spirit must increase magic once while the body stays on the ground: '+JSON.stringify(s.souls));
- console.log('PASS SOULS: house upgrade, circle unlock, Arcanist training, persistent corpse, white soul and magic gauge.');
+ console.log('PASS SOULS: house upgrade, circle unlock, Arcanist training, persistent corpse, exact 3D white soul and magic gauge.');
  await evaluate('window.__fightersQA.damageBuilding('+JSON.stringify(sanctuary.id)+',500)');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.healing.circles.length===0&&s.buildings.every(b=>b.id!==sanctuary.id),

@@ -843,7 +843,7 @@ const ORC_COSTS={barrack:180,hut:120,cauldron:200,factory:250};
 const ORC_NAMES={barrack:'Caserne',hut:'Hutte',mine:'Mine',cauldron:'Chaudron',factory:'Atelier'};
 const units=[],selected=new Set();
 const soulEffects=[];
-let magic=0,soulAssignmentElapsed=0,soulSilhouetteTexture=null;
+let magic=0,soulAssignmentElapsed=0;
 let female=null,male=null,swordModel=null,clothingFemale=null,clothingMale=null,hairBuns=null,hairBuzzed=null,hairParted=null;
 const sharedClipCatalog=new Map(),sharedCostumeMaterials=new Map();
 // One shared, bright ground-level ring per selected unit. Disable depth testing
@@ -3103,47 +3103,63 @@ function cancelSoulJob(actor){
   if(corpse?.soulReservedBy===actor.id)corpse.soulReservedBy=null;
   actor.soulJob=null;
 }
-function soulTexture(){
-  if(soulSilhouetteTexture)return soulSilhouetteTexture;
-  const canvas=document.createElement('canvas');canvas.width=64;canvas.height=128;
-  const ctx=canvas.getContext('2d');
-  ctx.fillStyle='#ffffff';ctx.strokeStyle='#ffffff';
-  ctx.shadowColor='#f3f4ff';ctx.shadowBlur=10;ctx.lineCap='round';ctx.lineJoin='round';
-  // One shared, soft humanoid silhouette billboard: no extra character rig.
-  ctx.beginPath();ctx.ellipse(32,20,12,14,0,0,2*Math.PI);ctx.fill();
-  ctx.beginPath();ctx.moveTo(24,36);ctx.lineTo(40,36);ctx.lineTo(46,76);
-  ctx.lineTo(18,76);ctx.closePath();ctx.fill();
-  ctx.lineWidth=10;ctx.beginPath();ctx.moveTo(23,42);ctx.lineTo(10,72);
-  ctx.moveTo(41,42);ctx.lineTo(54,72);ctx.moveTo(25,74);ctx.lineTo(23,113);
-  ctx.moveTo(39,74);ctx.lineTo(42,113);ctx.stroke();
-  soulSilhouetteTexture=new THREE.CanvasTexture(canvas);
-  return soulSilhouetteTexture;
-}
 function beginSoulEffect(corpse,mage){
-  const material=new THREE.SpriteMaterial({map:soulTexture(),color:0xf8faff,
-    transparent:true,opacity:.75,depthWrite:false,blending:THREE.AdditiveBlending,
-    toneMapped:false});
-  const sprite=new THREE.Sprite(material);
-  sprite.scale.set(1.08,2.15,1);sprite.renderOrder=9;
-  sprite.position.set(corpse.root.position.x,.65,corpse.root.position.z);
-  scene.add(sprite);
-  soulEffects.push({sprite,mage,source:corpse.root.position.clone(),elapsed:0});
+  // Copy the ACTUAL fallen body, including its frozen skeleton pose, costume,
+  // hair, weapon and identical geometries. Never substitute a flat icon.
+  const ghostVisual=cloneSkeleton(corpse.visual);
+  const material=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,
+    opacity:.66,side:THREE.DoubleSide,forceSinglePass:true,depthTest:false,
+    depthWrite:false,toneMapped:false});
+  const sourceMeshes=[],ghostMeshes=[],sourceSkins=[],ghostSkins=[];
+  corpse.visual.traverse(node=>{
+    if(node.isMesh)sourceMeshes.push(node);
+    if(node.isSkinnedMesh)sourceSkins.push(node);
+  });
+  ghostVisual.traverse(node=>{
+    if(node.isMesh){ghostMeshes.push(node);node.material=material;node.renderOrder=9;}
+    if(node.isSkinnedMesh)ghostSkins.push(node);
+  });
+  const sameGeometry=sourceMeshes.length===ghostMeshes.length&&
+    sourceMeshes.every((mesh,i)=>mesh.geometry===ghostMeshes[i].geometry);
+  const samePose=sourceSkins.length===ghostSkins.length&&sourceSkins.every((mesh,i)=>{
+    const a=mesh.skeleton.bones,b=ghostSkins[i].skeleton.bones;
+    return a.length===b.length&&a.every((bone,j)=>
+      bone.position.distanceTo(b[j].position)<1e-5&&
+      bone.quaternion.angleTo(b[j].quaternion)<1e-4);
+  });
+  const root=new THREE.Group();
+  root.position.copy(corpse.root.position);
+  root.quaternion.copy(corpse.root.quaternion);
+  root.scale.copy(corpse.root.scale);
+  root.add(ghostVisual);scene.add(root);
+  const sameTransform=root.position.distanceTo(corpse.root.position)<1e-6&&
+    root.quaternion.angleTo(corpse.root.quaternion)<1e-6&&
+    root.scale.distanceTo(corpse.root.scale)<1e-6;
+  soulEffects.push({root,material,mage,source:corpse.root.position.clone(),elapsed:0,
+    sameGeometry,samePose,sameTransform,meshCount:ghostMeshes.length,
+    skinnedCount:ghostSkins.length});
 }
 function disposeSoulEffect(effect){
-  scene.remove(effect.sprite);effect.sprite.material.dispose();
+  const skeletons=new Set();
+  effect.root.traverse(node=>{
+    if(node.isSkinnedMesh&&node.skeleton)skeletons.add(node.skeleton);
+  });
+  for(const skeleton of skeletons)skeleton.dispose();
+  scene.remove(effect.root);effect.material.dispose();
+  // All copied geometry and texture resources belong to the original actors.
 }
 function stepSoulEffects(dt){
   for(let i=soulEffects.length-1;i>=0;i--){
     const effect=soulEffects[i];effect.elapsed+=dt;
     const t=clamp(effect.elapsed/soulRules.SOUL_SECONDS,0,1);
     const flight=t*t*(3-2*t),target=effect.mage.root.position;
-    effect.sprite.position.set(
+    effect.root.position.set(
       THREE.MathUtils.lerp(effect.source.x,target.x,flight),
-      .65+1.45*Math.sin(Math.PI*t*.82)+.6*flight,
+      THREE.MathUtils.lerp(effect.source.y,target.y+1.2,flight)+
+        1.15*Math.sin(Math.PI*t),
       THREE.MathUtils.lerp(effect.source.z,target.z,flight));
-    effect.sprite.scale.setScalar(1-.72*flight);
-    effect.sprite.scale.y*=2;
-    effect.sprite.material.opacity=.77*(1-t*.85);
+    effect.root.scale.setScalar(1-.92*flight);
+    effect.material.opacity=.66*(1-t*.82);
     if(t<1)continue;
     if(!effect.mage.dead)magic=soulRules.magicAfterSoul(magic);
     disposeSoulEffect(effect);soulEffects.splice(i,1);refreshHUD();
@@ -3188,6 +3204,11 @@ function tickSoulHarvester(actor,dt){
   }
   faceDirection(actor,position.x-actor.root.position.x,
     position.z-actor.root.position.z);
+  // Wait for the authentic Death01 pose to settle before copying the corpse.
+  // Otherwise the spirit could inherit a standing or half-fallen skeleton.
+  if(corpse.current==='Death01'&&corpse.action?.isRunning()){
+    animation(actor,'Idle_Loop');return true;
+  }
   corpse.soulClaimed=true;cancelSoulJob(actor);
   animation(actor,'Idle_Loop');
   playWitchVoice('interaction',actor.root.position);
@@ -4410,6 +4431,10 @@ window.__fightersQA={
     souls:{magic,maxMagic:soulRules.MAX_MAGIC,perCorpse:soulRules.SOUL_VALUE,
       corpseLifetime:soulRules.CORPSE_SECONDS,buildUnlocked:circleUnlocked(),
       arcanistUnlocked:arcanistUnlocked(),activeSpirits:soulEffects.length,
+      spirits:soulEffects.map(e=>({sameGeometry:e.sameGeometry,samePose:e.samePose,
+        sameTransform:e.sameTransform,meshCount:e.meshCount,
+        skinnedCount:e.skinnedCount,scale:e.root.scale.x,
+        x:e.root.position.x,y:e.root.position.y,z:e.root.position.z})),
       corpses:units.filter(u=>u.dead).map(u=>({id:u.id,clan:u.kind,
         x:u.root.position.x,z:u.root.position.z,remaining:u.deadTime,
         claimed:u.soulClaimed,reservedBy:u.soulReservedBy})),
