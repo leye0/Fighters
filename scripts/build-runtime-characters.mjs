@@ -15,7 +15,8 @@ import {createHash} from 'node:crypto';
 
 const dir=process.argv[2]||'docs/models';
 const RUNTIME_CLIPS=['Idle_Loop','Walk_Loop','Jog_Fwd_Loop',
-  'Punch_Jab','Hit_Chest','Death01','Sword_Idle','Sword_Attack','Farm_Harvest'];
+  'Punch_Jab','Hit_Chest','Death01','Sword_Idle','Sword_Attack',
+  'Farm_Harvest','Farm_PlantSeed'];
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 const assert=(ok,message)=>{if(!ok)throw Error(message);};
 const io=new NodeIO().registerExtensions([EXTTextureWebP]);
