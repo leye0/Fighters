@@ -905,6 +905,26 @@ async function run(){
  await evaluate('window.__fightersQA.selectBuildingById('+JSON.stringify(sanctuary.id)+')');
  check(await evaluate('document.querySelector("#command-title").textContent')==='Cercle de roches',
    'The sanctuary must be selectable with its own French HUD label');
+ // Touching a friendly stone circle with witches selected must ORDER MOVEMENT,
+ // not discard the squad selection to select the building. Compact goals
+ // must all remain in the healing radius, including with three witches.
+ const sanctuaryScreen=await evaluate('window.__fightersQA.buildingScreenPoint('+JSON.stringify(sanctuary.id)+')');
+ check(sanctuaryScreen,'Stone circle should have a selectable ground point');
+ await evaluate('window.__fightersQA.selectUnit("witch",0);'+
+   'window.__fightersQA.tap('+sanctuaryScreen.x+','+sanctuaryScreen.y+')');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.selectedIds.length===1&&s.selectedBuildingId===null&&
+   s.witches[0].destination&&Math.hypot(s.witches[0].destination.x-sanctuary.x,
+     s.witches[0].destination.z-sanctuary.z)<1.4,
+   'Tapping the sanctuary must send the selected witch into its healing centre');
+ await evaluate('window.__fightersQA.selectWitches();'+
+   'window.__fightersQA.tap('+sanctuaryScreen.x+','+sanctuaryScreen.y+')');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.selectedIds.length===3&&s.selectedBuildingId===null&&
+   s.witches.every(u=>u.destination&&Math.hypot(u.destination.x-sanctuary.x,
+     u.destination.z-sanctuary.z)<1.4),
+   'Three selected witches must receive compact sanctuary goals, not select the building');
+ console.log('PASS STONE CIRCLE TAP: solo and squad orders enter the healing radius.');
  // Place the recovery subject OUTSIDE the circle on an actually reachable
  // route. Construction may happen around an already idle starting witch.
  const recoveryStart=await evaluate("(()=>{const c=window.__fightersQA.snapshot().healing.circles[0];"+

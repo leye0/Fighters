@@ -1812,15 +1812,20 @@ function pingAttackTarget(target){
     x:target.root.position.x,z:target.root.position.z,y:1.2
   },'attack');
 }
-function issueMove(destination){
+function issueMove(destination,{spacing=1.35,withinRadius=Infinity}={}){
   const actors=[...selected].filter(actor=>!actor.dead&&actor.kind===activeFaction);
   for(const actor of actors){cancelConstruction(actor);cancelWoodJob(actor);
-    actor.mineJob=null;actor.farmJob=null;actor.treeJob=null;actor.berryJob=null;}
+    actor.mineJob=null;actor.farmJob=null;actor.treeJob=null;actor.berryJob=null;
+    actor.healJob=null;}
   // Make one reservation per soldier, BEFORE movement begins. The old grid
   // independently snapped blocked offsets to the same nearest safe cell.
-  const goals=window.FightersUnitPhysics.formationGoals(actors,destination,navigatorRTS);
+  const goals=window.FightersUnitPhysics.formationGoals(actors,destination,navigatorRTS,{spacing});
   actors.forEach((actor,i)=>{
-    actor.destination=goals[i];
+    let goal=goals[i];
+    if(goal&&Math.hypot(goal.x-destination.x,goal.z-destination.z)>withinRadius&&
+      (navigatorRTS.segmentClear(actor.root.position,destination)||
+        navigatorRTS.plan(actor.root.position,destination)))goal={...destination};
+    actor.destination=goal;
     actor.attackOrder=null;actor.approachCache=null;
     actor.route=null;actor.routeVersion=-1;actor.routeAge=0;
   });
@@ -1829,6 +1834,16 @@ function issueMove(destination){
     acknowledgePlayerOrder(actors);
   }
   refreshHUD();
+}
+function issueStoneCircleMove(circle){
+  if(circle?.type!=='stone-circle'||circle.destroyed||activeFaction!=='witch'||!selected.size)
+    return false;
+  const centre={x:circle.root.position.x,z:circle.root.position.z};
+  // Ordinary formations spread outside the healing radius. Keep sanctuary
+  // orders compact so several selected witches can all stand in the glow.
+  issueMove(centre,{spacing:.72,withinRadius:stoneHealing.RADIUS-.12});
+  showBanner('SORCIÈRES AU CERCLE DE ROCHES');
+  return true;
 }
 function issueRavenMove(destination){
   if(activeFaction!=='witch'||!selectedRaven)return false;
@@ -3851,6 +3866,8 @@ function touchAt(x,y,append=false){
     if(unit&&targetFaction(unit)!==faction){
       orderAttack([...selected],unit);return;
     }
+    if(!attackMode&&building?.type==='stone-circle'&&
+      issueStoneCircleMove(building))return;
     if(treeIndex!==null&&orderChop([...selected],treeIndex))return;
     if(logIndex!==null&&orderCollectWood([...selected],logIndex))return;
   }
