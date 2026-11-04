@@ -3,6 +3,7 @@ import path from 'node:path';
 import {NodeIO,Document} from '@gltf-transform/core';
 import {copyToDocument} from '@gltf-transform/functions';
 import sharp from 'sharp';
+import {gzipSync} from 'node:zlib';
 
 // Extract just the 12 three-stage crop groups; never ship the original
 // 19 MB exhibition scene, its four soil meshes or their displaced transforms.
@@ -47,8 +48,10 @@ const stageNodes=verified.getRoot().listScenes()[0]?.listChildren()||[];
 if(stageNodes.length!==12||names.some(name=>!stageNodes.some(n=>n.getName()===name)))
   throw Error('Runtime crops did not preserve all 12 stages');
 const bytes=(await fs.stat(output)).size;
+const compressed=gzipSync(await fs.readFile(output),{level:9});
+await fs.writeFile(output+'.gz',compressed);
 console.log('PASS RUNTIME CROPS:',JSON.stringify({
-  bytes,sourceBytes:(await fs.stat(input)).size,
+  bytes,gzipBytes:compressed.length,sourceBytes:(await fs.stat(input)).size,
   stages:stageNodes.map(n=>n.getName()),
   meshes:verified.getRoot().listMeshes().length,
   textures:verified.getRoot().listTextures().length,
