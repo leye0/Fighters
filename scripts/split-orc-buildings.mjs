@@ -15,6 +15,37 @@ const visit=node=>{all.push(node);node.listChildren().forEach(visit);};
 scene.listChildren().forEach(visit);
 const hasMesh=node=>!!node.getMesh()||node.listChildren().some(hasMesh);
 const candidates=all.filter(node=>hasMesh(node)&&/^(?:orc_)?(?:barrack|hut|mine|factory|cauldron)_Lv[123]$/i.test(node.getName())&&node.listChildren().length>0);
+// The source pack's cauldron skinned meshes contain absolute (pack-space)
+// positions, despite already being parented under a translated cauldron root.
+// Without rebasing, the pot lands tens of units away from its building: its
+// off-site geometry makes the normalizing bounds ~80 units wide and shrinks
+// the visible building to a speck, leaving only its health bar recognizable.
+function rebaseCauldronSkin(root){
+  if(!/^orc_cauldron_Lv[123]$/i.test(root.getName()))return;
+  const skinned=[];
+  function walk(node){
+    if(node.getSkin()&&node.getMesh())skinned.push(node);
+    node.listChildren().forEach(walk);
+  }
+  walk(root);
+  if(skinned.length!==1)throw Error(root.getName()+': expected one skinned cauldron pot, got '+skinned.length);
+  for(const node of skinned){
+    const world=node.getWorldMatrix();
+    const [dx,dy,dz]=[world[12],world[13],world[14]];
+    // This is an asset-specific correction, not a generic GLB skin rewrite.
+    if(Math.abs(dx)<20||Math.abs(dz)>10||Math.abs(dy)>1)
+      throw Error(root.getName()+': unexpected cauldron skin origin');
+    for(const primitive of node.getMesh().listPrimitives()){
+      const position=primitive.getAttribute('POSITION');
+      if(!position)throw Error(root.getName()+': skinned pot has no positions');
+      const data=position.getArray().slice();
+      for(let i=0;i<data.length;i+=3){
+        data[i]-=dx;data[i+1]-=dy;data[i+2]-=dz;
+      }
+      position.setArray(data);
+    }
+  }
+}
 // Reject mesh subnodes and prefer complete, named asset groups.
 console.log('Candidate building groups:',candidates.map(n=>n.getName()).join(', '));
 if(candidates.length<2)throw Error('Fewer than two complete named building groups found');
@@ -36,6 +67,7 @@ for(let i=0;i<candidates.length;i++){
   if(!copy)throw Error('Failed to copy node '+node.getName());
   const dstScene=doc.createScene('Building '+(i+1));
   dstScene.addChild(copy);
+  rebaseCauldronSkin(copy);
   const filename='building-'+String(i+1).padStart(2,'0')+'.glb';
   // Remove channels targeting nodes outside this building. A source clip may animate all buildings.
   for(const animation of doc.getRoot().listAnimations()){

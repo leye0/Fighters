@@ -464,6 +464,11 @@ async function run(){
   'Both natural deposits must be neutral, permanent resources outside clan infrastructure');
  check(s.buildings.every(b=>b.hitbox.maxX>b.hitbox.minX&&b.hitbox.maxZ>b.hitbox.minZ),
   'Every orc structure must have a real 3D collider');
+ check(s.buildings.every(b=>b.hitbox.maxX-b.hitbox.minX<5&&
+   b.hitbox.maxZ-b.hitbox.minZ<5&&b.hitbox.maxY>1),
+  'Orc models must fit the village and have a visible above-ground body (no microscopic cauldron or enormous footprint): '+
+   JSON.stringify(s.buildings.map(b=>({id:b.id,extent:[b.hitbox.maxX-b.hitbox.minX,
+     b.hitbox.maxY,b.hitbox.maxZ-b.hitbox.minZ]}))));
  check(s.buildings.filter(b=>b.type!=='mine').every(b=>b.healthbarParent==='scene'),
    'Orc HP bars must not inherit a building rotation/scale');
  check(s.buildings.filter(b=>b.type!=='mine').every(b=>b.healthbarPosition[1]>b.hitbox.maxY),

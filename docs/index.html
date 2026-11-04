@@ -1313,7 +1313,7 @@ async function loadOrcVillage(limit=3){
       // Reuse the loaded mine's geometry and materials for a neutral deposit
       // close to the witch base. No second GLB is downloaded or decoded.
       const mirror=anchor.clone(true);
-      mirror.position.set(-12,-21);mirror.rotation.y=0;
+      mirror.position.set(-12,0,-21);mirror.rotation.y=0;
       mirror.updateMatrixWorld(true);
       const mirrorModel=mirror.children[0]?.children[0];
       if(mirrorModel){
