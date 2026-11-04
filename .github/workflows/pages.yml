@@ -57,10 +57,10 @@ jobs:
           node scripts/split-orc-buildings.mjs docs/models/orc_rts_building_set_-_proto_series.glb docs/models/orc-buildings
           python3 -m pip install --disable-pip-version-check shapely==2.1.2
           node scripts/generate-building-footprints.mjs docs/models/witch_house.glb docs/models/orc-buildings
-          curl --fail --location --silent --show-error --retry 3 \
+          curl --fail --location --silent --show-error --connect-timeout 12 --max-time 60 --retry 2 --retry-delay 2 \
             "https://raw.githubusercontent.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/5821923af517ac5fdc82505faa92a0d575fc1b1a/test/human_male.glb" \
             --output docs/models/human_male.glb
-          curl --fail --location --silent --show-error --retry 3 \
+          curl --fail --location --silent --show-error --connect-timeout 12 --max-time 60 --retry 2 --retry-delay 2 \
             "https://raw.githubusercontent.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/5821923af517ac5fdc82505faa92a0d575fc1b1a/test/human_female.glb" \
             --output docs/models/human_female.glb
           node scripts/verify-glb.mjs docs/models/human_male.glb docs/models/human_female.glb

@@ -88,7 +88,17 @@ async function run(){
  check(orcForest.visibleInViewport>=1,
    'Actual orc start must reveal at least one tree, not an empty map: '+JSON.stringify(orcForest));
  await screenshot('rts-forest-orc');
- await until("window.__fightersQA.sound().played>0",'real decoded Orc interaction SFX',10000);
+ // SwiftShader can make the first MP3 decode exceed the voice engine's 1.8s
+ // freshness limit. Once decoded it stays cached; a subsequent genuine order
+ // should play. Reissue selection briefly instead of treating a cold decode
+ // dropped on purpose as a missing audio implementation.
+ await until("window.__fightersQA.sound().contextState==='running'",'user-unlocked Orc AudioContext',10000);
+ for(let retry=0;retry<4&&!await evaluate('window.__fightersQA.sound().played>0');retry++){
+   await sleep(1200);
+   await evaluate("window.__fightersQA.selectUnit('orc',0)");
+ }
+ check(await evaluate('window.__fightersQA.sound().played>0'),
+   'Real decoded Orc interaction SFX never played: '+JSON.stringify(await evaluate('window.__fightersQA.sound()')));
  console.log('PASS WEB AUDIO BROWSER SMOKE:',JSON.stringify(await evaluate(
    '({witch:window.__fightersQA.witchSound(),orc:window.__fightersQA.sound()})')));
  await evaluate("window.__fightersQA.reset()");
@@ -102,8 +112,9 @@ async function run(){
   'Six roles must use only the two Quaternius rigs');
   check(s.witches[1].workTool==='Worker_Scythe'&&!s.witches[1].workToolVisible&&
     s.orcs[1].workTool==='Worker_Axe'&&!s.orcs[1].workToolVisible&&
-    [...s.witches,...s.orcs].filter(u=>u.role!=='worker').every(u=>!u.workTool),
-    'Only workers should carry hidden scythe/axe meshes before working');
+    [s.witches[1],s.orcs[1]].every(u=>u.hammerTool==='Worker_Hammer'&&!u.hammerToolVisible)&&
+    [...s.witches,...s.orcs].filter(u=>u.role!=='worker').every(u=>!u.workTool&&!u.hammerTool),
+    'Only workers should carry hidden shared job tools before working');
  for(const clan of ['witch','orc']){
   const sharing=await evaluate('window.__fightersQA.auditRigSharing('+JSON.stringify(clan)+')');
   check(sharing.bodyGeometryShared&&sharing.outfitGeometryShared&&
@@ -686,7 +697,8 @@ async function run(){
   const miningSwing=await evaluate("(()=>{const seen={witch:false,orc:false};"+
     "for(let i=0;i<38;i++){window.__fightersQA.advance(1);const s=window.__fightersQA.snapshot();"+
     "for(const kind of ['witch','orc'])if(s[kind==='witch'?'witches':'orcs'].some(u=>"+
-    "u.role==='worker'&&u.animation==='Work_Swing'&&u.workToolVisible))seen[kind]=true;}return seen})()");
+    "u.role==='worker'&&u.animation==='Work_Swing'&&u.workToolVisible&&"+
+    "!u.hammerToolVisible))seen[kind]=true;}return seen})()");
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.gold.witch>witchGoldBefore&&s.mining.totalMinedGold>0,
   'Witch worker never mined physical gold: '+JSON.stringify(s.mining));
@@ -706,12 +718,13 @@ async function run(){
   s.gold.witch===goldBeforeBuild-230,'Construction must reserve resources and wait for worker');
   const constructionSwing=await evaluate("(()=>{let seen=false;for(let i=0;i<38;i++){"+
     "window.__fightersQA.advance(1);seen ||= window.__fightersQA.snapshot().witches.some(u=>"+
-    "u.role==='worker'&&u.animation==='Work_Swing'&&u.workToolVisible);}return seen})()");
+    "u.role==='worker'&&u.animation==='Work_Swing'&&u.hammerToolVisible&&"+
+    "!u.workToolVisible);}return seen})()");
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.construction.length===0&&s.buildings.length===buildingsBefore+1&&
   s.buildings.some(b=>b.type==='witch-house'&&b.clanId==='witch'),
   'Witch worker did not finish a real house: '+JSON.stringify(s.construction));
-  check(constructionSwing,'Construction must visibly swing the worker tool');
+  check(constructionSwing,'House construction must show a hammer, never a scythe');
  console.log('PASS ECONOMIC ROLES: witch mined gold, constructed a shared-model house; soldiers cannot mine, workers cannot fight.');
  await evaluate('window.__fightersQA.reset()');
  s=await evaluate('window.__fightersQA.snapshot()');
@@ -724,8 +737,17 @@ async function run(){
  const gardenSite=await evaluate("(()=>{for(let z=-9;z>=-23;z-=2)for(let x=-8;x>=-24;x-=2)"+
    "if(window.__fightersQA.canBuild(x,z,'garden'))return {x,z};return null})()");
  check(gardenSite,'No buildable garden site on witch territory');
- check(await evaluate('!!window.__fightersQA.buildGarden('+gardenSite.x+','+gardenSite.z+')'),
-   'Garden could not be constructed as a real building');
+ check(await evaluate('window.__fightersQA.orderBuild("garden",'+gardenSite.x+','+gardenSite.z+')'),
+   'Witch worker could not begin garden construction');
+ const gardenBuild=await evaluate("(()=>{let planting=false,inside=false,built=false;"+
+   "for(let i=0;i<160;i++){window.__fightersQA.advance(.25);const s=window.__fightersQA.snapshot();"+
+   "const w=s.witches.find(u=>u.role==='worker');"+
+   "if(w?.animation==='Farm_PlantSeed'&&!w.workToolVisible&&!w.hammerToolVisible){"+
+   "planting=true;inside ||= Math.abs(w.x-("+gardenSite.x+"))<.75&&Math.abs(w.z-("+gardenSite.z+"))<.75;}"+
+   "if(s.buildings.some(b=>b.type==='garden')){built=true;break;}}"+
+   "return {planting,inside,built};})()");
+ check(gardenBuild.planting&&gardenBuild.inside&&gardenBuild.built,
+   'Gardener must enter the plot and sow by hand without a hammer: '+JSON.stringify(gardenBuild));
  await until("window.__fightersQA.snapshot().crops.loaded",
    'real licensed crop GLB after first garden',30000);
  s=await evaluate('window.__fightersQA.snapshot()');
@@ -755,16 +777,20 @@ async function run(){
  // Quaternius Farm_Harvest clip, with the work tool hidden.
  check(await evaluate('window.__fightersQA.orderHarvest(1,'+JSON.stringify(gardenId)+')'),
    'Witch worker could not be assigned to garden');
-  const harvestGesture=await evaluate("(()=>{let seen=false;for(let i=0;i<26;i++){"+
-    "window.__fightersQA.advance(1);seen ||= window.__fightersQA.snapshot().witches.some(u=>"+
-    "u.role==='worker'&&u.animation==='Farm_Harvest'&&!u.workToolVisible);}return seen})()");
+  const harvestGesture=await evaluate("(()=>{let seen=false,inside=false;for(let i=0;i<26;i++){"+
+    "window.__fightersQA.advance(1);const s=window.__fightersQA.snapshot();"+
+    "for(const u of s.witches)if(u.role==='worker'&&u.animation==='Farm_Harvest'&&"+
+    "!u.workToolVisible&&!u.hammerToolVisible){seen=true;inside ||= " +
+    "Math.abs(u.x-("+gardenSite.x+"))<1.2&&Math.abs(u.z-("+gardenSite.z+"))<1.6;}"+
+    "}return {seen,inside};})()");
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.farming.harvests>0&&s.farming.producedFood>=8,
    'Worker never reached and harvested mature crops: '+JSON.stringify(s.farming));
-  check(harvestGesture,'The witch must bend and pick wheat by hand, with no scythe visible');
+  check(harvestGesture.seen&&harvestGesture.inside,
+    'Witch must enter the garden and pick by hand with no tool: '+JSON.stringify(harvestGesture));
  check(s.farming.gardens[0].stages.every(stage=>stage>=1&&stage<=3),
    'Garden must never show dead or fourth-stage crops');
- console.log('PASS GARDEN: three real wheat GLB stages, ripe hold, witch harvest.');
+ console.log('PASS GARDEN: plant inside, three real wheat stages, harvest inside by hand.');
  await evaluate('window.__fightersQA.reset();window.__fightersQA.setFood(0)');
  s=await evaluate('window.__fightersQA.snapshot()');
  const healthBeforeStarvation=s.witches.map(w=>w.health);
@@ -775,8 +801,9 @@ async function run(){
  check(s.buildings.every(b=>b.type!=='garden')&&s.farming.gardens.length===0,
    'Reset must clear all gardens and worker assignments');
  await evaluate('window.__fightersQA.reset()');
- check((await evaluate('window.__fightersQA.snapshot()')).farming.food===45,
-   'New match must restore starting food');
+ const restoredFood=(await evaluate('window.__fightersQA.snapshot()')).farming.food;
+ check(restoredFood>44.9&&restoredFood<=45,
+   'New match must restore starting food, allowing one live animation frame: '+restoredFood);
  console.log('PASS FAMINE: starvation damages witches and reset removes garden economy.');
 
 

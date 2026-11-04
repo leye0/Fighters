@@ -579,7 +579,9 @@ function prototypeBuildingBounds(projection,center,scale){
 function liveBuildings(){return [witchBuilding,...buildingInstances.values()].filter(b=>!b.destroyed);}
 function updateNavObstacles(){
   navigatorRTS.setObstacles([...forestObstacles,
-    ...liveBuildings().map(b=>({id:b.id,...b.hitbox}))]);
+    // Garden beds are walkable so workers can tend crops from inside the plot.
+    // Their footprints still block overlapping construction and receive hits.
+    ...liveBuildings().filter(b=>b.type!=='garden').map(b=>({id:b.id,...b.hitbox}))]);
   for(const actor of units){actor.route=null;actor.routeVersion=-1;}
 }
 function drawBuildingSelection(){
@@ -1239,12 +1241,21 @@ function resize(){
 new ResizeObserver(resize).observe(viewport);
 new ResizeObserver(resize).observe($('command-panel'));
 resize();
-// Workers use the sword-swing for mining/building. Wheat harvesting uses the
-// original Quaternius Farm_Harvest gesture: bend down and pick by hand.
+// Each job selects its real Quaternius motion. Mining/building swing tools;
+// garden construction plants seeds and wheat harvesting picks by hand.
 const WORK_SWING='Work_Swing';
 const FARM_HARVEST='Farm_Harvest';
+const FARM_PLANT='Farm_PlantSeed';
+function showWorkerTool(actor,name){
+  if(!actor.workTool)return;
+  const swing=name===WORK_SWING;
+  actor.workTool.visible=swing&&!!actor.mineJob;
+  actor.hammerTool.visible=swing&&!!actor.constructJob&&actor.constructJob.type!=='garden';
+}
 function animation(actor,name,force=false){
-  if(!actor||(!force&&actor.current===name))return;
+  if(!actor)return;
+  showWorkerTool(actor,name);
+  if(!force&&actor.current===name)return;
   // Initialize only clips ACTUALLY played. Previously every new unit allocated
   // 86 mixer actions and thousands of joint-track bindings at creation time.
   let next=actor.actions.get(name);
@@ -1256,19 +1267,19 @@ function animation(actor,name,force=false){
   }
   const last=actor.action;
   if(last&&last!==next)last.fadeOut(.13);
-  // One complete bend-pick-stand motion per wheat harvest (1.6s), even though
-  // the original Quaternius clip is 2.5s long. No resampling or new keyframes.
+  // Complete one natural pick gesture per harvest and three planting gestures
+  // during construction, preserving every original native keyframe.
   const rate=name===FARM_HARVEST?
-    next.getClip().duration/window.FightersFarming.HARVEST_SECONDS:1;
+    next.getClip().duration/window.FightersFarming.HARVEST_SECONDS:
+    name===FARM_PLANT?next.getClip().duration/(BUILD_SECONDS/3):1;
   next.reset().stopFading().setEffectiveWeight(1).setEffectiveTimeScale(rate);
-  const oneshot=name!==WORK_SWING&&name!==FARM_HARVEST&&
+  const oneshot=name!==WORK_SWING&&name!==FARM_HARVEST&&name!==FARM_PLANT&&
     !name.includes('Loop')&&!name.includes('Idle');
   next.setLoop(oneshot?THREE.LoopOnce:THREE.LoopRepeat,oneshot?1:Infinity);
   next.clampWhenFinished=oneshot;
   if(last&&last!==next)next.fadeIn(.13);
   next.play();
   actor.action=next;actor.current=name;
-  if(actor.workTool)actor.workTool.visible=name===WORK_SWING;
 }
 // The official Peasant meshes carry exactly the same named 65-bone Quaternius rig.
 // Skin the garments/hair with this actor's own skeleton, never copy foreign joints.
@@ -1351,7 +1362,14 @@ const toolWood=new THREE.MeshStandardMaterial({color:0x77502d,roughness:1});
 const toolIron=new THREE.MeshStandardMaterial({color:0xbac5bd,metalness:.65,roughness:.42,side:THREE.DoubleSide});
 function workToolTemplate(kind){
   const tool=new THREE.Group();
-  tool.name=kind==='witch'?'Worker_Scythe':'Worker_Axe';
+  tool.name=kind==='hammer'?'Worker_Hammer':kind==='witch'?'Worker_Scythe':'Worker_Axe';
+  if(kind==='hammer'){
+    const handle=new THREE.Mesh(new THREE.CylinderGeometry(.036,.043,.79,7),toolWood);
+    handle.position.y=.28;tool.add(handle);
+    const head=new THREE.Mesh(new THREE.BoxGeometry(.47,.17,.22),toolIron);
+    head.position.y=.65;tool.add(head);
+    return tool;
+  }
   const length=kind==='witch'?1.14:.82;
   const handle=new THREE.Mesh(new THREE.CylinderGeometry(.035,.046,length,7),toolWood);
   handle.position.y=length*.34;tool.add(handle);
@@ -1375,7 +1393,8 @@ function workToolTemplate(kind){
   head.position.z=-.0325;tool.add(head);
   return tool;
 }
-const sharedWorkToolTemplates={witch:workToolTemplate('witch'),orc:workToolTemplate('orc')};
+const sharedWorkToolTemplates={witch:workToolTemplate('witch'),orc:workToolTemplate('orc'),
+  hammer:workToolTemplate('hammer')};
 // Adapted from asset-tooling/examples/weapons/derive-sockets.ts (CC0):
 // anatomy-driven grip from the actual Quaternius rig's finger bones, not
 // manual offset or an unrelated Ranger skeleton transform.
@@ -1419,9 +1438,10 @@ function mountWorkTool(actor){
   if(actor.role!=='worker')return;
   const socket=nativeRightHandSocket(actor.visual);
   const tool=sharedWorkToolTemplates[actor.kind].clone(true);
+  const hammer=sharedWorkToolTemplates.hammer.clone(true);
   socket.name='hand_r.work-tool';
-  tool.visible=false;socket.add(tool);
-  actor.workTool=tool;
+  tool.visible=false;hammer.visible=false;socket.add(tool,hammer);
+  actor.workTool=tool;actor.hammerTool=hammer;
 }
 
 function spawnUnit(kind,x,z,index=0,role='melee'){
@@ -1445,7 +1465,8 @@ function spawnUnit(kind,x,z,index=0,role='melee'){
     heading:{x:kind==='witch'?1:-1,z:0},facing:1,attack:null,stun:0,cooldown:rand(.25,1),dead:false,deadTime:0,
     speed:profile.speed,destination:null,attackOrder:null,route:null,routeVersion:-1,
     routeGoal:null,routeAge:0,approachCache:null,approachAge:0,
-    mineJob:null,constructJob:null,farmJob:null,workTool:null,weapon:null,selectionRing:marker,outfitInfo
+    mineJob:null,constructJob:null,farmJob:null,workTool:null,hammerTool:null,
+    weapon:null,selectionRing:marker,outfitInfo
   };
   // A single sword asset is cloned as a lightweight scene node for melee orcs.
   // Workers and ranged units never allocate weapons.
@@ -1798,7 +1819,9 @@ function validBuildPosition(x,z,type='hut'){
   if(forestObstacles.some(tree=>geometry.polygonsOverlap(proposed,tree))||
      liveBuildings().some(b=>geometry.polygonsOverlap(proposed,b.hitbox))||
      pendingBuilds.some(job=>geometry.polygonsOverlap(proposed,job.site.hitbox)))return false;
-  return units.every(actor=>actor.dead||
+  // The garden is cultivated ground, not a solid building: occupying a bed
+  // must not prevent the gardener from finishing construction inside it.
+  return type==='garden'||units.every(actor=>actor.dead||
     !geometry.pointBlocked(actor.root.position,proposed,UNIT_RADIUS));
 }
 // The raised soil beds have reusable geometry. Procedural silhouettes appear only
@@ -2036,22 +2059,31 @@ function scheduleBuild(type,x,z,{byAI=false}={}){
 function tickConstructWorker(actor,dt){
   const job=actor.constructJob;
   if(!job)return false;
-  const distance=window.FightersFootprints.distanceTo(actor.root.position,job.site.hitbox);
-  if(distance>BUILDING_CONTACT){
-    const goal=approachBuilding(actor,job.site);
-    if(goal)navigateActor(actor,goal,dt,'engage');
-    else animation(actor,'Idle_Loop');
+  const isGarden=job.type==='garden';
+  const distance=isGarden?
+    Math.hypot(actor.root.position.x-job.x,actor.root.position.z-job.z):
+    window.FightersFootprints.distanceTo(actor.root.position,job.site.hitbox);
+  if(distance>(isGarden?.28:BUILDING_CONTACT)){
+    const goal=isGarden?{x:job.x,z:job.z}:approachBuilding(actor,job.site);
+    if(goal){
+      const result=navigateActor(actor,goal,dt,'engage');
+      if(result!=='moving')animation(actor,'Idle_Loop');
+    }else animation(actor,'Idle_Loop');
     return true;
   }
-  faceBuildingCenter(actor,job.site);
-  animation(actor,WORK_SWING);
-  // The native Sword_Attack clip loops as Work_Swing. Strike only when its
-  // downward movement reaches the target, then once per full animation cycle.
-  const swingSeconds=Math.max(.35,actor.clipCatalog.get('Sword_Attack')?.duration||1);
-  actor.workHitTimer=(actor.workHitTimer||0)+dt;
-  if(actor.workHitTimer>=swingSeconds*.4){
-    actor.workHitTimer-=swingSeconds;
-    playConstructionHit(actor);
+  if(isGarden){
+    faceDirection(actor,.6,.8);
+    animation(actor,FARM_PLANT);
+  }else{
+    faceBuildingCenter(actor,job.site);
+    animation(actor,WORK_SWING);
+    // Hammer blows have sound; sowing a garden is silent.
+    const swingSeconds=Math.max(.35,actor.clipCatalog.get('Sword_Attack')?.duration||1);
+    actor.workHitTimer=(actor.workHitTimer||0)+dt;
+    if(actor.workHitTimer>=swingSeconds*.4){
+      actor.workHitTimer-=swingSeconds;
+      playConstructionHit(actor);
+    }
   }
   job.progress+=dt;
   if(job.progress>=BUILD_SECONDS){
@@ -2691,7 +2723,13 @@ function tickMineWorker(actor,dt){
   }
   return true;
 }
-// Worker harvests are physical contact jobs, using the same pathfinding as mining.
+// Garden workers enter the aisle between wheat rows instead of stopping at the
+// garden's exterior perimeter. Two columns x three rows match makeGardenVisual.
+function gardenHarvestGoal(garden,index){
+  const x=index%2===0?-.24:.24;
+  const z=(Math.floor(index/2)-1)*1.10;
+  return {x:garden.root.position.x+x,z:garden.root.position.z+z};
+}
 function orderHarvest(actors,garden){
   if(!garden||garden.type!=='garden'||garden.destroyed)return false;
   let assigned=0;
@@ -2728,16 +2766,6 @@ function tickGardenWorker(actor,dt){
   if(!garden||garden.type!=='garden'||garden.destroyed){
     actor.farmJob=null;return false;
   }
-  const distance=targetDistance(actor,garden);
-  if(distance>BUILDING_CONTACT){
-    const goal=approachBuilding(actor,garden);
-    if(goal){
-      const movement=navigateActor(actor,goal,dt,'engage');
-      if(movement!=='moving')animation(actor,'Idle_Loop');
-    }else animation(actor,'Idle_Loop');
-    return true;
-  }
-  faceBuildingCenter(actor,garden);
   if(job.plotIndex<0){
     const reserved=units.filter(u=>u!==actor&&!u.dead&&
       u.farmJob?.gardenId===garden.id&&u.farmJob.plotIndex>=0)
@@ -2746,6 +2774,15 @@ function tickGardenWorker(actor,dt){
     job.progress=0;
   }
   if(job.plotIndex<0){animation(actor,'Idle_Loop');return true;}
+  const goal=gardenHarvestGoal(garden,job.plotIndex);
+  if(Math.hypot(actor.root.position.x-goal.x,actor.root.position.z-goal.z)>.30){
+    const movement=navigateActor(actor,goal,dt,'engage');
+    if(movement!=='moving')animation(actor,'Idle_Loop');
+    return true;
+  }
+  const plantX=garden.root.position.x+(job.plotIndex%2===0?-.91:.91);
+  const plantZ=garden.root.position.z+(Math.floor(job.plotIndex/2)-1)*1.10;
+  faceDirection(actor,plantX-actor.root.position.x,plantZ-actor.root.position.z);
   animation(actor,FARM_HARVEST);
   job.progress+=dt;
   if(job.progress>=window.FightersFarming.HARVEST_SECONDS){
@@ -3305,7 +3342,8 @@ async function load(){
       const gltf=await loader.parseAsync(characters[idx],'');
       const required=['Idle_Loop','Walk_Loop','Jog_Fwd_Loop','Punch_Jab','Hit_Chest','Death01'];
       const gameClips=['Idle_Loop','Walk_Loop','Jog_Fwd_Loop','Punch_Jab',
-        'Hit_Chest','Death01','Sword_Idle','Sword_Attack','Farm_Harvest'];
+        'Hit_Chest','Death01','Sword_Idle','Sword_Attack',
+        'Farm_Harvest','Farm_PlantSeed'];
       if(gltf.animations.length!==gameClips.length||
         gameClips.some(name=>!gltf.animations.some(clip=>clip.name===name)))
         throw Error('Clips de combat natifs invalides : '+file);
@@ -3407,6 +3445,7 @@ window.__fightersQA={
     witches:units.filter(a=>a.kind==='witch'&&!a.dead).map(a=>({
       id:a.id,role:a.role,x:a.root.position.x,z:a.root.position.z,radius:a.radius,health:a.health,animation:a.current,
       workTool:a.workTool?.name||null,workToolVisible:!!a.workTool?.visible,
+      hammerTool:a.hammerTool?.name||null,hammerToolVisible:!!a.hammerTool?.visible,
       visible:a.root.visible,
       heading:{...a.heading},combatTargetId:a.attack?.target?.id||null,
       destination:a.destination?{...a.destination}:null,pathLength:a.route?.waypoints.length??0,
@@ -3417,6 +3456,7 @@ window.__fightersQA={
     orcs:units.filter(a=>a.kind==='orc'&&!a.dead).map(a=>({
       id:a.id,role:a.role,x:a.root.position.x,z:a.root.position.z,health:a.health,animation:a.current,
       workTool:a.workTool?.name||null,workToolVisible:!!a.workTool?.visible,
+      hammerTool:a.hammerTool?.name||null,hammerToolVisible:!!a.hammerTool?.visible,
       visible:a.root.visible,
       heading:{...a.heading},combatTargetId:a.attack?.target?.id||null,
       attackTargetId:a.attackOrder?.id||null,miningTargetId:a.mineJob?.mineId||null,
