@@ -1722,8 +1722,7 @@ const farmMaterial={
   soil:new THREE.MeshLambertMaterial({color:0x4a3128}),
   stalk:new THREE.MeshLambertMaterial({color:0x4b8a42}),
   leaf:new THREE.MeshLambertMaterial({color:0x6cbd4d}),
-  produce:[0xd44838,0xa47f4c,0xe68b2e,0xdeb65b].map(
-    color=>new THREE.MeshLambertMaterial({color}))
+  produce:new THREE.MeshLambertMaterial({color:0xdeb65b})
 };
 function gardenShape(x,z){
   const h=1.80;
@@ -1745,17 +1744,16 @@ function makeGardenVisual(){
     stem.position.y=.45;plant.add(stem);
     const leaves=new THREE.Mesh(farmGeometry.leaves,farmMaterial.leaf);
     leaves.position.y=.72;plant.add(leaves);
-    const fruit=new THREE.Mesh(farmGeometry.fruit,
-      farmMaterial.produce[[0,1,2,3,0,1][index]]);
+    const fruit=new THREE.Mesh(farmGeometry.fruit,farmMaterial.produce);
     fruit.position.y=.47;plant.add(fruit);root.add(plant);
     plots.push({plant,fruit,stage:0});
   }
   return {root,plots};
 }
 // The Sketchfab pack uses Z as up, and arranges variants very far apart.
-// CI extracts twelve untransformed meshes, then these reusable templates
+// CI extracts the three untransformed wheat meshes; these reusable templates
 // are oriented/grounded once; every plot only clones references to GPU assets.
-const CROP_NAMES=['Tomatoe','Potatoe','Carrot','Wheat'];
+const CROP_NAMES=['Wheat'];
 let cropCatalog=null,cropLoadPromise=null,cropLoadError=null;
 let cropTransport=null,cropWireBytes=0;
 function buildCropCatalog(gltf){
