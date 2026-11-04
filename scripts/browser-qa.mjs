@@ -88,6 +88,10 @@ async function run(){
   'Orcs must start with one worker and two distinct fighter types');
  check(s.assets.sourceRigs===2&&s.assets.roleModelsLoaded===0,
   'Six roles must use only the two Quaternius rigs');
+  check(s.witches[1].workTool==='Worker_Scythe'&&!s.witches[1].workToolVisible&&
+    s.orcs[1].workTool==='Worker_Axe'&&!s.orcs[1].workToolVisible&&
+    [...s.witches,...s.orcs].filter(u=>u.role!=='worker').every(u=>!u.workTool),
+    'Only workers should carry hidden scythe/axe meshes before working');
  for(const clan of ['witch','orc']){
   const sharing=await evaluate('window.__fightersQA.auditRigSharing('+JSON.stringify(clan)+')');
   check(sharing.bodyGeometryShared&&sharing.outfitGeometryShared&&
@@ -664,10 +668,15 @@ async function run(){
  const witchGoldBefore=s.gold.witch;
  check(await evaluate("window.__fightersQA.orderMine('witch',1,'neutral-gold-mine')"),
   'Witch worker could not take a mine job');
- await evaluate('window.__fightersQA.advance(38)');
+  const miningSwing=await evaluate("(()=>{const seen={witch:false,orc:false};"+
+    "for(let i=0;i<38;i++){window.__fightersQA.advance(1);const s=window.__fightersQA.snapshot();"+
+    "for(const kind of ['witch','orc'])if(s[kind==='witch'?'witches':'orcs'].some(u=>"+
+    "u.role==='worker'&&u.animation==='Work_Swing'&&u.workToolVisible))seen[kind]=true;}return seen})()");
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.gold.witch>witchGoldBefore&&s.mining.totalMinedGold>0,
   'Witch worker never mined physical gold: '+JSON.stringify(s.mining));
+  check(miningSwing.witch&&miningSwing.orc,
+    'Workers of both clans must swing visible scythes/axes when mining: '+JSON.stringify(miningSwing));
  check(s.mining.workers.every(u=>u.role==='worker'),
   'Non-worker character was assigned mining');
  // A construction order debits once, sends the worker to the real X/Z
@@ -680,11 +689,14 @@ async function run(){
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.buildings.length===buildingsBefore&&s.construction.length===1&&
   s.gold.witch===goldBeforeBuild-230,'Construction must reserve resources and wait for worker');
- await evaluate('window.__fightersQA.advance(38)');
+  const constructionSwing=await evaluate("(()=>{let seen=false;for(let i=0;i<38;i++){"+
+    "window.__fightersQA.advance(1);seen ||= window.__fightersQA.snapshot().witches.some(u=>"+
+    "u.role==='worker'&&u.animation==='Work_Swing'&&u.workToolVisible);}return seen})()");
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.construction.length===0&&s.buildings.length===buildingsBefore+1&&
   s.buildings.some(b=>b.type==='witch-house'&&b.clanId==='witch'),
   'Witch worker did not finish a real house: '+JSON.stringify(s.construction));
+  check(constructionSwing,'Construction must visibly swing the worker tool');
  console.log('PASS ECONOMIC ROLES: witch mined gold, constructed a shared-model house; soldiers cannot mine, workers cannot fight.');
  await evaluate('window.__fightersQA.reset()');
  s=await evaluate('window.__fightersQA.snapshot()');
@@ -726,10 +738,13 @@ async function run(){
  // The worker can be explicitly assigned; the auto-harvester also works when idle.
  check(await evaluate('window.__fightersQA.orderHarvest(1,'+JSON.stringify(gardenId)+')'),
    'Witch worker could not be assigned to garden');
- await evaluate('window.__fightersQA.advance(26)');
+  const harvestSwing=await evaluate("(()=>{let seen=false;for(let i=0;i<26;i++){"+
+    "window.__fightersQA.advance(1);seen ||= window.__fightersQA.snapshot().witches.some(u=>"+
+    "u.role==='worker'&&u.animation==='Work_Swing'&&u.workToolVisible);}return seen})()");
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.farming.harvests>0&&s.farming.producedFood>=8,
    'Worker never reached and harvested mature crops: '+JSON.stringify(s.farming));
+  check(harvestSwing,'The witch must swing her scythe while harvesting ripe wheat');
  check(s.farming.gardens[0].stages.every(stage=>stage>=1&&stage<=3),
    'Garden must never show dead or fourth-stage crops');
  console.log('PASS GARDEN: three real wheat GLB stages, ripe hold, witch harvest.');
