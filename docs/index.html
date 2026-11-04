@@ -1224,9 +1224,10 @@ function resize(){
 new ResizeObserver(resize).observe(viewport);
 new ResizeObserver(resize).observe($('command-panel'));
 resize();
-// Worker motions reuse the native sword-swing skeleton clip, without loading
-// another rig or keeping dozens of additional per-character animation tracks.
+// Workers use the sword-swing for mining/building. Wheat harvesting uses the
+// original Quaternius Farm_Harvest gesture: bend down and pick by hand.
 const WORK_SWING='Work_Swing';
+const FARM_HARVEST='Farm_Harvest';
 function animation(actor,name,force=false){
   if(!actor||(!force&&actor.current===name))return;
   // Initialize only clips ACTUALLY played. Previously every new unit allocated
@@ -1240,8 +1241,13 @@ function animation(actor,name,force=false){
   }
   const last=actor.action;
   if(last&&last!==next)last.fadeOut(.13);
-  next.reset().stopFading().setEffectiveWeight(1).setEffectiveTimeScale(1);
-  const oneshot=name!==WORK_SWING&&!name.includes('Loop')&&!name.includes('Idle');
+  // One complete bend-pick-stand motion per wheat harvest (1.6s), even though
+  // the original Quaternius clip is 2.5s long. No resampling or new keyframes.
+  const rate=name===FARM_HARVEST?
+    next.getClip().duration/window.FightersFarming.HARVEST_SECONDS:1;
+  next.reset().stopFading().setEffectiveWeight(1).setEffectiveTimeScale(rate);
+  const oneshot=name!==WORK_SWING&&name!==FARM_HARVEST&&
+    !name.includes('Loop')&&!name.includes('Idle');
   next.setLoop(oneshot?THREE.LoopOnce:THREE.LoopRepeat,oneshot?1:Infinity);
   next.clampWhenFinished=oneshot;
   if(last&&last!==next)next.fadeIn(.13);
@@ -2720,7 +2726,7 @@ function tickGardenWorker(actor,dt){
     job.progress=0;
   }
   if(job.plotIndex<0){animation(actor,'Idle_Loop');return true;}
-  animation(actor,WORK_SWING);
+  animation(actor,FARM_HARVEST);
   job.progress+=dt;
   if(job.progress>=window.FightersFarming.HARVEST_SECONDS){
     const yieldAmount=farming.harvest(garden.id,job.plotIndex);
@@ -3279,7 +3285,7 @@ async function load(){
       const gltf=await loader.parseAsync(characters[idx],'');
       const required=['Idle_Loop','Walk_Loop','Jog_Fwd_Loop','Punch_Jab','Hit_Chest','Death01'];
       const gameClips=['Idle_Loop','Walk_Loop','Jog_Fwd_Loop','Punch_Jab',
-        'Hit_Chest','Death01','Sword_Idle','Sword_Attack'];
+        'Hit_Chest','Death01','Sword_Idle','Sword_Attack','Farm_Harvest'];
       if(gltf.animations.length!==gameClips.length||
         gameClips.some(name=>!gltf.animations.some(clip=>clip.name===name)))
         throw Error('Clips de combat natifs invalides : '+file);
