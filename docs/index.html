@@ -439,6 +439,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 <script src="./rts-fog.js"></script>
 <script src="./rts-sound.js"></script>
 <script src="./rts-farming.js"></script>
+<script src="./rts-forest.js"></script>
 </head>
 <body>
 <div class="game-shell"><section class="arcade">
@@ -530,6 +531,8 @@ const witchBuilding={
 let buildingSelectionRing=null;
 const UNIT_RADIUS=window.FightersUnitPhysics.RADIUS;
 const navigatorRTS=new window.FightersNavigation.Navigator({halfSize:ARENA_HALF,cellSize:1,radius:UNIT_RADIUS});
+const forestLayout=window.FightersForest.createLayout();
+const forestObstacles=window.FightersForest.obstacles(forestLayout);
 function buildingVisualBounds(root){
   root.updateMatrixWorld(true);
   const b=new THREE.Box3().setFromObject(root);
@@ -575,7 +578,8 @@ function prototypeBuildingBounds(projection,center,scale){
 
 function liveBuildings(){return [witchBuilding,...buildingInstances.values()].filter(b=>!b.destroyed);}
 function updateNavObstacles(){
-  navigatorRTS.setObstacles(liveBuildings().map(b=>({id:b.id,...b.hitbox})));
+  navigatorRTS.setObstacles([...forestObstacles,
+    ...liveBuildings().map(b=>({id:b.id,...b.hitbox}))]);
   for(const actor of units){actor.route=null;actor.routeVersion=-1;}
 }
 function drawBuildingSelection(){
@@ -628,6 +632,46 @@ const loader = new GLTFLoader();
 // The authored CC0 sword uses EXT_meshopt_compression, unlike the two character GLBs.
 // Register decoder before parsing ANY GLTF so equipping a sword cannot abort startup.
 loader.setMeshoptDecoder(MeshoptDecoder);
+// Four shared CC0 GLBs; even dozens of trees render in only a handful of
+// instanced draw calls. Loaded after the characters to protect mobile startup.
+let forestLoadedSpecies=0,forestPromise=null;
+function loadForest(){
+  if(forestPromise)return forestPromise;
+  forestPromise=Promise.all(window.FightersForest.TYPES.map(async kind=>{
+    try{
+      const gltf=await loader.loadAsync('./models/forest/'+kind+'.glb');
+      const source=gltf.scene;
+      source.updateMatrixWorld(true);
+      const bounds=new THREE.Box3().setFromObject(source);
+      const size=bounds.getSize(new THREE.Vector3());
+      if(size.y<.01)throw Error('Tree model has no height: '+kind);
+      const center=bounds.getCenter(new THREE.Vector3());
+      const trees=forestLayout.filter(tree=>tree.type===kind);
+      const placement=new THREE.Matrix4(),offset=new THREE.Matrix4()
+        .makeTranslation(-center.x,-bounds.min.y,-center.z);
+      const orientation=new THREE.Quaternion(),axis=new THREE.Vector3(0,1,0);
+      source.traverse(mesh=>{
+        if(!mesh.isMesh)return;
+        const batch=new THREE.InstancedMesh(mesh.geometry,mesh.material,trees.length);
+        batch.name='forest-'+kind;
+        batch.castShadow=false;batch.receiveShadow=false;
+        for(let i=0;i<trees.length;i++){
+          const tree=trees[i],scale=tree.height/size.y;
+          orientation.setFromAxisAngle(axis,tree.angle);
+          placement.compose(new THREE.Vector3(tree.x,0,tree.z),orientation,
+            new THREE.Vector3(scale,scale,scale));
+          placement.multiply(offset).multiply(mesh.matrixWorld);
+          batch.setMatrixAt(i,placement);
+        }
+        batch.instanceMatrix.needsUpdate=true;
+        batch.computeBoundingSphere();
+        scene.add(batch);
+      });
+      forestLoadedSpecies++;
+    }catch(error){console.warn('Forest model unavailable:',kind,error);}
+  }));
+  return forestPromise;
+}
 
 
 
@@ -925,55 +969,21 @@ function box(w,h,d,color,x,y,z,emissive=0x000000){
   const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color,roughness:.85,emissive,emissiveIntensity:emissive? .42:0}));
   mesh.position.set(x,y,z);scene.add(mesh);return mesh;
 }
-function buildStreet(){
-  // A playable square, not the old endless 400 × 16 street strip.
+function buildTerrain(){
+  // Dark woodland terrain for the fantasy RTS, replacing the old neon city.
   const ground=new THREE.Mesh(new THREE.PlaneGeometry(ARENA_SIZE,ARENA_SIZE),
-    new THREE.MeshStandardMaterial({color:0x364454,roughness:.96}));
+    new THREE.MeshStandardMaterial({color:0x344739,roughness:.98}));
   ground.rotation.x=-Math.PI/2;ground.position.y=-.045;scene.add(ground);
-  // Cross-streets and paving communicate depth as strongly as width.
-  box(ARENA_SIZE,.012,11,0x263345,0,-.026,0);
-  box(11,.012,ARENA_SIZE,0x263345,0,-.025,0);
-  for(let p=-ARENA_HALF;p<=ARENA_HALF;p+=4){
-    box(ARENA_SIZE,.013,.034,0x485363,0,-.012,p);
-    box(.034,.013,ARENA_SIZE,0x485363,p,-.011,0);
-  }
-  // A visible low curb marks the four identical limits.
-  const edge=ARENA_HALF+.12;
-  box(ARENA_SIZE+.4,.12,.23,0x758598,0,.015,-edge);
-  box(ARENA_SIZE+.4,.12,.23,0x758598,0,.015,edge);
-  box(.23,.12,ARENA_SIZE+.4,0x758598,-edge,.015,0);
-  box(.23,.12,ARENA_SIZE+.4,0x758598,edge,.015,0);
-  // Shops and neon remain behind the northern edge, not in the arena.
-  const labels=['ARCADE 84','RAMEN','NEON CITY','MOTEL','NIGHT CLUB','METRO'];
-  const colors=['#f379a3','#83e8e0','#e9cc6b','#8eaffe'];
-  const palette=[0x253f5d,0x4d304f,0x294654,0x4b3f4b];
-  for(let x=-24,i=0;x<=24;x+=8,i++){
-    const h=5+(i%3)*1.1;
-    box(7.7,h,2,palette[i%palette.length],x,h/2-.08,-32.1);
-    box(7.3,.4,.35,0x131827,x,3,-31);
-    for(let yy=3.6;yy<h-.4;yy+=1.35)
-      for(let xx=-2.5;xx<=2.5;xx+=1.7){
-        const lit=(i+Math.round(xx)+Math.round(yy))%3!==0;
-        box(1.1,.7,.03,lit?0x98bdca:0x141e2c,x+xx,yy,-31.07,lit?0x527b9a:0);
-      }
-    if(i%2===0){
-      const sign=createSign(labels[i%labels.length],colors[i%colors.length],3.3);
-      sign.position.set(x,2.2,-30.99);scene.add(sign);
-    }
-    if(i%2){
-      const bulb=new THREE.PointLight(0x62dcff,6,7);
-      bulb.position.set(x+2,3.3,-29.4);scene.add(bulb);
-    }
-  }
-  for(let x=-24;x<=24;x+=12){
-    box(.13,4.4,.13,0x53687d,x,2.2,-29.4);
-    box(1.1,.12,.2,0x6a778e,x+.5,4.3,-29.4);
-    const lamp=new THREE.Mesh(new THREE.SphereGeometry(.18,8,8),
-      new THREE.MeshBasicMaterial({color:0xffe8ae}));
-    lamp.position.set(x+.9,4.2,-29.4);scene.add(lamp);
-  }
+  // A few broad, muted earth tracks retain easy visual orientation for RTS.
+  box(ARENA_SIZE,.013,7.5,0x3c4135,0,-.025,0);
+  box(7.5,.013,ARENA_SIZE,0x3c4135,0,-.024,0);
+  const edge=ARENA_HALF+.14;
+  box(ARENA_SIZE+.45,.10,.20,0x505b49,0,.012,-edge);
+  box(ARENA_SIZE+.45,.10,.20,0x505b49,0,.012,edge);
+  box(.20,.10,ARENA_SIZE+.45,0x505b49,-edge,.012,0);
+  box(.20,.10,ARENA_SIZE+.45,0x505b49,edge,.012,0);
 }
-buildStreet();
+buildTerrain();
 // House is a genuine GLB asset, not a procedural stand-in. Its local front
 // vector is configurable until visually calibrated against the Sketchfab mesh.
 async function loadWitchHouse(){
@@ -1780,7 +1790,8 @@ function validBuildPosition(x,z,type='hut'){
   if(proposed.minX<minX||proposed.maxX>maxX||
     proposed.minZ<-ARENA_HALF||proposed.maxZ>ARENA_HALF)return false;
   // The same true projected X/Z polygons govern construction and collision.
-  if(liveBuildings().some(b=>geometry.polygonsOverlap(proposed,b.hitbox))||
+  if(forestObstacles.some(tree=>geometry.polygonsOverlap(proposed,tree))||
+     liveBuildings().some(b=>geometry.polygonsOverlap(proposed,b.hitbox))||
      pendingBuilds.some(job=>geometry.polygonsOverlap(proposed,job.site.hitbox)))return false;
   return units.every(actor=>actor.dead||
     !geometry.pointBlocked(actor.root.position,proposed,UNIT_RADIUS));
@@ -2344,6 +2355,7 @@ function startSession(){
   activeFaction='witch';paused=false;running=true;cameraFollow={x:-18,z:-14};
   positionCamera();
   updateNavObstacles();
+  loadForest();
   spawnUnit('witch',-18,-13,0,'melee');spawnUnit('witch',-16.5,-15,1,'worker');spawnUnit('witch',-19,-16,2,'ranged');
   spawnOrcDefenders();updateVision();selectBuilding(witchBuilding);
   $('pause').disabled=false;$('pause').textContent='Ⅱ';$('overlay').hidden=true;
@@ -3326,6 +3338,8 @@ async function load(){
 window.__fightersQA={
   snapshot:()=>({
     loading:{...loadingProfile,characters:{...loadingProfile.characters}},
+    forest:{instances:forestLayout.length,loadedSpecies:forestLoadedSpecies,
+      obstacleCount:forestObstacles.length},
     ready,running,paused,activeFaction,cameraZoom,cameraCenter:{...cameraFollow},
     fog:{activeFaction,...fogOfWar.stats(activeFaction),
       exploredBrightness:fogShader.uniforms.exploredBrightness.value,
