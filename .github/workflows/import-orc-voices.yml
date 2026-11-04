@@ -25,8 +25,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Verify audio decoder
-        run: ffmpeg -version
+      - name: Install audio decoder
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          ffmpeg -version
 
       # Action 1: download all 51 freely playable MP3 previews.
       - name: Download Orc previews
