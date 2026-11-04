@@ -544,6 +544,19 @@ function buildingVisualBounds(root){
   return {shape:'aabb',minX:b.min.x,maxX:b.max.x,
     minZ:b.min.z,maxZ:b.max.z,minY:b.min.y,maxY:b.max.y};
 }
+function orcModelBounds(model,type){
+  model.updateMatrixWorld(true);
+  if(type!=='cauldron')return new THREE.Box3().setFromObject(model);
+  // The source cauldron's animated/skinned pot can report an offset bind-pose
+  // bounding box in Three.js. Normalize against its solid architectural mesh,
+  // or the entire structure is shrunk ~10× while the HP bar stays full-size.
+  const bounds=new THREE.Box3();
+  model.traverse(node=>{
+    if(node.isMesh&&!node.isSkinnedMesh)bounds.expandByObject(node);
+  });
+  if(bounds.isEmpty())throw Error('Chaudron sans corps 3D solide');
+  return bounds;
+}
 // Runtime collision is the transformed, actual triangle-projection silhouette.
 // The numeric AABB is derived from its vertices strictly for broadphase/HUD.
 const footprintCache=new Map();
@@ -1280,7 +1293,9 @@ async function loadOrcVillage(limit=3){
     // Let the renderer and input loop run between buildings.
     await new Promise(resolve=>setTimeout(resolve,0));
     model.updateMatrixWorld(true);
-    const bounds=new THREE.Box3().setFromObject(model);
+    const type=(entries[i].sourceNode||entries[i].name).match(/(?:orc_)?(barrack|hut|mine|cauldron|factory)_Lv1$/i)?.[1]?.toLowerCase();
+    if(!type)continue;
+    const bounds=orcModelBounds(model,type);
     const size=bounds.getSize(new THREE.Vector3());
     const footprint=Math.max(size.x,size.z);
     if(!Number.isFinite(footprint)||footprint<=1e-6)continue;
@@ -1292,8 +1307,6 @@ async function loadOrcVillage(limit=3){
     offset.position.set(-center.x,-bounds.min.y,-center.z);
     offset.add(model);
     anchor.add(offset);
-    const type=(entries[i].sourceNode||entries[i].name).match(/(?:orc_)?(barrack|hut|mine|cauldron|factory)_Lv1$/i)?.[1]?.toLowerCase();
-    if(!type)continue;
     const physicalPrototype=prototypeBuildingBounds(projection,center,3.9/footprint);
     buildingBlueprints.set(type,{
       entry:entries[i],source:model.clone(true),clips:buildingClips,
@@ -1911,7 +1924,7 @@ async function useOrcLevelModel(building,level){
   if(!orcLevelCache.has(key))orcLevelCache.set(key,loader.loadAsync(entry.file));
   const gltf=await orcLevelCache.get(key);
   if(building.level!==level||building.destroyed)return;
-  const model=gltf.scene.clone(true),bounds=new THREE.Box3().setFromObject(model);
+  const model=gltf.scene.clone(true),bounds=orcModelBounds(model,building.type);
   const size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3());
   const footprint=Math.max(size.x,size.z);
   if(!Number.isFinite(footprint)||footprint<=0)throw Error('GLB de niveau invalide');
@@ -2254,7 +2267,7 @@ function buildOrc(type,x,z,{byAI=false,prepaid=false}={}){
     (!prepaid&&!canAffordConstruction('orc',type))||!validBuildPosition(x,z,type))return false;
   const template=buildingBlueprints.get(type),model=template.source.clone(true);
   model.updateMatrixWorld(true);
-  const bounds=new THREE.Box3().setFromObject(model),center=bounds.getCenter(new THREE.Vector3());
+  const bounds=orcModelBounds(model,type),center=bounds.getCenter(new THREE.Vector3());
   const anchor=new THREE.Group(),offset=new THREE.Group();
   offset.position.set(-center.x,-bounds.min.y,-center.z);offset.add(model);anchor.add(offset);
   anchor.scale.setScalar(3.9/template.footprint);anchor.position.set(x,0,z);
