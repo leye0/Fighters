@@ -104,6 +104,11 @@
     visibleAt(x,z,clan='witch'){
       return this.sample(x,z,clan).visible>.2;
     }
+    // Gameplay visibility uses permanent discovery; live sight is retained
+    // separately for the fog texture and exploration frontier calculations.
+    exploredAt(x,z,clan='witch'){
+      return this.sample(x,z,clan).explored>.2;
+    }
     stats(clan='witch'){
       const map=this.maps[clan];
       let explored=0,visible=0;

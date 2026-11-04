@@ -212,6 +212,19 @@ async function run(){
  check(fogRendering.exploredBrightness===1,
    'Explored terrain must stay fully visible, not darken again: '+JSON.stringify(fogRendering));
  await screenshot('rts-fog-explored');
+ // Once revealed, an enemy currently standing in an explored square remains
+ // rendered and targetable after every scout has left the square.
+ check((await evaluate('window.__fightersQA.snapshot().orcs[0].visible'))===false,
+   'Enemy starting inside never-discovered black terrain must be hidden');
+ await evaluate("window.__fightersQA.moveUnitTo('orc',0,-8,-8)");
+ check((await evaluate('window.__fightersQA.snapshot().orcs[0].visible'))===true,
+   'Enemy must appear when it enters discovered terrain');
+ await evaluate("window.__fightersQA.moveUnitTo('witch',0,-18,-13);window.__fightersQA.moveUnitTo('witch',1,-16.5,-15);window.__fightersQA.moveUnitTo('witch',2,-19,-16)");
+ const rememberedEnemy=await evaluate("({tile:window.__fightersQA.fogAt(-8,-8),enemy:window.__fightersQA.snapshot().orcs[0]})");
+ check(rememberedEnemy.tile.explored>.2&&rememberedEnemy.tile.visible===0&&
+   rememberedEnemy.enemy.visible===true,
+   'Enemy in remembered territory must stay visible after scouts leave: '+
+     JSON.stringify(rememberedEnemy));
  await evaluate('window.__fightersQA.reset()');
  check((await evaluate('window.__fightersQA.fogAt(-8,-8)')).explored===0,
    'Reset must discard exploration from the prior match');
@@ -332,7 +345,7 @@ async function run(){
    Math.abs(damagedBar.healthbarFillOffset-1.1*damagedBar.healthbarFillScale+1.1)<.001,
    'Enemy HP fill must stay pinned to the left edge at half health: '+JSON.stringify(damagedBar));
  check(!damagedBar.healthbarVisible,
-   'Enemy damaged HP bar must stay hidden outside live witch vision');
+   'Enemy damaged HP bar must stay hidden outside discovered witch territory');
  await evaluate("window.__fightersQA.setBuildingHealth("+
    JSON.stringify(hpBuilding.id)+","+hpBuilding.maxHealth+")");
 

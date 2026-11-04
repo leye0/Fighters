@@ -717,13 +717,13 @@ function positionFogOverlay(){
   fogShader.uniforms.right.value.set(fogBR.x-fogBL.x,fogBR.z-fogBL.z);
   fogShader.uniforms.up.value.set(fogTL.x-fogBL.x,fogTL.z-fogBL.z);
 }
-function buildingInSight(building,clan){
+function buildingInDiscoveredZone(building,clan){
   const h=building.hitbox;
   if(!h)return false;
   const midX=(h.minX+h.maxX)/2,midZ=(h.minZ+h.maxZ)/2;
   // A large building can be spotted at its edges before its centre is in range.
   return [[midX,midZ],[h.minX,midZ],[h.maxX,midZ],
-    [midX,h.minZ],[midX,h.maxZ]].some(([x,z])=>fogOfWar.visibleAt(x,z,clan));
+    [midX,h.minZ],[midX,h.maxZ]].some(([x,z])=>fogOfWar.exploredAt(x,z,clan));
 }
 function updateVision(){
   const structures=liveBuildings();
@@ -739,32 +739,33 @@ function updateVision(){
     }
     fogOfWar.update(clan,sources);
     for(const b of structures){
-      if(b.clanId!==ownership&&b.clanId!=='neutral'&&buildingInSight(b,clan))
+      if(b.clanId!==ownership&&b.clanId!=='neutral'&&buildingInDiscoveredZone(b,clan))
         knownEnemyBuildings[clan].add(b.id);
     }
   }
-  // Only active-faction visibility controls the screen. Orc exploration never
-  // uncovers the player's map; moving enemy units need live sight to be shown.
+  // Only active-faction discovery controls gameplay visibility. The player
+  // keeps seeing all units in discovered zones, even after scouts leave;
+  // the Orc clan's discovery never leaks into the Witch player's map.
   const ownership=activeFaction==='witch'?'witch':'orcs';
   for(const actor of units){
     if(!actor.dead)actor.root.visible=actor.kind===activeFaction||
-      fogOfWar.visibleAt(actor.root.position.x,actor.root.position.z,activeFaction);
+      fogOfWar.exploredAt(actor.root.position.x,actor.root.position.z,activeFaction);
   }
   for(const b of structures){
-    const friendly=b.clanId===ownership||b.clanId==='neutral';
-    const liveSight=buildingInSight(b,activeFaction);
-    if(b.root)b.root.visible=friendly||knownEnemyBuildings[activeFaction].has(b.id);
-    if(b.healthBar)b.healthBar.root.visible=(friendly||liveSight)&&
+    const friendly=b.clanId===ownership;
+    const discovered=buildingInDiscoveredZone(b,activeFaction);
+    if(b.root)b.root.visible=friendly||discovered;
+    if(b.healthBar)b.healthBar.root.visible=(friendly||discovered)&&
       (b.health<b.maxHealth||selectedBuilding===b);
   }
   fogTexture.image.data=fogOfWar.textureData(activeFaction);
   fogTexture.needsUpdate=true;
 }
 function visibleToPlayer(x,z){
-  return fogOfWar.visibleAt(x,z,activeFaction);
+  return fogOfWar.exploredAt(x,z,activeFaction);
 }
-// Sound obeys the SAME live fog grid as targeting and rendering. Explored
-// territory alone never reveals hidden Orcs through audio.
+// Units in explored terrain remain visible and audible; units in the
+// never-discovered black territory remain hidden and silent.
 function playOrcVoice(category,position){
   if(!running||paused||!position||!visibleToPlayer(position.x,position.z))return false;
   const {x,z}=position;
@@ -839,7 +840,7 @@ function drawMinimap(){
       Math.max(2,miniZ(box.maxZ)-miniZ(box.minZ)));
   }
   for(const actor of units){
-    if(actor.dead||actor.kind!==activeFaction&&!fogOfWar.visibleAt(
+    if(actor.dead||actor.kind!==activeFaction&&!fogOfWar.exploredAt(
       actor.root.position.x,actor.root.position.z,activeFaction))continue;
     minimapContext.fillStyle=actor.kind===activeFaction?'#c6f4a3':'#ff7b76';
     minimapContext.fillRect(miniX(actor.root.position.x)-1,miniZ(actor.root.position.z)-1,3,3);
@@ -1036,9 +1037,8 @@ function updateHealthBar(building){
   const bar=building.healthBar.root,b=building.hitbox;
   bar.position.set((b.minX+b.maxX)/2,b.maxY+.85,(b.minZ+b.maxZ)/2);
   bar.quaternion.copy(camera.quaternion);
-  const friendly=building.clanId===(activeFaction==='witch'?'witch':'orcs')||
-    building.clanId==='neutral';
-  bar.visible=!building.destroyed&&(friendly||buildingInSight(building,activeFaction))&&
+  const friendly=building.clanId===(activeFaction==='witch'?'witch':'orcs');
+  bar.visible=!building.destroyed&&(friendly||buildingInDiscoveredZone(building,activeFaction))&&
     (building.health<building.maxHealth||selectedBuilding===building);
   const fraction=THREE.MathUtils.clamp(building.health/building.maxHealth,0,1);
   // PlaneGeometry is centre-anchored. Shift the shrinking fill left so its
@@ -2734,7 +2734,7 @@ function stepOrcStrategy(dt){
       scouting:!!u.scouting,destination:!!u.destination})),
     // Hidden witches cannot trigger omniscient defense orders.
     witches:units.filter(u=>u.kind==='witch'&&!u.dead&&
-      fogOfWar.visibleAt(u.root.position.x,u.root.position.z,'orc')).map(u=>({
+      fogOfWar.exploredAt(u.root.position.x,u.root.position.z,'orc')).map(u=>({
       id:u.id,x:u.root.position.x,z:u.root.position.z,role:u.role,dead:u.dead
     })),
     enemyBaseKnown,scoutTarget,unitCap:16
@@ -2771,7 +2771,7 @@ function stepOrcStrategy(dt){
       for(const orc of aliveOrcs){
         if(!roles.isFighter(orc)||orc.attackOrder||Math.hypot(orc.root.position.x-action.x,
           orc.root.position.z-action.z)>16)continue;
-        const enemy=attackers.filter(u=>fogOfWar.visibleAt(
+        const enemy=attackers.filter(u=>fogOfWar.exploredAt(
           u.root.position.x,u.root.position.z,'orc')).sort((a,b)=>
           targetDistance(orc,a)-targetDistance(orc,b))[0];
         if(enemy){orc.attackOrder=enemy;acknowledgeOrcAiOrder([orc]);}
@@ -3202,6 +3202,7 @@ window.__fightersQA={
     cameraQuaternion:camera.quaternion.toArray(),
     witches:units.filter(a=>a.kind==='witch'&&!a.dead).map(a=>({
       id:a.id,role:a.role,x:a.root.position.x,z:a.root.position.z,radius:a.radius,health:a.health,animation:a.current,
+      visible:a.root.visible,
       heading:{...a.heading},combatTargetId:a.attack?.target?.id||null,
       destination:a.destination?{...a.destination}:null,pathLength:a.route?.waypoints.length??0,
       approachPoint:a.approachCache?.point||null,attackDistance:a.attackOrder?targetDistance(a,a.attackOrder):null,
@@ -3210,6 +3211,7 @@ window.__fightersQA={
     })),
     orcs:units.filter(a=>a.kind==='orc'&&!a.dead).map(a=>({
       id:a.id,role:a.role,x:a.root.position.x,z:a.root.position.z,health:a.health,animation:a.current,
+      visible:a.root.visible,
       heading:{...a.heading},combatTargetId:a.attack?.target?.id||null,
       attackTargetId:a.attackOrder?.id||null,miningTargetId:a.mineJob?.mineId||null,
       destination:a.destination?{...a.destination}:null,pathLength:a.route?.waypoints.length??0,
