@@ -66,6 +66,12 @@ async function run(){
  await until('window.__fightersQA.snapshot().witchHouseLoaded','real witch house hitbox');
  await until('window.__fightersQA.snapshot().forest.loadedSpecies===2',
    'two real CC0 red/dead tree GLBs with WebP textures',30000);
+ await until('window.__fightersQA.snapshot().ravens.loaded===true',
+   'real locally compressed animated crow GLB',30000);
+ const ravens=await evaluate('window.__fightersQA.snapshot().ravens');
+ check(ravens.animated===4&&ravens.birds.length===4&&
+   ravens.birds.every(b=>b.y>3.5),
+   'Four real animated ravens must fly or perch above the ground: '+JSON.stringify(ravens));
  const forest=await evaluate('window.__fightersQA.snapshot().forest');
  check(forest.instances===55&&forest.obstacleCount===55&&forest.visibleInViewport>=3,
    'At least three real trees must be revealed and on screen at witch spawn: '+JSON.stringify(forest));
@@ -103,6 +109,16 @@ async function run(){
    '({witch:window.__fightersQA.witchSound(),orc:window.__fightersQA.sound()})')));
  await evaluate("window.__fightersQA.reset()");
  let s=await evaluate('window.__fightersQA.snapshot()');
+ await evaluate('window.__fightersQA.selectRaven(0)');
+ check((await evaluate('window.__fightersQA.snapshot().ravens.selectedId'))==='raven-1'&&
+   await evaluate('document.querySelector("#command-title").textContent')==='Corbeau familier'&&
+   await evaluate('Array.from(document.querySelectorAll("#command-buttons button")).some(b=>b.textContent.includes("Déplacer"))'),
+   'Selecting a raven must expose its own Move command, independent of witches');
+ await evaluate('window.__fightersQA.sendRaven(7,7);window.__fightersQA.advance(6)');
+ check((await evaluate('window.__fightersQA.fogAt(7,7,"witch").explored'))>.2,
+   'The commanded raven must uncover a small patch of the witches fog');
+ await evaluate('window.__fightersQA.reset()');
+ s=await evaluate('window.__fightersQA.snapshot()');
  check(s.witches.length===3&&s.orcs.length===4,'Starting troops');
  check(s.wood.witch===250&&s.wood.orc===350,'Wood reserve must belong to each faction');
  check(s.witches.map(u=>u.role).join(',')==='melee,worker,ranged',
