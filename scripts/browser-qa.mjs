@@ -916,14 +916,20 @@ async function run(){
  check(s.selectedIds.length===1&&s.selectedBuildingId===null&&
    s.witches[0].destination&&Math.hypot(s.witches[0].destination.x-sanctuary.x,
      s.witches[0].destination.z-sanctuary.z)<1.4,
-   'Tapping the sanctuary must send the selected witch into its healing centre');
+   'Tapping the sanctuary must send the selected witch into its healing centre: '+
+   JSON.stringify({screen:sanctuaryScreen,site:sanctuary,selected:s.selectedIds,
+     building:s.selectedBuildingId,raven:s.ravens.selectedId,
+     destination:s.witches[0].destination}));
  await evaluate('window.__fightersQA.selectWitches();'+
    'window.__fightersQA.tap('+sanctuaryScreen.x+','+sanctuaryScreen.y+')');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.selectedIds.length===3&&s.selectedBuildingId===null&&
    s.witches.every(u=>u.destination&&Math.hypot(u.destination.x-sanctuary.x,
      u.destination.z-sanctuary.z)<1.4),
-   'Three selected witches must receive compact sanctuary goals, not select the building');
+   'Three selected witches must receive compact sanctuary goals, not select the building: '+
+   JSON.stringify({site:sanctuary,selected:s.selectedIds,
+     building:s.selectedBuildingId,raven:s.ravens.selectedId,
+     destinations:s.witches.map(u=>u.destination)}));
  console.log('PASS STONE CIRCLE TAP: solo and squad orders enter the healing radius.');
  // Place the recovery subject OUTSIDE the circle on an actually reachable
  // route. Construction may happen around an already idle starting witch.
