@@ -1,0 +1,64 @@
+name: Import licensed Witch voice audio
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/import-witch-voices.py'
+      - '.github/workflows/import-witch-voices.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: fighters-witch-audio-import
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Import Witch interaction and creation audio
+        run: python3 scripts/import-witch-voices.py
+
+      - name: Validate category files and licenses
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("docs/sounds/witches")
+          catalog=json.loads((root/"manifest.json").read_text())
+          assert catalog["counts"]["interaction"]==1
+          assert catalog["counts"]["creation"]==1
+          assert all((root/sound["path"]).is_file() for sound in catalog["sounds"])
+          assert (root/"ATTRIBUTION.md").is_file()
+          print("Licensed sounds verified:",catalog["counts"])
+          PY
+
+      - name: Commit imported Witch sounds
+        id: persist
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/sounds/witches
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "Import licensed Witch voice MP3s and source attribution"
+            git pull --rebase origin main
+            git push origin HEAD:main
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish imported Witch voices
+        if: steps.persist.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref main

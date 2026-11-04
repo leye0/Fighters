@@ -1,7 +1,7 @@
-/* Lightweight Orc SFX engine. One unlocked AudioContext, lazy MP3 decoding,
+/* Lightweight faction SFX engine. One unlocked AudioContext, lazy MP3 decoding,
  * a bounded LRU cache and a bounded number of voices. No Three.js dependency.
  * The visibility callback is checked twice (before requesting and before play)
- * so an unseen Orc cannot disclose itself while audio is loading.
+ * so an unseen unit cannot disclose itself while audio is loading.
  */
 (function(root,factory){
   const api=factory(root);
@@ -9,16 +9,20 @@
   else root.FightersSound=api;
 })(typeof globalThis==='object'?globalThis:this,function(root){
   'use strict';
-  const TYPES=['short','long','loud'];
+  const DEFAULT_TYPES=['short','long','loud'];
   const MIX={
     short:{gain:.34,cooldown:450},
     long:{gain:.40,cooldown:1050},
-    loud:{gain:.38,cooldown:320}
+    loud:{gain:.38,cooldown:320},
+    interaction:{gain:.34,cooldown:450},
+    creation:{gain:.40,cooldown:1050},
+    destruction:{gain:.38,cooldown:320}
   };
-  const VALID_PATH=/^(short|long|loud)\/Orc_\d{2}\.mp3$/;
+  const VALID_PATH=/^[a-z]+\/[A-Za-z][A-Za-z0-9_-]*\.mp3$/;
   class Engine{
     constructor({fetcher,contextFactory,random,now,
       manifestUrl='./sounds/orcs/manifest.json',rootUrl='./sounds/orcs/',
+      categories=DEFAULT_TYPES,allowEmptyCategories=[],
       maxActive=4,maxCached=12,maxPending=3}={}){
       this.fetcher=fetcher||((url,options)=>root.fetch(url,options));
       this.contextFactory=contextFactory||
@@ -26,9 +30,13 @@
       this.random=random||Math.random;
       this.now=now||(()=>Date.now());
       this.manifestUrl=manifestUrl;this.rootUrl=rootUrl;
+      this.categories=[...categories];
+      if(this.categories.some(type=>!Object.hasOwn(MIX,type)))
+        throw Error('Unknown sound category');
+      this.allowEmptyCategories=new Set(allowEmptyCategories);
       this.maxActive=maxActive;this.maxCached=maxCached;this.maxPending=maxPending;
       this.context=null;this.loading=null;
-      this.catalog={short:[],long:[],loud:[]};
+      this.catalog=Object.fromEntries(this.categories.map(type=>[type,[]]));
       this.cache=new Map();this.pending=new Map();this.controllers=new Set();
       this.active=new Set();this.lastSound=new Map();this.lastTime=new Map();
       this.paused=false;this.generation=0;
@@ -38,22 +46,24 @@
       if(this.loading)return this.loading;
       this.loading=Promise.resolve().then(()=>this.fetcher(this.manifestUrl))
         .then(response=>{
-          if(!response.ok)throw Error('Orc sound manifest HTTP '+response.status);
+          if(!response.ok)throw Error('Sound manifest HTTP '+response.status);
           return response.json();
         }).then(data=>{
-          const groups={short:[],long:[],loud:[]};
+          const groups=Object.fromEntries(this.categories.map(type=>[type,[]]));
           for(const sound of data.sounds||[]){
-            if(!TYPES.includes(sound.category)||!VALID_PATH.test(sound.path)||
+            if(!this.categories.includes(sound.category)||
+              typeof sound.path!=='string'||!VALID_PATH.test(sound.path)||
               !sound.path.startsWith(sound.category+'/'))continue;
             groups[sound.category].push(sound.path);
           }
-          if(TYPES.some(type=>groups[type].length===0))
-            throw Error('Orc sound categories are incomplete');
+          if(this.categories.some(type=>groups[type].length===0&&
+            !this.allowEmptyCategories.has(type)))
+            throw Error('Sound categories are incomplete');
           this.catalog=groups;
           return groups;
         }).catch(error=>{
           this.stats.loadErrors++;
-          console.warn('Fighters Orc sounds unavailable:',error);
+          console.warn('Fighters sounds unavailable:',this.manifestUrl,error);
           this.loading=null;
           return null;
         });
@@ -106,7 +116,7 @@
         const timer=setTimeout(()=>controller.abort(),6000);
         try{
           const response=await this.fetcher(this.rootUrl+path,{signal:controller.signal});
-          if(!response.ok)throw Error('Orc preview HTTP '+response.status);
+          if(!response.ok)throw Error('Sound preview HTTP '+response.status);
           const bytes=await response.arrayBuffer();
           const buffer=await this.context.decodeAudioData(bytes);
           if(generation!==this.generation)return null;
@@ -117,7 +127,7 @@
         }catch(error){
           if(generation===this.generation){
             this.stats.loadErrors++;
-            console.warn('Orc sound skipped:',path,error);
+            console.warn('Sound skipped:',path,error);
           }
           return null;
         }finally{
@@ -135,7 +145,7 @@
       catch(_){return false;}
     }
     async play(category,canHear=()=>true){
-      if(!TYPES.includes(category))return false;
+      if(!this.categories.includes(category))return false;
       if(!this.canPlay(canHear)){
         if(typeof canHear==='function'){
           try{if(!canHear())this.stats.visibilityBlocked++;}catch(_){}
@@ -147,9 +157,10 @@
         this.stats.cooldownBlocked++;return false;
       }
       const groups=await this.load();
-      if(!groups||!this.canPlay(canHear)||requestedAt!==requestedAt)return false;
+      if(!groups||!this.canPlay(canHear))return false;
       if(this.active.size>=this.maxActive)return false;
       const paths=groups[category];
+      if(!paths?.length)return false;
       const previous=this.lastSound.get(category);
       const available=paths.length>1?paths.filter(path=>path!==previous):paths;
       const path=available[Math.min(available.length-1,
@@ -183,7 +194,7 @@
       }
     }
     snapshot(){
-      return {available:Object.fromEntries(TYPES.map(type=>
+      return {available:Object.fromEntries(this.categories.map(type=>
         [type,this.catalog[type].length])),
         active:this.active.size,cached:this.cache.size,pending:this.pending.size,
         paused:this.paused,...this.stats};

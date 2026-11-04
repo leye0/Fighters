@@ -80,4 +80,36 @@ assert.equal(await request,false,'no audio after losing real-time visibility');
 assert.equal(deferred.snapshot().played,0);
 assert.equal(deferred.snapshot().active,0);
 
-console.log('PASS Orc sound engine: random pools, real-time fog, pause, reset, cooldown, bounded memory.');
+// Witch catalog intentionally has no destruction sound until the licensed
+// Pixabay original is supplied. The two Freesound voices must still work.
+const witchManifest={sounds:[
+  {category:'interaction',path:'interaction/Witch_Interaction.mp3'},
+  {category:'creation',path:'creation/Witch_Creation.mp3'},
+  {category:'destruction',path:'../unlicensed-preview.mp3'},
+]};
+const witch=new Engine({
+  categories:['interaction','creation','destruction'],
+  allowEmptyCategories:['destruction'],
+  manifestUrl:'./sounds/witches/manifest.json',rootUrl:'./sounds/witches/',
+  contextFactory:()=>new FakeAudioContext(),now:()=>10000,
+  fetcher:async url=>url.endsWith('manifest.json')?
+    {ok:true,json:async()=>witchManifest}:
+    {ok:true,arrayBuffer:async()=>new ArrayBuffer(80)}
+});
+assert.equal(witch.unlock(),true);
+await witch.load();
+assert.deepEqual(witch.snapshot().available,{interaction:1,creation:1,destruction:0},
+  'licensed Witch categories load, unsafe preview is not accepted');
+assert.equal(await witch.play('interaction',()=>false),false,
+  'an unseen Witch must be inaudible');
+assert.equal(await witch.play('interaction',()=>true),true,
+  'Witch selection and orders play the whisper');
+assert.equal(await witch.play('creation',()=>true),true,
+  'Witch training plays the laugh');
+assert.equal(await witch.play('destruction',()=>true),false,
+  'missing licensed death asset must fail silently');
+assert.equal(witch.snapshot().loadErrors,0,'missing optional Witch sound is not a network error');
+witch.reset();
+assert.equal(witch.snapshot().active,0);
+
+console.log('PASS RTS sound engines: Orc random pools and fog; Witch categories, missing death preview, visibility, pause, reset and bounded memory.');

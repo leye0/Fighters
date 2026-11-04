@@ -655,6 +655,12 @@ let qaPassiveKind=null;
 // rendered across the viewport; both factions' discovery grids use ~147 KiB.
 const fogOfWar=new window.FightersFog.FogGrid({halfSize:ARENA_HALF,cellSize:.5,radius:7.5,fade:1.25});
 const orcSound=new window.FightersSound.Engine();
+const witchSound=new window.FightersSound.Engine({
+  categories:['interaction','creation','destruction'],
+  allowEmptyCategories:['destruction'],
+  manifestUrl:'./sounds/witches/manifest.json',
+  rootUrl:'./sounds/witches/'
+});
 // Each clan keeps its own permanent memory of enemy structures; never share it.
 const knownEnemyBuildings={witch:new Set(),orc:new Set()};
 const fogTexture=new THREE.DataTexture(fogOfWar.textureData('witch'),
@@ -763,11 +769,25 @@ function playOrcVoice(category,position){
   void orcSound.play(category,()=>running&&!paused&&visibleToPlayer(x,z));
   return true;
 }
+function playWitchVoice(category,position){
+  if(!running||paused||!position||!visibleToPlayer(position.x,position.z))return false;
+  const {x,z}=position;
+  void witchSound.play(category,()=>running&&!paused&&visibleToPlayer(x,z));
+  return true;
+}
 function acknowledgeOrcOrder(actors){
   // A single voice for a whole squad, never one voice per unit.
   const actor=[...actors].find(a=>a.kind==='orc'&&!a.dead&&
     visibleToPlayer(a.root.position.x,a.root.position.z));
   if(actor)playOrcVoice('short',actor.root.position);
+}
+function acknowledgePlayerOrder(actors){
+  const members=[...actors];
+  if(members.some(actor=>actor.kind==='orc'&&!actor.dead))
+    return acknowledgeOrcOrder(members);
+  const actor=members.find(a=>a.kind==='witch'&&!a.dead&&
+    visibleToPlayer(a.root.position.x,a.root.position.z));
+  if(actor)playWitchVoice('interaction',actor.root.position);
 }
 let lastOrcAiVoice=-Infinity;
 function acknowledgeOrcAiOrder(actors){
@@ -1359,7 +1379,7 @@ function selectUnits(actors,append=false){
     if(append&&selected.has(actor)){selected.delete(actor);actor.selectionRing.visible=false;}
     else{selected.add(actor);actor.selectionRing.visible=true;}
   }
-  if(activeFaction==='orc'&&selected.size)acknowledgeOrcOrder(selected);
+  if(selected.size)acknowledgePlayerOrder(selected);
   refreshHUD();
 }
 function selectBuilding(building){
@@ -1468,7 +1488,7 @@ function issueMove(destination){
   });
   if(actors.length){
     showOrderPing({x:destination.x,z:destination.z,y:.1},'move');
-    acknowledgeOrcOrder(actors);
+    acknowledgePlayerOrder(actors);
   }
   refreshHUD();
 }
@@ -1571,6 +1591,7 @@ function finishTraining(building,kind,role='melee'){
   const actor=spawnUnit(kind,position.x,position.z,units.filter(u=>u.kind===kind).length,role);
   if(building.rally)actor.destination=navigatorRTS.findSafeGoal(building.rally);
   if(kind==='orc')playOrcVoice('long',actor.root.position);
+  else if(kind==='witch')playWitchVoice('creation',actor.root.position);
   showBanner(role==='melee'?(kind==='witch'?'SORCIÈRE FORMÉE':'ORC FORMÉ'):
     roles.profile(kind,role).name.toUpperCase()+' FORMÉ(E)');
 }
@@ -1756,10 +1777,8 @@ function scheduleBuild(type,x,z,{byAI=false}={}){
   pendingBuilds.push(job);gold[clan]-=cost;
   worker.mineJob=null;worker.constructJob=job;worker.destination=null;
   worker.attackOrder=null;worker.route=null;worker.approachCache=null;
-  if(clan==='orc'){
-    if(byAI)acknowledgeOrcAiOrder([worker]);
-    else acknowledgeOrcOrder([worker]);
-  }
+  if(clan==='orc'&&byAI)acknowledgeOrcAiOrder([worker]);
+  else if(!byAI)acknowledgePlayerOrder([worker]);
   buildMode=null;
   if(!byAI)showBanner('OUVRIER EN CONSTRUCTION');
   refreshHUD();return true;
@@ -1803,7 +1822,7 @@ function stopSelectedUnits(){
     cancelConstruction(unit);unit.mineJob=null;
     unit.destination=null;unit.attackOrder=null;unit.route=null;
   }
-  acknowledgeOrcOrder(selected);
+  acknowledgePlayerOrder(selected);
   refreshHUD();
 }
 function refreshHUD(){
@@ -2156,7 +2175,7 @@ function orderAttack(actors,target){
     actor.approachCache=null;
     issued++;
   }
-  if(issued){attackMode=false;pingAttackTarget(target);acknowledgeOrcOrder(actors);refreshHUD();}
+  if(issued){attackMode=false;pingAttackTarget(target);acknowledgePlayerOrder(actors);refreshHUD();}
   return issued>0;
 }
 function removeRallyMarker(b){
@@ -2255,6 +2274,7 @@ function dealDamage(target,amount,attacker){
   if(!target.health){
     cancelConstruction(target);
     if(target.kind==='orc')playOrcVoice('loud',target.root.position);
+    else if(target.kind==='witch')playWitchVoice('destruction',target.root.position);
     target.dead=true;target.deadTime=1.4;target.destination=null;target.attackOrder=null;
     selected.delete(target);target.selectionRing.visible=false;
     animation(target,'Death01',true);refreshHUD();
@@ -2346,7 +2366,7 @@ function orderMine(actors,mine){
     actor.destination=null;actor.route=null;actor.approachCache=null;
     issued++;
   }
-  if(issued){showBanner('EXTRACTION D’OR');acknowledgeOrcOrder(actors);refreshHUD();}
+  if(issued){showBanner('EXTRACTION D’OR');acknowledgePlayerOrder(actors);refreshHUD();}
   return issued>0;
 }
 function tickMineWorker(actor,dt){
@@ -2820,13 +2840,15 @@ function pauseGame(){
   if(!running)return;
   paused=!paused;$('pause').textContent=paused?'▶':'Ⅱ';
   orcSound.setPaused(paused);
+  witchSound.setPaused(paused);
   showBanner(paused?'PAUSE':'REPRISE');refreshHUD();
 }
 $('pause').onclick=pauseGame;
 $('start').onclick=()=>{
   if(!ready){location.reload();return;}
   // Unlock inside the user's click before the simulation begins.
-  orcSound.reset();orcSound.unlock();startSession();
+  orcSound.reset();witchSound.reset();
+  orcSound.unlock();witchSound.unlock();startSession();
 };
 for(const name of ['gesturestart','gesturechange','gestureend','contextmenu'])document.addEventListener(name,event=>event.preventDefault(),{passive:false});
 const loadingProfile={
@@ -3111,6 +3133,7 @@ window.__fightersQA={
   canBuild:(x,z,type)=>validBuildPosition(x,z,type),
   setRally:(x,z)=>setRally(selectedBuilding,{x,z}),
   sound:()=>orcSound.snapshot(),
+  witchSound:()=>witchSound.snapshot(),
   pan:(x,y)=>panCamera(x,y),
   groundScreenPoint:screenGroundPoint,
   buildingScreenPoint:(id)=>{
