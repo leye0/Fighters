@@ -5,12 +5,11 @@ import {copyToDocument} from '@gltf-transform/functions';
 import sharp from 'sharp';
 import {gzipSync} from 'node:zlib';
 
-// Extract just the 12 three-stage crop groups; never ship the original
-// 19 MB exhibition scene, its four soil meshes or their displaced transforms.
+// Extract only the three wheat growth stages, never the other crops, soil
+// meshes or exhibition-layout transforms from Bumroker's source GLB.
 const input=process.argv[2],output=process.argv[3];
 if(!input||!output)throw Error('Usage: build-runtime-crops.mjs <source.glb> <output.glb>');
-const names=['Tomatoe','Potatoe','Carrot','Wheat'].flatMap(
-  crop=>[1,2,3].map(stage=>crop+'_F'+stage));
+const names=[1,2,3].map(stage=>'Wheat_F'+stage);
 const io=new NodeIO(),source=await io.read(input);
 const roots=source.getRoot().listNodes();
 const chosen=names.map(name=>{
@@ -45,12 +44,12 @@ await fs.mkdir(path.dirname(output),{recursive:true});
 await io.write(output,result);
 const verified=await io.read(output);
 const stageNodes=verified.getRoot().listScenes()[0]?.listChildren()||[];
-if(stageNodes.length!==12||names.some(name=>!stageNodes.some(n=>n.getName()===name)))
-  throw Error('Runtime crops did not preserve all 12 stages');
+if(stageNodes.length!==3||names.some(name=>!stageNodes.some(n=>n.getName()===name)))
+  throw Error('Runtime wheat did not preserve its three growth stages');
 const bytes=(await fs.stat(output)).size;
 const compressed=gzipSync(await fs.readFile(output),{level:9});
 await fs.writeFile(output+'.gz',compressed);
-console.log('PASS RUNTIME CROPS:',JSON.stringify({
+console.log('PASS RUNTIME WHEAT:',JSON.stringify({
   bytes,gzipBytes:compressed.length,sourceBytes:(await fs.stat(input)).size,
   stages:stageNodes.map(n=>n.getName()),
   meshes:verified.getRoot().listMeshes().length,
