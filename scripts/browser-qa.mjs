@@ -801,8 +801,9 @@ async function run(){
  check(s.buildings.every(b=>b.type!=='garden')&&s.farming.gardens.length===0,
    'Reset must clear all gardens and worker assignments');
  await evaluate('window.__fightersQA.reset()');
- check((await evaluate('window.__fightersQA.snapshot()')).farming.food===45,
-   'New match must restore starting food');
+ const restoredFood=(await evaluate('window.__fightersQA.snapshot()')).farming.food;
+ check(restoredFood>44.9&&restoredFood<=45,
+   'New match must restore starting food, allowing one live animation frame: '+restoredFood);
  console.log('PASS FAMINE: starvation damages witches and reset removes garden economy.');
 
 
