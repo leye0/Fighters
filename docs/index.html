@@ -2223,10 +2223,13 @@ function faceBuildingCenter(actor,building){
 }
 function approachBuilding(actor,building){
   const b=building.hitbox,p=actor.root.position,pad=UNIT_RADIUS+.14;
-  if(actor.approachCache?.id===building.id&&
-    actor.approachCache.version===navigatorRTS.version&&
-    actor.approachAge<2.5&&navigatorRTS.pointClear(actor.approachCache.point))
-    return actor.approachCache.point;
+  const cache=actor.approachCache;
+  // Failed perimeter searches must also be cached. Otherwise an unreachable
+  // HQ triggers a full A* search for every candidate on every game tick.
+  if(cache?.id===building.id&&cache.version===navigatorRTS.version&&
+    actor.approachAge<(cache.point?2.5:.75)&&
+    (!cache.point||navigatorRTS.pointClear(cache.point)))
+    return cache.point;
   const from={x:p.x,z:p.z};
   // Perimeter sites belong to the building's shared cache. Never sort or
   // unshift into that array: repeated attacks used to grow it without bound.
@@ -2248,7 +2251,7 @@ function approachBuilding(actor,building){
     const score=goal=>{
       let cost=Math.hypot(goal.x-p.x,goal.z-p.z);
       for(const other of coworkers){
-        const site=other.approachCache?.id===building.id?
+        const site=other.approachCache?.id===building.id&&other.approachCache.point?
           other.approachCache.point:other.root.position;
         const gap=Math.hypot(goal.x-site.x,goal.z-site.z);
         if(gap<1.4)cost+=(1.4-gap)*4;
@@ -2265,6 +2268,8 @@ function approachBuilding(actor,building){
       actor.approachAge=0;return candidate;
     }
   }
+  actor.approachCache={id:building.id,point:null,version:navigatorRTS.version};
+  actor.approachAge=0;
   return null;
 }
 function orderAttack(actors,target){
@@ -2398,12 +2403,15 @@ function navigateActor(actor,target,dt,mode){
   if(directClear){
     actor.route=null;actor.routeGoal={x:target.x,z:target.z};
     actor.routeVersion=navigatorRTS.version;
-  }else if(!actor.route||actor.routeVersion!==navigatorRTS.version||
-    goalChanged||actor.routeAge>2.3){
+  }else if(actor.routeVersion!==navigatorRTS.version||goalChanged||
+    actor.routeAge>(actor.route?2.3:.75)){
+    // Retain a failed-route result briefly: an impossible goal must not run
+    // full A* 60 times per second for every unit in a siege.
     actor.route=navigatorRTS.plan(from,target);
     actor.routeGoal={x:target.x,z:target.z};
     actor.routeVersion=navigatorRTS.version;actor.routeAge=0;
   }
+  if(!directClear&&!actor.route)return 'blocked';
   let waypoint=actor.route?.waypoints[0]||target;
   if(actor.route){
     while(actor.route.waypoints.length>1&&Math.hypot(waypoint.x-pos.x,waypoint.z-pos.z)<.45){
@@ -2422,7 +2430,8 @@ function navigateActor(actor,target,dt,mode){
   const budget=Math.max(0,Math.min(gap-(actor.route?0:arrival),speed));
   const next=window.FightersUnitPhysics.step(from,waypoint,budget,actor,units,navigatorRTS,UNIT_RADIUS);
   if(!next){
-    actor.route=null;actor.routeVersion=-1;
+    actor.route=null;actor.routeGoal={x:target.x,z:target.z};
+    actor.routeVersion=navigatorRTS.version;actor.routeAge=0;
     return 'blocked';
   }
   const step=Math.hypot(next.x-pos.x,next.z-pos.z);
@@ -3280,6 +3289,43 @@ window.__fightersQA={
       spawnUnit('witch',place.x,place.z,total);total++;
     }
     return total;
+  },
+  spawnOrcSiege:()=>{
+    // Multi-ranged raid from clear positions around the witch headquarters.
+    // Unlike a one-unit near-wall test, this exercises concurrent navigation.
+    const spots=[[-7,-14],[-8,-18],[-9,-10],[-12,-23],
+      [-4,-12],[-6,-20],[-7,-8],[-10,-25]];
+    const squad=[];
+    for(const [x,z] of spots){
+      if(!navigatorRTS.pointClear({x,z}))continue;
+      squad.push(spawnUnit('orc',x,z,units.length+1,'ranged'));
+    }
+    if(squad.length)orderAttack(squad,witchBuilding);
+    return squad.length;
+  },
+  auditUnreachableSiege:(kind,index,id)=>{
+    const actor=units.filter(u=>u.kind===kind&&!u.dead)[index];
+    const building=[witchBuilding,...buildingInstances.values()].find(b=>b.id===id);
+    if(!actor||!building||building.destroyed)throw Error('QA siege target missing');
+    const previous={approachCache:actor.approachCache,approachAge:actor.approachAge,
+      route:actor.route,routeGoal:actor.routeGoal,routeVersion:actor.routeVersion,
+      routeAge:actor.routeAge};
+    const originalPlan=navigatorRTS.plan,originalSegment=navigatorRTS.segmentClear;
+    let attempts=0;
+    try{
+      navigatorRTS.segmentClear=()=>false;
+      navigatorRTS.plan=()=>{attempts++;return null;};
+      actor.approachCache=null;actor.approachAge=Infinity;
+      for(let i=0;i<120;i++){actor.approachAge+=FIXED_DT;approachBuilding(actor,building);}
+      const approachPlans=attempts;attempts=0;
+      actor.route=null;actor.routeGoal=null;actor.routeVersion=-1;actor.routeAge=0;
+      const goal={x:actor.root.position.x+10,z:actor.root.position.z+10};
+      for(let i=0;i<120;i++)navigateActor(actor,goal,FIXED_DT,'order');
+      return {approachPlans,routePlans:attempts,seconds:2};
+    }finally{
+      navigatorRTS.plan=originalPlan;navigatorRTS.segmentClear=originalSegment;
+      Object.assign(actor,previous);
+    }
   },
   auditBuildingApproach:(kind,index,id,iterations=12)=>{
     const actor=units.filter(u=>u.kind===kind&&!u.dead)[index];
