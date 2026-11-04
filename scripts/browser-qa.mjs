@@ -905,10 +905,21 @@ async function run(){
  await evaluate('window.__fightersQA.selectBuildingById('+JSON.stringify(sanctuary.id)+')');
  check(await evaluate('document.querySelector("#command-title").textContent')==='Cercle de roches',
    'The sanctuary must be selectable with its own French HUD label');
- await evaluate('window.__fightersQA.setUnitHealth("witch",0,24);window.__fightersQA.advance(1)');
+ // Place the recovery subject OUTSIDE the circle on an actually reachable
+ // route. Construction may happen around an already idle starting witch.
+ const recoveryStart=await evaluate("(()=>{const c=window.__fightersQA.snapshot().healing.circles[0];"+
+   "for(const radius of [5,6,7,8])for(let i=0;i<32;i++){"+
+   "const a=i*Math.PI/16,x=c.x+radius*Math.cos(a),z=c.z+radius*Math.sin(a);"+
+   "if(x>-1||x<-27||z<-27||z>27||!window.__fightersQA.isClear(x,z))continue;"+
+   "if(window.__fightersQA.route({x,z},{x:c.x,z:c.z}))return {x,z};}"+
+   "return null})()");
+ check(recoveryStart,'Stone circle must have an accessible entrance from its surroundings');
+ await evaluate('window.__fightersQA.moveUnitTo("witch",0,'+recoveryStart.x+','+recoveryStart.z+');'+
+   'window.__fightersQA.setUnitHealth("witch",0,24);window.__fightersQA.advance(1)');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.witches[0].healingTarget===sanctuary.id,
-   'A wounded idle witch should seek shelter while no enemy is nearby');
+   'A wounded idle witch should seek shelter while no enemy is nearby: '+
+   JSON.stringify({site:sanctuary,start:recoveryStart,witch:s.witches[0]}));
  const recovered=await evaluate("(()=>{let witch=null;for(let i=0;i<35;i++){"+
    "window.__fightersQA.advance(1);witch=window.__fightersQA.snapshot().witches[0];"+
    "if(witch.health>=82)break;}return witch})()");
