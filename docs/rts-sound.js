@@ -39,7 +39,7 @@
       this.catalog=Object.fromEntries(this.categories.map(type=>[type,[]]));
       this.cache=new Map();this.pending=new Map();this.controllers=new Set();
       this.active=new Set();this.lastSound=new Map();this.lastTime=new Map();
-      this.paused=false;this.generation=0;
+      this.paused=false;this.generation=0;this.lastError=null;
       this.stats={played:0,visibilityBlocked:0,cooldownBlocked:0,loadErrors:0};
     }
     load(){
@@ -62,7 +62,7 @@
           this.catalog=groups;
           return groups;
         }).catch(error=>{
-          this.stats.loadErrors++;
+          this.stats.loadErrors++;this.lastError=String(error);
           console.warn('Fighters sounds unavailable:',this.manifestUrl,error);
           this.loading=null;
           return null;
@@ -74,19 +74,35 @@
       try{
         if(!this.context)this.context=this.contextFactory();
         this.paused=false;
-        Promise.resolve(this.context.resume()).catch(()=>{});
+        this.resumeFromGesture();
         void this.load();
         return true;
       }catch(error){
+        this.lastError=String(error);
         console.warn('Fighters audio not supported:',error);
         return false;
       }
     }
+    // iOS/WebKit may interrupt WebAudio after switching apps. This method
+    // must run during a real pointer or keyboard gesture to resume reliably.
+    resumeFromGesture(){
+      if(!this.context||this.paused)return false;
+      if(this.context.state!=='running'){
+        try{
+          Promise.resolve(this.context.resume()).catch(error=>{
+            this.lastError='AudioContext resume: '+String(error);
+          });
+        }catch(error){this.lastError='AudioContext resume: '+String(error);}
+      }
+      return true;
+    }
     setPaused(value){
       this.paused=!!value;
       if(!this.context)return;
-      const operation=this.paused?this.context.suspend():this.context.resume();
-      Promise.resolve(operation).catch(()=>{});
+      if(!this.paused){this.resumeFromGesture();return;}
+      Promise.resolve(this.context.suspend()).catch(error=>{
+        this.lastError='AudioContext suspend: '+String(error);
+      });
     }
     reset(){
       this.generation++;
@@ -126,7 +142,7 @@
           return buffer;
         }catch(error){
           if(generation===this.generation){
-            this.stats.loadErrors++;
+            this.stats.loadErrors++;this.lastError=String(error);
             console.warn('Sound skipped:',path,error);
           }
           return null;
@@ -166,8 +182,6 @@
       const path=available[Math.min(available.length-1,
         Math.floor(Math.max(0,this.random())*available.length))];
       if(!path)return false;
-      this.lastSound.set(category,path);
-      this.lastTime.set(category,requestedAt);
       const generation=this.generation;
       const buffer=await this.bufferFor(path);
       if(!buffer||generation!==this.generation||
@@ -185,6 +199,8 @@
       };
       try{
         source.start();
+        this.lastSound.set(category,path);
+        this.lastTime.set(category,this.now());
         this.stats.played++;
         return true;
       }catch(error){
@@ -197,7 +213,8 @@
       return {available:Object.fromEntries(this.categories.map(type=>
         [type,this.catalog[type].length])),
         active:this.active.size,cached:this.cache.size,pending:this.pending.size,
-        paused:this.paused,...this.stats};
+        paused:this.paused,contextState:this.context?.state||'locked',
+        lastError:this.lastError,...this.stats};
     }
   }
   return {Engine};

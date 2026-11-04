@@ -110,6 +110,15 @@ assert.equal(await witch.play('destruction',()=>true),false,
   'missing licensed death asset must fail silently');
 assert.equal(witch.snapshot().loadErrors,0,'missing optional Witch sound is not a network error');
 witch.reset();
+witch.context.state='suspended';
+assert.equal(witch.snapshot().contextState,'suspended');
+assert.equal(await witch.play('interaction',()=>true),false,
+  'browser suspension must not attempt silent playback');
+assert.equal(witch.resumeFromGesture(),true,'user interaction should resume audio');
+assert.equal(witch.snapshot().contextState,'running');
+assert.equal(await witch.play('interaction',()=>true),true,
+  'voice must become playable again after browser suspension');
+witch.reset();
 assert.equal(witch.snapshot().active,0);
 
-console.log('PASS RTS sound engines: Orc random pools and fog; Witch categories, missing death preview, visibility, pause, reset and bounded memory.');
+console.log('PASS RTS sound engines: Orc random pools and fog; Witch categories, iOS resume, visibility, pause, reset and bounded memory.');

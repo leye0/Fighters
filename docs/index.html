@@ -3025,6 +3025,18 @@ document.addEventListener('keydown',event=>{
   if(event.code==='KeyO'&&event.altKey&&new URLSearchParams(location.search).has('qa'))changeFaction('orc');
   if(event.code==='KeyF'&&selected.size){attackMode=true;refreshHUD();}
 });
+// Recover interrupted WebAudio during the next genuine player gesture.
+// Browsers (particularly iOS Safari) can suspend audio after tab/app switching.
+function resumeAudioFromPlayerGesture(){
+  if(!running||paused)return;
+  orcSound.resumeFromGesture();witchSound.resumeFromGesture();
+}
+document.addEventListener('pointerdown',resumeAudioFromPlayerGesture,{capture:true,passive:true});
+document.addEventListener('keydown',resumeAudioFromPlayerGesture,{capture:true});
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden)resumeAudioFromPlayerGesture();
+});
+window.addEventListener('pageshow',resumeAudioFromPlayerGesture);
 function pauseGame(){
   if(!running)return;
   paused=!paused;$('pause').textContent=paused?'▶':'Ⅱ';

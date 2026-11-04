@@ -64,6 +64,22 @@ async function run(){
  await call('Page.navigate',{url:root+'?qa=1'});
  await until('window.__fightersQA?.snapshot().running===true','RTS startup');
  await until('window.__fightersQA.snapshot().witchHouseLoaded','real witch house hitbox');
+ // Play through the actual Start button: ?qa otherwise skips the
+ // user gesture and never unlocks either AudioContext.
+ await evaluate("document.querySelector('#overlay').hidden=false");
+ const startRect=await evaluate("(()=>{const r=document.querySelector('#start').getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()");
+ await call('Input.dispatchMouseEvent',{type:'mousePressed',x:startRect.x,y:startRect.y,button:'left',clickCount:1});
+ await call('Input.dispatchMouseEvent',{type:'mouseReleased',x:startRect.x,y:startRect.y,button:'left',clickCount:1});
+ await until("window.__fightersQA.witchSound().contextState==='running'",'user-unlocked Witch AudioContext',10000);
+ await until("window.__fightersQA.witchSound().available.interaction>0",'Witch MP3 manifest',10000);
+ await until("window.__fightersQA.sound().available.short>0",'Orc MP3 manifest',10000);
+ await evaluate("window.__fightersQA.selectUnit('witch',0)");
+ await until("window.__fightersQA.witchSound().played>0",'real decoded Witch interaction SFX',10000);
+ await evaluate("window.__fightersQA.setFaction('orc');window.__fightersQA.selectUnit('orc',0)");
+ await until("window.__fightersQA.sound().played>0",'real decoded Orc interaction SFX',10000);
+ console.log('PASS WEB AUDIO BROWSER SMOKE:',JSON.stringify(await evaluate(
+   '({witch:window.__fightersQA.witchSound(),orc:window.__fightersQA.sound()})')));
+ await evaluate("window.__fightersQA.reset()");
  let s=await evaluate('window.__fightersQA.snapshot()');
  check(s.witches.length===3&&s.orcs.length===4,'Starting troops');
  check(s.witches.map(u=>u.role).join(',')==='melee,worker,ranged',
