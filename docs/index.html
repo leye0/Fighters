@@ -3121,11 +3121,14 @@ function beginSoulEffect(corpse,mage){
   });
   const sameGeometry=sourceMeshes.length===ghostMeshes.length&&
     sourceMeshes.every((mesh,i)=>mesh.geometry===ghostMeshes[i].geometry);
+  const sameQuaternion=(a,b)=>Math.abs(a.x-b.x)<1e-6&&
+    Math.abs(a.y-b.y)<1e-6&&Math.abs(a.z-b.z)<1e-6&&Math.abs(a.w-b.w)<1e-6;
   const samePose=sourceSkins.length===ghostSkins.length&&sourceSkins.every((mesh,i)=>{
     const a=mesh.skeleton.bones,b=ghostSkins[i].skeleton.bones;
     return a.length===b.length&&a.every((bone,j)=>
-      bone.position.distanceTo(b[j].position)<1e-5&&
-      bone.quaternion.angleTo(b[j].quaternion)<1e-4);
+      bone.position.distanceTo(b[j].position)<1e-6&&
+      sameQuaternion(bone.quaternion,b[j].quaternion)&&
+      bone.scale.distanceTo(b[j].scale)<1e-6);
   });
   const root=new THREE.Group();
   root.position.copy(corpse.root.position);
