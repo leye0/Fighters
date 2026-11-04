@@ -15,6 +15,10 @@ assert.equal(fog.sample(-18,-14,'orc').explored,0,'clans have isolated maps');
 assert.ok(fog.sample(-11,-14).visible>0&&fog.sample(-11,-14).visible<1,
   'vision boundary must fade instead of clipping to a hard square');
 assert.equal(fog.sample(-10,-14).visible,0);
+fog.update('witch',[{x:-18,z:-14,radius:3.1}]);
+assert.ok(fog.sample(-16,-14).visible>.2);
+assert.equal(fog.sample(-14,-14).visible,0,
+  'smaller airborne scout radius must override the soldier sight radius');
 
 fog.update('witch',[{x:2,z:3}]);
 assert.equal(fog.sample(-18,-14).visible,0,'old area is no longer in sight');

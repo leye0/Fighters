@@ -26,6 +26,14 @@ La carte débute **noire hors du champ de vision des unités**. Chaque sorcière
 
 La visibilité repose sur une grille de **112 × 112 cases (0,5 unité)**, commune à toutes les unités d'un clan. Les deux clans utilisent environ **147 Kio de données** au total, et un seul masque GPU couvrant l'écran; la grille est actualisée huit fois par seconde au maximum, sans ajout de modèles ou textures lourdes.
 
+## Corbeaux familiers des sorcières
+
+Quatre **vrais corbeaux 3D animés** se posent sur la cime des arbres près des sorcières. Ils quittent périodiquement leur perchoir, volent d'arbre en arbre, puis s'y reposent. Un arbre abattu ou un orc approchant provoque leur envol. Ils ne prennent pas de place au sol, ne sont pas des combattants et ne peuvent pas mourir.
+
+**Sélectionnez directement un corbeau** sur la carte, puis touchez le terrain pour lui donner un ordre de déplacement (ou choisissez son bouton **🧭 Déplacer**). Le corbeau rejoint la destination, effectue quelques détours de reconnaissance volontairement imprécis, puis retourne se poser sur un arbre. Son champ de vision en vol est limité à **3,1 unités** (contre 7,5 pour les unités ordinaires) et dévoile progressivement le brouillard de guerre de la faction des sorcières uniquement. Les orcs qui aperçoivent un corbeau peuvent abandonner momentanément leur trajet pour le poursuivre, sans parvenir à l'attaquer; ils reprennent ensuite leurs activités.
+
+Le modèle externe [Crow de Polyfork](https://polyfork.dev/asset/crow-base) conserve son squelette et ses animations natives `Fly` et `Idle`. Il est partagé par les quatre corbeaux et chargé à la demande depuis le **CDN officiel**, conformément à la licence (GLB d'environ 2,94 Mo, sans textures supplémentaires). [Source et licence](docs/models/RAVEN_ASSET_LICENSE.md).
+
 ## Forêt fantastique
 
 Le décor urbain provisoire a laissé place à des chemins de terre et à **55 vrais arbres 3D**, exclusivement des arbres tortueux rougeâtres et des arbres morts sombres. Les bosquets sont plus mystiques du côté des sorcières et plus austères du côté des orcs. Leur disposition est déterministe et préserve les bâtiments et les points de départ.

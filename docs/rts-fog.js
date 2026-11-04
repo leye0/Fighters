@@ -46,10 +46,15 @@
       if(!map)throw Error('Unknown fog faction: '+clan);
       const {visible,explored,rgba}=map;
       visible.fill(0);
-      const outer=this.radius,inner=outer-this.fade,size=this.size;
+      const size=this.size;
       const step=this.cellSize,half=this.halfSize;
       for(const unit of sources){
         if(!Number.isFinite(unit.x)||!Number.isFinite(unit.z))continue;
+        // Airborne familiars reveal a much smaller area than soldiers; all
+        // sources still write into the same pair of compact clan grids.
+        const outer=Number.isFinite(unit.radius)?
+          Math.max(this.fade+.1,Math.min(this.radius,unit.radius)):this.radius;
+        const inner=outer-this.fade;
         const left=Math.max(0,Math.floor((unit.x-outer+half)/step));
         const right=Math.min(size-1,Math.floor((unit.x+outer+half)/step));
         const low=Math.max(0,Math.floor((unit.z-outer+half)/step));
