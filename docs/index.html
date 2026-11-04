@@ -2228,7 +2228,9 @@ function approachBuilding(actor,building){
     actor.approachAge<2.5&&navigatorRTS.pointClear(actor.approachCache.point))
     return actor.approachCache.point;
   const from={x:p.x,z:p.z};
-  const candidates=buildingPerimeterSites(building,pad);
+  // Perimeter sites belong to the building's shared cache. Never sort or
+  // unshift into that array: repeated attacks used to grow it without bound.
+  const candidates=[...buildingPerimeterSites(building,pad)];
   // Find the closest point on the *actual polygon* and project outward.
   const closest=window.FightersFootprints.closestBoundary(from,b);
   if(closest.closest){
@@ -2659,8 +2661,10 @@ function tickUnit(actor,dt){
     }else animation(actor,'Idle_Loop');
     return;
   }
-  const nearby=nearestHostile(actor,actor.profile.sight);
   const explicit=actor.attackOrder;
+  // An explicit order already defines the target. Scanning every building's
+  // detailed contour 60 times/second for each raider is wasted CPU work.
+  const nearby=explicit?null:nearestHostile(actor,actor.profile.sight);
   const target=explicit||(nearby&&(!actor.destination||nearby.distance<2.7)?nearby.target:null);
   if(target){
     const distance=targetDistance(actor,target),
@@ -3274,6 +3278,21 @@ window.__fightersQA={
       spawnUnit('witch',place.x,place.z,total);total++;
     }
     return total;
+  },
+  auditBuildingApproach:(kind,index,id,iterations=12)=>{
+    const actor=units.filter(u=>u.kind===kind&&!u.dead)[index];
+    const building=[witchBuilding,...buildingInstances.values()].find(b=>b.id===id);
+    if(!actor||!building||building.destroyed)throw Error('QA approach target missing');
+    const sites=buildingPerimeterSites(building,UNIT_RADIUS+.14);
+    const before=sites.length,originalCache=actor.approachCache,originalAge=actor.approachAge;
+    let available=0;
+    try{
+      for(let i=0;i<Math.min(40,iterations);i++){
+        actor.approachCache=null;actor.approachAge=Infinity;
+        if(approachBuilding(actor,building))available++;
+      }
+    }finally{actor.approachCache=originalCache;actor.approachAge=originalAge;}
+    return {before,after:sites.length,available};
   },
   attackBuilding:id=>orderAttack([...selected],[witchBuilding,...buildingInstances.values()].find(b=>b.id===id)),
   attackUnit:id=>orderAttack([...selected],units.find(u=>u.id===id)),
