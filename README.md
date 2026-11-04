@@ -2,6 +2,18 @@
 
 **[Démo jouable](https://www.streamlev.com/Fighters/)** · [Laboratoire des 86 animations](https://www.streamlev.com/Fighters/motion-lab.html) · [Tests Chrome/WebGL](https://github.com/leye0/Fighters/actions/workflows/browser-qa.yml)
 
+### Cercle de roches
+
+Les ouvrières peuvent construire un **Cercle de roches** pour 260 or et 85 bois.
+Six véritables menhirs low-poly entourent un centre magique turquoise scintillant,
+entièrement accessible aux unités. Les sorcières situées dans son rayon de
+guérison regagnent **11 PV/s** (sans dépasser leur maximum). Lorsqu'une sorcière
+libre est sous **70 %** de vie et qu'aucun ennemi n'est proche, elle se dirige
+automatiquement vers un cercle accessible, y reste jusqu'à **96 %** de vie,
+puis reprend son activité autonome. Les ordres du joueur et les tâches en cours
+restent prioritaires; les orcs ne bénéficient pas de la guérison. Les six pierres
+partagent un seul modèle GLB de 24 Kio, sous [licence CC0](docs/models/STANDING_STONE_LICENSE.md).
+
 Fighters est un prototype de **stratégie en temps réel** en 3D isométrique. Le joueur commande les sorcières et la maison des sorcières; les **orcs sont une faction adverse autonome** qui produit des troupes, développe son village, défend ses bâtiments et lance des attaques. Le beat ’em up et ses gestes de combat direct ne font plus partie du jeu.
 
 ## Commandes
@@ -103,6 +115,7 @@ Le workflow `.github/workflows/browser-qa.yml` exécute :
 - `node scripts/test-rts-navigation.mjs` : A*, collisions élargies, coins diagonaux, détours et obstacles dynamiques.
 - `node scripts/test-rts-unit-physics.mjs` : préférence de séparation en terrain libre, **passage temporairement superposé** dans un corridor, réservations de **20 emplacements distincts**, dispersion progressive à l'arrêt et murs toujours solides.
 - `node scripts/test-orc-strategy.mjs` : construction cohérente, stratégie économique, recrutement, défense, raiders et réinitialisation.
+- `node scripts/test-rts-healing.mjs` : seuils de repos, sélection du sanctuaire, rayon et guérison plafonnée.
 - `node scripts/browser-qa.mjs` : vraie scène **Chrome WebGL SwiftShader**, **caméra à zoom fixe 3×**, **glisser à un doigt pour déplacer**, **sélection rectangulaire immédiate par deux doigts** et capture des pointeurs, séquence de **deux touches pour attaquer**, mires bleues et rouges à durée de vie limitée, stabilité des menus, production et améliorations avec vrais GLB, collisions, **destruction des bâtiments par les deux factions** et **village orc bâti automatiquement**. Le test enregistre également des captures desktop et mobile.
 
 Un paramètre `?qa=1` active les contrôles d'injection de test `window.__fightersQA` et désactive l'IA autonome initialement pour des essais reproductibles; la partie normale active l'IA.

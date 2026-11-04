@@ -881,6 +881,56 @@ async function run(){
  check(await evaluate('window.__fightersQA.isClear(8,-10)'),
   'Reset must remove constructed building hitboxes');
 
+ // A real CC0 menhir circle is constructed by a witch worker. Its six stones
+ // block only their own small footprints, leaving the glowing middle walkable.
+ await until('window.__fightersQA.snapshot().healing.modelLoaded',
+   'bundled CC0 standing-stone model',30000);
+ const stoneSite=await evaluate("(()=>{for(let z=-11;z>=-25;z-=1)"+
+   "for(let x=-8;x>=-24;x-=1)if(window.__fightersQA.canBuild(x,z,'stone-circle'))"+
+   "return {x,z};return null})()");
+ check(stoneSite,'No buildable spot for the witch healing circle');
+ check(await evaluate('window.__fightersQA.orderBuild("stone-circle",'+
+   stoneSite.x+','+stoneSite.z+')'),'Witch worker could not start a healing circle');
+ const stoneBuilt=await evaluate("(()=>{for(let i=0;i<45;i++){"+
+   "window.__fightersQA.advance(1);if(window.__fightersQA.snapshot().healing.circles.length)"+
+   "return true;}return false})()");
+ check(stoneBuilt,'Witch worker did not finish the stone circle');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ const sanctuary=s.healing.circles[0];
+ check(sanctuary.stones===6&&sanctuary.navigableCenter&&
+   s.buildings.some(b=>b.id===sanctuary.id&&b.health===280),
+   'Six actual menhirs must surround a walkable magic center: '+JSON.stringify(sanctuary));
+ await evaluate('window.__fightersQA.centerCamera('+sanctuary.x+','+sanctuary.z+')');
+ await screenshot('rts-stone-healing-circle');
+ await evaluate('window.__fightersQA.selectBuildingById('+JSON.stringify(sanctuary.id)+')');
+ check(await evaluate('document.querySelector("#command-title").textContent')==='Cercle de roches',
+   'The sanctuary must be selectable with its own French HUD label');
+ await evaluate('window.__fightersQA.setUnitHealth("witch",0,24);window.__fightersQA.advance(1)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.witches[0].healingTarget===sanctuary.id,
+   'A wounded idle witch should seek shelter while no enemy is nearby');
+ const recovered=await evaluate("(()=>{let witch=null;for(let i=0;i<35;i++){"+
+   "window.__fightersQA.advance(1);witch=window.__fightersQA.snapshot().witches[0];"+
+   "if(witch.health>=82)break;}return witch})()");
+ check(recovered.health>=82&&
+   Math.hypot(recovered.x-sanctuary.x,recovered.z-sanctuary.z)<1.5,
+   'Wounded witch must reach the circle and regain life: '+JSON.stringify(recovered));
+ await evaluate('window.__fightersQA.passive("witch");'+
+   'window.__fightersQA.setUnitHealth("orc",0,30);'+
+   'window.__fightersQA.moveUnitTo("orc",0,'+sanctuary.x+','+sanctuary.z+');'+
+   'window.__fightersQA.advance(2)');
+ check((await evaluate('window.__fightersQA.snapshot().orcs[0].health'))===30,
+   'The circle must never heal orcs');
+ await evaluate('window.__fightersQA.passive(null)');
+ await evaluate('window.__fightersQA.damageBuilding('+JSON.stringify(sanctuary.id)+',500)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.healing.circles.length===0&&s.buildings.every(b=>b.id!==sanctuary.id),
+   'Destroyed circles must be removed along with their menhir obstacles');
+ await evaluate('window.__fightersQA.reset()');
+ check((await evaluate('window.__fightersQA.snapshot()')).healing.circles.length===0,
+   'Reset must not keep stone circles or their healing jobs');
+ console.log('PASS STONE HEALING: actual menhirs, construction, walkable center, AI retreat, healing, destruction and reset.');
+
  // The wheat-only CC BY model has three distinct growth stages. Stage 3 stays ripe
  // until a physical witch worker harvests, then the crop begins again at 1.
  const gardenSite=await evaluate("(()=>{for(let z=-9;z>=-23;z-=2)for(let x=-8;x>=-24;x-=2)"+
