@@ -4670,8 +4670,14 @@ window.__fightersQA={
     if(!arcanist)return null;
     arcanist.destination=null;arcanist.attackOrder=null;arcanist.healJob=null;
     arcanist.berryJob=null;cancelSoulJob(arcanist);
-    const place=arcanist.root.position;
-    const actor=spawnUnit('orc',place.x+1.15,place.z,units.length,'worker');
+    const origin=arcanist.root.position;
+    // The test fixture must not land inside a menhir or a house collider.
+    const place=Array.from({length:16},(_,i)=>({
+      x:origin.x+1.1*Math.cos(i*Math.PI/8),
+      z:origin.z+1.1*Math.sin(i*Math.PI/8)
+    })).find(point=>navigatorRTS.pointClear(point)&&
+      navigatorRTS.segmentClear(origin,point))||{x:origin.x,z:origin.z};
+    const actor=spawnUnit('orc',place.x,place.z,units.length,'worker');
     dealDamage(actor,actor.maxHealth,null);
     return actor.id;
   },

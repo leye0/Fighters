@@ -677,10 +677,10 @@ async function run(){
  check(framing.hero.right<=framing.score.left+3&&framing.score.right<=framing.pause.left+4&&
   framing.pause.right<=mobile.width+1,'Compact mobile HUD overlaps: '+JSON.stringify(framing));
  const resourceBadges=await evaluate("Array.from(document.querySelectorAll('.score>div'),d=>({icon:getComputedStyle(d.querySelector('small'),'::before').content,border:getComputedStyle(d).borderColor}))");
- check(resourceBadges.length===4&&resourceBadges.every((item,i)=>
-   item.icon.includes(['💰','🪵','🌾','⚔'][i]))&&
-   new Set(resourceBadges.map(v=>v.icon)).size===4,
-   'Mobile resource counters need four distinct resource pictograms: '+
+ check(resourceBadges.length===5&&resourceBadges.every((item,i)=>
+   item.icon.includes(['💰','🪵','🌾','🔮','⚔'][i]))&&
+   new Set(resourceBadges.map(v=>v.icon)).size===5,
+   'Mobile resource counters need five distinct resource pictograms: '+
    JSON.stringify(resourceBadges));
  // Two real simultaneous touch pointers form a rectangle immediately.
  // The old hold-to-select and pinch-to-zoom paths are intentionally gone.
