@@ -808,6 +808,29 @@ async function run(){
  check(attempted>=6,'Expected at least 6 distinct valid attack-angle trials, got '+attempted);
  console.log('PASS multi-angle building attacks:',attempted);
 
+ // Regression: repeated Orc approaches must not grow the shared building
+ // perimeter cache. The old unshift mutated it on every recalculation.
+ await evaluate("window.__fightersQA.reset();window.__fightersQA.passive('witch');"+
+   "window.__fightersQA.setFaction('orc');"+
+   "window.__fightersQA.moveUnitTo('orc',2,-18.2,-17.5);"+
+   "window.__fightersQA.selectUnit('orc',2)");
+ const approachAudit=await evaluate(
+   "window.__fightersQA.auditBuildingApproach('orc',2,'witch-house-01',12)");
+ check(approachAudit.before>0&&approachAudit.available>0&&
+   approachAudit.after===approachAudit.before,
+   'HQ perimeter cache grows during repeated Orc approaches: '+
+     JSON.stringify(approachAudit));
+ const rangedHouseHp=(await evaluate('window.__fightersQA.snapshot()')).house.health;
+ check(await evaluate("window.__fightersQA.attackBuilding('witch-house-01')"),
+   'Ranged Orc could not target the mother house');
+ await evaluate('window.__fightersQA.advance(8)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.house.health<rangedHouseHp&&s.running&&
+   s.assets.sharedProjectiles<=25&&s.assets.activeProjectiles<=1,
+   'Ranged Orc HQ attack stalled, failed damage, or retained projectiles: '+
+     JSON.stringify({house:s.house.health,projectiles:s.assets}));
+ console.log('PASS RANGED HQ SIEGE:',JSON.stringify(approachAudit));
+
  // The orc faction must also damage/destroy the main witch house.
  await evaluate("window.__fightersQA.reset();window.__fightersQA.passive('witch');window.__fightersQA.setFaction('orc')");
  await evaluate("window.__fightersQA.moveUnitTo('orc',0,-18.2,-17.5);window.__fightersQA.selectUnit('orc',0);window.__fightersQA.setBuildingHealth('witch-house-01',27)");
