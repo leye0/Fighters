@@ -3335,11 +3335,24 @@ async function load(){
     $('start').disabled=false;$('start').textContent='↻ Recharger la page';
   }
 }
+function forestVisibleInViewport(){
+  camera.updateMatrixWorld();
+  let visible=0;
+  for(const tree of forestLayout){
+    // Check the trunk, not the canopy. Its actual ground pixel must be within
+    // the explored fog mask and the viewport, including on portrait phones.
+    if(fogOfWar.sample(tree.x,tree.z,activeFaction).explored<.85)continue;
+    const projected=new THREE.Vector3(tree.x,.15,tree.z).project(camera);
+    if(Math.abs(projected.x)<.9&&Math.abs(projected.y)<.9&&
+       projected.z>-1&&projected.z<1)visible++;
+  }
+  return visible;
+}
 window.__fightersQA={
   snapshot:()=>({
     loading:{...loadingProfile,characters:{...loadingProfile.characters}},
     forest:{instances:forestLayout.length,loadedSpecies:forestLoadedSpecies,
-      obstacleCount:forestObstacles.length},
+      obstacleCount:forestObstacles.length,visibleInViewport:forestVisibleInViewport()},
     ready,running,paused,activeFaction,cameraZoom,cameraCenter:{...cameraFollow},
     fog:{activeFaction,...fogOfWar.stats(activeFaction),
       exploredBrightness:fogShader.uniforms.exploredBrightness.value,

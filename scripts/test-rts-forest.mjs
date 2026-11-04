@@ -10,6 +10,13 @@ const { Navigator } = require('../docs/rts-navigation.js');
 const layout = forest.createLayout();
 assert.deepEqual(layout,forest.createLayout(),'forest must stay deterministic across resets');
 assert.equal(layout.length,55);
+const initialWitches=[{x:-18,z:-13},{x:-16.5,z:-15},{x:-19,z:-16}];
+const initialVisible=layout.filter(tree=>
+  initialWitches.some(unit=>Math.hypot(tree.x-unit.x,tree.z-unit.z)<6.25)&&
+  // Isometric X/Z screen axis, portrait half-width comfortably above 4 m.
+  Math.abs((tree.x+18)-(tree.z+14))/Math.SQRT2<4.5);
+assert.ok(initialVisible.length>=3,
+  'Opening viewport must visibly contain a witch-side forest glade');
 assert.deepEqual([...new Set(layout.map(t=>t.type))].sort(),forest.TYPES.slice().sort());
 const obstacles=forest.obstacles(layout);
 assert.equal(obstacles.length,layout.length);

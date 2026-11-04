@@ -67,9 +67,10 @@ async function run(){
  await until('window.__fightersQA.snapshot().forest.loadedSpecies===4',
    'four real CC0 tree GLBs with WebP textures',30000);
  const forest=await evaluate('window.__fightersQA.snapshot().forest');
- check(forest.instances===55&&forest.obstacleCount===55,
-   'Forest must reuse four models across 55 navigable trunk obstacles');
+ check(forest.instances===55&&forest.obstacleCount===55&&forest.visibleInViewport>=3,
+   'At least three real trees must be revealed and on screen at witch spawn: '+JSON.stringify(forest));
  console.log('PASS FOREST BROWSER:',JSON.stringify(forest));
+ await screenshot('rts-forest-start');
  // Play through the actual Start button: ?qa otherwise skips the
  // user gesture and never unlocks either AudioContext.
  await evaluate("document.querySelector('#overlay').hidden=false");
@@ -641,6 +642,9 @@ async function run(){
    'One-finger long press must NOT start rectangle selection');
  await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
  await call('Emulation.setTouchEmulationEnabled',{enabled:false});
+ const mobileForest=await evaluate('window.__fightersQA.snapshot().forest');
+ check(mobileForest.visibleInViewport>=3,
+   'Portrait-phone camera must display at least three revealed trees: '+JSON.stringify(mobileForest));
  await screenshot('rts-mobile-fixed-camera');
  await call('Emulation.clearDeviceMetricsOverride');
 
