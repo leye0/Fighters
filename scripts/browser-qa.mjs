@@ -736,15 +736,17 @@ async function run(){
  check(s.crops.plots.every(p=>p.real&&p.visible===1&&p.model==='Wheat_F3'),
    'Mature crops must display the exact stage-3 GLB mesh');
  // The worker can be explicitly assigned; the auto-harvester also works when idle.
+ // Unlike mining and building, wheat is picked by hand using the authored
+ // Quaternius Farm_Harvest clip, with the work tool hidden.
  check(await evaluate('window.__fightersQA.orderHarvest(1,'+JSON.stringify(gardenId)+')'),
    'Witch worker could not be assigned to garden');
-  const harvestSwing=await evaluate("(()=>{let seen=false;for(let i=0;i<26;i++){"+
+  const harvestGesture=await evaluate("(()=>{let seen=false;for(let i=0;i<26;i++){"+
     "window.__fightersQA.advance(1);seen ||= window.__fightersQA.snapshot().witches.some(u=>"+
-    "u.role==='worker'&&u.animation==='Work_Swing'&&u.workToolVisible);}return seen})()");
+    "u.role==='worker'&&u.animation==='Farm_Harvest'&&!u.workToolVisible);}return seen})()");
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.farming.harvests>0&&s.farming.producedFood>=8,
    'Worker never reached and harvested mature crops: '+JSON.stringify(s.farming));
-  check(harvestSwing,'The witch must swing her scythe while harvesting ripe wheat');
+  check(harvestGesture,'The witch must bend and pick wheat by hand, with no scythe visible');
  check(s.farming.gardens[0].stages.every(stage=>stage>=1&&stage<=3),
    'Garden must never show dead or fourth-stage crops');
  console.log('PASS GARDEN: three real wheat GLB stages, ripe hold, witch harvest.');
