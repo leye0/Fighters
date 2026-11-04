@@ -4147,6 +4147,19 @@ window.__fightersQA={
     }
     return total;
   },
+  skeletonResources:()=>{
+    // Native rigged costumes share an actor's skeleton, but different actors
+    // must own independent Skeleton/DataTexture instances. Inspect the real
+    // render resources rather than inferring them from all scene textures.
+    const skeletons=new Set();
+    for(const actor of units)actor.visual.traverse(node=>{
+      if(node.isSkinnedMesh&&node.skeleton)skeletons.add(node.skeleton);
+    });
+    const boneTextures=[...skeletons].map(skeleton=>skeleton.boneTexture).filter(Boolean);
+    return {actors:units.length,skeletons:skeletons.size,
+      boneTextures:boneTextures.length,
+      uniqueBoneTextures:new Set(boneTextures).size};
+  },
   spawnOrcSiege:()=>{
     // Multi-ranged raid from clear positions around the witch headquarters.
     // Unlike a one-unit near-wall test, this exercises concurrent navigation.

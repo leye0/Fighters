@@ -1293,27 +1293,39 @@ async function run(){
  await screenshot('rts-human-play-recruit-and-move');
 
  }
- // Regression for the actual WebGL leak: new skinned characters allocate
- // their OWN skeleton bone texture. A reset must return texture count to
- // baseline; merely detaching meshes leaves the GPU allocation alive.
- await evaluate("window.__fightersQA.enableOrcAI(false);window.__fightersQA.reset()");
+ // Regression for the actual WebGL leak. The camera must see the newly
+ // spawned skeletons before measuring GPU textures: WebGLRenderer allocates
+ // bone textures lazily when a skinned mesh is first rendered. The previous
+ // test looked away from the Witch base and falsely observed peak=restored.
+ await evaluate("window.__fightersQA.enableOrcAI(false);window.__fightersQA.reset();"+
+   "window.__fightersQA.centerCamera(-23.5,-17.5)");
  await sleep(350);
  const gpuBaseline=(await evaluate('window.__fightersQA.snapshot()')).gpu.textures;
+ const skeletonBaseline=await evaluate('window.__fightersQA.skeletonResources()');
  const gpuLifecycles=[];
  for(let cycle=0;cycle<3;cycle++){
    check(await evaluate('window.__fightersQA.spawnWitches(20)')===20,
      'Cannot populate GPU skeleton-lifecycle test');
+   await evaluate('window.__fightersQA.centerCamera(-23.5,-17.5)');
    await sleep(450);
    const peak=(await evaluate('window.__fightersQA.snapshot()')).gpu.textures;
-   await evaluate('window.__fightersQA.reset()');
+   const peakSkeletons=await evaluate('window.__fightersQA.skeletonResources()');
+   await evaluate('window.__fightersQA.reset();'+
+     'window.__fightersQA.centerCamera(-23.5,-17.5)');
    await sleep(450);
    const restored=(await evaluate('window.__fightersQA.snapshot()')).gpu.textures;
-   gpuLifecycles.push({peak,restored});
+   const restoredSkeletons=await evaluate('window.__fightersQA.skeletonResources()');
+   gpuLifecycles.push({peak,restored,peakSkeletons,restoredSkeletons});
    console.log('GPU_BONE_TEXTURE_CYCLE',JSON.stringify({
-     baseline:gpuBaseline,cycle:cycle+1,peak,restored
+     baseline:gpuBaseline,skeletonBaseline,cycle:cycle+1,
+     peak,restored,peakSkeletons,restoredSkeletons
    }));
+   check(peakSkeletons.uniqueBoneTextures>=restoredSkeletons.uniqueBoneTextures+10&&
+     peakSkeletons.uniqueBoneTextures===peakSkeletons.boneTextures,
+     'Newly rendered witches did not own independent bone textures: '+
+       JSON.stringify({skeletonBaseline,gpuLifecycles}));
    check(peak>=restored+10,
-     'GPU did not release per-actor skinning textures after reset: '+
+     'GPU did not release the rendered actors\' bone textures after reset: '+
        JSON.stringify({baseline:gpuBaseline,gpuLifecycles}));
    // The FIRST cycle can initialize still-unseen material/texture variants.
    // A true per-unit leak keeps increasing after that warm-up cycle.
