@@ -14,7 +14,7 @@
     constructor(){this.reset();}
     reset(){
       this.food=STARTING_FOOD;this.gardens=new Map();
-      this.harvests=0;this.producedFood=0;this.starvationSeconds=0;
+      this.harvests=0;this.producedFood=0;this.foragedFood=0;this.starvationSeconds=0;
     }
     addGarden(id){
       if(!id||this.gardens.has(id))return false;
@@ -37,6 +37,10 @@
       this.harvests++;this.producedFood+=FOOD_PER_HARVEST;
       this.food+=FOOD_PER_HARVEST;return FOOD_PER_HARVEST;
     }
+    forage(amount){
+      if(!Number.isFinite(amount)||amount<=0)throw Error('Invalid wild food amount');
+      this.food+=amount;this.foragedFood+=amount;
+    }
     step(dt,witchCount){
       if(!Number.isFinite(dt)||dt<0||!Number.isFinite(witchCount)||witchCount<0)
         throw Error('Invalid farming time or population');
@@ -57,6 +61,7 @@
     }
     snapshot(){
       return {food:this.food,harvests:this.harvests,producedFood:this.producedFood,
+        foragedFood:this.foragedFood,
         starvationSeconds:this.starvationSeconds,
         gardens:[...this.gardens.values()].map(g=>({id:g.id,
           stages:g.plots.map(p=>p.stage),species:g.plots.map(p=>SPECIES[p.species])}))};
