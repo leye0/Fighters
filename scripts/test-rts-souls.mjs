@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+import souls from '../docs/rts-souls.js';
+const buildings=[{type:'witch-house',clanId:'witch',level:1,destroyed:false}];
+assert.equal(souls.canBuildCircle(buildings),false,'House must be upgraded first');
+buildings[0].level=2;
+assert.equal(souls.canBuildCircle(buildings),true);
+buildings[0].destroyed=true;
+assert.equal(souls.canBuildCircle(buildings),false,'Destroyed house grants no unlock');
+assert.equal(souls.canTrainMage(buildings),false);
+buildings.push({type:'stone-circle',clanId:'witch',destroyed:false});
+assert.equal(souls.canTrainMage(buildings),true);
+buildings[1].destroyed=true;
+assert.equal(souls.canTrainMage(buildings),false);
+assert(souls.CORPSE_SECONDS>=90,'Corpses remain for a long time');
+assert.equal(souls.magicAfterSoul(0),20);
+assert.equal(souls.magicAfterSoul(95),souls.MAX_MAGIC);
+const corpse=(x,z,extra={})=>({x,z,dead:true,deadTime:100,...extra});
+const visible=[corpse(2,2),corpse(1,1,{soulClaimed:true}),
+  corpse(3,3,{soulReservedBy:7}),corpse(4,4,{deadTime:1}),corpse(12,0)];
+assert.equal(souls.nearestSoul({x:0,z:0},visible),visible[0]);
+assert.equal(souls.nearestSoul({x:0,z:0},visible,()=>false),null);
+visible[0].soulClaimed=true;
+assert.equal(souls.nearestSoul({x:0,z:0},visible),null,'Souls cannot be collected twice');
+console.log('PASS magical progression, persistent corpses, exclusive souls and capped magic');
