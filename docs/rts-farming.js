@@ -5,11 +5,11 @@
   else root.FightersFarming=api;
 })(typeof globalThis==='object'?globalThis:this,function(){
   'use strict';
-  const SPECIES=Object.freeze(['tomato','potato','carrot','wheat']);
+  const SPECIES=Object.freeze(['wheat']);
   const FIRST_STAGE=1,LAST_STAGE=3;
   const GROWTH_SECONDS=12,HARVEST_SECONDS=1.6,FOOD_PER_HARVEST=8;
   const FOOD_PER_WITCH_SECOND=.06,STARTING_FOOD=45,STARVATION_DAMAGE=2.5;
-  const PLOT_SPECIES=Object.freeze([0,1,2,3,0,1]);
+  const PLOT_SPECIES=Object.freeze([0,0,0,0,0,0]);
   class Economy{
     constructor(){this.reset();}
     reset(){

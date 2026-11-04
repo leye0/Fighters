@@ -1709,8 +1709,8 @@ function validBuildPosition(x,z,type='hut'){
   return units.every(actor=>actor.dead||
     !geometry.pointBlocked(actor.root.position,proposed,UNIT_RADIUS));
 }
-// The raised beds and temporary crop silhouettes share all geometries/materials.
-// They will be replaced by Bumroker's licensed GLB when the download is supplied.
+// The raised soil beds have reusable geometry. Procedural silhouettes appear only
+// while the extracted CC BY crop catalog loads asynchronously.
 const farmGeometry={
   bed:new THREE.BoxGeometry(3.55,.20,3.55),row:new THREE.BoxGeometry(1.48,.11,.91),
   stem:new THREE.CylinderGeometry(.055,.095,.8,5),
@@ -1722,8 +1722,7 @@ const farmMaterial={
   soil:new THREE.MeshLambertMaterial({color:0x4a3128}),
   stalk:new THREE.MeshLambertMaterial({color:0x4b8a42}),
   leaf:new THREE.MeshLambertMaterial({color:0x6cbd4d}),
-  produce:[0xd44838,0xa47f4c,0xe68b2e,0xdeb65b].map(
-    color=>new THREE.MeshLambertMaterial({color}))
+  produce:new THREE.MeshLambertMaterial({color:0xdeb65b})
 };
 function gardenShape(x,z){
   const h=1.80;
@@ -1745,12 +1744,82 @@ function makeGardenVisual(){
     stem.position.y=.45;plant.add(stem);
     const leaves=new THREE.Mesh(farmGeometry.leaves,farmMaterial.leaf);
     leaves.position.y=.72;plant.add(leaves);
-    const fruit=new THREE.Mesh(farmGeometry.fruit,
-      farmMaterial.produce[[0,1,2,3,0,1][index]]);
+    const fruit=new THREE.Mesh(farmGeometry.fruit,farmMaterial.produce);
     fruit.position.y=.47;plant.add(fruit);root.add(plant);
     plots.push({plant,fruit,stage:0});
   }
   return {root,plots};
+}
+// The Sketchfab pack uses Z as up, and arranges variants very far apart.
+// CI extracts the three untransformed wheat meshes; these reusable templates
+// are oriented/grounded once; every plot only clones references to GPU assets.
+const CROP_NAMES=['Wheat'];
+let cropCatalog=null,cropLoadPromise=null,cropLoadError=null;
+let cropTransport=null,cropWireBytes=0;
+function buildCropCatalog(gltf){
+  const catalog=new Map();
+  for(let species=0;species<CROP_NAMES.length;species++){
+    const stages=[],sizes=[];
+    for(let stage=1;stage<=3;stage++){
+      const name=CROP_NAMES[species]+'_F'+stage;
+      const source=gltf.scene.getObjectByName(name);
+      if(!source)throw Error('Missing crop mesh: '+name);
+      const upright=new THREE.Group(),model=source.clone(true);
+      model.rotation.x=-Math.PI/2;upright.add(model);
+      upright.updateMatrixWorld(true);
+      const bounds=new THREE.Box3().setFromObject(upright);
+      if(bounds.isEmpty())throw Error('Empty crop mesh: '+name);
+      const center=bounds.getCenter(new THREE.Vector3());
+      model.position.set(-center.x,-bounds.min.y,-center.z);
+      stages.push(upright);sizes.push(bounds.getSize(new THREE.Vector3()));
+    }
+    const mature=sizes[2];
+    const scale=Math.min(1.27/Math.max(mature.x,mature.z),1.20/mature.y);
+    for(const model of stages)model.scale.setScalar(scale);
+    catalog.set(species,stages);
+  }
+  return catalog;
+}
+function installGardenCrops(building){
+  if(!cropCatalog||building.destroyed||!farming.garden(building.id))return;
+  const plots=farming.garden(building.id).plots;
+  for(let i=0;i<plots.length;i++){
+    const visual=building.cropVisuals[i];
+    if(visual.variants)continue;
+    // Do not dispose the fallback: its meshes and materials are globally shared.
+    visual.plant.clear();visual.plant.scale.setScalar(1);
+    visual.variants=cropCatalog.get(plots[i].species).map(model=>model.clone(true));
+    visual.plant.add(...visual.variants);
+    visual.fruit=null;visual.stage=0;
+  }
+  syncGardenVisual(building);
+}
+function beginCropLoad(){
+  if(cropLoadPromise)return cropLoadPromise;
+  cropLoadPromise=(async()=>{
+    let gltf=null;
+    if(typeof DecompressionStream==='function'){
+      try{
+        const result=await fetchAsset('./models/crops.rts.glb.gz',
+          {compressed:true,timeout:30000});
+        gltf=await loader.parseAsync(result.data,'');
+        cropTransport='gzip';cropWireBytes=result.wireBytes;
+      }catch(err){
+        console.warn('Compressed garden assets unavailable, trying GLB:',err);
+      }
+    }
+    if(!gltf){
+      gltf=await loader.loadAsync('./models/crops.rts.glb');
+      cropTransport='raw';cropWireBytes=0;
+    }
+    cropCatalog=buildCropCatalog(gltf);
+    for(const building of buildingInstances.values())
+      if(building.type==='garden')installGardenCrops(building);
+  })().catch(err=>{
+    cropLoadError=String(err?.message||err);
+    console.warn('Could not load licensed garden crops:',err);
+  });
+  return cropLoadPromise;
 }
 function syncGardenVisual(building){
   const state=farming.garden(building.id);
@@ -1759,8 +1828,13 @@ function syncGardenVisual(building){
     const stage=state.plots[i].stage,visual=building.cropVisuals[i];
     if(visual.stage===stage)continue;
     visual.stage=stage;
-    visual.plant.scale.setScalar(stage===1?.27:stage===2?.67:1.1);
-    visual.fruit.visible=stage===3;
+    if(visual.variants){
+      for(let index=0;index<visual.variants.length;index++)
+        visual.variants[index].visible=index===stage-1;
+    }else{
+      visual.plant.scale.setScalar(stage===1?.27:stage===2?.67:1.1);
+      visual.fruit.visible=stage===3;
+    }
   }
 }
 function buildGarden(x,z,{prepaid=false}={}){
@@ -1781,6 +1855,8 @@ function buildGarden(x,z,{prepaid=false}={}){
     cropVisuals:plots,destroyed:false,initial:false};
   farming.addGarden(id);syncGardenVisual(building);
   buildingInstances.set(id,building);
+  if(cropCatalog)installGardenCrops(building);
+  else void beginCropLoad();
   if(!prepaid)gold.witch-=GARDEN_BUILD_COST;
   updateHealthBar(building);updateNavObstacles();refreshHUD();return building;
 }
@@ -3173,6 +3249,13 @@ window.__fightersQA={
       renderOrder:units.find(u=>u.kind===activeFaction)?.selectionRing.renderOrder??null},
     orcAI:orcDirector.snapshot(),qaPassiveKind,
     twoFingerSelection:twoFingerBox?{a:{...twoFingerBox.a},b:{...twoFingerBox.b}}:null,
+    crops:{loaded:!!cropCatalog,loading:!!cropLoadPromise&&!cropCatalog&&!cropLoadError,
+      transport:cropTransport,wireBytes:cropWireBytes,
+      error:cropLoadError,templates:cropCatalog?[...cropCatalog.values()].flat().length:0,
+      plots:[...buildingInstances.values()].filter(b=>b.type==='garden'&&!b.destroyed)
+        .flatMap(b=>b.cropVisuals.map(v=>({stage:v.stage,
+          real:!!v.variants,visible:v.variants?v.variants.filter(n=>n.visible).length:0,
+          model:v.variants?v.variants.find(n=>n.visible)?.children[0]?.name:null})))},
     farming:{...farming.snapshot(),workers:units.filter(u=>u.farmJob&&!u.dead).map(u=>({
       id:u.id,gardenId:u.farmJob.gardenId,plotIndex:u.farmJob.plotIndex,
       progress:u.farmJob.progress,x:u.root.position.x,z:u.root.position.z}))},

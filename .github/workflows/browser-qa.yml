@@ -24,6 +24,8 @@ on:
       - 'scripts/test-rts-navigation.mjs'
       - 'scripts/browser-qa.mjs'
       - 'scripts/verify-costumes.mjs'
+      - 'crops_low_poly.glb'
+      - 'scripts/build-runtime-crops.mjs'
       - 'witch_house.glb'
       - 'orc_rts_building_set_-_proto_series.glb.part*'
       - 'scripts/split-orc-buildings.mjs'
@@ -70,6 +72,7 @@ jobs:
           cp node_modules/three/build/three.module.js docs/vendor/three/three.module.js
           cp node_modules/three/build/three.core.js docs/vendor/three/three.core.js
           cp -R node_modules/three/examples/jsm docs/vendor/three/addons
+          node scripts/build-runtime-crops.mjs crops_low_poly.glb docs/models/crops.rts.glb
           node scripts/split-orc-buildings.mjs docs/models/orc_rts_building_set_-_proto_series.glb docs/models/orc-buildings
           python3 -m pip install --disable-pip-version-check shapely==2.1.2
           node scripts/generate-building-footprints.mjs docs/models/witch_house.glb docs/models/orc-buildings
