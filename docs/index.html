@@ -907,7 +907,7 @@ function updateVision(){
   for(const [clan,kind,ownership] of [['witch','witch','witch'],['orc','orc','orcs']]){
     const sources=units.filter(actor=>actor.kind===kind&&!actor.dead)
       .map(actor=>({x:actor.root.position.x,z:actor.root.position.z}));
-    if(clan==='witch')sources.push(...ravenFlock.visionSources());
+    if(clan==='witch'&&ravenModelLoaded)sources.push(...ravenFlock.visionSources());
     // Completed clan buildings have the same sight radius as a character.
     // Natural gold mines are deposits, not watchtowers.
     for(const b of structures){
@@ -3361,7 +3361,7 @@ function clearBolts(){
   activeBolts.length=0;boltPool.length=0;
 }
 function tickRavenDistraction(actor,dt){
-  if(actor.kind!=='orc'||!roles.isFighter(actor)||!orcDirector.enabled)return false;
+  if(!ravenModelLoaded||actor.kind!=='orc'||!roles.isFighter(actor)||!orcDirector.enabled)return false;
   actor.ravenCooldown=Math.max(0,(actor.ravenCooldown||0)-dt);
   if(!actor.ravenDistraction&&actor.ravenCooldown<=0){
     const bird=ravenFlock.nearestDecoy(actor.root.position,
@@ -3561,7 +3561,8 @@ function stepGame(dt){
   stepProduction(dt);
   stepFarming(dt);
   stepOrcStrategy(dt);
-  ravenFlock.update(dt,units.filter(actor=>actor.kind==='orc'&&!actor.dead));
+  if(ravenModelLoaded)
+    ravenFlock.update(dt,units.filter(actor=>actor.kind==='orc'&&!actor.dead));
   for(const actor of units)tickUnit(actor,dt);
   tickBolts(dt);
   window.FightersUnitPhysics.separate(units,navigatorRTS,UNIT_RADIUS,dt);
