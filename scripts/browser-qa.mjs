@@ -833,6 +833,12 @@ async function run(){
    approachAudit.after===approachAudit.before,
    'HQ perimeter cache grows during repeated Orc approaches: '+
      JSON.stringify(approachAudit));
+ const blockedSiege=await evaluate(
+   "window.__fightersQA.auditUnreachableSiege('orc',2,'witch-house-01')");
+ check(blockedSiege.approachPlans<=50&&blockedSiege.routePlans<=4,
+   'Unreachable HQ order causes unbounded per-frame A* replanning: '+
+     JSON.stringify(blockedSiege));
+ console.log('PASS UNREACHABLE HQ ROUTE BUDGET:',JSON.stringify(blockedSiege));
  const rangedHouseHp=(await evaluate('window.__fightersQA.snapshot()')).house.health;
  check(await evaluate("window.__fightersQA.attackBuilding('witch-house-01')"),
    'Ranged Orc could not target the mother house');
@@ -843,6 +849,22 @@ async function run(){
    'Ranged Orc HQ attack stalled, failed damage, or retained projectiles: '+
      JSON.stringify({house:s.house.health,projectiles:s.assets}));
  console.log('PASS RANGED HQ SIEGE:',JSON.stringify(approachAudit));
+ // Real multi-Orc siege: simulate the whole battle with several ranged troops,
+ // and reject CPU stalls, not just wrong health or missing projectiles.
+ await evaluate("window.__fightersQA.reset();window.__fightersQA.passive('witch');"+
+   "window.__fightersQA.setFaction('orc')");
+ const siegeCount=await evaluate('window.__fightersQA.spawnOrcSiege()');
+ check(siegeCount>=6,'Could not stage the ranged Orc siege: '+siegeCount);
+ const siegeStarted=Date.now();
+ await evaluate('window.__fightersQA.advance(12)');
+ const siegeCpuMs=Date.now()-siegeStarted;
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(siegeCpuMs<14000&&s.house.health<500&&
+   s.assets.sharedProjectiles<=24+siegeCount,
+   'Multi-Orc HQ attack caused CPU stall or missed damage: '+
+     JSON.stringify({siegeCount,siegeCpuMs,house:s.house.health,projectiles:s.assets}));
+ console.log('PASS MULTI-ORC HQ CPU SOAK:',JSON.stringify({
+   siegeCount,siegeCpuMs,house:s.house.health,projectiles:s.assets.sharedProjectiles}));
 
  // The orc faction must also damage/destroy the main witch house.
  await evaluate("window.__fightersQA.reset();window.__fightersQA.passive('witch');window.__fightersQA.setFaction('orc')");
