@@ -69,9 +69,9 @@ async function run(){
  await until('window.__fightersQA.snapshot().ravens.loaded===true',
    'real locally compressed animated crow GLB',30000);
  const ravens=await evaluate('window.__fightersQA.snapshot().ravens');
- check(ravens.animated===4&&ravens.birds.length===4&&
+ check(ravens.animated===2&&ravens.birds.length===2&&
    ravens.birds.every(b=>b.y>3.5),
-   'Four real animated ravens must fly or perch above the ground: '+JSON.stringify(ravens));
+   'Two real animated ravens must fly or perch above the ground: '+JSON.stringify(ravens));
  const forest=await evaluate('window.__fightersQA.snapshot().forest');
  check(forest.instances===55&&forest.obstacleCount===55&&forest.visibleInViewport>=3,
    'At least three real trees must be revealed and on screen at witch spawn: '+JSON.stringify(forest));
@@ -87,7 +87,14 @@ async function run(){
  await until("window.__fightersQA.witchSound().available.interaction>0",'Witch MP3 manifest',10000);
  await until("window.__fightersQA.sound().available.short>0",'Orc MP3 manifest',10000);
  await evaluate("window.__fightersQA.selectUnit('witch',0)");
- await until("window.__fightersQA.witchSound().played>0",'real decoded Witch interaction SFX',10000);
+ // On cold SwiftShader runs, the first MP3 decode can arrive after the
+ // engine's 1.8s freshness window. Reissue the real selection, as for Orcs.
+ for(let retry=0;retry<4&&!await evaluate('window.__fightersQA.witchSound().played>0');retry++){
+   await sleep(1200);
+   await evaluate("window.__fightersQA.selectUnit('witch',0)");
+ }
+ check(await evaluate('window.__fightersQA.witchSound().played>0'),
+   'Real decoded Witch interaction SFX never played: '+JSON.stringify(await evaluate('window.__fightersQA.witchSound()')));
  await evaluate("window.__fightersQA.setFaction('orc');window.__fightersQA.selectUnit('orc',0)");
  await evaluate("window.__fightersQA.centerCamera(15,18)");
  const orcForest=await evaluate('window.__fightersQA.snapshot().forest');
@@ -117,6 +124,8 @@ async function run(){
  await evaluate('window.__fightersQA.sendRaven(7,7);window.__fightersQA.advance(6)');
  check((await evaluate('window.__fightersQA.fogAt(7,7,"witch").explored'))>.2,
    'The commanded raven must uncover a small patch of the witches fog');
+ check((await evaluate('window.__fightersQA.minimapGroundVisibilityAt(7,7)'))===0,
+   'Raven-only fog vision must not reveal the bird position on the minimap');
  await evaluate('window.__fightersQA.reset()');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.witches.length===3&&s.orcs.length===4,'Starting troops');
@@ -464,6 +473,11 @@ async function run(){
   'Both natural deposits must be neutral, permanent resources outside clan infrastructure');
  check(s.buildings.every(b=>b.hitbox.maxX>b.hitbox.minX&&b.hitbox.maxZ>b.hitbox.minZ),
   'Every orc structure must have a real 3D collider');
+ check(s.buildings.every(b=>b.hitbox.maxX-b.hitbox.minX<5&&
+   b.hitbox.maxZ-b.hitbox.minZ<5&&b.hitbox.maxY>1),
+  'Orc models must fit the village and have a visible above-ground body (no microscopic cauldron or enormous footprint): '+
+   JSON.stringify(s.buildings.map(b=>({id:b.id,extent:[b.hitbox.maxX-b.hitbox.minX,
+     b.hitbox.maxY,b.hitbox.maxZ-b.hitbox.minZ]}))));
  check(s.buildings.filter(b=>b.type!=='mine').every(b=>b.healthbarParent==='scene'),
    'Orc HP bars must not inherit a building rotation/scale');
  check(s.buildings.filter(b=>b.type!=='mine').every(b=>b.healthbarPosition[1]>b.hitbox.maxY),

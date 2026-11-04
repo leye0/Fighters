@@ -12,6 +12,7 @@ on:
       - 'scripts/compress-character-assets.sh'
       - 'scripts/build-runtime-characters.mjs'
       - 'scripts/split-orc-buildings.mjs'
+      - 'scripts/test-orc-building-assets.mjs'
       - 'scripts/generate-building-footprints.mjs'
       - 'scripts/union-xz-triangles.py'
       - 'scripts/verify-costumes.mjs'
@@ -55,6 +56,7 @@ jobs:
           cp -R node_modules/three/examples/jsm docs/vendor/three/addons
           node scripts/build-runtime-crops.mjs crops_low_poly.glb docs/models/crops.rts.glb
           node scripts/split-orc-buildings.mjs docs/models/orc_rts_building_set_-_proto_series.glb docs/models/orc-buildings
+          node scripts/test-orc-building-assets.mjs docs/models/orc-buildings
           python3 -m pip install --disable-pip-version-check shapely==2.1.2
           node scripts/generate-building-footprints.mjs docs/models/witch_house.glb docs/models/orc-buildings
           bash scripts/fetch-pinned-humans.sh

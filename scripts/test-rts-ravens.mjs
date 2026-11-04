@@ -8,7 +8,7 @@ const {createLayout}=require('../docs/rts-forest.js');
 const {FogGrid}=require('../docs/rts-fog.js');
 
 const trees=createLayout(),flock=new Flock(trees);
-assert.equal(flock.ravens.length,4);
+assert.equal(flock.ravens.length,2,'the Witch faction starts with two ravens');
 assert.ok(flock.ravens.every(r=>r.mode==='perched'&&
   Math.abs(r.y-trees[r.treeIndex].height-.06)<1e-6),
   'birds must start perched on real tree tops, not at ground level');
@@ -21,6 +21,13 @@ assert.equal(fog.sample(first.x+5,first.z,'witch').visible,0,
   'perched birds must reveal only a small local patch');
 assert.equal(fog.sample(first.x,first.z,'orc').explored,0,
   'ravens must never leak the witches exploration to the orcs');
+const before=new FogGrid(),after=new FogGrid();
+before.update('witch',[{x:0,z:0,radius:3.1}]);
+after.update('witch',[{x:0,z:0,radius:SCOUT_SIGHT}]);
+const exploredCount=grid=>grid.maps.witch.explored.filter(Boolean).length;
+const areaRatio=exploredCount(after)/exploredCount(before);
+assert.ok(areaRatio>.45&&areaRatio<.55,
+  'raven flight should uncover roughly half the previous area: '+areaRatio);
 
 const called=flock.orderMove(flock.ravens[0].id,{x:17,z:17});
 assert.ok(called&&called.mode==='flying'&&called.scoutSteps===4);
