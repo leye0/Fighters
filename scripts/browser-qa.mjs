@@ -680,7 +680,12 @@ async function run(){
  check(gardenSite,'No buildable garden site on witch territory');
  check(await evaluate('!!window.__fightersQA.buildGarden('+gardenSite.x+','+gardenSite.z+')'),
    'Garden could not be constructed as a real building');
+ await until("window.__fightersQA.snapshot().crops.loaded",
+   'real licensed crop GLB after first garden',30000);
  s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.crops.templates===12&&s.crops.plots.length===6&&
+   s.crops.plots.every(p=>p.real&&p.visible===1&&p.model?.endsWith('_F1')),
+   'All six beds must use the real three-stage GLB variants: '+JSON.stringify(s.crops));
  const gardenId=s.buildings.find(b=>b.type==='garden')?.id;
  check(gardenId&&s.farming.gardens.length===1&&
    s.farming.gardens[0].stages.every(stage=>stage===1),
@@ -688,10 +693,14 @@ async function run(){
  await evaluate('window.__fightersQA.advance(12)');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.farming.gardens[0].stages.every(stage=>stage===2),'Crops must visibly reach stage 2');
+ check(s.crops.plots.every(p=>p.real&&p.visible===1&&p.model?.endsWith('_F2')),
+   'All plots must display their stage-2 GLB mesh, not a scaled placeholder');
  await evaluate('window.__fightersQA.advance(12)');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.farming.gardens[0].stages.every(stage=>stage===3),
    'Crops must reach the third and final harvestable stage');
+ check(s.crops.plots.every(p=>p.real&&p.visible===1&&p.model?.endsWith('_F3')),
+   'Mature crops must display the exact stage-3 GLB mesh');
  // The worker can be explicitly assigned; the auto-harvester also works when idle.
  check(await evaluate('window.__fightersQA.orderHarvest(1,'+JSON.stringify(gardenId)+')'),
    'Witch worker could not be assigned to garden');
@@ -701,7 +710,7 @@ async function run(){
    'Worker never reached and harvested mature crops: '+JSON.stringify(s.farming));
  check(s.farming.gardens[0].stages.every(stage=>stage>=1&&stage<=3),
    'Garden must never show dead or fourth-stage crops');
- console.log('PASS GARDEN: stages 1→2→3, ripe hold, physical witch harvest and food income.');
+ console.log('PASS GARDEN: 12 licensed GLB variants, stages 1→2→3, ripe hold, witch harvest.');
  await evaluate('window.__fightersQA.reset();window.__fightersQA.setFood(0)');
  s=await evaluate('window.__fightersQA.snapshot()');
  const healthBeforeStarvation=s.witches.map(w=>w.health);
