@@ -1,0 +1,76 @@
+name: Import Orc audio previews
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/import-orc-voices.py'
+      - '.github/workflows/import-orc-voices.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: fighters-orc-audio-import
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify audio decoder
+        run: ffmpeg -version
+
+      # Action 1: download all 51 freely playable MP3 previews.
+      - name: Download Orc previews
+        run: python3 scripts/import-orc-voices.py download --output "$RUNNER_TEMP/fighters-orc-previews"
+
+      # Action 2: analyze waveforms and sort them by the requested use.
+      - name: Classify Orc voices
+        run: python3 scripts/import-orc-voices.py classify --input "$RUNNER_TEMP/fighters-orc-previews" --output docs/sounds/orcs
+
+      - name: Validate manifest and files
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path("docs/sounds/orcs")
+          data = json.loads((root / "manifest.json").read_text())
+          sounds = data["sounds"]
+          assert len(sounds) == 51, len(sounds)
+          assert sorted(int(s["name"][4:6]) for s in sounds) == list(range(51))
+          assert sum(data["counts"].values()) == 51
+          assert all((root / s["path"]).is_file() for s in sounds)
+          assert len({s["path"] for s in sounds}) == 51
+          print("Verified 51 sounds, with a unique category and source ID each.")
+          PY
+
+      - name: Commit categorized MP3 previews
+        id: persist
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/sounds/orcs
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "Import and classify 51 Orc audio previews (CC BY 4.0)"
+            git pull --rebase origin main
+            git push origin HEAD:main
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # GITHUB_TOKEN pushes do not automatically trigger other workflows.
+      # workflow_dispatch is the supported exception.
+      - name: Publish new audio with the game
+        if: steps.persist.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref main
