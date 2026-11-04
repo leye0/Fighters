@@ -395,16 +395,17 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
     display:inline-block;flex:none}
   .hud .score small::before{font:850 13px/1 system-ui,sans-serif;
     display:inline;color:#e3dcb8}
-  /* The two coin pictograms belong to different factions: tint their chips. */
-  .hud .score>div:nth-child(1){border-color:#6ca58a;background:#173329c9}
-  .hud .score>div:nth-child(1) strong{color:#adf0ca}
-  .hud .score>div:nth-child(2){border-color:#b7a16a;background:#322d1dc9}
-  .hud .score>div:nth-child(3){border-color:#c28761;background:#38271ec9}
-  .hud .score>div:nth-child(3) strong{color:#ffd0a2}
-  .hud .score>div:nth-child(1) small::before{content:"🪙"}
-  .hud .score>div:nth-child(2) small::before{content:"🌾"}
-  .hud .score>div:nth-child(3) small::before{content:"🪙"}
-  .hud .score>div:nth-child(4) small::before{content:"⚔"}
+  /* One active-faction gold purse, then logs, wheat and troops. */
+  .hud .score>div:nth-child(1){border-color:#cfaa53;background:#342c16c9}
+  .hud .score>div:nth-child(1) strong{color:#ffe28d}
+  .hud .score>div:nth-child(2){border-color:#9d7651;background:#30251ac9}
+  .hud .score>div:nth-child(2) strong{color:#e5b886}
+  .hud .score>div:nth-child(3){border-color:#8ca96d;background:#27321dc9}
+  .hud .score>div:nth-child(3) strong{color:#c9ed9b}
+  .hud .score>div:nth-child(1) small::before{content:"💰"}
+  .hud .score>div:nth-child(2) small::before{content:"🪵"}
+  .hud .score>div:nth-child(3) small::before{content:"🌾"}
+  .hud .score>div:nth-child(4) small::before{content:"⚔️"}
   .hud .score strong{font:800 14px/1 system-ui,sans-serif!important;
     letter-spacing:0}
 }
@@ -445,7 +446,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 <div class="game-shell"><section class="arcade">
 <div class="hud">
   <div class="hero-hud"><div class="hud-kicker">FIGHTERS · RTS</div><strong id="faction-title">SORCIÈRES</strong><small id="selection-summary">Sélectionnez une unité ou la maison</small><small id="ai-status" class="ai-status">Village orc · en développement</small></div>
-  <div class="score"><div title="Or des sorcières"><small>OR SORCIÈRES</small><strong id="witch-gold">2000</strong></div><div title="Réserves de nourriture des sorcières"><small>🌾 VIVRES</small><strong id="witch-food">45</strong></div><div title="Or des orcs"><small>OR ORCS</small><strong id="orc-gold">900</strong></div><div title="Unités des sorcières et des orcs"><small>UNITÉS</small><strong id="unit-count">0 : 0</strong></div></div>
+  <div class="score"><div id="hud-gold-chip" title="Or de la faction sélectionnée"><small>💰 OR</small><strong id="hud-gold">2000</strong></div><div id="hud-wood-chip" title="Bois rapporté par les ouvriers"><small>🪵 BOIS</small><strong id="hud-wood">250</strong></div><div title="Réserves de nourriture des sorcières"><small>🌾 VIVRES</small><strong id="hud-food">45</strong></div><div title="Unités des sorcières et des orcs"><small>⚔️ UNITÉS</small><strong id="unit-count">0 : 0</strong></div></div>
   <button id="pause" class="pause-compact" aria-label="Pause" title="Pause (P)" disabled>Ⅱ</button>
 </div>
 <div id="viewport" class="viewport" aria-label="Carte de stratégie en temps réel"><div class="scanlines"></div><div id="banner" class="banner"></div><div id="selection-rectangle" hidden></div><div id="order-pings" aria-hidden="true"></div><div id="order-prompt" role="status" aria-live="polite" hidden></div>
@@ -637,9 +638,10 @@ loader.setMeshoptDecoder(MeshoptDecoder);
 // Two shared CC0 tree GLBs (red and dead) and one tiny CC0 bundle of logs.
 // Keep references to individual instance matrices so felling a tree is just
 // a zero-scale GPU instance update, never a forest-wide mesh rebuild.
+const WOOD_PER_TREE=80;
 let forestLoadedSpecies=0,forestPromise=null,woodBundleTemplate=null;
 let woodBundleScale=1,woodBundleCenter=null,woodBundleFloor=0;
-const forestVisuals=forestLayout.map(()=>[]),fallenLogBundles=new Map();
+const forestVisuals=forestLayout.map(()=>[]),fallenLogBundles=new Map(),woodDeposits=new Map();
 const hiddenTreeMatrix=new THREE.Matrix4().makeScale(0,0,0);
 function setTreeVisible(index,visible){
   for(const entry of forestVisuals[index]||[]){
@@ -649,7 +651,7 @@ function setTreeVisible(index,visible){
 }
 function placeLogBundle(index){
   const tree=forestLayout[index];
-  if(!tree?.felled||!woodBundleTemplate||fallenLogBundles.has(index))return;
+  if(!tree?.felled||!woodDeposits.has(index)||!woodBundleTemplate||fallenLogBundles.has(index))return;
   const root=new THREE.Group(),model=woodBundleTemplate.clone(true);
   model.scale.setScalar(woodBundleScale);
   model.position.set(-woodBundleCenter.x*woodBundleScale,
@@ -657,10 +659,16 @@ function placeLogBundle(index){
   root.position.set(tree.x,0,tree.z);root.add(model);
   scene.add(root);fallenLogBundles.set(index,root);
 }
+function removeLogBundle(index){
+  const root=fallenLogBundles.get(index);
+  if(root)scene.remove(root);
+  fallenLogBundles.delete(index);
+}
 function fellTree(index){
   const tree=forestLayout[index];
   if(!tree||tree.felled)return false;
-  tree.felled=true;setTreeVisible(index,false);placeLogBundle(index);
+  tree.felled=true;woodDeposits.set(index,{amount:WOOD_PER_TREE,reservedBy:null});
+  setTreeVisible(index,false);placeLogBundle(index);
   forestObstacles=window.FightersForest.obstacles(forestLayout);
   updateNavObstacles();return true;
 }
@@ -669,7 +677,7 @@ function resetForest(){
     forestLayout[i].felled=false;setTreeVisible(i,true);
   }
   for(const root of fallenLogBundles.values())scene.remove(root);
-  fallenLogBundles.clear();
+  fallenLogBundles.clear();woodDeposits.clear();
   forestObstacles=window.FightersForest.obstacles(forestLayout);
 }
 function loadForest(){
@@ -745,7 +753,9 @@ const sharedSelectionMaterials={witch:new THREE.MeshBasicMaterial({
     color:0xbaff68,side:THREE.DoubleSide,depthTest:false,depthWrite:false,toneMapped:false}),
   orc:new THREE.MeshBasicMaterial({
     color:0xffd279,side:THREE.DoubleSide,depthTest:false,depthWrite:false,toneMapped:false})};
-let ready=false,running=false,paused=false,activeFaction='witch',gold={witch:2000,orc:900},buildMode=null;
+const INITIAL_WOOD=Object.freeze({witch:250,orc:350});
+let ready=false,running=false,paused=false,activeFaction='witch',gold={witch:2000,orc:900},
+  wood={...INITIAL_WOOD},buildMode=null;
 let selectedBuilding=null,nextUnitId=1,qaPassive=false,orcSpawned=false;
 let rallyMode=false,constructionTab=false,lastHudSignature='';
 const ORC_TRAIN_COST=100,ORC_TRAIN_DURATION=4.5,MAX_QUEUE=8;
@@ -1521,7 +1531,7 @@ function spawnUnit(kind,x,z,index=0,role='melee'){
     heading:{x:kind==='witch'?1:-1,z:0},facing:1,attack:null,stun:0,cooldown:rand(.25,1),dead:false,deadTime:0,
     speed:profile.speed,destination:null,attackOrder:null,route:null,routeVersion:-1,
     routeGoal:null,routeAge:0,approachCache:null,approachAge:0,
-    mineJob:null,constructJob:null,farmJob:null,treeJob:null,
+    mineJob:null,constructJob:null,farmJob:null,treeJob:null,woodJob:null,carryBundle:null,
     workTool:null,hammerTool:null,chopTool:null,
     weapon:null,selectionRing:marker,outfitInfo
   };
@@ -1628,6 +1638,20 @@ function pickTree(x,y){
   }
   return chosen;
 }
+function pickLogBundle(x,y){
+  const rect=viewport.getBoundingClientRect();
+  const radius=viewport.clientWidth<760?29:22;
+  let chosen=null,best=radius;
+  for(const index of woodDeposits.keys()){
+    const tree=forestLayout[index];
+    if(!visibleToPlayer(tree.x,tree.z))continue;
+    const p=new THREE.Vector3(tree.x,.24,tree.z).project(camera);
+    const sx=rect.left+(p.x+1)*rect.width/2,sy=rect.top+(1-p.y)*rect.height/2;
+    const distance=Math.hypot(x-sx,y-sy);
+    if(distance<best){chosen=index;best=distance;}
+  }
+  return chosen;
+}
 const activeOrderPings=new Set();
 function removeOrderPing(el){
   if(!activeOrderPings.delete(el))return;
@@ -1669,7 +1693,8 @@ function pingAttackTarget(target){
 }
 function issueMove(destination){
   const actors=[...selected].filter(actor=>!actor.dead&&actor.kind===activeFaction);
-  for(const actor of actors){cancelConstruction(actor);actor.mineJob=null;actor.farmJob=null;actor.treeJob=null;}
+  for(const actor of actors){cancelConstruction(actor);cancelWoodJob(actor);
+    actor.mineJob=null;actor.farmJob=null;actor.treeJob=null;}
   // Make one reservation per soldier, BEFORE movement begins. The old grid
   // independently snapped blocked offsets to the same nearest safe cell.
   const goals=window.FightersUnitPhysics.formationGoals(actors,destination,navigatorRTS);
@@ -1698,16 +1723,17 @@ function queueOrder(building,kind,role='melee'){
   const faction=building.clanId==='witch'?'witch':'orc';
   if(kind==='witch'&&(faction!=='witch'||building.type!=='witch-house')||
      kind==='orc'&&(faction!=='orc'||building.type!=='barrack'))return false;
-  let cost,duration;
+  let cost,duration,woodCost=0;
   if(kind==='upgrade'){
     if(building.level+building.queue.filter(j=>j.kind==='upgrade').length>=3)return false;
-    cost=upgradeCost(building);duration=6+building.level*2;
+    cost=upgradeCost(building);woodCost=40;duration=6+building.level*2;
   }else{
     cost=roles.profile(faction,role).cost;
     duration=trainingDuration(building,kind,role);
   }
-  if(cost===null||gold[faction]<cost)return false;
-  gold[faction]-=cost;building.queue.push({kind,role:kind==='upgrade'?null:role,cost,duration});
+  if(cost===null||gold[faction]<cost||wood[faction]<woodCost)return false;
+  gold[faction]-=cost;wood[faction]-=woodCost;
+  building.queue.push({kind,role:kind==='upgrade'?null:role,cost,woodCost,duration});
   refreshHUD();return true;
 }
 function issueTrain(role='melee'){return queueOrder(witchBuilding,'witch',role);}
@@ -1716,7 +1742,8 @@ function issueUpgrade(building=selectedBuilding){return queueOrder(building,'upg
 function cancelOrder(building,index){
   if(!building?.queue[index])return false;
   const [order]=building.queue.splice(index,1);
-  gold[building.clanId==='witch'?'witch':'orc']+=order.cost;
+  const clan=building.clanId==='witch'?'witch':'orc';
+  gold[clan]+=order.cost;wood[clan]+=order.woodCost||0;
   if(index===0)building.progress=0;
   refreshHUD();return true;
 }
@@ -1860,9 +1887,15 @@ function beginRally(){
 }
 
 const WITCH_BUILD_COST=230,GARDEN_BUILD_COST=175,BUILD_SECONDS=6;
+const BUILD_WOOD_COST=Object.freeze({'witch-house':75,garden:0,
+  hut:55,barrack:95,cauldron:80,factory:130});
 const pendingBuilds=[];
 function constructionCost(type){
   return type==='witch-house'?WITCH_BUILD_COST:type==='garden'?GARDEN_BUILD_COST:ORC_COSTS[type]||null;
+}
+function constructionWood(type){return BUILD_WOOD_COST[type]??0;}
+function canAffordConstruction(clan,type){
+  return gold[clan]>=constructionCost(type)&&wood[clan]>=constructionWood(type);
 }
 function buildFaction(type){return type==='witch-house'||type==='garden'?'witch':'orc';}
 function builderAvailable(clan){
@@ -1873,7 +1906,7 @@ function beginBuild(type){
   if(!running||paused||activeFaction!==clan||!cost||
     (clan==='orc'&&!buildingBlueprints.has(type))||
     (clan==='witch'&&type==='witch-house'&&!witchHouse)||
-    gold[clan]<cost||!builderAvailable(clan))return false;
+    !canAffordConstruction(clan,type)||!builderAvailable(clan))return false;
   buildMode=type;rallyMode=false;constructionTab=false;refreshHUD();return true;
 }
 function buildShape(type,x,z){
@@ -2030,7 +2063,7 @@ function syncGardenVisual(building){
   }
 }
 function buildGarden(x,z,{prepaid=false}={}){
-  if((!prepaid&&gold.witch<GARDEN_BUILD_COST)||!validBuildPosition(x,z,'garden'))return false;
+  if((!prepaid&&!canAffordConstruction('witch','garden'))||!validBuildPosition(x,z,'garden'))return false;
   const id='witch-garden-'+String(++farmSerial).padStart(2,'0');
   const {root,plots}=makeGardenVisual();
   root.position.set(x,0,z);scene.add(root);
@@ -2049,13 +2082,13 @@ function buildGarden(x,z,{prepaid=false}={}){
   buildingInstances.set(id,building);
   if(cropCatalog)installGardenCrops(building);
   else void beginCropLoad();
-  if(!prepaid)gold.witch-=GARDEN_BUILD_COST;
+  if(!prepaid){gold.witch-=GARDEN_BUILD_COST;wood.witch-=constructionWood('garden');}
   updateHealthBar(building);updateNavObstacles();refreshHUD();return building;
 }
 
 function buildOrc(type,x,z,{byAI=false,prepaid=false}={}){
   if(!ORC_COSTS[type]||!buildingBlueprints.has(type)||
-    (!prepaid&&gold.orc<ORC_COSTS[type])||!validBuildPosition(x,z,type))return false;
+    (!prepaid&&!canAffordConstruction('orc',type))||!validBuildPosition(x,z,type))return false;
   const template=buildingBlueprints.get(type),model=template.source.clone(true);
   model.updateMatrixWorld(true);
   const bounds=new THREE.Box3().setFromObject(model),center=bounds.getCenter(new THREE.Vector3());
@@ -2070,12 +2103,12 @@ function buildOrc(type,x,z,{byAI=false,prepaid=false}={}){
   const instance=createBuildingInstance(template.entry,type,1,anchor,3.9,model,template.projection);
   if(!orcVillage){orcVillage=new THREE.Group();scene.add(orcVillage);}
   orcVillage.add(anchor);
-  if(!prepaid)gold.orc-=ORC_COSTS[type];
+  if(!prepaid){gold.orc-=ORC_COSTS[type];wood.orc-=constructionWood(type);}
   if(!byAI){buildMode=null;showBanner(ORC_NAMES[type]+' CONSTRUITE');}
   updateNavObstacles();refreshHUD();return instance;
 }
 function buildWitchHouse(x,z,{prepaid=false}={}){
-  if(!witchHouse||(!prepaid&&gold.witch<WITCH_BUILD_COST)||
+  if(!witchHouse||(!prepaid&&!canAffordConstruction('witch','witch-house'))||
      !validBuildPosition(x,z,'witch-house'))return false;
   // Reuse the already-loaded house hierarchy, geometry, materials and textures.
   const root=witchHouse.clone(true);
@@ -2098,7 +2131,7 @@ function buildWitchHouse(x,z,{prepaid=false}={}){
   fill.position.z=.01;bar.add(backdrop,fill);
   instance.healthBar={root:bar,fill};scene.add(bar);
   buildingInstances.set(id,instance);scene.add(root);updateHealthBar(instance);
-  if(!prepaid)gold.witch-=WITCH_BUILD_COST;
+  if(!prepaid){gold.witch-=WITCH_BUILD_COST;wood.witch-=constructionWood('witch-house');}
   updateNavObstacles();refreshHUD();return instance;
 }
 function cancelConstruction(actor,refund=true){
@@ -2107,12 +2140,13 @@ function cancelConstruction(actor,refund=true){
   actor.constructJob=null;actor.route=null;actor.approachCache=null;
   const index=pendingBuilds.indexOf(job);
   if(index>=0)pendingBuilds.splice(index,1);
-  if(refund)gold[actor.kind]+=job.cost;
+  if(refund){gold[actor.kind]+=job.cost;wood[actor.kind]+=job.woodCost;}
   return true;
 }
 function scheduleBuild(type,x,z,{byAI=false}={}){
-  const clan=buildFaction(type),cost=constructionCost(type);
-  if(!running||paused||!cost||gold[clan]<cost||!validBuildPosition(x,z,type))return false;
+  const clan=buildFaction(type),cost=constructionCost(type),woodCost=constructionWood(type);
+  if(!running||paused||!cost||!canAffordConstruction(clan,type)||
+    !validBuildPosition(x,z,type))return false;
   const candidates=units.filter(u=>u.kind===clan&&roles.isWorker(u)&&!u.dead&&!u.constructJob);
   const preferred=candidates.filter(u=>selected.has(u));
   const available=preferred.length?preferred:candidates;
@@ -2122,8 +2156,9 @@ function scheduleBuild(type,x,z,{byAI=false}={}){
   if(!worker)return false;
   const site={id:'construction-'+worker.id+'-'+nextUnitId,
     hitbox:buildShape(type,x,z)};
-  const job={type,x,z,cost,site,byAI,progress:0};
-  pendingBuilds.push(job);gold[clan]-=cost;
+  const job={type,x,z,cost,woodCost,site,byAI,progress:0};
+  pendingBuilds.push(job);gold[clan]-=cost;wood[clan]-=woodCost;
+  cancelWoodJob(worker);
   worker.mineJob=null;worker.farmJob=null;worker.treeJob=null;
   worker.constructJob=job;worker.destination=null;
   worker.workHitTimer=0;
@@ -2169,7 +2204,7 @@ function tickConstructWorker(actor,dt){
     const built=job.type==='witch-house'?buildWitchHouse(job.x,job.z,{prepaid:true}):
       job.type==='garden'?buildGarden(job.x,job.z,{prepaid:true}):
       buildOrc(job.type,job.x,job.z,{prepaid:true,byAI:job.byAI});
-    if(!built)gold[actor.kind]+=job.cost;
+    if(!built){gold[actor.kind]+=job.cost;wood[actor.kind]+=job.woodCost;}
     else if(job.byAI)showBanner('CONSTRUCTION TERMINÉE');
     refreshHUD();
   }
@@ -2186,16 +2221,19 @@ function cancelTransientMode(){
 function stopSelectedUnits(){
   attackMode=false;
   for(const unit of selected){
-    cancelConstruction(unit);unit.mineJob=null;unit.farmJob=null;
+    cancelConstruction(unit);cancelWoodJob(unit);unit.treeJob=null;
+    unit.mineJob=null;unit.farmJob=null;
     unit.destination=null;unit.attackOrder=null;unit.route=null;
   }
   acknowledgePlayerOrder(selected);
   refreshHUD();
 }
 function refreshHUD(){
-  setText('witch-gold',gold.witch);
-  setText('witch-food',Math.ceil(farming.food));
-  setText('orc-gold',gold.orc);
+  setText('hud-gold',gold[activeFaction]);
+  setText('hud-wood',wood[activeFaction]);
+  setText('hud-food',activeFaction==='witch'?Math.ceil(farming.food):'—');
+  $('hud-gold-chip').title='Or des '+(activeFaction==='witch'?'sorcières':'orcs');
+  $('hud-wood-chip').title='Bois des '+(activeFaction==='witch'?'sorcières':'orcs');
   setText('unit-count',units.filter(u=>u.kind==='witch'&&!u.dead).length+' : '+
     units.filter(u=>u.kind==='orc'&&!u.dead).length);
   setText('faction-title',activeFaction==='witch'?'SORCIÈRES':'ORCS');
@@ -2217,10 +2255,13 @@ function refreshHUD(){
     const add=(symbol,name,cost,action,disabled=false,tooltip='')=>{
       const element=document.createElement('button');
       element.type='button';element.disabled=!!disabled;
-      element.title=tooltip||name+(cost?' · '+cost+' or':'');
+      const price=typeof cost==='object'?
+        [cost.gold?cost.gold+'💰':'',cost.wood?cost.wood+'🪵':''].filter(Boolean).join(' '):
+        cost?cost+'💰':'';
+      element.title=tooltip||name+(price?' · '+price:'');
       element.setAttribute('aria-label',element.title);
       for(const [className,text] of [['action-symbol',symbol],['action-name',name],
-        ['action-cost',cost?cost+' or':'']]){
+        ['action-cost',price]]){
         const span=document.createElement('span');span.className=className;span.textContent=text;
         element.appendChild(span);
       }
@@ -2236,8 +2277,9 @@ function refreshHUD(){
       for(const type of types){
         const cost=constructionCost(type);
         add(({barrack:'🏰',hut:'🛖',cauldron:'⚗️',factory:'🏭','witch-house':'🏡',garden:'🌾'})[type],
-          type==='witch-house'?'Maison':type==='garden'?'Potager':ORC_NAMES[type],cost,()=>beginBuild(type),
-          gold[activeFaction]<cost||!builderAvailable(activeFaction)||
+          type==='witch-house'?'Maison':type==='garden'?'Potager':ORC_NAMES[type],
+          {gold:cost,wood:constructionWood(type)},()=>beginBuild(type),
+          !canAffordConstruction(activeFaction,type)||!builderAvailable(activeFaction)||
             (activeFaction==='orc'&&!buildingBlueprints.has(type)),
           'Confier '+(type==='witch-house'?'une maison':type==='garden'?'un potager':ORC_NAMES[type])+' à un ouvrier');
       }
@@ -2273,8 +2315,10 @@ function refreshHUD(){
         }
       }
       const cost=upgradeCost(b),pending=b.queue.some(item=>item.kind==='upgrade');
-      if(friendly&&b.type!=='mine'&&b.type!=='garden')add('⬆️','Améliorer',cost,()=>issueUpgrade(b),
-        cost===null||pending||gold[faction]<cost||b.queue.length>=MAX_QUEUE||paused,
+      if(friendly&&b.type!=='mine'&&b.type!=='garden')add('⬆️','Améliorer',
+        {gold:cost,wood:40},()=>issueUpgrade(b),
+        cost===null||pending||gold[faction]<cost||wood[faction]<40||
+          b.queue.length>=MAX_QUEUE||paused,
         cost===null?'Niveau maximal':pending?'Amélioration déjà dans la file':
         'Améliorer au niveau '+(b.level+1));
       // Warcraft II buildings show their train/upgrade icons directly;
@@ -2363,12 +2407,12 @@ function refreshHUD(){
     if(role)disabled||=gold[faction]<roles.profile(faction,role).cost||b?.queue.length>=MAX_QUEUE;
     else if(action==='Améliorer')disabled||=upgradeCost(b)===null||
       b?.queue.some(item=>item.kind==='upgrade')||
-      gold[faction]<upgradeCost(b)||b?.queue.length>=MAX_QUEUE;
+      gold[faction]<upgradeCost(b)||wood[faction]<40||b?.queue.length>=MAX_QUEUE;
     else if(action==='Annuler prochain')disabled=b?.queue.length===0;
     else if(constructionTab&&(['Maison','Potager'].includes(action)||Object.values(ORC_NAMES).includes(action))){
       const type=action==='Maison'?'witch-house':action==='Potager'?'garden':
         Object.keys(ORC_NAMES).find(key=>ORC_NAMES[key]===action);
-      disabled||=gold[activeFaction]<constructionCost(type)||!builderAvailable(activeFaction)||
+      disabled||=!canAffordConstruction(activeFaction,type)||!builderAvailable(activeFaction)||
         (activeFaction==='orc'&&!buildingBlueprints.has(type));
     }else if(action==='Construire')disabled||=!builderAvailable(activeFaction);
     else if(action==='Caserne')disabled||=![...buildingInstances.values()].some(v=>v.type==='barrack'&&!v.destroyed);
@@ -2455,7 +2499,8 @@ function startSession(){
     }
   }
   resize();
-  gold={witch:2000,orc:900};farming.reset();farmSerial=0;farmAssignmentElapsed=0;famineAlerted=false;
+  gold={witch:2000,orc:900};wood={...INITIAL_WOOD};
+  farming.reset();farmSerial=0;farmAssignmentElapsed=0;famineAlerted=false;
   buildMode=null;orcSpawned=false;
   fogOfWar.reset();knownEnemyBuildings.witch.clear();
   knownEnemyBuildings.orc.clear();fogElapsed=0;fogStarted=true;
@@ -2580,7 +2625,7 @@ function removeRallyMarker(b){
   b.rallyMarker.material.dispose();b.rallyMarker=null;
 }
 function releaseActor(actor){
-  cancelConstruction(actor);
+  cancelConstruction(actor);cancelWoodJob(actor);
   selected.delete(actor);
   actor.mixer.stopAllAction();actor.mixer.uncacheRoot(actor.visual);
   // Every SkeletonUtils.clone owns one or more GPU bone textures. Removing
@@ -2672,7 +2717,7 @@ function dealDamage(target,amount,attacker){
   if(target.dead)return;
   target.health=Math.max(0,target.health-amount);target.stun=.24;
   if(!target.health){
-    cancelConstruction(target);
+    cancelConstruction(target);cancelWoodJob(target);
     if(target.kind==='orc')playOrcVoice('loud',target.root.position);
     else if(target.kind==='witch')playWitchVoice('destruction',target.root.position);
     target.dead=true;target.deadTime=1.4;target.destination=null;target.attackOrder=null;
@@ -2735,7 +2780,8 @@ function assignMiners(){
   if(!orcDirector.enabled||!running)return;
   const mines=[...buildingInstances.values()].filter(b=>b.type==='mine'&&
     b.clanId==='neutral'&&!b.destroyed);
-  const orcs=units.filter(u=>u.kind==='orc'&&roles.isWorker(u)&&!u.dead&&!u.constructJob&&!u.treeJob);
+  const orcs=units.filter(u=>u.kind==='orc'&&roles.isWorker(u)&&!u.dead&&
+    !u.constructJob&&!u.treeJob&&!u.woodJob);
   const limit=Math.min(mines.length,Math.max(1,Math.floor(orcs.length/3)));
   let assigned=orcs.filter(u=>u.mineJob&&mines.some(b=>b.id===u.mineJob.mineId));
   for(const orc of orcs){
@@ -2765,7 +2811,8 @@ function orderMine(actors,mine){
   let issued=0;
   for(const actor of actors){
     if(!canMine(actor,mine))continue;
-    cancelConstruction(actor);actor.farmJob=null;actor.treeJob=null;
+    cancelConstruction(actor);cancelWoodJob(actor);
+    actor.farmJob=null;actor.treeJob=null;
     actor.mineJob={mineId:mine.id,progress:0,cycles:0};
     actor.destination=null;actor.route=null;actor.approachCache=null;
     issued++;
@@ -2803,13 +2850,122 @@ function tickMineWorker(actor,dt){
   return true;
 }
 const TREE_CHOP_SECONDS=4.2;
+const WOOD_PICKUP_SECONDS=1.15;
+function mountCarriedWood(actor){
+  if(!woodBundleTemplate)return;
+  if(!actor.carryBundle){
+    // A small bundle is held in front of the torso, without rig-specific
+    // hand-bone retargeting. The original GLB geometry/materials are shared.
+    const root=new THREE.Group(),model=woodBundleTemplate.clone(true);
+    const scale=woodBundleScale*.57;
+    model.scale.setScalar(scale);
+    model.position.set(-woodBundleCenter.x*scale,-woodBundleFloor*scale,
+      -woodBundleCenter.z*scale);
+    root.position.set(0,1.02,.25);root.add(model);
+    actor.root.add(root);actor.carryBundle=root;
+  }
+  actor.carryBundle.visible=true;
+}
+function cancelWoodJob(actor){
+  const job=actor.woodJob;
+  if(!job)return;
+  if(job.phase==='carry'){
+    woodDeposits.set(job.index,{amount:job.amount,reservedBy:null});
+    placeLogBundle(job.index);
+  }else{
+    const deposit=woodDeposits.get(job.index);
+    if(deposit?.reservedBy===actor.id)deposit.reservedBy=null;
+  }
+  actor.woodJob=null;
+  if(actor.carryBundle)actor.carryBundle.visible=false;
+}
+function orderCollectWood(actors,index,{byAI=false}={}){
+  const deposit=woodDeposits.get(index);
+  if(!deposit)return false;
+  let assigned=0;
+  for(const actor of actors){
+    if(actor.dead||!roles.isWorker(actor)||
+      (deposit.reservedBy&&deposit.reservedBy!==actor.id))continue;
+    cancelConstruction(actor);cancelWoodJob(actor);
+    actor.mineJob=null;actor.farmJob=null;actor.treeJob=null;
+    actor.woodJob={index,phase:'pickup',progress:0,amount:0,goal:null};
+    deposit.reservedBy=actor.id;
+    actor.destination=null;actor.attackOrder=null;actor.route=null;
+    actor.approachCache=null;assigned++;
+    break; // One bundle is a single physical resource, never double-counted.
+  }
+  if(assigned){if(!byAI)showBanner('RAMASSAGE DES BÛCHES');refreshHUD();}
+  return assigned>0;
+}
+function woodStoreFor(actor){
+  const clan=actor.kind==='witch'?'witch':'orcs';
+  const homes=liveBuildings().filter(b=>b.clanId===clan&&b.type!=='garden');
+  homes.sort((a,b)=>targetDistance(actor,a)-targetDistance(actor,b));
+  return homes[0]||null;
+}
+function tickWoodWorker(actor,dt){
+  const job=actor.woodJob;
+  if(!job)return false;
+  if(job.phase==='pickup'){
+    const deposit=woodDeposits.get(job.index),tree=forestLayout[job.index];
+    if(!deposit||deposit.reservedBy!==actor.id){actor.woodJob=null;return true;}
+    if(Math.hypot(actor.root.position.x-tree.x,actor.root.position.z-tree.z)>1.45){
+      if(!job.goal||!navigatorRTS.pointClear(job.goal))job.goal=treeChopGoal(actor,tree);
+      if(job.goal){const status=navigateActor(actor,job.goal,dt,'engage');
+        if(status!=='moving')animation(actor,'Idle_Loop');}
+      return true;
+    }
+    faceDirection(actor,tree.x-actor.root.position.x,tree.z-actor.root.position.z);
+    animation(actor,FARM_HARVEST);job.progress+=dt;
+    if(job.progress>=WOOD_PICKUP_SECONDS){
+      job.amount=deposit.amount;job.phase='carry';job.goal=null;
+      woodDeposits.delete(job.index);removeLogBundle(job.index);
+      mountCarriedWood(actor);animation(actor,'Idle_Loop');
+    }
+    return true;
+  }
+  const home=woodStoreFor(actor);
+  if(!home){animation(actor,'Idle_Loop');return true;}
+  if(targetDistance(actor,home)>BUILDING_CONTACT){
+    const goal=approachBuilding(actor,home);
+    if(goal){const status=navigateActor(actor,goal,dt,'engage');
+      if(status!=='moving')animation(actor,'Idle_Loop');}
+    return true;
+  }
+  wood[actor.kind]+=job.amount;
+  if(actor.carryBundle)actor.carryBundle.visible=false;
+  actor.woodJob=null;animation(actor,'Idle_Loop');
+  showBanner('BOIS LIVRÉ : +'+job.amount+' 🪵');refreshHUD();
+  return true;
+}
+function assignOrcLumberjack(){
+  if(!orcDirector.enabled||wood.orc>=140||
+    units.some(u=>u.kind==='orc'&&!u.dead&&(u.treeJob||u.woodJob)))return;
+  const workers=units.filter(u=>u.kind==='orc'&&roles.isWorker(u)&&!u.dead&&
+    !u.constructJob&&!u.farmJob&&!u.destination);
+  if(!workers.length)return;
+  const candidates=[];
+  for(let i=0;i<forestLayout.length;i++){
+    const tree=forestLayout[i];
+    if(tree.felled||!fogOfWar.exploredAt(tree.x,tree.z,'orc'))continue;
+    for(const actor of workers){
+      candidates.push({actor,index:i,d:Math.hypot(actor.root.position.x-tree.x,
+        actor.root.position.z-tree.z)});
+    }
+  }
+  candidates.sort((a,b)=>a.d-b.d);
+  for(const {actor,index} of candidates.slice(0,12)){
+    const goal=treeChopGoal(actor,forestLayout[index]);
+    if(goal&&orderChop([actor],index))return;
+  }
+}
 function orderChop(actors,index){
   const tree=forestLayout[index];
   if(!tree||tree.felled)return false;
   let assigned=0;
   for(const actor of actors){
     if(actor.dead||!roles.isWorker(actor))continue;
-    cancelConstruction(actor);
+    cancelConstruction(actor);cancelWoodJob(actor);
     actor.mineJob=null;actor.farmJob=null;
     actor.treeJob={index,progress:0,goal:null};
     actor.destination=null;actor.attackOrder=null;actor.route=null;
@@ -2850,6 +3006,7 @@ function tickTreeWorker(actor,dt){
   if(job.progress>=TREE_CHOP_SECONDS){
     fellTree(job.index);actor.treeJob=null;
     animation(actor,'Idle_Loop');showBanner('BRASSÉE DE BÛCHES');
+    orderCollectWood([actor],job.index,{byAI:true});
   }
   return true;
 }
@@ -2865,7 +3022,7 @@ function orderHarvest(actors,garden){
   let assigned=0;
   for(const actor of actors){
     if(actor.kind!=='witch'||actor.dead||!roles.isWorker(actor))continue;
-    cancelConstruction(actor);
+    cancelConstruction(actor);cancelWoodJob(actor);
     actor.mineJob=null;actor.treeJob=null;
     actor.farmJob={gardenId:garden.id,plotIndex:-1,progress:0};
     actor.destination=null;actor.attackOrder=null;actor.route=null;actor.approachCache=null;
@@ -2882,7 +3039,7 @@ function assignGardenWorkers(dt){
     if(garden.type!=='garden'||garden.destroyed||farming.firstReady(garden.id)<0)continue;
     if(units.some(u=>!u.dead&&u.farmJob?.gardenId===garden.id))continue;
     const workers=units.filter(u=>u.kind==='witch'&&!u.dead&&roles.isWorker(u)&&
-      !u.constructJob&&!u.mineJob&&!u.farmJob&&!u.treeJob&&!u.destination);
+      !u.constructJob&&!u.mineJob&&!u.farmJob&&!u.treeJob&&!u.woodJob&&!u.destination);
     workers.sort((a,b)=>targetDistance(a,garden)-targetDistance(b,garden));
     const worker=workers[0];
     if(!worker)continue;
@@ -3003,7 +3160,7 @@ function tickUnit(actor,dt){
   if(actor.attackOrder&&!enemyOf(actor,actor.attackOrder))actor.attackOrder=null;
   if(roles.isWorker(actor)){
     if(tickConstructWorker(actor,dt)||tickMineWorker(actor,dt)||
-      tickTreeWorker(actor,dt)||tickGardenWorker(actor,dt))return;
+      tickTreeWorker(actor,dt)||tickWoodWorker(actor,dt)||tickGardenWorker(actor,dt))return;
     if(actor.destination){
       const result=navigateActor(actor,actor.destination,dt,'order');
       if(result==='arrived'){actor.destination=null;actor.route=null;}
@@ -3061,6 +3218,7 @@ function stepOrcStrategy(dt){
   // There is no passive mine income. Assign visible workers to real mines,
   // then credit gold ONLY after a miner completes a physical work cycle.
   assignMiners();
+  assignOrcLumberjack();
   const aliveOrcs=units.filter(a=>a.kind==='orc'&&!a.dead);
   const enemyBaseKnown=knownEnemyBuildings.orc.has(witchBuilding.id);
   const scout=aliveOrcs.find(a=>roles.isFighter(a)&&a.scouting&&!a.attackOrder)||
@@ -3182,6 +3340,7 @@ function touchAt(x,y,append=false){
   const friend=pickUnit(x,y,false),building=pickBuilding(pos);
   const unit=pickUnit(x,y,true);
   const treeIndex=selected.size?pickTree(x,y):null;
+  const logIndex=selected.size?pickLogBundle(x,y):null;
   const faction=activeFaction==='witch'?'witch':'orcs';
   // A selected unit needs only one more tap inside the hostile GLB footprint:
   // no separate target mode, and the polygon wins over nearby unit circles.
@@ -3194,6 +3353,7 @@ function touchAt(x,y,append=false){
       orderAttack([...selected],unit);return;
     }
     if(treeIndex!==null&&orderChop([...selected],treeIndex))return;
+    if(logIndex!==null&&orderCollectWood([...selected],logIndex))return;
   }
   if(attackMode){
     showBanner('CIBLE ENNEMIE REQUISE');return;
@@ -3562,9 +3722,16 @@ window.__fightersQA={
       x:u.root.position.x,z:u.root.position.z}))},
     forestry:{workers:units.filter(u=>u.treeJob&&!u.dead).map(u=>({
       id:u.id,clan:u.kind,index:u.treeJob.index,progress:u.treeJob.progress,
-      x:u.root.position.x,z:u.root.position.z}))},
+      x:u.root.position.x,z:u.root.position.z})),
+      piles:[...woodDeposits].map(([index,deposit])=>({index,amount:deposit.amount,
+        reservedBy:deposit.reservedBy,visible:fallenLogBundles.has(index)})),
+      haulers:units.filter(u=>u.woodJob&&!u.dead).map(u=>({
+        id:u.id,clan:u.kind,index:u.woodJob.index,phase:u.woodJob.phase,
+        amount:u.woodJob.amount,carrying:!!u.carryBundle?.visible,
+        x:u.root.position.x,z:u.root.position.z}))},
     construction:pendingBuilds.map(job=>({type:job.type,x:job.x,z:job.z,
-      progress:job.progress,cost:job.cost,workerId:units.find(u=>u.constructJob===job)?.id||null})),
+      progress:job.progress,cost:job.cost,woodCost:job.woodCost,
+      workerId:units.find(u=>u.constructJob===job)?.id||null})),
     gpu:{geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,
       drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles},
     assets:{sourceRigs:sharedClipCatalog.size,sharedMaterials:sharedCostumeMaterials.size,
@@ -3582,7 +3749,7 @@ window.__fightersQA={
       persistentButtons:[],
       queueButtons:$('training-progress').querySelectorAll('button').length,
       orderPrompt:$('order-prompt').hidden?'':$('order-prompt').textContent},
-    gold:{...gold},projection:camera.isOrthographicCamera?'orthographic':'perspective',
+    gold:{...gold},wood:{...wood},projection:camera.isOrthographicCamera?'orthographic':'perspective',
     cameraQuaternion:camera.quaternion.toArray(),
     witches:units.filter(a=>a.kind==='witch'&&!a.dead).map(a=>({
       id:a.id,role:a.role,x:a.root.position.x,z:a.root.position.z,radius:a.radius,health:a.health,animation:a.current,
@@ -3648,6 +3815,10 @@ window.__fightersQA={
     const actor=units.filter(u=>u.kind===kind&&!u.dead)[index];
     return actor?orderChop([actor],treeIndex):false;
   },
+  orderCollectWood:(kind,index,treeIndex)=>{
+    const actor=units.filter(u=>u.kind===kind&&!u.dead)[index];
+    return actor?orderCollectWood([actor],treeIndex):false;
+  },
   treeScreenPoint:index=>{
     const tree=forestLayout[index];
     if(!tree||tree.felled)return null;
@@ -3659,6 +3830,8 @@ window.__fightersQA={
   orderBuild:(type,x,z)=>scheduleBuild(type,x,z),
   buildGarden:(x,z)=>buildGarden(x,z),
   setFood:value=>{farming.food=Math.max(0,Number(value)||0);refreshHUD();},
+  setWood:(clan,value)=>{if(clan==='witch'||clan==='orc'){
+    wood[clan]=Math.max(0,Math.floor(Number(value)||0));refreshHUD();}},
   auditRigSharing:(kind)=>{
     const actors=units.filter(u=>u.kind===kind&&!u.dead);
     const meshes=actors.map(a=>{

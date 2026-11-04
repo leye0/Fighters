@@ -165,25 +165,40 @@
      if(distance(from,goal)<.12)return {goal,waypoints:[],version:this.version};
      if(this.segmentClear(from,goal))return {goal,waypoints:[goal],version:this.version};
      let cells=null;
+     // A circle may stand legally beside a tree or wall while its entire
+     // coarse 1 m A* cell is marked blocked. Start from a *reachable* free
+     // neighbour in that case; never move/teleport through the obstacle.
+     const startCell=this.cell(from),starts=[];
+     if(this.cellBlocked(startCell)){
+       for(let dz=-4;dz<=4;dz++)for(let dx=-4;dx<=4;dx++){
+         const c={x:startCell.x+dx,z:startCell.z+dz};
+         if(this.cellBlocked(c))continue;
+         const p=this.center(c);
+         if(this.segmentClear(from,p))starts.push({p,d:distance(from,p)});
+       }
+       starts.sort((a,b)=>a.d-b.d);
+     }else starts.push({p:from,d:0});
      const endpoint=this.cell(goal);
-     if(!this.cellBlocked(endpoint)){
-       cells=this.findPath(from,goal);
-     }else{
+     const targets=[];
+     if(!this.cellBlocked(endpoint))targets.push(goal);
+     else{
        // A* uses inflated occupancy for safe diagonal edges. A legal melee
        // endpoint immediately outside a building can share a BLOCKED cell
        // without being physically obstructed. Reach it from a free cell.
-       const candidates=[];
        for(let dz=-5;dz<=5;dz++)for(let dx=-5;dx<=5;dx++){
          const c={x:endpoint.x+dx,z:endpoint.z+dz};
          if(this.cellBlocked(c))continue;
          const p=this.center(c);
-         if(this.segmentClear(p,goal))candidates.push({p,d:distance(p,goal)});
+         if(this.segmentClear(p,goal))targets.push(p);
        }
-       candidates.sort((a,b)=>a.d-b.d);
-       for(const {p} of candidates.slice(0,18)){
-         const route=this.findPath(from,p);
-         if(route){cells=route;break;}
+       targets.sort((a,b)=>distance(a,goal)-distance(b,goal));
+     }
+     for(const {p:start} of starts.slice(0,18)){
+       for(const target of targets.slice(0,18)){
+         const route=this.findPath(start,target);
+         if(route){cells=start===from?route:[start,...route];break;}
        }
+       if(cells)break;
      }
      if(!cells)return null;
      const candidates=[...cells,goal],waypoints=[];let current=from,index=0;
