@@ -46,6 +46,32 @@
   }
   return penalty;
  }
+ // Watch actual displacement over time, not the fact that a walk animation
+ // was requested. An agent can oscillate beside a wall or be pushed back by
+ // separation on every frame while step() still returns a nonzero movement.
+ // Return the number of consecutive stalled windows. Replanning a path or
+ // chasing a moving target must not erase evidence of a stationary unit;
+ // actual displacement (or an explicit order resetting navWatch) does.
+ function watchMovement(agent,position,waypoint,dt){
+  let watch=agent.navWatch;
+  const gap=distance(position,waypoint);
+  if(!watch){
+   agent.navWatch={waypoint:{...waypoint},origin:{...position},gap,
+    elapsed:0,stalls:0};
+   return 0;
+  }
+  if(distance(watch.waypoint,waypoint)>.55){
+   watch.waypoint={...waypoint};watch.gap=gap;
+  }
+  if(distance(position,watch.origin)>.48){
+   watch.origin={...position};watch.gap=gap;watch.elapsed=0;watch.stalls=0;
+   return 0;
+  }
+  watch.elapsed+=dt;
+  if(watch.elapsed<1.8)return 0;
+  watch.origin={...position};watch.gap=gap;watch.elapsed=0;
+  return ++watch.stalls;
+ }
  function step(from,destination,budget,agent,units,nav,radius=RADIUS){
   const dx=destination.x-from.x,dz=destination.z-from.z;
   const gap=Math.hypot(dx,dz);
@@ -73,7 +99,10 @@
    // Once inside the assigned formation slot's landing radius, continue
    // towards that slot instead of orbiting a nearby friend forever.
    const landingWeight=clamp((gap-.45)/1.25,0,1);
-   const congestion=(crowdNow*.55+crowdAhead*1.25)*landingWeight;
+   // A trapped actor gets a short forward-only recovery window. Other units
+   // are soft obstacles, so a packed crowd must not permanently pin it down.
+   const congestion=agent?.unstickSeconds>0?0:
+     (crowdNow*.55+crowdAhead*1.25)*landingWeight;
    const score=progress*1.5-congestion-Math.abs(angle)*.10;
    if(score>bestScore){best=end;bestScore=score;}
   }
@@ -158,5 +187,5 @@
   return actors.map(actor=>assigned.get(actor)||null);
  }
  return {RADIUS,MIN_SPACING,distance,sweptCircleHit,freeForUnit,
-  crowdPenalty,step,separate,formationGoals};
+  crowdPenalty,watchMovement,step,separate,formationGoals};
 });
