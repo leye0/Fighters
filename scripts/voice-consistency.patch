@@ -1,0 +1,99 @@
+diff --git a/docs/index.html b/docs/index.html
+index b178b4e..8590343 100644
+--- a/docs/index.html
++++ b/docs/index.html
+@@ -1096,7 +1096,8 @@ function playOrcVoice(category,actorOrPosition){
+   const {x,z}=position;
+   // The callback is evaluated again after asynchronous MP3 fetch/decode.
+   void orcSound.play(category,()=>running&&!paused&&visibleToPlayer(x,z),
+-    actor?{voice:ROLE_VOICE.orc[actor.role]}:{});
++    actor?{voice:ROLE_VOICE.orc[actor.role],
++      ...(category==='interaction'||category==='attack'?{variant:actor.voiceLineIndex}:{})}:{});
+   return true;
+ }
+ function playWitchVoice(category,actorOrPosition){
+@@ -1104,7 +1105,8 @@ function playWitchVoice(category,actorOrPosition){
+   const position=actor?.root.position||actorOrPosition;
+   if(!running||paused||!position||!visibleToPlayer(position.x,position.z))return false;
+   const {x,z}=position;
+-  const options=actor?{voice:ROLE_VOICE.witch[actor.role]}:{};
++  const options=actor?{voice:ROLE_VOICE.witch[actor.role],
++    ...(category==='interaction'||category==='attack'?{variant:actor.voiceLineIndex}:{})}:{};
+   void witchSound.play(category,()=>running&&!paused&&visibleToPlayer(x,z),options);
+   return true;
+ }
+@@ -1873,6 +1875,10 @@ function spawnUnit(kind,x,z,index=0,role='melee'){
+   const profile=roles.profile(kind,role);
+   const root=new THREE.Group(),visual=cloneSkeleton(source.scene);
+   const appearance=kind==='witch'?randomWitchHair():null;
++  // The voice line is selected ONCE when a character is born. Four variants
++  // remain available across units, but one individual never changes its
++  // recorded performer or emotional energy on consecutive clicks.
++  const voiceLineIndex=1+Math.floor(Math.random()*4);
+   const outfitInfo=costumeLayers(visual,kind,index,role,appearance);
+   const bounds=new THREE.Box3().setFromObject(visual);
+   const center=bounds.getCenter(new THREE.Vector3());
+@@ -1898,7 +1904,7 @@ function spawnUnit(kind,x,z,index=0,role='melee'){
+     orcFoodJob:null,
+     healJob:null,healRetry:0,soulJob:null,soulClaimed:false,soulReservedBy:null,
+     workTool:null,hammerTool:null,pickTool:null,chopTool:null,
+-    weapon:null,selectionRing:marker,outfitInfo
++    weapon:null,selectionRing:marker,outfitInfo,voiceLineIndex
+   };
+   // A single sword asset is cloned as a lightweight scene node for melee orcs.
+   // Workers and ranged units never allocate weapons.
+diff --git a/docs/rts-sound.js b/docs/rts-sound.js
+index b5a43af..f247f6d 100644
+--- a/docs/rts-sound.js
++++ b/docs/rts-sound.js
+@@ -238,8 +238,13 @@
+       const voiceRole=typeof options.voice==='string'?options.voice:null;
+       const paths=voiceRole?this.voices[category]?.[voiceRole]:groups[category];
+       if(!paths?.length)return false;
++      // Independent TTS calls can sound like different performers even when
++      // labelled as one role. Lock each actor to one approved take for repeated
++      // selection and battle commands; never re-roll its performer per click.
++      const variant=Number.isInteger(options.variant)?options.variant:null;
++      if(variant!==null&&(variant<1||variant>paths.length))return false;
+       const pinned=typeof options.path==='string'&&paths.includes(options.path)?
+-        options.path:null;
++        options.path:variant===null?null:paths[variant-1];
+       const historyKey=voiceRole?category+':'+voiceRole:category;
+       const previous=this.lastSound.get(historyKey);
+       const available=pinned?[pinned]:paths.length>1?
+diff --git a/scripts/test-rts-sound.mjs b/scripts/test-rts-sound.mjs
+index e8215c2..8335429 100644
+--- a/scripts/test-rts-sound.mjs
++++ b/scripts/test-rts-sound.mjs
+@@ -184,6 +184,10 @@ assert(html.includes("acknowledgePlayerOrder(actors.filter(actor=>actor.attackOr
+   'attack commands must trigger forceful speech');
+ assert(!html.includes('WITCH_VOICE_PRESETS'),
+   'unpredictable old Freesound Witch acknowledgements are retired');
++assert(html.includes('const voiceLineIndex=1+Math.floor(Math.random()*4)'),
++  'each unit draws its performer once when created');
++assert.equal((html.match(/variant:actor\.voiceLineIndex/g)||[]).length,2,
++  'both Witch and Orc dialogue must pin the same take per character');
+ for(const [faction,roles] of Object.entries({
+   witch:['worker','guard','arcane'],orc:['worker','warrior','shaman']
+ })){
+@@ -222,5 +226,19 @@ time+=700;
+ assert.equal(await roleEngine.play('attack',()=>true,{voice:'elder'}),false,
+   'unknown voice must stay silent rather than playing another role');
+ roleEngine.reset();
++time+=700;
++assert.equal(await roleEngine.play('interaction',()=>true,{voice:'worker',variant:2}),true);
++assert.equal(roleEngine.lastSound.get('interaction:worker'),'interaction/worker_02.mp3');
++time+=500;
++assert.equal(await roleEngine.play('interaction',()=>true,{voice:'worker',variant:2}),true);
++assert.equal(roleEngine.lastSound.get('interaction:worker'),'interaction/worker_02.mp3',
++  'selecting the same character twice must play the EXACT same voice recording');
++time+=500;
++assert.equal(await roleEngine.play('attack',()=>true,{voice:'guard',variant:1}),true);
++assert.equal(roleEngine.lastSound.get('attack:guard'),'attack/guard_01.mp3');
++time+=700;
++assert.equal(await roleEngine.play('attack',()=>true,{voice:'guard',variant:99}),false,
++  'an invalid pinned voice must not silently switch to another performer');
++roleEngine.reset();
+ 
+-console.log('PASS RTS sound engines: role-stable Orc/Witch creation, selection and attack; fog, iOS resume, pause, reset and bounded memory.');
++console.log('PASS RTS sound engines: per-character pinned Orc/Witch selection and attack; fog, iOS resume, pause, reset and bounded memory.');
