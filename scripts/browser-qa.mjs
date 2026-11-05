@@ -806,6 +806,7 @@ async function run(){
    'Orc did not navigate around hut to destination: '+JSON.stringify(travel));
 
  // Tap the projected real ground polygon, never the oversized 3D roof AABB.
+ await evaluate('window.__fightersQA.centerCamera('+hutSite.x+','+hutSite.z+')');
  const clicked=await evaluate("(function(){const s=window.__fightersQA.snapshot();const b=s.buildings.find(b=>!b.initial);const p=window.__fightersQA.buildingScreenPoint(b.id);window.__fightersQA.tap(p.x,p.y);return window.__fightersQA.snapshot().selectedBuildingId===b.id})()");
  check(clicked,'Exact building X/Z polygon picking failed');
  await screenshot('rts-orc-building-panel');
