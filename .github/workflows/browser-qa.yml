@@ -8,6 +8,7 @@ on:
       - 'docs/rts-footprint.js'
       - 'docs/rts-walls.js'
       - 'docs/rts-navigation.js'
+      - 'docs/rts-raiding.js'
       - 'docs/rts-fog.js'
       - 'docs/rts-sound.js'
       - 'docs/rts-farming.js'
@@ -47,6 +48,7 @@ on:
       - 'scripts/compress-character-assets.sh'
       - 'scripts/build-runtime-characters.mjs'
       - 'scripts/test-rts-navigation.mjs'
+      - 'scripts/test-rts-raiding.mjs'
       - 'scripts/test-rts-map.mjs'
       - 'scripts/browser-qa.mjs'
       - 'scripts/verify-costumes.mjs'
@@ -91,6 +93,7 @@ jobs:
           node scripts/test-rts-footprint.mjs
           node scripts/test-rts-walls.mjs
           node scripts/test-rts-navigation.mjs
+          node scripts/test-rts-raiding.mjs
           node scripts/test-rts-map.mjs
           node scripts/test-rts-fog.mjs
           node scripts/test-rts-sound.mjs

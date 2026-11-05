@@ -475,6 +475,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 <script src="./rts-walls.js"></script>
 <script src="./rts-navigation.js"></script>
 <script src="./rts-unit-physics.js"></script>
+<script src="./rts-raiding.js"></script>
 <script src="./orc-strategy.js"></script>
 <script src="./witch-strategy.js"></script>
 <script src="./rts-roles.js"></script>
@@ -1898,7 +1899,8 @@ function spawnUnit(kind,x,z,index=0,role='melee'){
     clipCatalog:sharedClipCatalog.get(kind),current:'',action:null,
     health:profile.health,maxHealth:profile.health,
     heading:{x:kind==='witch'?1:-1,z:0},facing:1,attack:null,stun:0,cooldown:rand(.25,1),dead:false,deadTime:0,
-    speed:profile.speed,destination:null,attackOrder:null,route:null,routeVersion:-1,
+    speed:profile.speed,destination:null,attackOrder:null,raiding:false,
+    retaliationTarget:null,retaliationOrigin:null,route:null,routeVersion:-1,
     routeGoal:null,routeAge:0,approachCache:null,approachAge:0,
     navWatch:null,unstickSeconds:0,noStepFailures:0,
     unreachableTarget:null,unreachableTime:0,workerRetryTime:0,
@@ -2108,6 +2110,7 @@ function issueMove(destination,{spacing=1.35,withinRadius=Infinity}={}){
         navigatorRTS.plan(actor.root.position,destination)))goal={...destination};
     actor.destination=goal;
     actor.attackOrder=null;actor.approachCache=null;
+    window.FightersRaiding.end(actor);
     actor.route=null;actor.routeVersion=-1;actor.routeAge=0;
     actor.defenseAnchor=null;actor.navWatch=null;actor.unreachableTarget=null;
   });
@@ -3493,6 +3496,10 @@ function targetDistance(actor,target){
   if(!isBuilding(target))return Math.hypot(target.root.position.x-p.x,target.root.position.z-p.z);
   return window.FightersFootprints.distanceTo(p,target.hitbox);
 }
+function nextRaidBuilding(actor){
+  return window.FightersRaiding.nextBuilding(actor,liveBuildings(),
+    knownEnemyBuildings[actor.kind],enemyOf,targetDistance);
+}
 function nearestHostile(actor,maxDistance=Infinity){
   let nearest=null,distance=maxDistance,priority=Infinity;
   const candidates=[...units,...liveBuildings()];
@@ -3573,8 +3580,12 @@ function orderAttack(actors,target){
   for(const actor of actors){
     if(actor.dead||!roles.isFighter(actor)||!enemyOf(actor,target))continue;
     cancelSoulJob(actor);
+    cancelOrcFoodJob(actor);
     actor.attackOrder=target;actor.destination=null;actor.route=null;actor.routeAge=0;
-    actor.berryJob=null;actor.defenseAnchor=null;actor.navWatch=null;
+    if(isBuilding(target))window.FightersRaiding.begin(actor);
+    else window.FightersRaiding.end(actor);
+    actor.berryJob=null;actor.healJob=null;actor.ravenDistraction=null;
+    actor.defenseAnchor=null;actor.navWatch=null;
     actor.unreachableTarget=null;actor.unreachableTime=0;
     actor.approachCache=null;
     issued++;
@@ -3652,6 +3663,8 @@ function destroyBuilding(building){
   if(building.healthBar)building.healthBar.root.visible=false;
   removeRallyMarker(building);
   if(selectedBuilding===building){selectedBuilding=null;drawBuildingSelection();}
+  // The next discovered enemy building will replace this one on the next
+  // combat tick, once the destroyed building has left navigation obstacles.
   for(const actor of units){
     if(actor.attackOrder===building)actor.attackOrder=null;
     if(actor.attack?.target===building)actor.attack=null;
@@ -3676,8 +3689,19 @@ function destroyBuilding(building){
 function alertNearbyDefenders(victim,attacker){
   if(!attacker||attacker.dead||victim.dead||!enemyOf(attacker,victim))return;
   const kind=victim.kind,point=victim.root.position;
+  // Enemy counterattacks temporarily supersede a raid's building target.
+  // Nearby squadmates help, but nobody abandons the enemy village for home.
+  if(victim.raiding&&roles.isFighter(victim)){
+    for(const ally of units){
+      if(ally.kind!==kind||ally.dead||!roles.isFighter(ally)||!ally.raiding||
+        Math.hypot(ally.root.position.x-point.x,
+          ally.root.position.z-point.z)>8)continue;
+      window.FightersRaiding.attacked(ally,attacker,enemyOf);
+    }
+  }
   const aiControlled=kind==='orc'?orcDirector.enabled:witchDirector.enabled;
   const guards=units.filter(u=>u.kind===kind&&!u.dead&&roles.isFighter(u)&&
+    !u.raiding&&
     Math.hypot(u.root.position.x-point.x,u.root.position.z-point.z)<=18&&
     (aiControlled||(!u.destination&&!u.attackOrder)));
   for(const guard of guards){
@@ -3754,6 +3778,7 @@ function alertVillageUnderAttack(building,attacker){
   const aiControlled=clan==='orc'?orcDirector.enabled:witchDirector.enabled;
   const center=villageCenter(building);
   const guards=units.filter(u=>u.kind===clan&&!u.dead&&roles.isFighter(u)&&
+    !u.raiding&&
     // Never overwrite an explicit player move/attack order. Idle player
     // defenders still respond, even without the autonomous clan director.
     (aiControlled||(!u.destination&&(!u.attackOrder||u.defenseAnchor))));
@@ -3910,7 +3935,7 @@ function assignSoulHarvesters(dt){
   soulAssignmentElapsed=0;
   for(const mage of units){
     if(mage.kind!=='witch'||mage.role!=='ranged'||mage.dead||mage.soulJob||
-      mage.destination||mage.attackOrder||mage.attack||mage.healJob||mage.berryJob||
+      mage.raiding||mage.destination||mage.attackOrder||mage.attack||mage.healJob||mage.berryJob||
       mage.workerRetryTime||nearestHostile(mage,5)?.target)continue;
     const position=mage.root.position;
     const available=units.filter(unit=>unit.dead).map(unit=>({
@@ -4485,7 +4510,7 @@ function assignBerryForagers(dt){
   // Nearby idle witches (of any role) may eat. They never abandon explicit
   // orders, garden work, mining, construction, tree felling or combat.
   const candidates=units.filter(u=>u.kind==='witch'&&!u.dead&&!u.attack&&
-    !u.attackOrder&&!u.destination&&!u.constructJob&&!u.mineJob&&
+    !u.raiding&&!u.attackOrder&&!u.destination&&!u.constructJob&&!u.mineJob&&
     !u.repairJob&&!u.treeJob&&!u.woodJob&&!u.farmJob&&!u.berryJob&&!u.soulJob&&
     !u.workerRetryTime);
   let jobs=units.filter(u=>u.berryJob&&!u.dead).length;
@@ -4545,7 +4570,7 @@ function assignOrcForagers(dt){
   let jobs=orcs.filter(u=>u.orcFoodJob).length;
   if(jobs>=2)return;
   const candidates=orcs.filter(u=>!u.orcFoodJob&&!u.scouting&&!u.attack&&
-    !u.attackOrder&&!u.destination&&!u.constructJob&&!u.repairJob&&!u.mineJob&&
+    !u.raiding&&!u.attackOrder&&!u.destination&&!u.constructJob&&!u.repairJob&&!u.mineJob&&
     !u.treeJob&&!u.woodJob&&!u.farmJob&&!u.ravenDistraction&&
     !u.workerRetryTime&&!nearestHostile(u,8)?.target);
   // Fallen witches are a substantial, finite meal, preferred over live hares.
@@ -4839,9 +4864,17 @@ function tickUnit(actor,dt){
     return;
   }
   if(actor.stun>0)return;
-  if(tickRavenDistraction(actor,dt))return;
+  if(!actor.raiding&&tickRavenDistraction(actor,dt))return;
   if(actor.attackOrder&&!enemyOf(actor,actor.attackOrder))actor.attackOrder=null;
   updateVillageDefense(actor);
+  if(actor.raiding&&!actor.attackOrder){
+    actor.attackOrder=nextRaidBuilding(actor);
+    if(actor.attackOrder){
+      actor.destination=null;actor.route=null;actor.navWatch=null;
+      actor.approachCache=null;
+    }else if(!liveBuildings().some(b=>enemyOf(actor,b)))
+      window.FightersRaiding.end(actor);
+  }
   if(tickHealingRetreat(actor,dt))return;
   if(tickSoulHarvester(actor,dt))return;
   if(tickBerryForager(actor,dt))return;
@@ -4857,7 +4890,8 @@ function tickUnit(actor,dt){
     }else animation(actor,'Idle_Loop');
     return;
   }
-  const explicit=actor.attackOrder;
+  const retaliation=window.FightersRaiding.retaliation(actor,enemyOf);
+  const explicit=retaliation||actor.attackOrder;
   // An explicit order already defines the target. Scanning every building's
   // detailed contour 60 times/second for each raider is wasted CPU work.
   const nearby=explicit?null:nearestHostile(actor,actor.profile.sight);
@@ -4906,6 +4940,9 @@ function tickUnit(actor,dt){
       if(result==='blocked'){
         actor.unreachableTarget=target;actor.unreachableTime=6;
         actor.navWatch=null;actor.route=null;actor.approachCache=null;
+        if(retaliation===target){
+          actor.retaliationTarget=null;actor.retaliationOrigin=null;
+        }
         if(actor.attackOrder===target)actor.attackOrder=null;
         if(actor.defenseAnchor)returnFromDefense(actor);
       }
@@ -4932,8 +4969,8 @@ function stepOrcStrategy(dt){
   assignOrcLumberjack();
   const aliveOrcs=units.filter(a=>a.kind==='orc'&&!a.dead);
   const enemyBaseKnown=knownEnemyBuildings.orc.has(witchBuilding.id);
-  const scout=aliveOrcs.find(a=>roles.isFighter(a)&&a.scouting&&!a.attackOrder)||
-    aliveOrcs.find(a=>roles.isFighter(a)&&!a.attackOrder&&!a.destination);
+  const scout=aliveOrcs.find(a=>roles.isFighter(a)&&a.scouting&&!a.raiding&&!a.attackOrder)||
+    aliveOrcs.find(a=>roles.isFighter(a)&&!a.raiding&&!a.attackOrder&&!a.destination);
   const source=scout?.root.position;
   const scoutTarget=!enemyBaseKnown&&source&&!scout.destination?
     fogOfWar.frontier('orc',source,(x,z)=>{
@@ -4950,7 +4987,7 @@ function stepOrcStrategy(dt){
     })),
     orcs:aliveOrcs.map(u=>({id:u.id,x:u.root.position.x,z:u.root.position.z,
       health:u.health,maxHealth:u.maxHealth,dead:u.dead,
-      role:u.role,attackOrder:!!u.attackOrder,mining:!!u.mineJob,
+      role:u.role,attackOrder:!!u.attackOrder||!!u.raiding,mining:!!u.mineJob,
       scouting:!!u.scouting,destination:!!u.destination})),
     // Hidden witches cannot trigger omniscient defense orders.
     witches:units.filter(u=>u.kind==='witch'&&!u.dead&&
@@ -4972,7 +5009,7 @@ function stepOrcStrategy(dt){
       if(b&&!b.destroyed)queueOrder(b,'upgrade');
     }else if(action.type==='scout'&&!enemyBaseKnown){
       const actor=aliveOrcs.find(u=>u.id===action.unitId);
-      if(actor&&roles.isFighter(actor)&&!actor.attackOrder){
+      if(actor&&roles.isFighter(actor)&&!actor.raiding&&!actor.attackOrder){
         const newGoal=!actor.destination||Math.hypot(
           actor.destination.x-action.x,actor.destination.z-action.z)>1;
         actor.scouting=true;actor.destination={x:action.x,z:action.z};
@@ -4983,6 +5020,8 @@ function stepOrcStrategy(dt){
       const squad=aliveOrcs.filter(u=>roles.isFighter(u)&&!u.defenseTime&&action.unitIds.includes(u.id));
       const newlyOrdered=squad.filter(actor=>actor.attackOrder!==witchBuilding);
       for(const actor of squad){
+        window.FightersRaiding.begin(actor);
+        cancelOrcFoodJob(actor);actor.ravenDistraction=null;actor.healJob=null;
         actor.scouting=false;actor.attackOrder=witchBuilding;
         actor.defenseAnchor=null;actor.destination=null;actor.route=null;actor.navWatch=null;
       }
@@ -4990,7 +5029,7 @@ function stepOrcStrategy(dt){
     }else if(action.type==='defend'){
       const attackers=units.filter(u=>u.kind==='witch'&&!u.dead);
       for(const orc of aliveOrcs){
-        if(!roles.isFighter(orc)||orc.attackOrder||Math.hypot(orc.root.position.x-action.x,
+        if(!roles.isFighter(orc)||orc.raiding||orc.attackOrder||Math.hypot(orc.root.position.x-action.x,
           orc.root.position.z-action.z)>16)continue;
         const enemy=attackers.filter(u=>fogOfWar.exploredAt(
           u.root.position.x,u.root.position.z,'orc')).sort((a,b)=>
@@ -5021,8 +5060,8 @@ function stepWitchStrategy(dt){
     (a.type==='barrack'?0:1)-(b.type==='barrack'?0:1)||
     targetDistance({root:{position:witchBuilding.root.position}},a)-
       targetDistance({root:{position:witchBuilding.root.position}},b))[0]||null;
-  const scout=aliveWitches.find(u=>roles.isFighter(u)&&u.scouting&&!u.attackOrder)||
-    aliveWitches.find(u=>roles.isFighter(u)&&!u.attackOrder&&!u.destination);
+  const scout=aliveWitches.find(u=>roles.isFighter(u)&&u.scouting&&!u.raiding&&!u.attackOrder)||
+    aliveWitches.find(u=>roles.isFighter(u)&&!u.raiding&&!u.attackOrder&&!u.destination);
   const source=scout?.root.position;
   const scoutTarget=!enemyTarget&&source&&!scout.destination?
     fogOfWar.frontier('witch',source,(x,z)=>{
@@ -5040,7 +5079,7 @@ function stepWitchStrategy(dt){
       maxHealth:b.maxHealth,hitbox:b.hitbox,destroyed:b.destroyed})),
     witches:aliveWitches.map(u=>({id:u.id,x:u.root.position.x,z:u.root.position.z,
       role:u.role,health:u.health,maxHealth:u.maxHealth,scouting:!!u.scouting,
-      attackOrder:!!u.attackOrder,destination:!!u.destination,
+      attackOrder:!!u.attackOrder||!!u.raiding,destination:!!u.destination,
       mining:!!u.mineJob,repairing:!!u.repairJob,healing:!!u.healJob})),
     // No enemy positions or buildings outside the witches' own sight/memory.
     orcs:units.filter(u=>u.kind==='orc'&&!u.dead&&
@@ -5064,13 +5103,15 @@ function stepWitchStrategy(dt){
       if(building&&worker)orderRepair([worker],building,{byAI:true});
     }else if(action.type==='scout'&&!enemyTarget){
       const unit=aliveWitches.find(u=>u.id===action.unitId);
-      if(unit&&roles.isFighter(unit)&&!unit.attackOrder){
+      if(unit&&roles.isFighter(unit)&&!unit.raiding&&!unit.attackOrder){
         unit.scouting=true;unit.destination={x:action.x,z:action.z};
         unit.defenseAnchor=null;unit.route=null;unit.routeAge=0;unit.navWatch=null;
       }
     }else if(action.type==='raid'&&enemyTarget&&!enemyTarget.destroyed&&
       action.targetId===enemyTarget.id){
       for(const unit of aliveWitches.filter(u=>action.unitIds.includes(u.id)&&roles.isFighter(u)&&!u.defenseTime)){
+        window.FightersRaiding.begin(unit);
+        cancelSoulJob(unit);unit.berryJob=null;unit.healJob=null;
         unit.scouting=false;unit.attackOrder=enemyTarget;
         unit.defenseAnchor=null;unit.destination=null;unit.route=null;unit.navWatch=null;
       }
@@ -5078,7 +5119,7 @@ function stepWitchStrategy(dt){
       const nearby=units.filter(u=>u.kind==='orc'&&!u.dead&&
         fogOfWar.visibleAt(u.root.position.x,u.root.position.z,'witch'));
       for(const unit of aliveWitches){
-        if(!roles.isFighter(unit)||unit.attackOrder||
+        if(!roles.isFighter(unit)||unit.raiding||unit.attackOrder||
           Math.hypot(unit.root.position.x-action.x,unit.root.position.z-action.z)>18)continue;
         const enemy=nearby.sort((a,b)=>targetDistance(unit,a)-targetDistance(unit,b))[0];
         if(enemy){
@@ -5666,7 +5707,8 @@ window.__fightersQA={
       destination:a.destination?{...a.destination}:null,pathLength:a.route?.waypoints.length??0,
       approachPoint:a.approachCache?.point||null,attackDistance:a.attackOrder?targetDistance(a,a.attackOrder):null,
       routeGoal:a.routeGoal||null,attackCooldown:a.cooldown,
-      attackTargetId:a.attackOrder?.id||null,
+      attackTargetId:a.attackOrder?.id||null,raiding:!!a.raiding,
+      retaliationTargetId:a.retaliationTarget?.id||null,
       defenseAnchor:a.defenseAnchor?{x:a.defenseAnchor.x,z:a.defenseAnchor.z}:null,
       navStalls:a.navWatch?.stalls||0
     })),
@@ -5680,7 +5722,9 @@ window.__fightersQA={
       repairTargetId:a.repairJob?.buildingId||null,
       foodTarget:a.orcFoodJob?{...a.orcFoodJob}:null,
       heading:{...a.heading},combatTargetId:a.attack?.target?.id||null,
-      attackTargetId:a.attackOrder?.id||null,miningTargetId:a.mineJob?.mineId||null,
+      attackTargetId:a.attackOrder?.id||null,raiding:!!a.raiding,
+      retaliationTargetId:a.retaliationTarget?.id||null,
+      miningTargetId:a.mineJob?.mineId||null,
       destination:a.destination?{...a.destination}:null,pathLength:a.route?.waypoints.length??0,
       scouting:!!a.scouting,
       defenseAnchor:a.defenseAnchor?{x:a.defenseAnchor.x,z:a.defenseAnchor.z}:null,
