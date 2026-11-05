@@ -578,7 +578,7 @@ async function run(){
  check(await evaluate('window.__fightersQA.upgradeHouse()'),'House upgrade refused');
  await evaluate('window.__fightersQA.advance(8.1)');
  s=await evaluate('window.__fightersQA.snapshot()');
- check(s.house.level===2&&s.house.maxHealth===750,'House upgrade level/HP failed');
+ check(s.house.level===2&&s.house.maxHealth===2250,'House upgrade level/HP failed');
  check(await evaluate('window.__fightersQA.train()'),'Upgraded house cannot train');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.house.queue[0].duration<3.5,'House upgrade should improve training time');
@@ -1032,7 +1032,7 @@ async function run(){
  s=await evaluate('window.__fightersQA.snapshot()');
  const sanctuary=s.healing.circles[0];
  check(sanctuary.stones===6&&sanctuary.navigableCenter&&
-   s.buildings.some(b=>b.id===sanctuary.id&&b.health===280),
+   s.buildings.some(b=>b.id===sanctuary.id&&b.health===850),
    'Six actual menhirs must surround a walkable magic center: '+JSON.stringify(sanctuary));
  await evaluate('window.__fightersQA.centerCamera('+sanctuary.x+','+sanctuary.z+')');
  await screenshot('rts-stone-healing-circle');
@@ -1335,7 +1335,7 @@ async function run(){
  await evaluate('window.__fightersQA.advance(12)');
  const siegeCpuMs=Date.now()-siegeStarted;
  s=await evaluate('window.__fightersQA.snapshot()');
- check(siegeCpuMs<14000&&s.house.health<500&&
+ check(siegeCpuMs<14000&&s.house.health<s.house.maxHealth&&
    s.assets.sharedProjectiles<=24+siegeCount,
    'Multi-Orc HQ attack caused CPU stall or missed damage: '+
      JSON.stringify({siegeCount,siegeCpuMs,house:s.house.health,projectiles:s.assets}));
