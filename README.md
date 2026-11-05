@@ -24,6 +24,7 @@ Fighters est un prototype de **stratégie en temps réel** en 3D isométrique. L
 | Sélection multiple | Glisser sur la carte ou Ctrl/Cmd+A | **Deux doigts délimitent un rectangle** : posez les deux doigts, écartez/déplacez-les pour entourer les unités, puis soulevez-les |
 | Déplacement / formation | Sélectionner puis cliquer au sol | Sélectionner puis toucher le terrain |
 | Attaquer une unité ou un bâtiment ennemi | **Deux clics :** sélectionner une sorcière puis cliquer directement le bâtiment ou l'unité ennemie | **Deux touches :** sorcière puis bâtiment ennemi, sans passer par un mode supplémentaire |
+| Réparer un bâtiment allié endommagé | Sélectionner un ouvrier puis cliquer le bâtiment, ou bouton **🔨 Réparer** pour le plus proche | Sélectionner une ouvrière/un ouvrier puis toucher le bâtiment, ou bouton **🔨 Réparer** |
 | Zoom | **Fixe, aucune commande de zoom** | **Fixe, aucun pincement de zoom** |
 | Déplacer la caméra | Glisser avec bouton central ou droit, **ou cliquer la mini-carte** | **Glisser avec un doigt ou toucher la mini-carte** |
 | Pause | Touche **P** ou bouton Ⅱ discret | Bouton Ⅱ discret |
@@ -62,11 +63,15 @@ Sur téléphone, les mêmes commandes tiennent dans une **bande de 141 px en bas
 
 La maison des sorcières et la caserne orc permettent d'entraîner trois rôles par clan (ouvrier, combattant de mêlée et combattant à distance), avec des coûts distincts et une file de huit commandes. Seul un ouvrier peut miner ou construire. Les améliorations de bâtiments, le ralliement et l'annulation/remboursement restent disponibles depuis la même grille.
 
+**Réparation rapide :** les ouvriers des deux factions réparent leurs propres bâtiments (maison, potager, cercle de roches et bâtiments orcs). Un clic/toucher direct sur la structure endommagée donne l'ordre sans la sélectionner. L'ouvrier rejoint le contour, frappe au marteau et restaure **18 % des PV maximum par seconde** à portée, soit environ 5,6 secondes pour reconstruire les PV d'un bâtiment presque détruit. Plusieurs ouvriers accélèrent la réparation. Aucun coût supplémentaire en ressources; un nouvel ordre interrompt le travail. Les bâtiments détruits, ennemis et mines neutres ne sont jamais réparables.
+
 ## Performance et gestion des ressources
 
 Le panneau contextuel n'est plus reconstruit à chaque mise à jour d'or ou de points de vie : les boutons restent les mêmes objets DOM et seules les valeurs dynamiques changent. Les statistiques de développement exposent le nombre de reconstructions. La planification de l'IA orc est évaluée à cadence réduite plutôt que de recréer les mêmes tableaux soixante fois par seconde. Les unités mortes conservent leur animation de chute au sol pendant deux minutes, puis libèrent leurs squelettes et leurs actions; un plafond de 40 cadavres limite la mémoire durant les grandes batailles. Les constructions retirées libèrent les animations et barres de vie dont elles sont propriétaires. Les mires bleues/rouges ont une durée de vie limitée et un plafond simultané. Les tests de régression contrôlent la stabilité des menus sur une partie simulée prolongée.
 
 Pendant une construction, chaque cycle du geste d'ouvrier peut déclencher un bref coup de marteau réel, partagé par les deux clans. Il se produit au moment de l'impact du geste, uniquement à proximité de la caméra et dans une zone explorée, avec une limite globale d'un coup toutes les 450 ms. Les moteurs audio déjà présents assurent le décodage paresseux, la pause et la libération des voix; le fichier MP3 de 4,8 Ko est sous licence CC0 ([source et détails](docs/sounds/WORK_ATTRIBUTION.md)).
+
+Les ouvriers utilisent désormais une **pioche** dans les mines, un **marteau** pour construire et réparer et une **hache** pour couper les arbres. Les récoltes continuent de se faire à la main. Ces outils low-poly utilisent des géométries et matériaux partagés, sans téléchargement de modèle supplémentaire.
 
 ## Combat contre les bâtiments
 

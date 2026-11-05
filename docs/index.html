@@ -456,6 +456,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 <script src="./rts-berries.js"></script>
 <script src="./rts-ravens.js"></script>
 <script src="./rts-healing.js"></script>
+<script src="./rts-repair.js"></script>
 <script src="./rts-souls.js"></script>
 </head>
 <body>
@@ -543,6 +544,7 @@ let witchHouse=null;
 const STONE_RING_RADIUS=2.45,STONE_RING_COUNT=6,STONE_RING_SLOTS=7,
   STONE_RING_START=-5*Math.PI/7,STONE_CIRCLE_HEALTH=280;
 const stoneHealing=window.FightersHealing;
+const repairRules=window.FightersRepair;
 const soulRules=window.FightersSouls;
 let standingStoneModel=null,stoneCircleSerial=0,healingAssignmentElapsed=0;
 const witchBuilding={
@@ -1429,8 +1431,10 @@ function showWorkerTool(actor,name){
   if(!actor.workTool)return;
   const swing=name===WORK_SWING;
   const chopping=name===TREE_CHOP;
-  actor.workTool.visible=(swing&&!!actor.mineJob)||(chopping&&actor.kind==='orc');
-  actor.hammerTool.visible=swing&&!!actor.constructJob&&actor.constructJob.type!=='garden';
+  actor.workTool.visible=chopping&&actor.kind==='orc';
+  actor.pickTool.visible=swing&&!!actor.mineJob;
+  actor.hammerTool.visible=swing&&(!!actor.repairJob||
+    !!actor.constructJob&&actor.constructJob.type!=='garden');
   if(actor.chopTool)actor.chopTool.visible=chopping;
 }
 function animation(actor,name,force=false){
@@ -1537,13 +1541,26 @@ function costumeLayers(visual,kind,index,role){
   if(garmentMeshes<4||hairMeshes!==1)throw Error('Tenue civile incomplète');
   return {garmentMeshes,hairMeshes,headTriangles:body.geometry.getIndex()?.count/3||0,role};
 }
-// Both tools are built once from tiny primitives. Their clones share geometry
+// All tools are built once from tiny primitives. Their clones share geometry
 // and materials across every worker; no worker-only GLB or texture is loaded.
 const toolWood=new THREE.MeshStandardMaterial({color:0x77502d,roughness:1});
 const toolIron=new THREE.MeshStandardMaterial({color:0xbac5bd,metalness:.65,roughness:.42,side:THREE.DoubleSide});
 function workToolTemplate(kind){
   const tool=new THREE.Group();
-  tool.name=kind==='hammer'?'Worker_Hammer':kind==='witch'?'Worker_Scythe':'Worker_Axe';
+  tool.name=kind==='hammer'?'Worker_Hammer':kind==='pickaxe'?'Worker_Pickaxe':
+    kind==='witch'?'Worker_Scythe':'Worker_Axe';
+  if(kind==='pickaxe'){
+    const handle=new THREE.Mesh(new THREE.CylinderGeometry(.032,.043,.9,7),toolWood);
+    handle.position.y=.32;tool.add(handle);
+    const center=new THREE.Mesh(new THREE.CylinderGeometry(.085,.10,.36,6),toolIron);
+    center.rotation.z=Math.PI/2;center.position.y=.72;tool.add(center);
+    for(const side of [-1,1]){
+      const tip=new THREE.Mesh(new THREE.ConeGeometry(.105,.42,6),toolIron);
+      tip.rotation.z=-side*Math.PI/2;
+      tip.position.set(side*.37,.72,0);tool.add(tip);
+    }
+    return tool;
+  }
   if(kind==='hammer'){
     const handle=new THREE.Mesh(new THREE.CylinderGeometry(.036,.043,.79,7),toolWood);
     handle.position.y=.28;tool.add(handle);
@@ -1575,7 +1592,7 @@ function workToolTemplate(kind){
   return tool;
 }
 const sharedWorkToolTemplates={witch:workToolTemplate('witch'),orc:workToolTemplate('orc'),
-  hammer:workToolTemplate('hammer')};
+  hammer:workToolTemplate('hammer'),pickaxe:workToolTemplate('pickaxe')};
 // Adapted from asset-tooling/examples/weapons/derive-sockets.ts (CC0):
 // anatomy-driven grip from the actual Quaternius rig's finger bones, not
 // manual offset or an unrelated Ranger skeleton transform.
@@ -1620,14 +1637,16 @@ function mountWorkTool(actor){
   const socket=nativeRightHandSocket(actor.visual);
   const tool=sharedWorkToolTemplates[actor.kind].clone(true);
   const hammer=sharedWorkToolTemplates.hammer.clone(true);
-  // Witches keep their scythe for mining but switch to the very same shared
-  // axe shape as the orcs for forestry. No separate alignment or asset load.
+  const pickTool=sharedWorkToolTemplates.pickaxe.clone(true);
+  // Workers wield a pickaxe at mines, a hammer for construction/repairs and
+  // an axe while chopping. The unused tools remain hidden in the hand socket.
   const chopTool=actor.kind==='witch'?sharedWorkToolTemplates.orc.clone(true):null;
   socket.name='hand_r.work-tool';
-  tool.visible=false;hammer.visible=false;
-  socket.add(tool,hammer);
+  tool.visible=false;hammer.visible=false;pickTool.visible=false;
+  socket.add(tool,hammer,pickTool);
   if(chopTool){chopTool.visible=false;socket.add(chopTool);}
-  actor.workTool=tool;actor.hammerTool=hammer;actor.chopTool=chopTool;
+  actor.workTool=tool;actor.hammerTool=hammer;actor.pickTool=pickTool;
+  actor.chopTool=chopTool;
 }
 
 function spawnUnit(kind,x,z,index=0,role='melee'){
@@ -1651,10 +1670,10 @@ function spawnUnit(kind,x,z,index=0,role='melee'){
     heading:{x:kind==='witch'?1:-1,z:0},facing:1,attack:null,stun:0,cooldown:rand(.25,1),dead:false,deadTime:0,
     speed:profile.speed,destination:null,attackOrder:null,route:null,routeVersion:-1,
     routeGoal:null,routeAge:0,approachCache:null,approachAge:0,
-    mineJob:null,constructJob:null,farmJob:null,carryWheat:null,
+    mineJob:null,constructJob:null,repairJob:null,farmJob:null,carryWheat:null,
     treeJob:null,woodJob:null,carryBundle:null,berryJob:null,
     healJob:null,healRetry:0,soulJob:null,soulClaimed:false,soulReservedBy:null,
-    workTool:null,hammerTool:null,chopTool:null,
+    workTool:null,hammerTool:null,pickTool:null,chopTool:null,
     weapon:null,selectionRing:marker,outfitInfo
   };
   // A single sword asset is cloned as a lightweight scene node for melee orcs.
@@ -1836,7 +1855,7 @@ function pingAttackTarget(target){
 }
 function issueMove(destination,{spacing=1.35,withinRadius=Infinity}={}){
   const actors=[...selected].filter(actor=>!actor.dead&&actor.kind===activeFaction);
-  for(const actor of actors){cancelConstruction(actor);cancelWoodJob(actor);
+  for(const actor of actors){cancelConstruction(actor);cancelWoodJob(actor);cancelRepair(actor);
     cancelSoulJob(actor);
     actor.mineJob=null;cancelFarmJob(actor);actor.treeJob=null;actor.berryJob=null;
     actor.healJob=null;}
@@ -2472,7 +2491,8 @@ function scheduleBuild(type,x,z,{byAI=false}={}){
   if(!running||paused||!cost||(type==='stone-circle'&&!circleUnlocked())||
     !canAffordConstruction(clan,type)||
     !validBuildPosition(x,z,type))return false;
-  const candidates=units.filter(u=>u.kind===clan&&roles.isWorker(u)&&!u.dead&&!u.constructJob);
+  const candidates=units.filter(u=>u.kind===clan&&roles.isWorker(u)&&!u.dead&&
+    !u.constructJob&&(!byAI||!u.repairJob));
   const preferred=candidates.filter(u=>selected.has(u));
   const available=preferred.length?preferred:candidates;
   available.sort((a,b)=>Math.hypot(a.root.position.x-x,a.root.position.z-z)-
@@ -2483,7 +2503,7 @@ function scheduleBuild(type,x,z,{byAI=false}={}){
     hitbox:buildShape(type,x,z)};
   const job={type,x,z,cost,woodCost,site,byAI,progress:0};
   pendingBuilds.push(job);gold[clan]-=cost;wood[clan]-=woodCost;
-  cancelWoodJob(worker);
+  cancelWoodJob(worker);cancelRepair(worker);
   worker.mineJob=null;cancelFarmJob(worker);worker.treeJob=null;worker.berryJob=null;
   worker.constructJob=job;worker.destination=null;
   worker.workHitTimer=0;
@@ -2537,6 +2557,58 @@ function tickConstructWorker(actor,dt){
   }
   return true;
 }
+function cancelRepair(actor){actor.repairJob=null;}
+function orderRepair(actors,building){
+  if(!running||paused)return false;
+  let assigned=0;
+  for(const actor of actors){
+    if(!repairRules.canRepair(actor,building))continue;
+    cancelConstruction(actor);cancelWoodJob(actor);cancelFarmJob(actor);
+    cancelSoulJob(actor);
+    actor.mineJob=null;actor.treeJob=null;actor.berryJob=null;actor.healJob=null;
+    actor.repairJob={buildingId:building.id};actor.workHitTimer=0;
+    actor.destination=null;actor.attackOrder=null;actor.route=null;
+    actor.routeVersion=-1;actor.routeAge=0;actor.approachCache=null;
+    assigned++;
+  }
+  if(assigned){
+    const box=building.hitbox;
+    showOrderPing({x:(box.minX+box.maxX)/2,z:(box.minZ+box.maxZ)/2,y:.15},'move');
+    acknowledgePlayerOrder(actors);
+    showBanner('RÉPARATION EN COURS');refreshHUD();
+  }
+  return assigned>0;
+}
+function tickRepairWorker(actor,dt){
+  if(!actor.repairJob)return false;
+  const building=actor.repairJob.buildingId===witchBuilding.id?witchBuilding:
+    buildingInstances.get(actor.repairJob.buildingId);
+  if(!repairRules.canRepair(actor,building)){
+    cancelRepair(actor);animation(actor,'Idle_Loop');return false;
+  }
+  if(targetDistance(actor,building)>BUILDING_CONTACT){
+    const goal=approachBuilding(actor,building);
+    if(goal){
+      const status=navigateActor(actor,goal,dt,'engage');
+      if(status!=='moving')animation(actor,'Idle_Loop');
+    }else animation(actor,'Idle_Loop');
+    return true;
+  }
+  faceBuildingCenter(actor,building);
+  animation(actor,WORK_SWING);
+  actor.workHitTimer=(actor.workHitTimer||0)+dt;
+  const swingSeconds=Math.max(.35,actor.clipCatalog.get('Sword_Attack')?.duration||1);
+  if(actor.workHitTimer>=swingSeconds){
+    actor.workHitTimer-=swingSeconds;playConstructionHit(actor);
+  }
+  repairRules.restore(building,dt);
+  if(building.healthBar)updateHealthBar(building);
+  if(building.health>=building.maxHealth){
+    cancelRepair(actor);animation(actor,'Idle_Loop');
+    showBanner('BÂTIMENT RÉPARÉ');refreshHUD();
+  }
+  return true;
+}
 const uiStats={commandRebuilds:0,feedbackCreated:0,feedbackRemoved:0,peakPings:0};
 function setText(id,value){
   const el=$(id),display=String(value);
@@ -2549,7 +2621,7 @@ function stopSelectedUnits(){
   attackMode=false;
   for(const unit of selected){
     cancelSoulJob(unit);
-    cancelConstruction(unit);cancelWoodJob(unit);unit.treeJob=null;
+    cancelConstruction(unit);cancelWoodJob(unit);cancelRepair(unit);unit.treeJob=null;
     unit.mineJob=null;cancelFarmJob(unit);unit.berryJob=null;unit.healJob=null;
     unit.destination=null;unit.attackOrder=null;unit.route=null;
   }
@@ -2675,8 +2747,8 @@ function refreshHUD(){
       portrait.textContent=single?single.profile.icon:activeFaction==='witch'?'🧙':'👹';
       title.textContent=single?single.profile.name:alive.length+' unités '+(activeFaction==='witch'?'sorcières':'orcs');
       info.textContent=single?.role==='worker'?
-        (single.kind==='witch'?'Ouvrière : mine, construit les potagers et récolte les légumes.':
-          'Ouvrier : mine l’or et construit les bâtiments. Aucun combat.'):
+        (single.kind==='witch'?'Ouvrière : mine, construit, récolte et répare les bâtiments.':
+          'Ouvrier : mine, construit et répare les bâtiments. Aucun combat.'):
         single?.role==='ranged'?'Combattant à distance : attaque de loin, plus fragile.':
         'Déplacement : touchez le terrain. Les combattants engagent les ennemis proches.';
       const average=Math.round(alive.reduce((sum,u)=>sum+u.health/u.maxHealth,0)/alive.length*100);
@@ -2702,6 +2774,14 @@ function refreshHUD(){
             Math.min(...workers.map(w=>targetDistance(w,b))));
           if(!orderMine(workers,mines[0]))showBanner('AUCUNE MINE DISPONIBLE');
         });
+        add('🔨','Réparer','',()=>{
+          const workers=alive.filter(roles.isWorker);
+          const damaged=liveBuildings().filter(b=>workers.some(w=>repairRules.canRepair(w,b)));
+          damaged.sort((a,b)=>Math.min(...workers.map(w=>targetDistance(w,a)))-
+            Math.min(...workers.map(w=>targetDistance(w,b))));
+          if(!orderRepair(workers,damaged[0]))showBanner('AUCUN BÂTIMENT À RÉPARER');
+        },!liveBuildings().some(b=>alive.some(w=>repairRules.canRepair(w,b))),
+        'Envoyer les ouvriers vers le bâtiment allié endommagé le plus proche');
         add('🏗️',activeFaction==='witch'?'Construire':'Bât. base','',()=>{
           constructionTab='basic';refreshHUD();
         });
@@ -2765,6 +2845,8 @@ function refreshHUD(){
         (type==='stone-circle'&&(!standingStoneModel||!circleUnlocked()))||
         (activeFaction==='orc'&&!buildingBlueprints.has(type));
     }else if(action==='Construire')disabled||=!builderAvailable(activeFaction);
+    else if(action==='Réparer')disabled||=!liveBuildings().some(b=>
+      alive.some(w=>repairRules.canRepair(w,b)));
     else if(action==='Caserne')disabled||=![...buildingInstances.values()].some(v=>v.type==='barrack'&&!v.destroyed);
     button.disabled=!!disabled;
   }
@@ -2992,6 +3074,7 @@ function removeRallyMarker(b){
 }
 function releaseActor(actor){
   cancelSoulJob(actor);
+  cancelRepair(actor);
   if(actor.dead)for(const mage of units)if(mage.soulJob===actor)cancelSoulJob(mage);
   cancelConstruction(actor);cancelWoodJob(actor);cancelFarmJob(actor);
   selected.delete(actor);
@@ -3058,6 +3141,7 @@ function destroyBuilding(building){
     if(actor.mineJob?.mineId===building.id)actor.mineJob=null;
     if(actor.farmJob?.gardenId===building.id)cancelFarmJob(actor);
     if(actor.healJob?.id===building.id)actor.healJob=null;
+    if(actor.repairJob?.buildingId===building.id)cancelRepair(actor);
   }
   if(building.type==='garden')farming.removeGarden(building.id);
   if((building.clanId==='orcs'||building.type==='garden'||building.type==='stone-circle')&&!building.initial){
@@ -3280,7 +3364,7 @@ function assignMiners(){
   const mines=[...buildingInstances.values()].filter(b=>b.type==='mine'&&
     b.clanId==='neutral'&&!b.destroyed);
   const orcs=units.filter(u=>u.kind==='orc'&&roles.isWorker(u)&&!u.dead&&
-    !u.constructJob&&!u.treeJob&&!u.woodJob);
+    !u.constructJob&&!u.repairJob&&!u.treeJob&&!u.woodJob);
   const limit=Math.min(mines.length,Math.max(1,Math.floor(orcs.length/3)));
   let assigned=orcs.filter(u=>u.mineJob&&mines.some(b=>b.id===u.mineJob.mineId));
   for(const orc of orcs){
@@ -3310,7 +3394,7 @@ function orderMine(actors,mine){
   let issued=0;
   for(const actor of actors){
     if(!canMine(actor,mine))continue;
-    cancelConstruction(actor);cancelWoodJob(actor);
+    cancelConstruction(actor);cancelWoodJob(actor);cancelRepair(actor);
     cancelFarmJob(actor);actor.treeJob=null;
     actor.mineJob={mineId:mine.id,progress:0,cycles:0};
     actor.destination=null;actor.route=null;actor.approachCache=null;
@@ -3385,7 +3469,7 @@ function orderCollectWood(actors,index,{byAI=false}={}){
   for(const actor of actors){
     if(actor.dead||!roles.isWorker(actor)||
       (deposit.reservedBy&&deposit.reservedBy!==actor.id))continue;
-    cancelConstruction(actor);cancelWoodJob(actor);
+    cancelConstruction(actor);cancelWoodJob(actor);cancelRepair(actor);
     actor.mineJob=null;cancelFarmJob(actor);actor.treeJob=null;actor.berryJob=null;
     actor.woodJob={index,phase:'pickup',progress:0,amount:0,goal:null};
     deposit.reservedBy=actor.id;
@@ -3413,7 +3497,7 @@ function safeWitchWoodLocation(tree){
 }
 function continueWitchWoodRun(actor){
   if(actor.kind!=='witch'||actor.dead||actor.destination||actor.constructJob||
-    actor.farmJob||actor.mineJob||actor.treeJob||actor.woodJob)return false;
+    actor.repairJob||actor.farmJob||actor.mineJob||actor.treeJob||actor.woodJob)return false;
   const candidates=forestLayout.map((tree,index)=>({tree,index,d:
     Math.hypot(actor.root.position.x-tree.x,actor.root.position.z-tree.z)}))
     .filter(({tree})=>safeWitchWoodLocation(tree))
@@ -3470,7 +3554,7 @@ function assignOrcLumberjack(){
   if(!orcDirector.enabled||wood.orc>=140||
     units.some(u=>u.kind==='orc'&&!u.dead&&(u.treeJob||u.woodJob)))return;
   const workers=units.filter(u=>u.kind==='orc'&&roles.isWorker(u)&&!u.dead&&
-    !u.constructJob&&!u.farmJob&&!u.destination);
+    !u.constructJob&&!u.repairJob&&!u.farmJob&&!u.destination);
   if(!workers.length)return;
   const candidates=[];
   for(let i=0;i<forestLayout.length;i++){
@@ -3493,7 +3577,7 @@ function orderChop(actors,index,{byAI=false}={}){
   let assigned=0;
   for(const actor of actors){
     if(actor.dead||!roles.isWorker(actor))continue;
-    cancelConstruction(actor);cancelWoodJob(actor);
+    cancelConstruction(actor);cancelWoodJob(actor);cancelRepair(actor);
     actor.mineJob=null;cancelFarmJob(actor);actor.berryJob=null;
     actor.treeJob={index,progress:0,goal:null};
     actor.destination=null;actor.attackOrder=null;actor.route=null;
@@ -3574,7 +3658,7 @@ function orderHarvest(actors,garden){
   let assigned=0;
   for(const actor of actors){
     if(actor.kind!=='witch'||actor.dead||!roles.isWorker(actor))continue;
-    cancelConstruction(actor);cancelWoodJob(actor);
+    cancelConstruction(actor);cancelWoodJob(actor);cancelRepair(actor);
     actor.mineJob=null;actor.treeJob=null;actor.berryJob=null;
     cancelFarmJob(actor);
     actor.farmJob={gardenId:garden.id,plotIndex:-1,progress:0,phase:'harvest',amount:0};
@@ -3592,7 +3676,7 @@ function assignGardenWorkers(dt){
     if(garden.type!=='garden'||garden.destroyed||farming.firstReady(garden.id)<0)continue;
     if(units.some(u=>!u.dead&&u.farmJob?.gardenId===garden.id))continue;
     const workers=units.filter(u=>u.kind==='witch'&&!u.dead&&roles.isWorker(u)&&
-      !u.constructJob&&!u.mineJob&&!u.farmJob&&!u.treeJob&&!u.woodJob&&
+      !u.constructJob&&!u.repairJob&&!u.mineJob&&!u.farmJob&&!u.treeJob&&!u.woodJob&&
       !u.berryJob&&!u.destination);
     workers.sort((a,b)=>targetDistance(a,garden)-targetDistance(b,garden));
     const worker=workers[0];
@@ -3660,7 +3744,7 @@ function assignBerryForagers(dt){
   // orders, garden work, mining, construction, tree felling or combat.
   const candidates=units.filter(u=>u.kind==='witch'&&!u.dead&&!u.attack&&
     !u.attackOrder&&!u.destination&&!u.constructJob&&!u.mineJob&&
-    !u.treeJob&&!u.woodJob&&!u.farmJob&&!u.berryJob&&!u.soulJob);
+    !u.repairJob&&!u.treeJob&&!u.woodJob&&!u.farmJob&&!u.berryJob&&!u.soulJob);
   let jobs=units.filter(u=>u.berryJob&&!u.dead).length;
   for(const bush of wildBerries.bushes){
     if(jobs>=2)break;
@@ -3746,7 +3830,7 @@ function stepHealing(dt){
     // No autonomous retreat can override the player's commands or work.
     if(!stoneHealing.needsRest(witch)||witch.healRetry>0||witch.destination||
       witch.attack||witch.attackOrder||witch.constructJob||witch.farmJob||
-      witch.mineJob||witch.treeJob||witch.woodJob||
+      witch.repairJob||witch.mineJob||witch.treeJob||witch.woodJob||
       nearestHostile(witch,stoneHealing.HOSTILE_SAFETY_DISTANCE)?.target)continue;
     const from=witch.root.position;
     const choice=stoneHealing.nearestCircle(from,circles.map(b=>({
@@ -3764,7 +3848,7 @@ function stepHealing(dt){
 function tickHealingRetreat(actor,dt){
   if(!actor.healJob)return false;
   if(actor.destination||actor.attackOrder||actor.constructJob||actor.farmJob||
-    actor.mineJob||actor.treeJob||actor.woodJob){actor.healJob=null;return false;}
+    actor.repairJob||actor.mineJob||actor.treeJob||actor.woodJob){actor.healJob=null;return false;}
   const circle=buildingInstances.get(actor.healJob.id);
   if(!circle||circle.destroyed||stoneHealing.recovered(actor)){
     actor.healJob=null;return false;
@@ -3881,7 +3965,7 @@ function tickUnit(actor,dt){
   if(tickSoulHarvester(actor,dt))return;
   if(tickBerryForager(actor,dt))return;
   if(roles.isWorker(actor)){
-    if(tickConstructWorker(actor,dt)||tickMineWorker(actor,dt)||
+    if(tickConstructWorker(actor,dt)||tickRepairWorker(actor,dt)||tickMineWorker(actor,dt)||
       tickTreeWorker(actor,dt)||tickWoodWorker(actor,dt)||tickGardenWorker(actor,dt))return;
     if(actor.destination){
       const result=navigateActor(actor,actor.destination,dt,'order');
@@ -4120,6 +4204,7 @@ function touchAt(x,y,append=false){
   // A selected unit needs only one more tap inside the hostile GLB footprint:
   // no separate target mode, and the polygon wins over nearby unit circles.
   if(selected.size){
+    if(building&&orderRepair([...selected],building))return;
     if(building?.type==='mine'&&orderMine([...selected],building))return;
     if(building?.type==='garden'&&orderHarvest([...selected],building))return;
     if(building&&targetFaction(building)!==faction&&targetFaction(building)!=='neutral'&&
@@ -4539,6 +4624,9 @@ window.__fightersQA={
     construction:pendingBuilds.map(job=>({type:job.type,x:job.x,z:job.z,
       progress:job.progress,cost:job.cost,woodCost:job.woodCost,
       workerId:units.find(u=>u.constructJob===job)?.id||null})),
+    repairs:units.filter(u=>u.repairJob&&!u.dead).map(u=>({
+      workerId:u.id,clan:u.kind,buildingId:u.repairJob.buildingId,
+      x:u.root.position.x,z:u.root.position.z})),
     gpu:{geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,
       drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles},
     assets:{sourceRigs:sharedClipCatalog.size,sharedMaterials:sharedCostumeMaterials.size,
@@ -4562,8 +4650,10 @@ window.__fightersQA={
       id:a.id,role:a.role,x:a.root.position.x,z:a.root.position.z,radius:a.radius,health:a.health,animation:a.current,
       workTool:a.workTool?.name||null,workToolVisible:!!a.workTool?.visible,
       hammerTool:a.hammerTool?.name||null,hammerToolVisible:!!a.hammerTool?.visible,
+      pickTool:a.pickTool?.name||null,pickToolVisible:!!a.pickTool?.visible,
       chopTool:a.chopTool?.name||null,chopToolVisible:!!a.chopTool?.visible,
       visible:a.root.visible,berryTarget:a.berryJob?.index??null,
+      repairTargetId:a.repairJob?.buildingId||null,
       healingTarget:a.healJob?.id||null,
       heading:{...a.heading},combatTargetId:a.attack?.target?.id||null,
       destination:a.destination?{...a.destination}:null,pathLength:a.route?.waypoints.length??0,
@@ -4575,8 +4665,10 @@ window.__fightersQA={
       id:a.id,role:a.role,x:a.root.position.x,z:a.root.position.z,health:a.health,animation:a.current,
       workTool:a.workTool?.name||null,workToolVisible:!!a.workTool?.visible,
       hammerTool:a.hammerTool?.name||null,hammerToolVisible:!!a.hammerTool?.visible,
+      pickTool:a.pickTool?.name||null,pickToolVisible:!!a.pickTool?.visible,
       chopTool:a.chopTool?.name||null,chopToolVisible:!!a.chopTool?.visible,
       visible:a.root.visible,
+      repairTargetId:a.repairJob?.buildingId||null,
       heading:{...a.heading},combatTargetId:a.attack?.target?.id||null,
       attackTargetId:a.attackOrder?.id||null,miningTargetId:a.mineJob?.mineId||null,
       destination:a.destination?{...a.destination}:null,pathLength:a.route?.waypoints.length??0,
@@ -4618,6 +4710,11 @@ window.__fightersQA={
     const actor=units.filter(u=>u.kind===kind&&!u.dead)[index];
     const mine=buildingInstances.get(mineId);
     return actor?orderMine([actor],mine):false;
+  },
+  orderRepair:(kind,index,buildingId)=>{
+    const actor=units.filter(u=>u.kind===kind&&!u.dead)[index];
+    const building=buildingId===witchBuilding.id?witchBuilding:buildingInstances.get(buildingId);
+    return actor?orderRepair([actor],building):false;
   },
   orderChop:(kind,index,treeIndex)=>{
     const actor=units.filter(u=>u.kind===kind&&!u.dead)[index];

@@ -139,6 +139,7 @@ async function run(){
   check(s.witches[1].workTool==='Worker_Scythe'&&!s.witches[1].workToolVisible&&
     s.orcs[1].workTool==='Worker_Axe'&&!s.orcs[1].workToolVisible&&
     [s.witches[1],s.orcs[1]].every(u=>u.hammerTool==='Worker_Hammer'&&!u.hammerToolVisible)&&
+    [s.witches[1],s.orcs[1]].every(u=>u.pickTool==='Worker_Pickaxe'&&!u.pickToolVisible)&&
     [...s.witches,...s.orcs].filter(u=>u.role!=='worker').every(u=>!u.workTool&&!u.hammerTool),
     'Only workers should carry hidden shared job tools before working');
  for(const clan of ['witch','orc']){
@@ -150,6 +151,60 @@ async function run(){
  check(s.assets.sharedMaterials<120,
   'Too many cosmetic materials: '+s.assets.sharedMaterials);
  console.log('PASS SIX CHARACTER ROLES: shared bodies and costume geometry, separate worker/melee/ranged stats.');
+ // Repair is a direct building tap with a selected worker, including the
+ // starting witch house. It must not select the building or spend resources.
+ await evaluate("window.__fightersQA.enableOrcAI(false);window.__fightersQA.setBuildingHealth('witch-house-01',300);"+
+   "window.__fightersQA.selectUnit('witch',1)");
+ check(await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>"+
+   "b.textContent.includes('Réparer')&&!b.disabled)"),
+   'A worker with damaged allied structures must expose an enabled Repair command');
+ const beforeRepair=await evaluate('window.__fightersQA.snapshot()');
+ const houseTap=await evaluate("window.__fightersQA.buildingScreenPoint('witch-house-01')");
+ await evaluate('window.__fightersQA.tap('+houseTap.x+','+houseTap.y+')');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.witches[1].repairTargetId==='witch-house-01'&&s.selectedIds.includes(s.witches[1].id)&&
+   !s.selectedBuildingId,'Tapping an allied damaged house must order a selected worker to repair it');
+ const repairWorking=await evaluate("(()=>{for(let i=0;i<36;i++){"+
+   "window.__fightersQA.advance(.25);const s=window.__fightersQA.snapshot();"+
+   "if(s.house.health>300&&s.witches[1].hammerToolVisible)return s;}"+
+   "return window.__fightersQA.snapshot();})()");
+ check(repairWorking.house.health>300&&repairWorking.witches[1].hammerToolVisible&&
+   repairWorking.witches[1].animation==='Work_Swing',
+   'Witch worker must stand at building edge and repair with a hammer');
+ await evaluate('window.__fightersQA.advance(7)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.house.health===s.house.maxHealth&&!s.repairs.length&&
+   s.gold.witch===beforeRepair.gold.witch&&s.wood.witch===beforeRepair.wood.witch,
+   'Repair must quickly reach exactly max health, finish, and not spend resources');
+ await evaluate("window.__fightersQA.setBuildingHealth('witch-house-01',200);"+
+   "window.__fightersQA.selectUnit('witch',1);"+
+   "Array.from(document.querySelectorAll('#command-buttons button')).find(b=>"+
+   "b.textContent.includes('Réparer')).click()");
+ check((await evaluate('window.__fightersQA.snapshot()')).witches[1].repairTargetId==='witch-house-01',
+   'Repair panel action must find the nearest damaged allied building');
+ await evaluate('window.__fightersQA.move(-8,-8)');
+ check(!(await evaluate('window.__fightersQA.snapshot()')).repairs.length,
+   'Explicit movement must cancel the repair job');
+ await evaluate('window.__fightersQA.reset();window.__fightersQA.enableOrcAI(false);'+
+   'window.__fightersQA.setFaction("orc")');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ const orcHut=s.buildings.find(b=>b.type==='hut');
+ await evaluate('window.__fightersQA.setBuildingHealth('+JSON.stringify(orcHut.id)+',30);'+
+   'window.__fightersQA.centerCamera(22,20);window.__fightersQA.selectUnit("orc",1)');
+ const hutTap=await evaluate('window.__fightersQA.buildingScreenPoint('+JSON.stringify(orcHut.id)+')');
+ await evaluate('window.__fightersQA.tap('+hutTap.x+','+hutTap.y+')');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.orcs[1].repairTargetId===orcHut.id,'Orc worker must repair a damaged allied hut by tap');
+ await evaluate('window.__fightersQA.advance(10)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.buildings.find(b=>b.id===orcHut.id).health===orcHut.maxHealth&&
+   !s.repairs.length,'Orc worker must finish repairing the hut');
+ check(!await evaluate('window.__fightersQA.orderRepair("orc",1,"witch-house-01")')&&
+   !await evaluate('window.__fightersQA.orderRepair("orc",0,'+JSON.stringify(orcHut.id)+')')&&
+   !await evaluate('window.__fightersQA.orderRepair("orc",1,"neutral-gold-mine-01")'),
+   'Enemy buildings, fighter units, and neutral deposits may not be repaired');
+ await evaluate('window.__fightersQA.reset()');
+ console.log('PASS BUILDING REPAIR: direct taps, panel button, hammer, both clans, cancellation, ownership and caps.');
  await until('window.__fightersQA.snapshot().crops.loaded',
    'real six-stage source model for wheat and wild berry bushes',30000);
  await evaluate('window.__fightersQA.reset()');
@@ -854,13 +909,13 @@ async function run(){
   const miningSwing=await evaluate("(()=>{const seen={witch:false,orc:false};"+
     "for(let i=0;i<38;i++){window.__fightersQA.advance(1);const s=window.__fightersQA.snapshot();"+
     "for(const kind of ['witch','orc'])if(s[kind==='witch'?'witches':'orcs'].some(u=>"+
-    "u.role==='worker'&&u.animation==='Work_Swing'&&u.workToolVisible&&"+
-    "!u.hammerToolVisible))seen[kind]=true;}return seen})()");
+    "u.role==='worker'&&u.animation==='Work_Swing'&&u.pickToolVisible&&"+
+    "!u.workToolVisible&&!u.hammerToolVisible&&!u.chopToolVisible))seen[kind]=true;}return seen})()");
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.gold.witch>witchGoldBefore&&s.mining.totalMinedGold>0,
   'Witch worker never mined physical gold: '+JSON.stringify(s.mining));
   check(miningSwing.witch&&miningSwing.orc,
-    'Workers of both clans must swing visible scythes/axes when mining: '+JSON.stringify(miningSwing));
+    'Workers of both clans must swing a pickaxe, not a scythe/axe, when mining: '+JSON.stringify(miningSwing));
  check(s.mining.workers.every(u=>u.role==='worker'),
   'Non-worker character was assigned mining');
  // A construction order debits once, sends the worker to the real X/Z
@@ -878,7 +933,7 @@ async function run(){
   const constructionSwing=await evaluate("(()=>{let seen=false;for(let i=0;i<38;i++){"+
     "window.__fightersQA.advance(1);seen ||= window.__fightersQA.snapshot().witches.some(u=>"+
     "u.role==='worker'&&u.animation==='Work_Swing'&&u.hammerToolVisible&&"+
-    "!u.workToolVisible);}return seen})()");
+    "!u.pickToolVisible&&!u.workToolVisible);}return seen})()");
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.construction.length===0&&s.buildings.length===buildingsBefore+1&&
   s.buildings.some(b=>b.type==='witch-house'&&b.clanId==='witch'),
