@@ -92,4 +92,6 @@ assert(html.includes('witchDirector.enabled=!qaMode&&chosenFaction===\'orc\''),
  'Witch AI must be the opponent when playing the orks');
 assert(html.includes('orcDirector.enabled=!qaMode&&chosenFaction===\'witch\''),
  'Orc AI must be the opponent when playing the witches');
+assert(html.includes("const playerWon=victory===(chosenFaction==='witch')"),
+ 'Victory must follow the chosen faction, not QA-only camera/faction switching');
 console.log('PASS witch strategy: food, training, research, buildings, repair/defense, fog, raids, faction choice.');

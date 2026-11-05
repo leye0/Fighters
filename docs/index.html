@@ -3275,7 +3275,9 @@ function damageBuilding(building,amount,attacker){
 }
 function endBattle(victory){
   running=false;
-  const playerWon=victory===(activeFaction==='witch');
+  // QA can temporarily inspect the opposing faction without changing who
+  // the human actually selected at the title screen.
+  const playerWon=victory===(chosenFaction==='witch');
   $('overlay-title').textContent=playerWon?'VICTOIRE':'DÉFAITE';
   $('overlay-desc').textContent=victory?'Le village ork a été détruit.':
     'La maison principale des sorcières a été détruite.';
