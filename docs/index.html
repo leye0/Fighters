@@ -3,6 +3,25 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<script>
+// Install zoom guards before the 3D engine loads: Safari can otherwise zoom
+// the loading screen, and older WebKit builds ignore touch-action:manipulation.
+for(const name of ['gesturestart','gesturechange','gestureend','dblclick'])
+  document.addEventListener(name,event=>event.preventDefault(),{capture:true,passive:false});
+let lastPageTap=null;
+document.addEventListener('touchend',event=>{
+  if(event.touches.length||event.changedTouches.length!==1){lastPageTap=null;return;}
+  // Keep fast repeated button presses (e.g. queueing units) working normally.
+  if(event.target.closest('button,a,input,textarea,select,[role="button"]')){
+    lastPageTap=null;return;
+  }
+  const touch=event.changedTouches[0],now=performance.now();
+  if(lastPageTap&&now-lastPageTap.time<350&&
+    Math.hypot(touch.clientX-lastPageTap.x,touch.clientY-lastPageTap.y)<30){
+    event.preventDefault();lastPageTap=null;
+  }else lastPageTap={time:now,x:touch.clientX,y:touch.clientY};
+},{capture:true,passive:false});
+</script>
 <meta name="theme-color" content="#080c17">
 <meta name="description" content="Orks & Sorcières — RTS avec deux clans jouables et une faction adverse autonome.">
 <title>Orks &amp; Sorcières</title>
@@ -443,6 +462,12 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
   .hud .score #hud-magic{font-size:11px!important}
   .hud-magic-track{width:17px;height:5px}
 }
+/* iOS WebKit used to permit double-tap zoom on touch-action:manipulation.
+   Lock the game surface and controls; allow vertical scrolling only inside
+   the two panels that may need it on a short phone screen. */
+.game-shell,.game-shell *{touch-action:none!important}
+.start-card,.start-card :not(button),
+.command-panel,.command-panel :not(button):not(canvas){touch-action:pan-y!important}
 </style>
 <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
 <script src="./rts-map.js"></script>
@@ -5048,7 +5073,7 @@ $('start').onclick=()=>{
   orcSound.reset();witchSound.reset();
   orcSound.unlock();witchSound.unlock();startSession();
 };
-for(const name of ['gesturestart','gesturechange','gestureend','contextmenu'])document.addEventListener(name,event=>event.preventDefault(),{passive:false});
+document.addEventListener('contextmenu',event=>event.preventDefault(),{passive:false});
 const loadingProfile={
   startedAt:performance.now(),readyMs:null,characters:{},downloadMs:null,
   compressed:false,steps:[]
