@@ -4656,19 +4656,13 @@ function tickUnit(actor,dt){
   // detailed contour 60 times/second for each raider is wasted CPU work.
   const nearby=explicit?null:nearestHostile(actor,actor.profile.sight);
   const target=explicit||(nearby&&(!actor.destination||nearby.distance<2.7)?nearby.target:null);
-  // Player-controlled squads hold formation against distant scouts, but a
-  // raider entering any friendly settlement is no longer just a passer-by.
+  // Player-controlled squads hold formation on sight. When a building is
+  // actually struck, alertVillageUnderAttack assigns a bounded defense order;
+  // merely seeing a scout near the village must not break formation.
   const playerControlled=actor.kind==='witch'?!witchDirector.enabled:!orcDirector.enabled;
-  const invaderAtVillage=playerControlled&&!explicit&&target&&
-    liveBuildings().some(b=>{
-      if(b.clanId!==unitFaction(actor))return false;
-      const p=defenseTargetPosition(target),h=b.hitbox;
-      return Math.hypot(Math.max(h.minX-p.x,0,p.x-h.maxX),
-        Math.max(h.minZ-p.z,0,p.z-h.maxZ))<10;
-    });
-  const groupDefense=playerControlled&&!invaderAtVillage&&
+  const groupDefense=playerControlled&&
     !explicit&&!actor.destination&&
-    nearby&&units.some(ally=>ally!==actor&&ally.kind==='witch'&&!ally.dead&&
+    nearby&&units.some(ally=>ally!==actor&&ally.kind===actor.kind&&!ally.dead&&
       Math.hypot(ally.root.position.x-actor.root.position.x,
         ally.root.position.z-actor.root.position.z)<=5.5);
   if(target){
