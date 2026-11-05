@@ -17,6 +17,7 @@ on:
       - 'scripts/union-xz-triangles.py'
       - 'scripts/verify-costumes.mjs'
       - 'scripts/download-costumes.sh'
+      - 'scripts/pack-hair-long.mjs'
       - 'scripts/download-sword.sh'
       - 'scripts/decompress-sword.mjs'
       - '.github/workflows/pages.yml'

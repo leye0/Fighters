@@ -848,7 +848,7 @@ const ORC_NAMES={barrack:'Caserne',hut:'Hutte',mine:'Mine',cauldron:'Chaudron',f
 const units=[],selected=new Set();
 const soulEffects=[];
 let magic=0,soulAssignmentElapsed=0;
-let female=null,male=null,swordModel=null,clothingFemale=null,clothingMale=null,hairBuns=null,hairBuzzed=null,hairParted=null;
+let female=null,male=null,swordModel=null,clothingFemale=null,clothingMale=null,hairBuns=null,hairBuzzed=null,hairParted=null,hairLong=null;
 const sharedClipCatalog=new Map(),sharedCostumeMaterials=new Map();
 // One shared, bright ground-level ring per selected unit. Disable depth testing
 // so paved streets, model feet and shallow building surfaces cannot bury it.
@@ -1469,6 +1469,67 @@ function animation(actor,name,force=false){
 // The official Peasant meshes carry exactly the same named 65-bone Quaternius rig.
 // Skin the garments/hair with this actor's own skeleton, never copy foreign joints.
 const headGeometryCache=new WeakMap();
+const WITCH_HAIR_STYLES=['short','long','very-long','ponytail','side-buns'];
+const WITCH_HAIR_COLORS=[
+  {name:'black',hex:0x191718},{name:'blonde',hex:0xe9c87e},
+  {name:'white',hex:0xf5f3e9},{name:'brown',hex:0x603b2a},
+  {name:'red',hex:0xbd582d},{name:'gray',hex:0x94938e},
+  {name:'green',hex:0x4fa46a}
+];
+const hairStyleDeck=[],hairColorDeck=[];
+function shuffledDraw(deck,options){
+  if(!deck.length){
+    deck.push(...options);
+    for(let i=deck.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [deck[i],deck[j]]=[deck[j],deck[i]];
+    }
+  }
+  return deck.pop();
+}
+function randomWitchHair(){
+  return {style:shuffledDraw(hairStyleDeck,WITCH_HAIR_STYLES),
+    color:shuffledDraw(hairColorDeck,WITCH_HAIR_COLORS)};
+}
+// A single extended geometry is shared by every very-long-haired witch.
+// Stretch only the lower part of the source hairstyle, never its scalp.
+const veryLongHairCache=new WeakMap();
+function veryLongHairGeometry(original){
+  if(veryLongHairCache.has(original))return veryLongHairCache.get(original);
+  const geometry=original.clone(),positions=geometry.getAttribute('position');
+  for(let i=0;i<positions.count;i++){
+    const y=positions.getY(i),z=positions.getZ(i);
+    const t=THREE.MathUtils.clamp((1.70-y)/.20,0,1);
+    if(t<=0)continue;
+    positions.setY(i,y-.45*t*t);
+    if(z<-.01)positions.setZ(i,z-.055*t);
+  }
+  positions.needsUpdate=true;geometry.computeVertexNormals();geometry.computeBoundingSphere();
+  veryLongHairCache.set(original,geometry);
+  return geometry;
+}
+// A tiny rigid ponytail follows the head bone; no per-frame hair simulation.
+const ponytailGeometry=new THREE.CylinderGeometry(.075,.014,.48,8,6);
+const ponytailPositions=ponytailGeometry.getAttribute('position');
+for(let i=0;i<ponytailPositions.count;i++){
+  const t=THREE.MathUtils.clamp((.24-ponytailPositions.getY(i))/.48,0,1);
+  ponytailPositions.setZ(i,ponytailPositions.getZ(i)-.065*t*t);
+}
+ponytailPositions.needsUpdate=true;ponytailGeometry.computeVertexNormals();
+const ponytailMaterials=new Map();
+function addPonytail(skeleton,color){
+  const head=skeleton.bones.find(b=>b.name==='Head');
+  if(!head)throw Error('Os Head manquant pour la queue de cheval');
+  let material=ponytailMaterials.get(color.hex);
+  if(!material){
+    material=new THREE.MeshStandardMaterial({color:color.hex,roughness:.94});
+    ponytailMaterials.set(color.hex,material);
+  }
+  const tail=new THREE.Mesh(ponytailGeometry,material);
+  tail.name='hair_ponytail';tail.userData.costumeLayer='hair';
+  tail.position.set(0,-.14,-.18);
+  head.add(tail);
+}
 function headOnlyGeometry(body){
   if(headGeometryCache.has(body.geometry))return headGeometryCache.get(body.geometry);
   const geom=body.geometry,si=geom.getAttribute('skinIndex'),sw=geom.getAttribute('skinWeight');
@@ -1495,7 +1556,7 @@ function sharedRoleMaterial(original,key,configure){
   }
   return material;
 }
-function costumeLayers(visual,kind,index,role){
+function costumeLayers(visual,kind,index,role,appearance=null){
   const bodyName=kind==='witch'?'Superhero_Female':'SuperHero_Male';
   let body=null;
   visual.traverse(o=>{if(o.isSkinnedMesh&&o.name===bodyName)body=o;});
@@ -1513,7 +1574,9 @@ function costumeLayers(visual,kind,index,role){
   // Reuse the original 65-bone rig; expose only the head beneath a costume.
   body.geometry=headOnlyGeometry(body);
   const clothing=kind==='witch'?clothingFemale:clothingMale;
-  const hairstyle=kind==='witch'?hairBuns:(index%2?hairParted:hairBuzzed);
+  const hairstyle=kind==='witch'?({short:hairParted,long:hairLong,
+    'very-long':hairLong,ponytail:hairParted,'side-buns':hairBuns}[appearance.style]):
+    (index%2?hairParted:hairBuzzed);
   let garmentMeshes=0,hairMeshes=0;
   for(const [source,type] of [[clothing,'garment'],[hairstyle,'hair']]){
     if(!source)throw Error('Tenue ou coiffure manquante : '+type);
@@ -1524,13 +1587,17 @@ function costumeLayers(visual,kind,index,role){
         throw Error('Ordre des os incompatible pour '+o.name);
       const sourceMaterials=Array.isArray(o.material)?o.material:[o.material];
       const materials=sourceMaterials.map(mat=>sharedRoleMaterial(mat,
-        kind+'-'+role+'-'+type+(type==='hair'?'-'+index%2:''),
+        type==='hair'&&kind==='witch'?'witch-hair-'+appearance.color.name:
+          kind+'-'+role+'-'+type+(type==='hair'?'-'+index%2:''),
         m=>{
           if(!m.color)return;
           if(type==='garment')m.color.lerp(new THREE.Color(profile.garment),.72);
-          else m.color.multiply(new THREE.Color(kind==='witch'?0x58372c:index%2?0x302a28:0x63452e));
+          else if(kind==='witch')m.color.setHex(appearance.color.hex);
+          else m.color.multiply(new THREE.Color(index%2?0x302a28:0x63452e));
         }));
-      const layer=new THREE.SkinnedMesh(o.geometry,Array.isArray(o.material)?materials:materials[0]);
+      const geometry=kind==='witch'&&type==='hair'&&appearance.style==='very-long'?
+        veryLongHairGeometry(o.geometry):o.geometry;
+      const layer=new THREE.SkinnedMesh(geometry,Array.isArray(o.material)?materials:materials[0]);
       layer.name=type+'_'+o.name;layer.userData.costumeLayer=type;
       layer.frustumCulled=false;
       layer.bind(skeleton,body.bindMatrix.clone());
@@ -1539,7 +1606,9 @@ function costumeLayers(visual,kind,index,role){
     });
   }
   if(garmentMeshes<4||hairMeshes!==1)throw Error('Tenue civile incomplète');
-  return {garmentMeshes,hairMeshes,headTriangles:body.geometry.getIndex()?.count/3||0,role};
+  if(kind==='witch'&&appearance.style==='ponytail')addPonytail(skeleton,appearance.color);
+  return {garmentMeshes,hairMeshes,headTriangles:body.geometry.getIndex()?.count/3||0,
+    role,hairStyle:appearance?.style||null,hairColor:appearance?.color.name||null};
 }
 // All tools are built once from tiny primitives. Their clones share geometry
 // and materials across every worker; no worker-only GLB or texture is loaded.
@@ -1654,7 +1723,8 @@ function spawnUnit(kind,x,z,index=0,role='melee'){
   if(!source)throw Error('Source GLB absente pour '+kind);
   const profile=roles.profile(kind,role);
   const root=new THREE.Group(),visual=cloneSkeleton(source.scene);
-  const outfitInfo=costumeLayers(visual,kind,index,role);
+  const appearance=kind==='witch'?randomWitchHair():null;
+  const outfitInfo=costumeLayers(visual,kind,index,role,appearance);
   const bounds=new THREE.Box3().setFromObject(visual);
   const center=bounds.getCenter(new THREE.Vector3());
   visual.position.set(-center.x,-bounds.min.y,-center.z);
@@ -2912,6 +2982,7 @@ function showBanner(message){
 }
 function startSession(){
   if(!ready)return;
+  hairStyleDeck.length=0;hairColorDeck.length=0;
   clearOrderPings();clearBolts();lastOrcAiVoice=-Infinity;
   for(const effect of soulEffects)disposeSoulEffect(effect);
   soulEffects.length=0;magic=0;soulAssignmentElapsed=0;
@@ -4513,10 +4584,11 @@ async function load(){
     }
     const files=['quaternius_outfit_Female_Peasant.glb',
       'quaternius_outfit_Male_Peasant.glb','quaternius_ubc_Hair_Buns.glb',
-      'quaternius_ubc_Hair_Buzzed.glb','quaternius_ubc_Hair_SimpleParted.glb'];
+      'quaternius_ubc_Hair_Buzzed.glb','quaternius_ubc_Hair_SimpleParted.glb',
+      'quaternius_ubc_Hair_Long.glb'];
     const garments=await Promise.all(files.map(async file=>
       loader.parseAsync(await getBinary(file),'') ));
-    [clothingFemale,clothingMale,hairBuns,hairBuzzed,hairParted]=garments;
+    [clothingFemale,clothingMale,hairBuns,hairBuzzed,hairParted,hairLong]=garments;
     $('load-bar').style.width='90%';
     swordModel=await loader.loadAsync('./models/equipment.sword.arming.default.gltf?v=uncompressed-20261101');
     const grip=swordModel.scene.getObjectByName('grip');
@@ -4647,7 +4719,8 @@ window.__fightersQA={
     gold:{...gold},wood:{...wood},projection:camera.isOrthographicCamera?'orthographic':'perspective',
     cameraQuaternion:camera.quaternion.toArray(),
     witches:units.filter(a=>a.kind==='witch'&&!a.dead).map(a=>({
-      id:a.id,role:a.role,x:a.root.position.x,z:a.root.position.z,radius:a.radius,health:a.health,animation:a.current,
+      id:a.id,role:a.role,hairStyle:a.outfitInfo.hairStyle,hairColor:a.outfitInfo.hairColor,
+      x:a.root.position.x,z:a.root.position.z,radius:a.radius,health:a.health,animation:a.current,
       workTool:a.workTool?.name||null,workToolVisible:!!a.workTool?.visible,
       hammerTool:a.hammerTool?.name||null,hammerToolVisible:!!a.hammerTool?.visible,
       pickTool:a.pickTool?.name||null,pickToolVisible:!!a.pickTool?.visible,
