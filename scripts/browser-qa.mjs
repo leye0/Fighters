@@ -40,6 +40,17 @@ async function evaluate(expression){
  if(result.exceptionDetails)throw Error('Browser error: '+JSON.stringify(result.exceptionDetails));
  return result.result.value;
 }
+async function findWitchSite(type){
+  // Search an actual ring around the mother house. The 8-unit proximity rule
+  // deliberately invalidated the old far-east fixtures; these options cover
+  // all directions while staying close enough for a worker to reach.
+  return evaluate("(()=>{const q=window.__fightersQA;"+
+    "for(const r of [7,8.5,10,11.5,13,14.5])for(let i=0;i<32;i++){"+
+    "const a=i*Math.PI/16,x=Math.round((-23.5+r*Math.cos(a))*2)/2,"+
+    "z=Math.round((-17.5+r*Math.sin(a))*2)/2;"+
+    "if(q.canBuild(x,z,"+JSON.stringify(type)+"))return {x,z};}"+
+    "return null})()");
+}
 async function until(expression,label,timeout=90000){
  const deadline=Date.now()+timeout;
  while(Date.now()<deadline){
@@ -403,9 +414,7 @@ async function run(){
      'Reset must restore every tree and release all log bundle scene nodes');
  }
  console.log('PASS FORESTRY: both clans axe-fell actual CC0 trees to tiny CC0 log bundles; reset clears them.');
- const noWoodSite=await evaluate("(()=>{for(let z=-12;z>=-17;z-=2)"+
-   "for(let x=-8;x>=-16;x-=2)if(window.__fightersQA.canBuild(x,z,'witch-house'))"+
-   "return {x,z};return null})()");
+ const noWoodSite=await findWitchSite('witch-house');
  check(noWoodSite,'Need a legal house site for the wood-cost regression');
  await evaluate("window.__fightersQA.setWood('witch',0)");
  check(!await evaluate('window.__fightersQA.orderBuild("witch-house",'+
@@ -1083,7 +1092,7 @@ async function run(){
   'Non-worker character was assigned mining');
  // A construction order debits once, sends the worker to the real X/Z
  // perimeter and creates the structure only after its work animation.
- const site=await evaluate("(()=>{for(let z=-12;z>=-17;z-=2)for(let x=-8;x>=-16;x-=2)if(window.__fightersQA.canBuild(x,z,'witch-house'))return {x,z};return null})()");
+ const site=await findWitchSite('witch-house');
  check(site,'No safe witch house construction site');
  const buildingsBefore=s.buildings.length,goldBeforeBuild=s.gold.witch,
   woodBeforeBuild=s.wood.witch;
@@ -1128,9 +1137,7 @@ async function run(){
  await evaluate('window.__fightersQA.advance(8.1)');
  check((await evaluate('window.__fightersQA.snapshot()')).souls.buildUnlocked,
    'Upgraded house did not unlock stone-circle construction');
- const stoneSite=await evaluate("(()=>{for(let z=-11;z>=-25;z-=1)"+
-   "for(let x=-8;x>=-24;x-=1)if(window.__fightersQA.canBuild(x,z,'stone-circle'))"+
-   "return {x,z};return null})()");
+ const stoneSite=await findWitchSite('stone-circle');
  check(stoneSite,'No buildable spot for the witch healing circle');
  check(await evaluate('window.__fightersQA.orderBuild("stone-circle",'+
    stoneSite.x+','+stoneSite.z+')'),'Witch worker could not start a healing circle');
@@ -1236,8 +1243,7 @@ async function run(){
 
  // The wheat-only CC BY model has three distinct growth stages. Stage 3 stays ripe
  // until a physical witch worker harvests, then the crop begins again at 1.
- const gardenSite=await evaluate("(()=>{for(let z=-9;z>=-23;z-=2)for(let x=-8;x>=-24;x-=2)"+
-   "if(window.__fightersQA.canBuild(x,z,'garden'))return {x,z};return null})()");
+ const gardenSite=await findWitchSite('garden');
  check(gardenSite,'No buildable garden site on witch territory');
  check(await evaluate('window.__fightersQA.orderBuild("garden",'+gardenSite.x+','+gardenSite.z+')'),
    'Witch worker could not begin garden construction');
