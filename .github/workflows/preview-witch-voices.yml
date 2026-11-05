@@ -1,0 +1,43 @@
+name: Preview five Qwen3 Witch voices
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/preview-witch-voices.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fighters-witch-voice-preview
+  cancel-in-progress: false
+
+jobs:
+  audition:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare audio tools
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Generate five audition clips
+        env:
+          REPLICATE_API_KEY: ${{ secrets.REPLICATE_API_KEY }}
+        run: python3 scripts/preview-witch-voices.py
+      - name: Upload audition files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fighters-witch-voice-audition
+          path: witch-voice-audition/
+          if-no-files-found: warn
+          retention-days: 30
