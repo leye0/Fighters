@@ -1,4 +1,4 @@
-# Fighters — prototype RTS : sorcières contre orcs
+# Orks & Sorcières — prototype RTS
 
 **[Démo jouable](https://www.streamlev.com/Fighters/)** · [Laboratoire des 86 animations](https://www.streamlev.com/Fighters/motion-lab.html) · [Tests Chrome/WebGL](https://github.com/leye0/Fighters/actions/workflows/browser-qa.yml)
 
@@ -14,13 +14,13 @@ puis reprend son activité autonome. Les ordres du joueur et les tâches en cour
 restent prioritaires; les orcs ne bénéficient pas de la guérison. Les six pierres
 partagent un seul modèle GLB de 24 Kio, sous [licence CC0](docs/models/STANDING_STONE_LICENSE.md).
 
-Fighters est un prototype de **stratégie en temps réel** en 3D isométrique. Le joueur commande les sorcières et la maison des sorcières; les **orcs sont une faction adverse autonome** qui produit des troupes, développe son village, défend ses bâtiments et lance des attaques. Le beat ’em up et ses gestes de combat direct ne font plus partie du jeu.
+Orks & Sorcières est un prototype de **stratégie en temps réel** en 3D isométrique. À l'écran de démarrage, le joueur choisit d'incarner les **sorcières** ou les **orks**. Il contrôle uniquement son camp; l'autre faction est autonome et peut développer son village, produire des troupes, récolter des ressources, explorer, défendre ses bâtiments et attaquer. Le beat ’em up et ses gestes de combat direct ne font plus partie du jeu.
 
 ## Commandes
 
 | Action | Ordinateur | Téléphone/tablette |
 |---|---|---|
-| Sélectionner une sorcière ou un bâtiment | Clic gauche | Toucher |
+| Sélectionner une unité de votre clan ou un bâtiment | Clic gauche | Toucher |
 | Sélection multiple | Glisser sur la carte ou Ctrl/Cmd+A | **Deux doigts délimitent un rectangle** : posez les deux doigts, écartez/déplacez-les pour entourer les unités, puis soulevez-les |
 | Déplacement / formation | Sélectionner puis cliquer au sol | Sélectionner puis toucher le terrain |
 | Attaquer une unité ou un bâtiment ennemi | **Deux clics :** sélectionner une sorcière puis cliquer directement le bâtiment ou l'unité ennemie | **Deux touches :** sorcière puis bâtiment ennemi, sans passer par un mode supplémentaire |
@@ -31,7 +31,7 @@ Fighters est un prototype de **stratégie en temps réel** en 3D isométrique. L
 
 **Deux doigts servent uniquement à sélectionner des unités** : leurs positions forment les coins du rectangle vert visible immédiatement; soulever le premier doigt confirme la sélection, et le deuxième doigt ne produit aucune commande parasite. Le pincement ne change plus l'échelle, fixée à un grossissement de **4,05× celui de l'ancien démarrage**, soit **35 % de plus** que le précédent zoom 3× (hauteur orthographique 35 → 35/(3 × 1,35)). La partie commence près des trois sorcières, et non au milieu d'une carte désormais trop grande pour tenir sur l'écran. Un anneau bleu apparaît brièvement après un ordre de déplacement; une mire rouge confirme un ordre d'attaque. Les marqueurs disparaissent automatiquement et leur nombre simultané est plafonné.
 
-La barre supérieure n'affiche plus que la faction active, ses ressources (**💰 or, 🪵 bois, 🌾 nourriture chez les sorcières**), le total d'unités et le bouton pause. Il n'y a plus deux pictogrammes de pièces identiques pour les deux clans; changer de faction affiche les stocks correspondants. L'interface reprend maintenant la disposition de **Warcraft II** : petite console à gauche sur ordinateur et bande compacte en bas sur téléphone.
+La barre supérieure n'affiche que la faction choisie, ses ressources (**💰 or, 🪵 bois, 🌾 nourriture chez les sorcières**), le total d'unités et le bouton pause. Le choix de faction est fait au démarrage ou entre les parties, sans changement de clan en cours de match. L'interface reprend la disposition de **Warcraft II** : petite console à gauche sur ordinateur et bande compacte en bas sur téléphone.
 
 ## Brouillard de guerre
 
@@ -77,7 +77,7 @@ Les ouvriers utilisent désormais une **pioche** dans les mines, un **marteau** 
 
 Les **unités et les bâtiments ennemis** sont des cibles du même système de combat : ordre d'attaque, acquisition automatique à proximité, approche jusqu'à portée de frappe, animation native, dégâts et recharge entre attaques.
 
-Les bâtiments ont une santé, un identifiant et une **hitbox réelle 3D**. Lorsqu'un édifice tombe à zéro PV, le jeu le retire de la scène, annule sa production, supprime sa collision, enlève sa barre de vie et invalide les trajectoires des unités. **La destruction de la maison des sorcières provoque la défaite; celle du dernier bâtiment orc provoque la victoire.** La réinitialisation restaure la carte de départ.
+Les bâtiments ont une santé, un identifiant et une **hitbox réelle 3D**. Lorsqu'un édifice tombe à zéro PV, le jeu le retire de la scène, annule sa production, supprime sa collision, enlève sa barre de vie et invalide les trajectoires des unités. **La destruction de la maison principale des sorcières fait gagner les orks; celle du dernier bâtiment ork fait gagner les sorcières.** Le résultat est présenté du point de vue du camp incarné. La réinitialisation restaure la carte de départ.
 
 Les **barres de vie orcs** ne sont plus des enfants des GLB redimensionnés/tournés. Elles sont attachées à la scène, placées au-dessus de leur hitbox et orientées vers la caméra dans le repère mondial. Cela élimine leur rotation parasite de 90°.
 
@@ -104,6 +104,17 @@ Les bâtiments possèdent maintenant **deux volumes distincts** calculés sur le
 5. **Offensive :** l'IA regroupe une force suffisante avant de lancer un raid contre la maison des sorcières. Elle tient compte du temps de développement du village et peut reconstruire une caserne perdue.
 
 Cette IA est **un moteur de décisions tactiques et économiques par règles**, pas un modèle neuronal ni une intelligence de niveau compétitif professionnel. Il reste possible de développer des formations plus avancées, du micro-management de combats et une économie récoltable.
+
+## IA sorcière autonome
+
+Lorsque le joueur choisit les orks, `docs/witch-strategy.js` dirige les sorcières par règles, à une fréquence réduite et avec une mémoire d'exploration indépendante :
+
+1. **Survie et économie :** recrutement d'ouvrières, culture de potagers selon les réserves de nourriture, coupe et livraison de bois, extraction physique d'or uniquement dans les mines déjà découvertes.
+2. **Expansion et magie :** placement des bâtiments après validation des vraies empreintes au sol, amélioration de la maison, construction du cercle de roches et recrutement d'Arcanistes lorsque cette technologie est débloquée.
+3. **Défense et soins :** réparations des structures endommagées, riposte aux ennemis visibles à proximité, guérison et récolte des âmes par les mécanismes autonomes existants.
+4. **Reconnaissance et offensives :** envoi d'éclaireuses vers les zones inconnues de leur propre brouillard de guerre, puis raids en groupe seulement contre des bâtiments adverses effectivement découverts.
+
+En mode normal, **une seule IA stratégique dirige le camp adverse**. Le joueur garde ses commandes directes, et les tests conservent leurs contrôles de simulation isolés. Le scénario de choix de clan et l'IA sorcière sont couverts par `scripts/test-witch-strategy.mjs` et les tests navigateur.
 
 ## Modèles et déploiement
 

@@ -1585,6 +1585,32 @@ async function run(){
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.witches.length===3&&s.orcs.length===4&&
   s.buildings.filter(b=>!b.destroyed).length===6,'Reset after AI restores starting match');
+ // The playable faction comes from the start overlay, not the test-only
+ // setFaction helper. Launch an actual orc match, then exercise the enemy AI.
+ check(await evaluate("document.title==='Orks & Sorcières'"),
+   'Browser title must use the new game name');
+ await evaluate("document.querySelector('#overlay').hidden=false;"+
+   "document.querySelector('#choose-orc').click()");
+ check(await evaluate("document.querySelector('#choose-orc').getAttribute('aria-pressed')==='true'&&"+
+   "document.querySelector('#choose-witch').getAttribute('aria-pressed')==='false'&&"+
+   "!document.querySelector('#start').disabled"),
+   'Orc faction must be selectable after the village is loaded');
+ await evaluate("document.querySelector('#start').click()");
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.activeFaction==='orc'&&s.chosenFaction==='orc'&&s.orcs.length===4&&
+   s.cameraCenter.x>10&&s.selectedBuildingId?.startsWith('orc-barrack'),
+   'Starting as orcs must reveal their own base and select their barrack');
+ await evaluate('window.__fightersQA.enableWitchAI(true);window.__fightersQA.advance(12)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.witchAI.decisions.some(a=>a.type==='train'||a.type==='build')&&
+   s.witchAI.decisions.some(a=>a.type==='scout'),
+   'Real witch director must independently recruit/build and scout');
+ await evaluate("document.querySelector('#overlay').hidden=false;"+
+   "document.querySelector('#choose-witch').click();document.querySelector('#start').click()");
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.activeFaction==='witch'&&s.chosenFaction==='witch'&&
+   s.witches.length===3&&s.witchAI.decisions.length===0,
+   'Choosing witches for a new match must reset the witch AI');
  check(!errors.length,'Browser JavaScript exceptions: '+errors.join(' | '));
  console.log('PASS RTS: stable HUD, persistent shortcuts, blue/red reticles, two-tap attacks, one-finger pan, instant two-finger box selection, locked 4.05× zoom, destroyed buildings and strategic AI.');
 

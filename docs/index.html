@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#080c17">
-<meta name="description" content="Fighters RTS — sorcières et orcs, sélection, production et construction.">
-<title>Fighters — RTS</title>
+<meta name="description" content="Orks & Sorcières — RTS avec deux clans jouables et une faction adverse autonome.">
+<title>Orks &amp; Sorcières</title>
 <style>
 :root{background:#080c17;color:#edf3ff;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:dark}
 *{box-sizing:border-box}body{margin:0;overflow-x:hidden}button{font:inherit;cursor:pointer}button:disabled{cursor:wait;opacity:.5}a{color:#baf6f0;text-decoration:none}
@@ -20,6 +20,7 @@
 .gesture-indicator{position:absolute;display:none;z-index:6;pointer-events:none;width:68px;height:68px;border:2px solid #b8f3b2;border-radius:50%;background:#2a745648;color:#eaffc9;place-items:center;font-size:32px;text-shadow:0 2px 4px #000;transform:translate(-50%,-50%);box-shadow:0 0 25px #83f6ae44}
 .guard-indicator{position:absolute;right:17px;bottom:60px;z-index:6;display:none;color:#d7ecff;background:#31556bdc;border:1px solid #8dcde9;border-radius:10px;font-size:12px;font-weight:900;letter-spacing:.12em;padding:10px 14px;pointer-events:none}@keyframes rise{to{transform:translateY(-50px) scale(1.2);opacity:0}}
 .start-overlay{position:absolute;z-index:10;inset:0;background:#080d19bc;display:grid;place-items:center;padding:28px;text-align:center;backdrop-filter:blur(5px)}.start-overlay[hidden]{display:none}.start-card{max-width:540px;background:#101a2af0;border:1px solid #4b6280;border-radius:20px;padding:30px;box-shadow:0 28px 75px #0008}.start-card .stamp{font-size:11px;letter-spacing:.25em;color:#c1ed94;font-weight:900}.start-card h2{font-size:clamp(30px,5vw,55px);line-height:1;letter-spacing:-.065em;font-weight:1000;margin:12px 0;color:#f0f5ff}.start-card p{color:#acbdd6;line-height:1.65;font-size:14px}.start-card .primary{background:#f4ed66;color:#1c1b11;border:0;font-weight:950;border-radius:12px;font-size:15px;padding:13px 30px;margin-top:14px;box-shadow:4px 5px 0 #ec638c}.load-progress{height:5px;background:#394761;border-radius:5px;margin-top:16px;overflow:hidden}.load-progress>div{height:100%;width:0;background:#b9f18b;transition:width .2s}
+.faction-choice{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0 7px}.faction-choice button{min-width:0;padding:12px 8px;border:2px solid #47586c;border-radius:12px;background:#1b2a3a;color:#d7e3f2;font-weight:850;touch-action:manipulation}.faction-choice button[aria-pressed="true"]{border-color:#dcf48f;background:#35492f;color:#f6ffe2;box-shadow:0 0 0 2px #b7e68736}.faction-choice button:focus-visible{outline:3px solid #f4ed66;outline-offset:3px}.faction-choice button span{display:block;font-size:25px;margin-bottom:2px}
 /* Short RTS notifications: tiny white text on black, against the very bottom
    edge, above the command panel but never intercepting its controls. */
 .banner{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 2px);top:auto;left:50%;transform:translateX(-50%);max-width:calc(100% - 16px);padding:2px 6px;background:#000;color:#fff;border:0;border-radius:2px;font:500 10px/1.15 ui-sans-serif,system-ui,-apple-system,sans-serif;letter-spacing:0;text-shadow:none;box-shadow:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;z-index:9;opacity:0}
@@ -38,7 +39,7 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;padding:0;overf
 .gesture-indicator{opacity:.7}
 .guard-indicator{bottom:calc(env(safe-area-inset-bottom,0px) + 14px);right:calc(env(safe-area-inset-right,0px) + 14px)}
 .start-overlay{padding:16px}
-.start-card{padding:18px;max-width:520px;max-height:calc(100dvh - 22px);overflow:hidden}
+.start-card{padding:18px;max-width:520px;max-height:calc(100dvh - 22px);overflow:auto}
 .start-card h2{font-size:clamp(26px,5vw,42px);margin:8px 0}
 .start-card p{font-size:12px;line-height:1.42;margin:9px 0}
 .start-card .primary{margin-top:7px}
@@ -448,6 +449,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 <script src="./rts-navigation.js"></script>
 <script src="./rts-unit-physics.js"></script>
 <script src="./orc-strategy.js"></script>
+<script src="./witch-strategy.js"></script>
 <script src="./rts-roles.js"></script>
 <script src="./rts-fog.js"></script>
 <script src="./rts-sound.js"></script>
@@ -486,7 +488,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
     <div id="training-progress" class="production-progress" aria-live="off"></div>
   </div>
 </aside>
-<div class="start-overlay" id="overlay"><div class="start-card"><div class="stamp">FIGHTERS · PROTOTYPE RTS</div><h2 id="overlay-title">SORCIÈRES CONTRE ORCS</h2><p id="overlay-desc">Sélectionnez une ou plusieurs sorcières puis touchez le terrain pour donner un ordre de déplacement. Les unités combattent automatiquement les ennemis proches. Touchez la maison pour entraîner d’autres sorcières; passez aux orcs pour construire.</p><button class="primary" id="start" disabled>Chargement des unités…</button><div class="load-progress"><div id="load-bar"></div></div></div></div>
+<div class="start-overlay" id="overlay"><div class="start-card"><div class="stamp">STRATÉGIE EN TEMPS RÉEL</div><h2 id="overlay-title">Orks &amp; Sorcières</h2><p id="overlay-desc">Choisissez votre clan. L'autre développera son village, défendra ses terres et préparera ses attaques de manière autonome.</p><div class="faction-choice" id="faction-choice" role="group" aria-label="Choisissez votre clan"><button id="choose-witch" aria-pressed="true" type="button"><span aria-hidden="true">🧙‍♀️</span>Sorcières</button><button id="choose-orc" aria-pressed="false" type="button"><span aria-hidden="true">👹</span>Orks</button></div><button class="primary" id="start" disabled>Chargement des unités…</button><div class="load-progress"><div id="load-bar"></div></div></div></div>
 </div></section></div><script>
 (function(){
   // This runs before ES modules. If a dependency fails to import, the module's
@@ -864,9 +866,12 @@ let selectedBuilding=null,selectedRaven=null,nextUnitId=1,qaPassive=false,orcSpa
 let rallyMode=false,constructionTab=false,lastHudSignature='';
 const ORC_TRAIN_COST=100,ORC_TRAIN_DURATION=4.5,MAX_QUEUE=8;
 const orcDirector=new window.FightersOrcStrategy.Director();
-const autonomousOrcs=!new URLSearchParams(location.search).has('qa');
-orcDirector.enabled=autonomousOrcs;
+const witchDirector=new window.FightersWitchStrategy.Director();
+const qaMode=new URLSearchParams(location.search).has('qa');
+let chosenFaction='witch';
+orcDirector.enabled=false;witchDirector.enabled=false;
 let orcIncomeFraction=0,attackMode=false,strategyAccumulator=0;
+let witchStrategyAccumulator=0;
 let ravenMoveMode=false;
 let completedMiningCycles=0,totalMinedGold=0;
 let qaPassiveKind=null;
@@ -1387,6 +1392,7 @@ async function loadOrcVillage(limit=3){
     }
   }
   orcVillage=village;
+  refreshStartButton();
   refreshHUD();
   console.info('Orc village:',village.children.length,'/',entries.length,'individual buildings loaded; textures reused:',deduplicatedTextures,'verified:',manifest.sharedTexturesVerified);
 }
@@ -1394,12 +1400,16 @@ async function loadOrcVillage(limit=3){
 // The full 3D orc village streams in AFTER the player is ready to start.
 const orcCountParam=new URLSearchParams(location.search).get('orcDebug');
 const orcDebugCount=orcCountParam===null?5:Math.min(5,Math.max(0,Math.floor(Number(orcCountParam)||0)));
-let orcVillageLoadStarted=false;
+let orcVillageLoadStarted=false,orcVillageLoadError=null;
 function beginOrcVillageLoad(){
   if(orcVillageLoadStarted||!orcDebugCount)return;
   orcVillageLoadStarted=true;
   setTimeout(()=>loadOrcVillage(orcDebugCount)
-    .catch(err=>console.warn('Orc village loading failed:',err)),100);
+    .catch(err=>{
+      orcVillageLoadError=err;
+      console.warn('Orc village loading failed:',err);
+      refreshStartButton();
+    }),100);
 }
 
 function resize(){
@@ -2628,7 +2638,7 @@ function tickConstructWorker(actor,dt){
   return true;
 }
 function cancelRepair(actor){actor.repairJob=null;}
-function orderRepair(actors,building){
+function orderRepair(actors,building,{byAI=false}={}){
   if(!running||paused)return false;
   let assigned=0;
   for(const actor of actors){
@@ -2642,10 +2652,13 @@ function orderRepair(actors,building){
     assigned++;
   }
   if(assigned){
-    const box=building.hitbox;
-    showOrderPing({x:(box.minX+box.maxX)/2,z:(box.minZ+box.maxZ)/2,y:.15},'move');
-    acknowledgePlayerOrder(actors);
-    showBanner('RÉPARATION EN COURS');refreshHUD();
+    if(!byAI){
+      const box=building.hitbox;
+      showOrderPing({x:(box.minX+box.maxX)/2,z:(box.minZ+box.maxZ)/2,y:.15},'move');
+      acknowledgePlayerOrder(actors);
+      showBanner('RÉPARATION EN COURS');
+    }
+    refreshHUD();
   }
   return assigned>0;
 }
@@ -2709,9 +2722,10 @@ function refreshHUD(){
   setText('unit-count',units.filter(u=>u.kind==='witch'&&!u.dead).length+' : '+
     units.filter(u=>u.kind==='orc'&&!u.dead).length);
   setText('faction-title',activeFaction==='witch'?'SORCIÈRES':'ORCS');
-  setText('ai-status',orcDirector.enabled?'ORCS · '+({
+  const director=activeFaction==='witch'?orcDirector:witchDirector;
+  setText('ai-status',director.enabled?(activeFaction==='witch'?'ORCS':'SORCIÈRES')+' · '+({
     develop:'Expansion',defend:'Défense',attack:'Assaut',recover:'Regroupement'
-  }[orcDirector.mode]||'Stratégie'):'ORCS · En attente');
+  }[director.mode]||'Stratégie'):'IA · En attente');
 
   const b=selectedBuilding,alive=[...selected].filter(u=>!u.dead),
     faction=b?.clanId==='witch'?'witch':'orc',
@@ -2971,6 +2985,25 @@ function changeFaction(faction){
   attackMode=false;ravenMoveMode=false;
   updateVision();clearSelection();refreshHUD();
 }
+function chooseFaction(faction){
+  if(faction!=='witch'&&faction!=='orc')return;
+  chosenFaction=faction;
+  $('choose-witch').setAttribute('aria-pressed',String(faction==='witch'));
+  $('choose-orc').setAttribute('aria-pressed',String(faction==='orc'));
+  refreshStartButton();
+}
+function refreshStartButton(){
+  if(running||!ready)return;
+  const waitingForOrcs=chosenFaction==='orc'&&!orcVillage;
+  $('start').disabled=waitingForOrcs;
+  $('start').textContent=waitingForOrcs?'Chargement du village ork…':'▶ COMMENCER';
+  if(!$('overlay').hidden&&$('overlay-title').textContent==='Orks & Sorcières')
+    $('overlay-desc').textContent=waitingForOrcs?
+      (orcVillageLoadError?'Le village ork n’a pas pu charger. Choisissez les sorcières ou rechargez la page.':
+      'Le village ork se prépare. Vous pourrez jouer dès que ses bâtiments seront chargés.'):
+      'Vous incarnez les '+(chosenFaction==='witch'?'sorcières':'orks')+
+      '. L’autre clan gère ses troupes, son économie et sa stratégie de manière autonome.';
+}
 function showBanner(message){
   // Short, compositor-driven toast. A JS timeout can be delayed under heavy
   // WebGL rendering and leave the notification stranded on-screen.
@@ -2981,13 +3014,14 @@ function showBanner(message){
   banner.style.animation='tiny-rts-toast .6s linear forwards';
 }
 function startSession(){
-  if(!ready)return;
+  if(!ready||(chosenFaction==='orc'&&!orcVillage))return;
   hairStyleDeck.length=0;hairColorDeck.length=0;
   clearOrderPings();clearBolts();lastOrcAiVoice=-Infinity;
   for(const effect of soulEffects)disposeSoulEffect(effect);
   soulEffects.length=0;magic=0;soulAssignmentElapsed=0;
   for(const actor of units)releaseActor(actor);
   units.length=0;selected.clear();selectedBuilding=null;selectedRaven=null;nextUnitId=1;
+  pendingBuilds.length=0;
   // Match reset removes constructed buildings while retaining the initial village.
   for(const [id,building] of buildingInstances){
     if(building.initial)continue;
@@ -3014,7 +3048,10 @@ function startSession(){
   buildMode=null;orcSpawned=false;
   fogOfWar.reset();knownEnemyBuildings.witch.clear();
   knownEnemyBuildings.orc.clear();fogElapsed=0;fogStarted=true;
-  orcDirector.reset();orcIncomeFraction=0;strategyAccumulator=0;attackMode=false;
+  orcDirector.reset();witchDirector.reset();orcIncomeFraction=0;
+  strategyAccumulator=0;witchStrategyAccumulator=0;attackMode=false;
+  orcDirector.enabled=!qaMode&&chosenFaction==='witch';
+  witchDirector.enabled=!qaMode&&chosenFaction==='orc';
   ravenMoveMode=false;qaPassiveKind=null;
   completedMiningCycles=0;totalMinedGold=0;
   rallyMode=false;constructionTab=false;lastHudSignature='';
@@ -3023,9 +3060,9 @@ function startSession(){
       (b.type==='garden'?180:b.type==='stone-circle'?STONE_CIRCLE_HEALTH:500):
       BUILDING_TYPES[b.type].levels[1].maxHealth;
     b.health=b.maxHealth;}
-  // At 3× magnification the old map-centre start would show empty terrain
-  // on phones. Begin beside the house and the three starting witches.
-  activeFaction='witch';paused=false;running=true;cameraFollow={x:-18,z:-14};
+  // Start next to the selected clan's headquarters, never in empty terrain.
+  activeFaction=chosenFaction;paused=false;running=true;
+  cameraFollow=chosenFaction==='witch'?{x:-18,z:-14}:{x:18,z:18};
   positionCamera();
   resetForest();
   ravenFlock.reset();
@@ -3035,7 +3072,9 @@ function startSession(){
   if(!berryBatches.length)rebuildBerryVisuals();
   void beginCropLoad();
   spawnUnit('witch',-18,-13,0,'melee');spawnUnit('witch',-16.5,-15,1,'worker');spawnUnit('witch',-19,-16,2,'ranged');
-  spawnOrcDefenders();updateVision();selectBuilding(witchBuilding);
+  spawnOrcDefenders();updateVision();
+  selectBuilding(chosenFaction==='witch'?witchBuilding:
+    [...buildingInstances.values()].find(b=>b.type==='barrack'&&b.clanId==='orcs')||null);
   $('pause').disabled=false;$('pause').textContent='Ⅱ';$('overlay').hidden=true;
   showBanner('DÉBUT DE LA PARTIE');refreshHUD();
 }
@@ -3236,9 +3275,10 @@ function damageBuilding(building,amount,attacker){
 }
 function endBattle(victory){
   running=false;
-  $('overlay-title').textContent=victory?'VICTOIRE':'DÉFAITE';
-  $('overlay-desc').textContent=victory?'Le village orc a été détruit.':
-    'La maison des sorcières a été détruite.';
+  const playerWon=victory===(activeFaction==='witch');
+  $('overlay-title').textContent=playerWon?'VICTOIRE':'DÉFAITE';
+  $('overlay-desc').textContent=victory?'Le village ork a été détruit.':
+    'La maison principale des sorcières a été détruite.';
   $('start').textContent='Nouvelle partie';$('start').disabled=false;
   $('overlay').hidden=false;$('pause').disabled=true;
 }
@@ -3430,30 +3470,32 @@ function navigateActor(actor,target,dt,mode){
   return 'moving';
 }
 const MINING_SECONDS=4.5,MINING_PAY=22;
-function assignMiners(){
-  if(!orcDirector.enabled||!running)return;
+function assignMiners(clan='orc'){
+  if(!running||!(clan==='orc'?orcDirector.enabled:witchDirector.enabled))return;
   const mines=[...buildingInstances.values()].filter(b=>b.type==='mine'&&
-    b.clanId==='neutral'&&!b.destroyed);
-  const orcs=units.filter(u=>u.kind==='orc'&&roles.isWorker(u)&&!u.dead&&
-    !u.constructJob&&!u.repairJob&&!u.treeJob&&!u.woodJob);
-  const limit=Math.min(mines.length,Math.max(1,Math.floor(orcs.length/3)));
-  let assigned=orcs.filter(u=>u.mineJob&&mines.some(b=>b.id===u.mineJob.mineId));
-  for(const orc of orcs){
-    if(orc.mineJob&&!mines.some(m=>m.id===orc.mineJob.mineId))orc.mineJob=null;
+    b.clanId==='neutral'&&!b.destroyed&&
+    (clan==='orc'||fogOfWar.exploredAt(b.root.position.x,b.root.position.z,clan)));
+  const workers=units.filter(u=>u.kind===clan&&roles.isWorker(u)&&!u.dead&&
+    !u.constructJob&&!u.repairJob&&!u.treeJob&&!u.woodJob&&!u.farmJob);
+  const limit=Math.min(mines.length,Math.max(1,Math.floor(workers.length/3)));
+  let assigned=workers.filter(u=>u.mineJob&&mines.some(b=>b.id===u.mineJob.mineId));
+  for(const worker of workers){
+    if(worker.mineJob&&!mines.some(m=>m.id===worker.mineJob.mineId))worker.mineJob=null;
   }
-  assigned=orcs.filter(u=>u.mineJob);
+  assigned=workers.filter(u=>u.mineJob);
   if(assigned.length>=limit)return;
   const needed=mines.filter(m=>!assigned.some(u=>u.mineJob.mineId===m.id));
   for(const mine of needed){
     if(assigned.length>=limit)break;
-    const available=orcs.filter(u=>!u.mineJob&&!u.constructJob&&!u.destination);
+    const available=workers.filter(u=>!u.mineJob&&!u.constructJob&&!u.destination&&
+      !u.berryJob&&!u.soulJob);
     available.sort((a,b)=>targetDistance(a,mine)-targetDistance(b,mine));
     const miner=available[0];
     if(!miner)continue;
     miner.mineJob={mineId:mine.id,progress:0,cycles:0};
     miner.route=null;miner.approachCache=null;
     assigned.push(miner);
-    acknowledgeOrcAiOrder([miner]);
+    if(clan==='orc')acknowledgeOrcAiOrder([miner]);
   }
 }
 function canMine(actor,mine){
@@ -3489,7 +3531,7 @@ function tickMineWorker(actor,dt){
     if(status!=='moving')animation(actor,'Idle_Loop');
     return true;
   }
-  // Gold is earned ONLY here, while an actual orc stands beside a mine.
+  // Gold is earned ONLY here, while an actual worker stands beside a mine.
   // A mine with no worker produces precisely zero gold.
   faceBuildingCenter(actor,mine);
   animation(actor,WORK_SWING);
@@ -3569,6 +3611,7 @@ function safeWitchWoodLocation(tree){
 function continueWitchWoodRun(actor){
   if(actor.kind!=='witch'||actor.dead||actor.destination||actor.constructJob||
     actor.repairJob||actor.farmJob||actor.mineJob||actor.treeJob||actor.woodJob)return false;
+  if(witchDirector.enabled&&wood.witch>=220)return false;
   const candidates=forestLayout.map((tree,index)=>({tree,index,d:
     Math.hypot(actor.root.position.x-tree.x,actor.root.position.z-tree.z)}))
     .filter(({tree})=>safeWitchWoodLocation(tree))
@@ -3640,6 +3683,24 @@ function assignOrcLumberjack(){
   for(const {actor,index} of candidates.slice(0,12)){
     const goal=treeChopGoal(actor,forestLayout[index]);
     if(goal&&orderChop([actor],index))return;
+  }
+}
+function assignWitchLumberjack(){
+  if(!witchDirector.enabled||wood.witch>=180||
+    units.some(u=>u.kind==='witch'&&!u.dead&&(u.treeJob||u.woodJob)))return;
+  const workers=units.filter(u=>u.kind==='witch'&&roles.isWorker(u)&&!u.dead&&
+    !u.constructJob&&!u.repairJob&&!u.farmJob&&!u.mineJob&&!u.destination);
+  if(!workers.length)return;
+  const candidates=[];
+  for(let index=0;index<forestLayout.length;index++){
+    const tree=forestLayout[index];
+    if(tree.felled||!safeWitchWoodLocation(tree))continue;
+    for(const actor of workers)candidates.push({actor,index,
+      distance:Math.hypot(actor.root.position.x-tree.x,actor.root.position.z-tree.z)});
+  }
+  candidates.sort((a,b)=>a.distance-b.distance);
+  for(const {actor,index} of candidates.slice(0,15)){
+    if(treeChopGoal(actor,forestLayout[index])&&orderChop([actor],index,{byAI:true}))return;
   }
 }
 function orderChop(actors,index,{byAI=false}={}){
@@ -4176,6 +4237,85 @@ function stepOrcStrategy(dt){
     }
   }
 }
+function stepWitchStrategy(dt){
+  if(!witchDirector.enabled||!running||paused||!witchHouse||witchBuilding.destroyed)return;
+  witchStrategyAccumulator+=dt;
+  if(witchStrategyAccumulator<.25)return;
+  dt=witchStrategyAccumulator;witchStrategyAccumulator=0;
+  assignMiners('witch');
+  assignWitchLumberjack();
+  const aliveWitches=units.filter(u=>u.kind==='witch'&&!u.dead);
+  const buildings=liveBuildings().filter(b=>b.clanId==='witch');
+  const knownOrcs=[...buildingInstances.values()].filter(b=>b.clanId==='orcs'&&
+    !b.destroyed&&knownEnemyBuildings.witch.has(b.id));
+  const enemyTarget=knownOrcs.sort((a,b)=>
+    (a.type==='barrack'?0:1)-(b.type==='barrack'?0:1)||
+    targetDistance({root:{position:witchBuilding.root.position}},a)-
+      targetDistance({root:{position:witchBuilding.root.position}},b))[0]||null;
+  const scout=aliveWitches.find(u=>roles.isFighter(u)&&u.scouting&&!u.attackOrder)||
+    aliveWitches.find(u=>roles.isFighter(u)&&!u.attackOrder&&!u.destination);
+  const source=scout?.root.position;
+  const scoutTarget=!enemyTarget&&source&&!scout.destination?
+    fogOfWar.frontier('witch',source,(x,z)=>{
+      const goal={x,z};
+      return navigatorRTS.pointClear(goal)&&
+        (navigatorRTS.segmentClear(source,goal)||!!navigatorRTS.plan(source,goal));
+    }):null;
+  const state={ready:true,running,paused,gold:gold.witch,wood:wood.witch,
+    food:farming.food,homeId:witchBuilding.id,circleUnlocked:circleUnlocked(),
+    arcanistUnlocked:arcanistUnlocked(),
+    pendingBuilds:pendingBuilds.filter(job=>buildFaction(job.type)==='witch')
+      .map(job=>({type:job.type})),
+    buildings:buildings.map(b=>({id:b.id,type:b.type,level:b.level,
+      queue:b.queue.map(j=>({kind:j.kind})),health:b.health,
+      maxHealth:b.maxHealth,hitbox:b.hitbox,destroyed:b.destroyed})),
+    witches:aliveWitches.map(u=>({id:u.id,x:u.root.position.x,z:u.root.position.z,
+      role:u.role,health:u.health,maxHealth:u.maxHealth,scouting:!!u.scouting,
+      attackOrder:!!u.attackOrder,destination:!!u.destination,
+      mining:!!u.mineJob,repairing:!!u.repairJob,healing:!!u.healJob})),
+    // No enemy positions or buildings outside the witches' own sight/memory.
+    orcs:units.filter(u=>u.kind==='orc'&&!u.dead&&
+      fogOfWar.visibleAt(u.root.position.x,u.root.position.z,'witch'))
+      .map(u=>({id:u.id,x:u.root.position.x,z:u.root.position.z,role:u.role})),
+    enemyTarget:enemyTarget?{id:enemyTarget.id}:null,scoutTarget,unitCap:17};
+  const actions=witchDirector.update(dt,state,validBuildPosition);
+  for(const action of actions){
+    if(action.type==='build')scheduleBuild(action.building,action.x,action.z,{byAI:true});
+    else if(action.type==='train'){
+      const building=buildings.find(b=>b.id===action.buildingId);
+      if(building)queueOrder(building,'witch',action.role);
+    }else if(action.type==='upgrade'){
+      const building=buildings.find(b=>b.id===action.buildingId);
+      if(building)queueOrder(building,'upgrade');
+    }else if(action.type==='repair'){
+      const building=buildings.find(b=>b.id===action.buildingId);
+      const worker=aliveWitches.find(u=>roles.isWorker(u)&&!u.repairJob&&
+        !u.constructJob&&!u.farmJob&&!u.mineJob&&!u.treeJob&&!u.woodJob);
+      if(building&&worker)orderRepair([worker],building,{byAI:true});
+    }else if(action.type==='scout'&&!enemyTarget){
+      const unit=aliveWitches.find(u=>u.id===action.unitId);
+      if(unit&&roles.isFighter(unit)&&!unit.attackOrder){
+        unit.scouting=true;unit.destination={x:action.x,z:action.z};
+        unit.route=null;unit.routeAge=0;
+      }
+    }else if(action.type==='raid'&&enemyTarget&&!enemyTarget.destroyed&&
+      action.targetId===enemyTarget.id){
+      for(const unit of aliveWitches.filter(u=>action.unitIds.includes(u.id)&&roles.isFighter(u))){
+        unit.scouting=false;unit.attackOrder=enemyTarget;
+        unit.destination=null;unit.route=null;
+      }
+    }else if(action.type==='defend'){
+      const nearby=units.filter(u=>u.kind==='orc'&&!u.dead&&
+        fogOfWar.visibleAt(u.root.position.x,u.root.position.z,'witch'));
+      for(const unit of aliveWitches){
+        if(!roles.isFighter(unit)||unit.attackOrder||
+          Math.hypot(unit.root.position.x-action.x,unit.root.position.z-action.z)>18)continue;
+        const enemy=nearby.sort((a,b)=>targetDistance(unit,a)-targetDistance(unit,b))[0];
+        if(enemy){unit.scouting=false;unit.attackOrder=enemy;unit.destination=null;}
+      }
+    }
+  }
+}
 const FIXED_DT=1/60;
 let accumulator=0,uiElapsed=0;
 function stepGame(dt){
@@ -4185,6 +4325,7 @@ function stepGame(dt){
   assignSoulHarvesters(dt);
   stepFarming(dt);
   stepOrcStrategy(dt);
+  stepWitchStrategy(dt);
   if(ravenModelLoaded)
     ravenFlock.update(dt,units.filter(actor=>actor.kind==='orc'&&!actor.dead));
   for(const actor of units)tickUnit(actor,dt);
@@ -4494,8 +4635,11 @@ function pauseGame(){
   showBanner(paused?'PAUSE':'REPRISE');refreshHUD();
 }
 $('pause').onclick=pauseGame;
+$('choose-witch').onclick=()=>chooseFaction('witch');
+$('choose-orc').onclick=()=>chooseFaction('orc');
 $('start').onclick=()=>{
   if(!ready){location.reload();return;}
+  if(chosenFaction==='orc'&&!orcVillage)return;
   // Unlock inside the user's click before the simulation begins.
   lastConstructionHitAt=-Infinity;
   orcSound.reset();witchSound.reset();
@@ -4596,9 +4740,7 @@ async function load(){
     loadingProfile.readyMs=Math.round(performance.now()-loadingProfile.startedAt);
     loadingProfile.steps.push('characters_11_native_clips_parallel','native_rig_verified',
       'costumes_complete','sword_complete');
-    ready=true;$('load-bar').style.width='100%';$('start').disabled=false;
-    $('start').textContent='▶ COMMENCER';
-    $('overlay-desc').textContent='Sélectionnez vos sorcières puis touchez le terrain. Les orcs développent leur village pendant la partie.';
+    ready=true;$('load-bar').style.width='100%';refreshStartButton();
     refreshHUD();
     if(new URLSearchParams(location.search).has('qa'))startSession();
     beginOrcVillageLoad();
@@ -4645,7 +4787,8 @@ window.__fightersQA={
       orcExploredCells:fogOfWar.stats('orc').exploredCells},
     selectionRingStyle:{depthTest:sharedSelectionMaterials[activeFaction].depthTest,
       renderOrder:units.find(u=>u.kind===activeFaction)?.selectionRing.renderOrder??null},
-    orcAI:orcDirector.snapshot(),qaPassiveKind,
+    orcAI:orcDirector.snapshot(),witchAI:witchDirector.snapshot(),
+    chosenFaction,qaPassiveKind,
     twoFingerSelection:twoFingerBox?{a:{...twoFingerBox.a},b:{...twoFingerBox.b}}:null,
     crops:{loaded:!!cropCatalog,loading:!!cropLoadPromise&&!cropCatalog&&!cropLoadError,
       transport:cropTransport,wireBytes:cropWireBytes,
@@ -4960,6 +5103,7 @@ window.__fightersQA={
   },
   passive:kind=>{qaPassiveKind=kind||null;},
   enableOrcAI:value=>{orcDirector.enabled=!!value;orcDirector.reset();orcIncomeFraction=0;refreshHUD();},
+  enableWitchAI:value=>{witchDirector.enabled=!!value;witchDirector.reset();refreshHUD();},
   upgradeHouse:()=>issueUpgrade(witchBuilding),
   upgradeSelected:()=>issueUpgrade(selectedBuilding),
   upgradeBuilding:id=>issueUpgrade([witchBuilding,...buildingInstances.values()]

@@ -31,9 +31,11 @@ on:
       - 'docs/rts-unit-physics.js'
       - 'scripts/test-rts-unit-physics.mjs'
       - 'docs/orc-strategy.js'
+      - 'docs/witch-strategy.js'
       - 'docs/rts-roles.js'
       - 'scripts/test-rts-roles.mjs'
       - 'scripts/test-orc-strategy.mjs'
+      - 'scripts/test-witch-strategy.mjs'
       - 'scripts/compress-character-assets.sh'
       - 'scripts/build-runtime-characters.mjs'
       - 'scripts/test-rts-navigation.mjs'
@@ -78,6 +80,7 @@ jobs:
           node scripts/test-rts-sound.mjs
           node scripts/test-rts-unit-physics.mjs
           node scripts/test-orc-strategy.mjs
+          node scripts/test-witch-strategy.mjs
           node scripts/test-rts-roles.mjs
           node scripts/test-rts-farming.mjs
           node scripts/test-rts-forest.mjs
