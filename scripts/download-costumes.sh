@@ -20,6 +20,22 @@ fetch_costume hair quaternius_ubc_Hair_Buns.glb
 fetch_costume hair quaternius_ubc_Hair_Buzzed.glb
 fetch_costume hair quaternius_ubc_Hair_SimpleParted.glb
 
+# Hair_Long is another Quaternius Universal Base Characters CC0 mesh. Pin the
+# glTF+BIN mirror to a Git commit and pack it into one GLB for offline gameplay.
+hair_dir="$(mktemp -d)"
+trap 'rm -f "$hair_dir/Hair_Long.gltf" "$hair_dir/Hair_Long.bin"; rmdir "$hair_dir"' EXIT
+hair_source='https://raw.githubusercontent.com/fastrouter/experiments-costa-vista/23e87108a281ac827e2ea23691aa7bf4b544146e/public/assets/toon/hair'
+curl -fLsS --retry 3 --max-time 50 "$hair_source/Hair_Long.gltf" -o "$hair_dir/Hair_Long.gltf"
+curl -fLsS --retry 3 --max-time 50 "$hair_source/Hair_Long.bin" -o "$hair_dir/Hair_Long.bin"
+(
+  cd "$hair_dir"
+  sha256sum --check <<'LONG_HAIR_HASHES'
+4895e4fda7948cabdb4a6a2ef314b24bb366cd17439b15cef4d7d539607cb560  Hair_Long.gltf
+268fd531d2c2ac321783d36fcf106d15c5c76e8923eec2c8704d5fe9de953589  Hair_Long.bin
+LONG_HAIR_HASHES
+)
+node scripts/pack-hair-long.mjs "$hair_dir/Hair_Long.gltf" docs/models/quaternius_ubc_Hair_Long.glb
+
 sha256sum --check <<'ASSET_HASHES'
 5abc4c3b64404fa636160ae4eddf30e746875e15de1101db14dacd5b5d5e7bba  docs/models/quaternius_outfit_Female_Peasant.glb
 bd0ee4210696d0b9a6af29945272fdb551da89f865eda7ce4070f6a38f046a8c  docs/models/quaternius_outfit_Male_Peasant.glb

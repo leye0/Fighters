@@ -48,6 +48,7 @@ on:
       - 'scripts/generate-building-footprints.mjs'
       - 'scripts/union-xz-triangles.py'
       - 'scripts/download-costumes.sh'
+      - 'scripts/pack-hair-long.mjs'
       - 'scripts/fetch-pinned-humans.sh'
       - 'scripts/download-sword.sh'
       - 'scripts/decompress-sword.mjs'

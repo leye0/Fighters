@@ -134,6 +134,10 @@ async function run(){
   'Witches must start with worker, melee and ranged roles');
  check(s.orcs.map(u=>u.role).join(',')==='melee,worker,ranged,melee',
   'Orcs must start with one worker and two distinct fighter types');
+ const hairStyles=new Set(['short','long','very-long','ponytail','side-buns']);
+ const hairColors=new Set(['black','blonde','white','brown','red','gray','green']);
+ check(s.witches.every(u=>hairStyles.has(u.hairStyle)&&hairColors.has(u.hairColor)),
+  'Initial witches must each keep a valid randomized hair style and color');
  check(s.assets.sourceRigs===2&&s.assets.roleModelsLoaded===0,
   'Six roles must use only the two Quaternius rigs');
   check(s.witches[1].workTool==='Worker_Scythe'&&!s.witches[1].workToolVisible&&
@@ -150,6 +154,12 @@ async function run(){
  }
  check(s.assets.sharedMaterials<120,
   'Too many cosmetic materials: '+s.assets.sharedMaterials);
+ await evaluate('window.__fightersQA.spawnWitches(20)');
+ const hairCrowd=(await evaluate('window.__fightersQA.snapshot()')).witches;
+ check(new Set(hairCrowd.map(u=>u.hairStyle)).size===5&&
+   new Set(hairCrowd.map(u=>u.hairColor)).size===7,
+   'Randomized witch hair must cover all five styles and seven colors in a crowd');
+ await evaluate('window.__fightersQA.reset()');
  console.log('PASS SIX CHARACTER ROLES: shared bodies and costume geometry, separate worker/melee/ranged stats.');
  // Repair is a direct building tap with a selected worker, including the
  // starting witch house. It must not select the building or spend resources.

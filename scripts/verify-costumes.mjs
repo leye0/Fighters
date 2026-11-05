@@ -25,12 +25,14 @@ const outfitM=glb('quaternius_outfit_Male_Peasant.glb');
 const bun=glb('quaternius_ubc_Hair_Buns.glb');
 const buzz=glb('quaternius_ubc_Hair_Buzzed.glb');
 const parted=glb('quaternius_ubc_Hair_SimpleParted.glb');
-for(const m of [outfitF,outfitM,bun,buzz,parted]){
+const long=glb('quaternius_ubc_Hair_Long.glb');
+for(const m of [outfitF,outfitM,bun,buzz,parted,long]){
   assert.deepEqual(m.names,female.names,m.file+' 65 joint order');
   assert.equal(m.animations,0,m.file+' is only the skin, source GLB supplies clips');
 }
 assert.equal(outfitF.ibm,female.ibm,'female garment rest + inverse bind matrices must be exact');
 assert.equal(bun.ibm,female.ibm,'female hair rest must be exact');
+assert.equal(long.ibm,female.ibm,'long female hair rest must be exact');
 assert.equal(buzz.ibm,outfitM.ibm,'male buzzed hair bind must match male clothes');
 assert.equal(parted.ibm,outfitM.ibm,'male parted hair bind must match male clothes');
 assert.notEqual(outfitM.ibm,male.ibm,'male Peasant is a slightly different rest silhouette, checked visually in Chrome QA');
@@ -38,6 +40,7 @@ assert.equal(outfitF.meshNames.length,4);
 assert.equal(outfitM.meshNames.length,4);
 assert(outfitF.meshNames.every(x=>x.includes('Peasant'))&&outfitM.meshNames.every(x=>x.includes('Peasant')),'civilian clothes only');
 assert.equal(bun.meshNames.length,1);
-console.log(JSON.stringify({integrity:'PASS',outfits:2,hairStyles:3,joints:65,
+assert.equal(long.meshNames.length,1);
+console.log(JSON.stringify({integrity:'PASS',outfits:2,hairStyles:4,joints:65,
   femaleExactRest:true,maleSameJointOrder:true,maleRestVariant:true,
   femaleMeshes:outfitF.meshNames,maleMeshes:outfitM.meshNames},null,2));
