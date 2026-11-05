@@ -1,0 +1,58 @@
+name: Replicate credit preflight
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/check-replicate-credit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Test one inexpensive voice prediction
+        env:
+          REPLICATE_API_KEY: ${{ secrets.REPLICATE_API_KEY }}
+        run: |
+          python3 - <<'PY'
+          import json, os, sys, time, urllib.error, urllib.request
+          token = os.environ.get('REPLICATE_API_KEY')
+          if not token:
+              sys.exit('REPLICATE_API_KEY is not configured')
+          url = 'https://api.replicate.com/v1/models/qwen/qwen3-tts/predictions'
+          payload = {'input': {'mode': 'custom_voice', 'speaker': 'Serena',
+                               'language': 'English', 'text': 'Hello!'}}
+          def call(endpoint, body=None):
+              request = urllib.request.Request(
+                  endpoint, data=json.dumps(body).encode() if body else None,
+                  headers={'Authorization': 'Bearer ' + token,
+                           'Content-Type': 'application/json', 'Prefer': 'wait'},
+                  method='POST' if body else 'GET')
+              try:
+                  with urllib.request.urlopen(request, timeout=75) as response:
+                      return json.load(response)
+              except urllib.error.HTTPError as error:
+                  print('Replicate HTTP status:', error.code)
+                  if error.code == 402:
+                      sys.exit('BLOCKED: Replicate account still has insufficient credit (402)')
+                  raise
+          result = call(url, payload)
+          for _ in range(90):
+              if result.get('status') in ('succeeded', 'failed', 'canceled'):
+                  break
+              next_url = result.get('urls', {}).get('get', '')
+              if not next_url.startswith('https://api.replicate.com/v1/predictions/'):
+                  sys.exit('Unexpected prediction polling URL')
+              time.sleep(2)
+              result = call(next_url)
+          status = result.get('status')
+          print('Replicate prediction result:', status)
+          if status != 'succeeded':
+              sys.exit('Replicate could not complete the test prediction')
+          print('CREDIT CHECK PASSED: a new audio prediction completed successfully')
+          PY
