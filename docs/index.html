@@ -487,15 +487,15 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 <script src="./rts-forest.js"></script>
 <script src="./rts-berries.js"></script>
 <script src="./rts-ravens.js"></script>
-<script src="./rts-healing.js"></script>
+<script src="./rts-healing.js?v=magic-20261105"></script>
 <script src="./rts-repair.js"></script>
-<script src="./rts-souls.js"></script>
+<script src="./rts-souls.js?v=magic-20261105"></script>
 </head>
 <body>
 <div class="game-shell"><section class="arcade">
 <div class="hud">
   <div class="hero-hud"><div class="hud-kicker">FIGHTERS · RTS</div><strong id="faction-title">SORCIÈRES</strong><small id="selection-summary">Sélectionnez une unité ou la maison</small><small id="ai-status" class="ai-status">Village orc · en développement</small></div>
-  <div class="score"><div id="hud-gold-chip" title="Or de la faction sélectionnée"><small>💰 OR</small><strong id="hud-gold">2000</strong></div><div id="hud-wood-chip" title="Bois rapporté par les ouvriers"><small>🪵 BOIS</small><strong id="hud-wood">250</strong></div><div id="hud-food-chip" title="Réserves alimentaires de la faction"><small id="hud-food-label">🌾 VIVRES</small><strong id="hud-food">45</strong></div><div id="hud-magic-chip" title="Magie accumulée en siphonnant les âmes"><small>🔮 MAGIE</small><strong id="hud-magic">0</strong><div class="hud-magic-track"><div id="hud-magic-fill"></div></div></div><div id="hud-units-chip" title="Unités des sorcières et des orcs"><small>⚔️ UNITÉS</small><strong id="unit-count">0 : 0</strong></div></div>
+  <div class="score"><div id="hud-gold-chip" title="Or de la faction sélectionnée"><small>💰 OR</small><strong id="hud-gold">2000</strong></div><div id="hud-wood-chip" title="Bois rapporté par les ouvriers"><small>🪵 BOIS</small><strong id="hud-wood">250</strong></div><div id="hud-food-chip" title="Réserves alimentaires de la faction"><small id="hud-food-label">🌾 VIVRES</small><strong id="hud-food">45</strong></div><div id="hud-magic-chip" title="Magie : +20 par esprit siphonné, +5 toutes les 30 s. Les soins coûtent 1 magie pour 15 PV."><small>🔮 MAGIE</small><strong id="hud-magic">0</strong><div class="hud-magic-track"><div id="hud-magic-fill"></div></div></div><div id="hud-units-chip" title="Unités des sorcières et des orcs"><small>⚔️ UNITÉS</small><strong id="unit-count">0 : 0</strong></div></div>
   <button id="pause" class="pause-compact" aria-label="Pause" title="Pause (P)" disabled>Ⅱ</button>
 </div>
 <div id="viewport" class="viewport" aria-label="Carte de stratégie en temps réel"><div class="scanlines"></div><div id="banner" class="banner"></div><div id="selection-rectangle" hidden></div><div id="order-pings" aria-hidden="true"></div><div id="order-prompt" role="status" aria-live="polite" hidden></div>
@@ -3103,7 +3103,7 @@ function refreshHUD(){
   setText('hud-food-label',activeFaction==='witch'?'🌾 VIVRES':'🍖 VIANDE');
   $('hud-food-chip').title=activeFaction==='witch'? 'Blé et baies · consommation des sorcières':
     'Lièvres et dépouilles de sorcières · les orcs mangent moins souvent';
-  setText('hud-magic',magic+'/'+soulRules.MAX_MAGIC);
+  setText('hud-magic',(Math.round(magic*10)/10)+'/'+soulRules.MAX_MAGIC);
   $('hud-magic-fill').style.width=100*magic/soulRules.MAX_MAGIC+'%';
   $('hud-gold-chip').title='Or des '+(activeFaction==='witch'?'sorcières':'orcs');
   $('hud-wood-chip').title='Bois des '+(activeFaction==='witch'?'sorcières':'orcs');
@@ -3173,7 +3173,7 @@ function refreshHUD(){
       title.textContent=names[b.type]||'Bâtiment';
       const friendly=b.clanId===(activeFaction==='orc'?'orcs':'witch');
       info.textContent=b.type==='stone-circle'?
-        'Sanctuaire : les sorcières au centre récupèrent 11 PV/s. Les blessées y reviennent au calme.':
+        'Sanctuaire : 11 PV/s par sorcière, pour 1 magie / 15 PV restaurés. Les blessées y reviennent au calme.':
         b.type==='garden'?'Cultures : trois stades, prêtes au troisième.':
         b.type==='mine'?
         'Gisement d’or neutre et indestructible · exploitable par les ouvriers des deux clans.':
@@ -4674,14 +4674,18 @@ function stepFarming(dt){
 function stepHealing(dt){
   const circles=[...buildingInstances.values()].filter(b=>
     b.type==='stone-circle'&&!b.destroyed);
+  const resting=[];
   for(const witch of units){
     if(witch.kind!=='witch'||witch.dead)continue;
     witch.healRetry=Math.max(0,witch.healRetry-dt);
     if(witch.health>=witch.maxHealth)continue;
     const point={x:witch.root.position.x,z:witch.root.position.z};
     if(circles.some(b=>stoneHealing.inside(point,b.root.position)))
-      witch.health=stoneHealing.restore(witch.health,witch.maxHealth,dt);
+      resting.push(witch);
   }
+  // One shared magic budget for every circle; scarce magic is split fairly
+  // rather than silently healing the first unit in the array for free.
+  if(resting.length)magic=stoneHealing.restoreGroup(resting,dt,magic).magic;
   healingAssignmentElapsed+=dt;
   if(healingAssignmentElapsed<.85)return;
   healingAssignmentElapsed=0;
@@ -5133,6 +5137,7 @@ let accumulator=0,uiElapsed=0;
 function stepGame(dt){
   if(!ready||!running||paused)return;
   stepProduction(dt);
+  magic=soulRules.magicAfterTime(magic,dt);
   stepHealing(dt);
   assignSoulHarvesters(dt);
   stepFarming(dt);
@@ -5628,12 +5633,14 @@ window.__fightersQA={
       foragers:units.filter(u=>u.berryJob&&!u.dead).map(u=>({id:u.id,
         index:u.berryJob.index,progress:u.berryJob.progress}))},
     healing:{modelLoaded:!!standingStoneModel,healPerSecond:stoneHealing.HEAL_PER_SECOND,
+      healthPerMagic:stoneHealing.HEALTH_PER_MAGIC,
       circles:[...buildingInstances.values()].filter(b=>b.type==='stone-circle'&&!b.destroyed)
         .map(b=>({id:b.id,x:b.root.position.x,z:b.root.position.z,
           stones:b.root.children.filter(n=>n.name.startsWith('standing-stone-')).length,
           navigableCenter:navigatorRTS.pointClear(b.root.position)})),
       retreating:units.filter(u=>!!u.healJob&&!u.dead).map(u=>({id:u.id,circleId:u.healJob.id}))},
     souls:{magic,maxMagic:soulRules.MAX_MAGIC,perCorpse:soulRules.SOUL_VALUE,
+      passiveMagicPer30Seconds:soulRules.PASSIVE_MAGIC_PER_30_SECONDS,
       corpseLifetime:soulRules.CORPSE_SECONDS,buildUnlocked:circleUnlocked(),
       arcanistUnlocked:arcanistUnlocked(),activeSpirits:soulEffects.length,
       spirits:soulEffects.map(e=>({sameGeometry:e.sameGeometry,samePose:e.samePose,

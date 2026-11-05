@@ -1198,6 +1198,8 @@ async function run(){
  check(stoneBuilt,'Witch worker did not finish the stone circle');
  s=await evaluate('window.__fightersQA.snapshot()');
  const sanctuary=s.healing.circles[0];
+ check(s.healing.healthPerMagic===15&&s.souls.passiveMagicPer30Seconds===5,
+   'Healing must cost 1 magic per 15 HP and magic must regenerate 5/30s');
  check(sanctuary.stones===6&&sanctuary.navigableCenter&&
    s.buildings.some(b=>b.id===sanctuary.id&&b.health===850),
    'Six actual menhirs must surround a walkable magic center: '+JSON.stringify(sanctuary));
@@ -1268,6 +1270,7 @@ async function run(){
    'Arcanist production must finish after sanctuary unlock');
  const soulCorpseId=await evaluate('window.__fightersQA.spawnTestCorpseNearArcanist()');
  s=await evaluate('window.__fightersQA.snapshot()');
+ const magicBeforeSoul=s.souls.magic;
  check(s.souls.corpses.some(c=>c.id===soulCorpseId&&c.remaining>110),
    'Fallen characters must leave persistent bodies');
  const spirit=await evaluate("(()=>{for(let i=0;i<24;i++){"+
@@ -1279,9 +1282,10 @@ async function run(){
  await screenshot('rts-soul-corpse-clone');
  await evaluate('window.__fightersQA.advance(1.5)');
  s=await evaluate('window.__fightersQA.snapshot()');
- check(s.souls.magic===20&&s.souls.activeSpirits===0&&
+ check(s.souls.magic>=magicBeforeSoul+19&&s.souls.magic<=magicBeforeSoul+22&&
+   s.souls.activeSpirits===0&&
    s.souls.corpses.some(c=>c.id===soulCorpseId&&c.claimed&&c.remaining>100),
-   'Spirit must increase magic once while the body stays on the ground: '+JSON.stringify(s.souls));
+   'Spirit must add 20 magic on top of passive regeneration while the corpse persists: '+JSON.stringify(s.souls));
  console.log('PASS SOULS: house upgrade, circle unlock, Arcanist training, persistent corpse, exact 3D white soul and magic gauge.');
  await evaluate('window.__fightersQA.damageBuilding('+JSON.stringify(sanctuary.id)+',999999)');
  s=await evaluate('window.__fightersQA.snapshot()');
