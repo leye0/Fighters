@@ -812,6 +812,27 @@ async function run(){
    mobile.panel.height<=180&&mobile.panel.top>=mobile.height-182,
   'Mobile command panel must be a compact strip, not a huge sheet: '+
   JSON.stringify(mobile.panel));
+ const noBrowserZoom=await evaluate(`(()=>{
+   const action=selector=>getComputedStyle(document.querySelector(selector)).touchAction;
+   const doubleTap=new MouseEvent('dblclick',{bubbles:true,cancelable:true});
+   const pinch=new Event('gesturestart',{bubbles:true,cancelable:true});
+   document.querySelector('#viewport').dispatchEvent(doubleTap);
+   document.dispatchEvent(pinch);
+   return {
+     viewportMeta:document.querySelector('meta[name="viewport"]').content,
+     surfaces:['#viewport','#pause','#choose-witch','#command-buttons button',
+       '#war2-minimap'].map(action),
+     scrollPanels:['.start-card','.command-panel'].map(action),
+     doubleTapPrevented:doubleTap.defaultPrevented,
+     pinchPrevented:pinch.defaultPrevented
+   };
+ })()`);
+ check(noBrowserZoom.viewportMeta.includes('maximum-scale=1')&&
+   noBrowserZoom.surfaces.every(action=>action==='none')&&
+   noBrowserZoom.scrollPanels.every(action=>action==='pan-y')&&
+   noBrowserZoom.doubleTapPrevented&&noBrowserZoom.pinchPrevented,
+   'Mobile Safari must have no page-zoom gestures, but scrollable panels must still pan: '+
+   JSON.stringify(noBrowserZoom));
  const mobileMini=await evaluate("(()=>{const m=document.querySelector('#war2-minimap').getBoundingClientRect(),buttons=[...document.querySelectorAll('#command-buttons button:not([hidden])')].map(b=>b.getBoundingClientRect().toJSON());return {map:m.toJSON(),buttons}})()");
  check(mobileMini.map.width>=40&&mobileMini.map.height>=40&&
    mobileMini.buttons.length<=6&&mobileMini.buttons.every(b=>b.width>=56&&b.height>=44&&
@@ -859,6 +880,13 @@ async function run(){
  // The old hold-to-select and pinch-to-zoom paths are intentionally gone.
  await call('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:2});
  const touch=(id,x,y)=>({id,x,y,force:1,radiusX:4,radiusY:4});
+ const initialPageScale=await evaluate('visualViewport?.scale||1');
+ for(let tap=0;tap<2;tap++){
+   await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[touch(80,175,295)]});
+   await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ }
+ check(Math.abs((await evaluate('visualViewport?.scale||1'))-initialPageScale)<.001,
+   'A real double-tap must not change the mobile page scale');
  const fixedMobileZoom=35/(3*1.35);
  await evaluate("window.__fightersQA.reset();window.__fightersQA.centerCamera(-18,-14)");
  let selectionBefore=await evaluate('window.__fightersQA.snapshot()');
