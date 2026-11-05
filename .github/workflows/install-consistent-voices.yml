@@ -42,10 +42,29 @@ jobs:
           node scripts/test-rts-roles.mjs
           node --check docs/rts-sound.js
           python3 -m py_compile scripts/build-consistent-witch-voices.py scripts/retune-orc-speech.py
+      - name: Restore paid audio from an earlier failed attempt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p generated-voices/witches-checkpoint
+          for previous in $(gh run list --workflow install-consistent-voices.yml --limit 20 --json databaseId -q '.[].databaseId'); do
+            if [ "$previous" = "$GITHUB_RUN_ID" ]; then continue; fi
+            if gh run download "$previous" --name witch-audio-checkpoint --dir generated-voices/witches-checkpoint > /dev/null 2>&1; then
+              echo "Restored paid voices from GitHub run $previous"
+              break
+            fi
+          done
       - name: Create 4 permanent Witch identities and generate all 52 lines
         env:
           REPLICATE_API_KEY: ${{ secrets.REPLICATE_API_KEY }}
         run: python3 scripts/build-consistent-witch-voices.py
+      - name: Preserve every generated voice, including on billing failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: witch-audio-checkpoint
+          path: generated-voices/witches-checkpoint/
+          if-no-files-found: warn
       - name: Lower Orc speech by 5.7 semitones without slowing
         run: python3 scripts/retune-orc-speech.py
       - name: Validate generated identities and audio assets
