@@ -1335,6 +1335,46 @@ async function run(){
  check(await evaluate("document.querySelector('.order-ping.attack')!==null"),
    'Attack order needs a red fading reticle');
  await until("window.__fightersQA.snapshot().ui.activePings===0",'red order reticle cleanup',10000);
+
+ // Reuse this match: test real stone geometry, navigation, and the worker's
+ // bottom-to-top wall construction before combat's next scheduled reset.
+ await until('window.__fightersQA.snapshot().blueprints.length===5',
+   'Orc blueprint load for stone-wall acceptance',100000);
+ await evaluate("window.__fightersQA.setFaction('orc')");
+ const wallSite=await evaluate("(()=>{const q=window.__fightersQA;"+
+   "const s=q.snapshot();const structures=s.buildings.filter(b=>b.clanId==='orcs'&&b.type!=='wall');"+
+   "const sites=window.FightersWalls.perimeter(structures);"+
+   "for(const p of sites){const dx=p.axis==='x'?3.2:0,dz=p.axis==='z'?3.2:0;"+
+   "if(q.canBuildAxis(p.x,p.z,'wall',p.axis)&&"+
+   "q.canBuildAxis(p.x+dx,p.z+dz,'wall',p.axis))"+
+   "return {...p,dx,dz};}return null})()");
+ check(wallSite,'No terrain supports two contiguous orc stone-wall sections');
+ check(await evaluate('window.__fightersQA.beginBuild("wall")'),
+   'Workers must be offered a stone-wall action in their construction menu');
+ check(await evaluate('!!window.__fightersQA.buildWall('+wallSite.x+','+wallSite.z+','+
+   JSON.stringify(wallSite.axis)+')'), 'Could not erect first stone wall');
+ let wallState=await evaluate('window.__fightersQA.snapshot()');
+ const first=wallState.buildings.find(b=>b.type==='wall');
+ check(first&&first.health===280&&first.clanId==='orcs',
+   'Stone wall needs ownership, health and a building collision shape');
+ check(!await evaluate('window.__fightersQA.isClear('+first.x+','+first.z+')'),
+   'The stone wall must be a hard unit-navigation obstacle');
+ check(await evaluate('window.__fightersQA.scheduleConstruction("wall",'+
+   (wallSite.x+wallSite.dx)+','+(wallSite.z+wallSite.dz)+','+
+   JSON.stringify(wallSite.axis)+')'),
+   'Worker must be able to schedule a neighboring wall segment');
+ wallState=await evaluate('window.__fightersQA.snapshot()');
+ check(wallState.construction.some(job=>job.type==='wall'&&job.previewVisible),
+   'A wall under construction must render its rising stone preview');
+ await evaluate('window.__fightersQA.advance(30)');
+ wallState=await evaluate('window.__fightersQA.snapshot()');
+ check(wallState.buildings.filter(b=>b.type==='wall'&&!b.destroyed).length===2&&
+   !wallState.construction.some(job=>job.type==='wall'),
+   'Worker must finish a second wall with a connected, solid joint');
+ check(!await evaluate('window.__fightersQA.isClear('+
+   (wallSite.x+wallSite.dx)+','+(wallSite.z+wallSite.dz)+')'),
+   'Finished wall must enter navigation immediately');
+ console.log('PASS STONE WALL WEBGL: build action, two connected instanced sections, worker reveal and solid navigation.');
  }
 
  if(group==='all'||group==='combat'){

@@ -472,6 +472,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
 <script src="./rts-map.js"></script>
 <script src="./rts-footprint.js"></script>
+<script src="./rts-walls.js"></script>
 <script src="./rts-navigation.js"></script>
 <script src="./rts-unit-physics.js"></script>
 <script src="./orc-strategy.js"></script>
@@ -918,9 +919,9 @@ let farmAssignmentElapsed=0,farmSerial=0,famineAlerted=false;
 const wildBerries=new window.FightersBerries.WildBerries(forestLayout,{map:arena});
 let berryAssignmentElapsed=0;
 const ROLE_IDS=roles.ROLE_IDS,ROLE_DEFINITIONS=roles.DEFINITIONS;
-const ORC_COSTS={barrack:180,hut:120,cauldron:200,factory:250};
+const ORC_COSTS={barrack:180,hut:120,cauldron:200,factory:250,wall:32};
 // Deposits are fixed map resources, not structures that players or the AI can build.
-const ORC_NAMES={barrack:'Caserne',hut:'Hutte',mine:'Mine',cauldron:'Chaudron',factory:'Atelier'};
+const ORC_NAMES={barrack:'Caserne',hut:'Hutte',mine:'Mine',cauldron:'Chaudron',factory:'Atelier',wall:'Mur de pierre'};
 const units=[],selected=new Set();
 const soulEffects=[];
 let magic=0,soulAssignmentElapsed=0;
@@ -1036,7 +1037,7 @@ function groundSightSources(clan,structures=liveBuildings()){
   // Completed clan buildings have the same sight radius as a character.
   // Natural gold mines are deposits, not watchtowers.
   for(const b of structures){
-    if(b.clanId!==ownership||b.type==='mine'||!b.hitbox)continue;
+    if(b.clanId!==ownership||b.type==='mine'||b.type==='wall'||!b.hitbox)continue;
     sources.push({x:(b.hitbox.minX+b.hitbox.maxX)/2,
       z:(b.hitbox.minZ+b.hitbox.maxZ)/2});
   }
@@ -1318,7 +1319,8 @@ const BUILDING_TYPES=Object.freeze({
   hut:{name:'Hut',levels:{1:{maxHealth:450,constructionCost:240,requiredTechnology:null},2:{maxHealth:675,constructionCost:240,requiredTechnology:null},3:{maxHealth:900,constructionCost:240,requiredTechnology:null}}},
   mine:{name:'Mine',levels:{1:{maxHealth:100,constructionCost:240,requiredTechnology:null},2:{maxHealth:150,constructionCost:240,requiredTechnology:null},3:{maxHealth:200,constructionCost:240,requiredTechnology:null}}},
   cauldron:{name:'Cauldron',levels:{1:{maxHealth:450,constructionCost:240,requiredTechnology:null},2:{maxHealth:675,constructionCost:240,requiredTechnology:null},3:{maxHealth:900,constructionCost:240,requiredTechnology:null}}},
-  factory:{name:'Factory',levels:{1:{maxHealth:450,constructionCost:240,requiredTechnology:null},2:{maxHealth:675,constructionCost:240,requiredTechnology:null},3:{maxHealth:900,constructionCost:240,requiredTechnology:null}}}
+  factory:{name:'Factory',levels:{1:{maxHealth:450,constructionCost:240,requiredTechnology:null},2:{maxHealth:675,constructionCost:240,requiredTechnology:null},3:{maxHealth:900,constructionCost:240,requiredTechnology:null}}},
+  wall:{name:'Stone wall',levels:{1:{maxHealth:280,constructionCost:32,requiredTechnology:null}}}
 });
 const ORC_VILLAGE={
   positions:{
@@ -2115,7 +2117,7 @@ function canTrainOrcRole(role){
     (role!=='ranged'||orcMageUnlocked());
 }
 function upgradeCost(building){
-  if(!building||['mine','garden','stone-circle'].includes(building.type)||building.clanId==='neutral')return null;
+  if(!building||['mine','garden','stone-circle','wall'].includes(building.type)||building.clanId==='neutral')return null;
   return building.level>=3?null:(building.clanId==='witch'?230:160)+building.level*100;
 }
 function queueOrder(building,kind,role='melee'){
@@ -2291,7 +2293,7 @@ function beginRally(){
 
 const WITCH_BUILD_COST=230,GARDEN_BUILD_COST=175,STONE_BUILD_COST=260,BUILD_SECONDS=6;
 const BUILD_WOOD_COST=Object.freeze({'witch-house':75,garden:0,'stone-circle':85,
-  hut:55,barrack:95,cauldron:80,factory:130});
+  hut:55,barrack:95,cauldron:80,factory:130,wall:10});
 const pendingBuilds=[];
 function constructionCost(type){
   return type==='witch-house'?WITCH_BUILD_COST:type==='garden'?GARDEN_BUILD_COST:
@@ -2308,15 +2310,39 @@ function builderAvailable(clan){
 function beginBuild(type){
   const clan=buildFaction(type),cost=constructionCost(type);
   if(!running||paused||activeFaction!==clan||!cost||
-    (clan==='orc'&&!buildingBlueprints.has(type))||
+    (clan==='orc'&&type!=='wall'&&!buildingBlueprints.has(type))||
     (clan==='witch'&&type==='witch-house'&&!witchHouse)||
     (type==='stone-circle'&&!circleUnlocked())||
     (type==='stone-circle'&&!standingStoneModel)||
     !canAffordConstruction(clan,type)||!builderAvailable(clan))return false;
   buildMode=type;rallyMode=false;constructionTab=false;refreshHUD();return true;
 }
-function buildShape(type,x,z){
+function wallNeighbours(){return [...buildingInstances.values()].filter(b=>b.type==='wall'&&!b.destroyed)
+  .map(b=>({x:b.root.position.x,z:b.root.position.z,axis:b.wallAxis,hitbox:b.hitbox}));}
+function wallPlacement(x,z,axis){return window.FightersWalls.resolve(x,z,wallNeighbours(),
+  liveBuildings().filter(b=>b.clanId==='orcs'),axis);}
+function wallKeepsVillageExit(proposed){
+  // Compare paths from an actual village orc to westward exits before/after
+  // placement. Even a player-placed wall cannot seal the last usable exit.
+  const inside=units.filter(u=>u.kind==='orc'&&!u.dead&&
+    Math.hypot(u.root.position.x-19,u.root.position.z-18)<10&&
+    navigatorRTS.pointClear(u.root.position)).sort((a,b)=>
+    Math.hypot(a.root.position.x-19,a.root.position.z-18)-
+    Math.hypot(b.root.position.x-19,b.root.position.z-18))[0];
+  const source=inside?{x:inside.root.position.x,z:inside.root.position.z}:
+    navigatorRTS.findSafeGoal({x:19,z:18});
+  if(!source)return true;
+  const exits=[{x:3,z:18},{x:6,z:10},{x:5,z:26}].filter(p=>
+    navigatorRTS.pointClear(p)&&!!navigatorRTS.plan(source,p));
+  if(!exits.length)return true;
+  const check=new window.FightersNavigation.Navigator({
+    halfSize:arena.worldHalf,cellSize:1,radius:UNIT_RADIUS,region:arena});
+  check.setObstacles([...navigatorRTS.obstacles,proposed]);
+  return check.pointClear(source)&&exits.some(p=>check.pointClear(p)&&!!check.plan(source,p));
+}
+function buildShape(type,x,z,axis){
   const geometry=window.FightersFootprints;
+  if(type==='wall')return window.FightersWalls.shape(x,z,axis||wallPlacement(x,z).axis);
   if(type==='garden')return gardenShape(x,z);
   if(type==='stone-circle')return stoneCircleShape(x,z);
   if(type==='witch-house'&&witchHouse&&witchBuilding.hitbox.shape==='polygon')
@@ -2324,10 +2350,11 @@ function buildShape(type,x,z){
   const template=buildingBlueprints.get(type);
   return template?.collisionLocal?geometry.translated(template.collisionLocal,x,z):null;
 }
-function validBuildPosition(x,z,type='hut'){
+function validBuildPosition(x,z,type='hut',axis){
   if(!constructionCost(type))return false;
   if(type==='stone-circle'&&!circleUnlocked())return false;
-  const proposed=buildShape(type,x,z);
+  if(type==='wall'&&!axis){const point=wallPlacement(x,z);x=point.x;z=point.z;axis=point.axis;}
+  const proposed=buildShape(type,x,z,axis);
   if(!proposed)return false;
   const clan=buildFaction(type),geometry=window.FightersFootprints;
   const minX=clan==='witch'?-arena.worldHalf:0,
@@ -2340,8 +2367,28 @@ function validBuildPosition(x,z,type='hut'){
   // The same true projected X/Z polygons govern construction and collision.
   if(forestObstacles.some(tree=>geometry.withinClearance(proposed,tree,BUILD_CLEARANCE))||
      wildBerries.bushes.some(b=>geometry.distanceTo({x:b.x,z:b.z},proposed)<1.65)||
-     liveBuildings().some(b=>geometry.withinClearance(proposed,b.hitbox,BUILD_CLEARANCE))||
-     pendingBuilds.some(job=>geometry.withinClearance(proposed,job.site.hitbox,BUILD_CLEARANCE)))return false;
+     liveBuildings().some(b=>b.type!=='wall'&&geometry.withinClearance(proposed,b.hitbox,BUILD_CLEARANCE))||
+     pendingBuilds.some(job=>job.type!=='wall'&&geometry.withinClearance(proposed,job.site.hitbox,BUILD_CLEARANCE)))return false;
+  const walls=wallNeighbours(),candidate={x,z,axis:axis||wallPlacement(x,z).axis};
+  const pendingWalls=pendingBuilds.filter(j=>j.type==='wall').map(j=>({
+    x:j.x,z:j.z,axis:j.axis,hitbox:j.site.hitbox}));
+  if(type==='wall'){
+    if([...walls,...pendingWalls].some(w=>!window.FightersWalls.compatible(candidate,w)))return false;
+    // Wall-to-wall placement cannot leave an isolated distant section; touching
+    // caps are permitted (indeed preferred) at straight runs and corners.
+    if(![...walls,...pendingWalls].some(w=>geometry.withinClearance(proposed,w.hitbox,
+      window.FightersWalls.MAX_LINK_GAP))&&
+      !liveBuildings().some(b=>b.clanId==='orcs'&&b.type!=='mine'&&b.type!=='wall'&&
+        geometry.withinClearance(proposed,b.hitbox,16)))return false;
+    if(!wallKeepsVillageExit(proposed))return false;
+  }else{
+    // New structures must grow from a real allied structure, never from walls
+    // or neutral gold deposits. Both clans obey the same 8-world-unit limit.
+    if(!liveBuildings().some(b=>b.clanId===(clan==='orc'?'orcs':'witch')&&
+      b.type!=='wall'&&b.type!=='mine'&&
+      geometry.withinClearance(proposed,b.hitbox,8)))return false;
+    if([...walls,...pendingWalls].some(w=>geometry.withinClearance(proposed,w.hitbox,BUILD_CLEARANCE)))return false;
+  }
   // The garden is cultivated ground, not a solid building: occupying a bed
   // must not prevent the gardener from finishing construction inside it.
   return type==='garden'||type==='stone-circle'||units.every(actor=>actor.dead||
@@ -2643,7 +2690,104 @@ function buildStoneCircle(x,z,{prepaid=false}={}){
   updateHealthBar(building);updateNavObstacles();refreshHUD();return building;
 }
 
+// Each stone segment takes four small instanced batches, not dozens of draw
+// calls. Subtle colour variation, offset masonry courses and raised coping
+// remain visually continuous through straight joints and right-angle corners.
+const WALL_PALETTE=[0x9b9e99,0x797e79,0xadb0a7,0x646d68].map(color=>
+  new THREE.MeshLambertMaterial({color}));
+function makeWallVisual(axis='x'){
+  const root=new THREE.Group(),stone=window.FightersWalls;
+  const blocks=WALL_PALETTE.map(()=>[]);
+  const length=stone.LENGTH,half=length/2;
+  const add=(x,y,z,w,h,d,shade,terminal=0)=>blocks[shade].push({x,y,z,w,h,d,terminal});
+  for(let row=0;row<3;row++){
+    const height=row===0?.46:.41,base=row===0?0:row===1?.46:.87;
+    const count=row%2===0?6:7;
+    for(let i=0;i<count;i++){
+      const min=-half+i*length/count,max=-half+(i+1)*length/count;
+      const bevel=.018;
+      add((min+max)/2,base+height/2,0,max-min-bevel,height-.025,
+        stone.WIDTH-(row===1?.03:0),(i*3+row*5)%4);
+    }
+  }
+  // A light overhanging coping joins sections, while terminal capstones form
+  // an intentional stone pier at every turn (not a broken miter).
+  for(let i=0;i<6;i++)add(-half+(i+.5)*length/6,1.37,0,
+    length/6-.018,.19,stone.WIDTH+.12,i%3);
+  for(const sign of [-1,1]){
+    const x=sign*half;
+    add(x,.33,0,.78,.66,.82,1,sign);
+    add(x,.84,0,.72,.36,.76,2,sign);
+    add(x,1.25,0,.87,.18,.86,0,sign);
+  }
+  const transform=new THREE.Object3D();
+  root.userData.wallBatches=[];
+  blocks.forEach((list,i)=>{
+    if(!list.length)return;
+    const mesh=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),WALL_PALETTE[i],list.length);
+    mesh.name='wall-stone-course-'+i;
+    list.forEach((b,j)=>{
+      transform.position.set(b.x,b.y,b.z);transform.scale.set(b.w,b.h,b.d);
+      transform.updateMatrix();mesh.setMatrixAt(j,transform.matrix);
+    });
+    mesh.instanceMatrix.needsUpdate=true;mesh.castShadow=false;mesh.receiveShadow=true;
+    root.add(mesh);
+    root.userData.wallBatches.push({mesh,blocks:list});
+  });
+  root.rotation.y=axis==='z'?-Math.PI/2:0;
+  return root;
+}
+let wallSerial=0;
+function syncWallJoints(){
+  // At a shared endpoint exactly one segment owns the pier. Avoid doubled
+  // stone caps and flickering coincident faces, even at T and L junctions.
+  const occupied=new Set(),stone=window.FightersWalls;
+  for(const building of [...buildingInstances.values()].filter(b=>
+    b.type==='wall'&&!b.destroyed).sort((a,b)=>a.id.localeCompare(b.id))){
+    const endpoints=stone.ends({x:building.root.position.x,
+      z:building.root.position.z,axis:building.wallAxis});
+    const visibility=new Map();
+    [-1,1].forEach((sign,i)=>{
+      const p=endpoints[i],key=p.x.toFixed(2)+':'+p.z.toFixed(2);
+      visibility.set(sign,!occupied.has(key));occupied.add(key);
+    });
+    const transform=new THREE.Object3D();
+    for(const {mesh,blocks} of building.root.userData.wallBatches||[]){
+      blocks.forEach((b,j)=>{
+        transform.position.set(b.x,b.y,b.z);
+        const show=!b.terminal||visibility.get(b.terminal);
+        transform.scale.set(show?b.w:.0001,show?b.h:.0001,show?b.d:.0001);
+        transform.updateMatrix();mesh.setMatrixAt(j,transform.matrix);
+      });
+      mesh.instanceMatrix.needsUpdate=true;
+    }
+  }
+}
+function buildWall(x,z,{prepaid=false,byAI=false,axis=null}={}){
+  const point=wallPlacement(x,z,axis);
+  if((!prepaid&&!canAffordConstruction('orc','wall'))||
+    !validBuildPosition(point.x,point.z,'wall',point.axis))return false;
+  const root=makeWallVisual(point.axis),id='orc-wall-'+String(++wallSerial).padStart(3,'0');
+  root.position.set(point.x,0,point.z);scene.add(root);
+  const bar=new THREE.Group();bar.name='healthbar-world-'+id;
+  const background=new THREE.Mesh(new THREE.PlaneGeometry(2.3,.24),
+    new THREE.MeshBasicMaterial({color:0x292929,depthTest:false,side:THREE.DoubleSide}));
+  const fill=new THREE.Mesh(new THREE.PlaneGeometry(2.2,.17),
+    new THREE.MeshBasicMaterial({color:0x65c957,depthTest:false,side:THREE.DoubleSide}));
+  fill.position.z=.01;bar.add(background,fill);scene.add(bar);
+  const building={id,type:'wall',clanId:'orcs',wallAxis:point.axis,level:1,
+    health:280,maxHealth:280,root,hitbox:buildShape('wall',point.x,point.z,point.axis),
+    visualHitbox:buildingVisualBounds(root),queue:[],progress:0,
+    rally:null,rallyMarker:null,healthBar:{root:bar,fill},destroyed:false,initial:false};
+  buildingInstances.set(id,building);
+  syncWallJoints();
+  if(!prepaid){gold.orc-=constructionCost('wall');wood.orc-=constructionWood('wall');}
+  if(!byAI){buildMode=null;showBanner('MUR DE PIERRE CONSTRUIT');}
+  updateHealthBar(building);updateNavObstacles();refreshHUD();return building;
+}
+
 function buildOrc(type,x,z,{byAI=false,prepaid=false}={}){
+  if(type==='wall')return buildWall(x,z,{byAI,prepaid});
   if(!ORC_COSTS[type]||!buildingBlueprints.has(type)||
     (!prepaid&&!canAffordConstruction('orc',type))||!validBuildPosition(x,z,type))return false;
   const template=buildingBlueprints.get(type),model=template.source.clone(true);
@@ -2694,9 +2838,11 @@ function buildWitchHouse(x,z,{prepaid=false}={}){
 // Construction previews use the real building meshes. A horizontal WebGL
 // clipping plane reveals their geometry from ground to roof; changing scale Y
 // would squash the architecture and misalign its materials and animations.
-function createConstructionPreview(type,x,z){
+function createConstructionPreview(type,x,z,axis=null){
   let root,architectureHeight=null;
-  if(type==='witch-house'){
+  if(type==='wall'){
+    root=makeWallVisual(axis||wallPlacement(x,z).axis);root.position.set(x,0,z);
+  }else if(type==='witch-house'){
     if(!witchHouse)return null;
     root=witchHouse.clone(true);root.position.set(x,0,z);
   }else if(type==='garden'){
@@ -2753,6 +2899,7 @@ function disposeConstructionPreview(job){
     if(!node.isMesh&&!node.isPoints)return;
     const materials=Array.isArray(node.material)?node.material:[node.material];
     for(const material of materials)material.dispose();
+    if(job.type==='wall')node.geometry.dispose();
     if(node.userData.stoneEffect)node.geometry.dispose();
   });
   job.preview=null;
@@ -2767,11 +2914,12 @@ function cancelConstruction(actor,refund=true){
   if(refund){gold[actor.kind]+=job.cost;wood[actor.kind]+=job.woodCost;}
   return true;
 }
-function scheduleBuild(type,x,z,{byAI=false}={}){
+function scheduleBuild(type,x,z,{byAI=false,axis=null}={}){
   const clan=buildFaction(type),cost=constructionCost(type),woodCost=constructionWood(type);
+  if(type==='wall'){const point=wallPlacement(x,z,axis);x=point.x;z=point.z;axis=point.axis;}
   if(!running||paused||!cost||(type==='stone-circle'&&!circleUnlocked())||
     !canAffordConstruction(clan,type)||
-    !validBuildPosition(x,z,type))return false;
+    !validBuildPosition(x,z,type,axis))return false;
   const candidates=units.filter(u=>u.kind===clan&&roles.isWorker(u)&&!u.dead&&
     !u.constructJob&&(!byAI||!u.repairJob));
   const preferred=candidates.filter(u=>selected.has(u));
@@ -2781,9 +2929,9 @@ function scheduleBuild(type,x,z,{byAI=false}={}){
   const worker=available[0];
   if(!worker)return false;
   const site={id:'construction-'+worker.id+'-'+nextUnitId,
-    hitbox:buildShape(type,x,z)};
-  const job={type,x,z,cost,woodCost,site,byAI,progress:0,
-    preview:createConstructionPreview(type,x,z)};
+    hitbox:buildShape(type,x,z,axis)};
+  const job={type,x,z,axis,cost,woodCost,site,byAI,progress:0,
+    preview:createConstructionPreview(type,x,z,axis)};
   pendingBuilds.push(job);gold[clan]-=cost;wood[clan]-=woodCost;
   cancelWoodJob(worker);cancelRepair(worker);
   cancelMineJob(worker);cancelFarmJob(worker);worker.treeJob=null;worker.berryJob=null;
@@ -2833,6 +2981,7 @@ function tickConstructWorker(actor,dt){
     const built=job.type==='witch-house'?buildWitchHouse(job.x,job.z,{prepaid:true}):
       job.type==='garden'?buildGarden(job.x,job.z,{prepaid:true}):
       job.type==='stone-circle'?buildStoneCircle(job.x,job.z,{prepaid:true}):
+      job.type==='wall'?buildWall(job.x,job.z,{prepaid:true,byAI:job.byAI,axis:job.axis}):
       buildOrc(job.type,job.x,job.z,{prepaid:true,byAI:job.byAI});
     if(!built){gold[actor.kind]+=job.cost;wood[actor.kind]+=job.woodCost;}
     else if(job.byAI)showBanner('CONSTRUCTION TERMINÉE');
@@ -2968,16 +3117,16 @@ function refreshHUD(){
       title.textContent=constructionTab==='advanced'?'Bâtiments avancés':'Bâtiments de base';
       info.textContent='Choisissez la structure à construire avec un ouvrier.';
       const types=activeFaction==='witch'?['witch-house','garden','stone-circle']:
-        constructionTab==='advanced'?['cauldron','factory']:['hut','barrack'];
+        constructionTab==='advanced'?['cauldron','factory']:['hut','barrack','wall'];
       for(const type of types){
         const cost=constructionCost(type);
-        add(({barrack:'🏰',hut:'🛖',cauldron:'⚗️',factory:'🏭','witch-house':'🏡',garden:'🌾','stone-circle':'🪨'})[type],
+        add(({barrack:'🏰',hut:'🛖',wall:'🧱',cauldron:'⚗️',factory:'🏭','witch-house':'🏡',garden:'🌾','stone-circle':'🪨'})[type],
           type==='witch-house'?'Maison':type==='garden'?'Potager':
             type==='stone-circle'?'Cercle de roches':ORC_NAMES[type],
           {gold:cost,wood:constructionWood(type)},()=>beginBuild(type),
           !canAffordConstruction(activeFaction,type)||!builderAvailable(activeFaction)||
             (type==='stone-circle'&&(!standingStoneModel||!circleUnlocked()))||
-            (activeFaction==='orc'&&!buildingBlueprints.has(type)),
+            (activeFaction==='orc'&&type!=='wall'&&!buildingBlueprints.has(type)),
           'Confier '+(type==='witch-house'?'une maison':type==='garden'?'un potager':
             type==='stone-circle'?'un cercle de guérison':ORC_NAMES[type])+' à un ouvrier'+
             (type==='stone-circle'&&!circleUnlocked()?' · nécessite une maison niveau 2':''));
@@ -2987,7 +3136,7 @@ function refreshHUD(){
       const names={'witch-house':'Maison des sorcières',garden:'Potager',
         'stone-circle':'Cercle de roches',...ORC_NAMES};
       const icons={'witch-house':'🏡',garden:'🌾','stone-circle':'🪨',barrack:'🏰',hut:'🛖',mine:'⛏️',
-        cauldron:'⚗️',factory:'🏭'};
+        cauldron:'⚗️',factory:'🏭',wall:'🧱'};
       portrait.textContent=icons[b.type]||'🏠';
       title.textContent=names[b.type]||'Bâtiment';
       const friendly=b.clanId===(activeFaction==='orc'?'orcs':'witch');
@@ -3002,6 +3151,7 @@ function refreshHUD(){
         b.type==='hut'?'Hutte orc · abrite '+orcFoodRules.HUT_CAPACITY[b.level]+
           ' orcs. Population totale : '+orcPopulationCommitted()+' / '+orcHousingCap()+'.':
         b.type==='cauldron'?'Chaudron orc · débloque les lanceurs-mages dans les casernes.':
+        b.type==='wall'?'Mur de pierre infranchissable · les sections s’assemblent en angle.':
         'Bâtiment orc · améliorer la structure et définir un point de rassemblement.';
       if(b.type!=='mine'){
         const track=document.createElement('div');track.className='hp-track';
@@ -3023,7 +3173,7 @@ function refreshHUD(){
         }
       }
       const cost=upgradeCost(b),pending=b.queue.some(item=>item.kind==='upgrade');
-      if(friendly&&b.type!=='mine'&&b.type!=='garden'&&b.type!=='stone-circle')add('⬆️','Améliorer',
+      if(friendly&&b.type!=='mine'&&b.type!=='garden'&&b.type!=='stone-circle'&&b.type!=='wall')add('⬆️','Améliorer',
         {gold:cost,wood:40},()=>issueUpgrade(b),
         cost===null||pending||gold[faction]<cost||wood[faction]<40||
           b.queue.length>=MAX_QUEUE||paused,
@@ -3141,7 +3291,7 @@ function refreshHUD(){
         Object.keys(ORC_NAMES).find(key=>ORC_NAMES[key]===action);
       disabled||=!canAffordConstruction(activeFaction,type)||!builderAvailable(activeFaction)||
         (type==='stone-circle'&&(!standingStoneModel||!circleUnlocked()))||
-        (activeFaction==='orc'&&!buildingBlueprints.has(type));
+        (activeFaction==='orc'&&type!=='wall'&&!buildingBlueprints.has(type));
     }else if(action==='Construire')disabled||=!builderAvailable(activeFaction);
     else if(action==='Réparer')disabled||=!liveBuildings().some(b=>
       alive.some(w=>repairRules.canRepair(w,b)));
@@ -3259,7 +3409,7 @@ function startSession(){
   gold={witch:2000,orc:900};wood={...INITIAL_WOOD};
   farming.reset();farmSerial=0;farmAssignmentElapsed=0;famineAlerted=false;
   orcFood.reset();orcForageElapsed=0;orcFamineAlerted=false;
-  stoneCircleSerial=0;healingAssignmentElapsed=0;
+  stoneCircleSerial=0;wallSerial=0;healingAssignmentElapsed=0;
   wildBerries.reset();berryAssignmentElapsed=0;syncBerryVisuals();
   buildMode=null;orcSpawned=false;
   fogOfWar.reset();knownEnemyBuildings.witch.clear();
@@ -3432,6 +3582,9 @@ function releaseConstructedBuilding(building){
     orcAnimationMixers[i].stopAllAction();orcAnimationMixers.splice(i,1);
   }
   building.root.parent?.remove(building.root);
+  if(building.type==='wall')building.root.traverse(node=>{
+    if(node.isInstancedMesh)node.geometry.dispose();
+  });
   if(building.magic){
     for(const mesh of [building.magic.core,building.magic.pulse,
       building.magic.glyphs,building.magic.sparkles]){
@@ -3477,10 +3630,11 @@ function destroyBuilding(building){
     releaseConstructedBuilding(building);
     buildingInstances.delete(building.id);
   }
+  if(building.type==='wall')syncWallJoints();
   updateNavObstacles();lastHudSignature='';refreshHUD();
   if(building===witchBuilding)endBattle(false);
   else if(building.clanId==='orcs'&&![...buildingInstances.values()].some(
-    b=>!b.destroyed&&b.clanId==='orcs'))endBattle(true);
+    b=>!b.destroyed&&b.clanId==='orcs'&&b.type!=='wall'))endBattle(true);
 }
 function alertWitchDefenders(victim,attacker){
   if(!witchDirector.enabled||attacker?.kind!=='orc'||attacker.dead||
@@ -4421,7 +4575,30 @@ const boltGeometry=new THREE.SphereGeometry(.115,6,4);
 const boltMaterials={witch:new THREE.MeshBasicMaterial({color:0x83b9ff}),
   orc:new THREE.MeshBasicMaterial({color:0xe2a269})};
 const activeBolts=[],boltPool=[];
+function interceptMagicWithWall(actor,target){
+  // The glow is cosmetic but its impact is physical: a hostile stone rampart
+  // intercepts bolts instead of letting ranged attacks damage a building or
+  // unit behind it. Friendly ramparts do not absorb their own side's spells.
+  if(actor.role!=='ranged'||!target)return target;
+  const from={x:actor.root.position.x,z:actor.root.position.z};
+  const to=isBuilding(target)?{
+    x:(target.hitbox.minX+target.hitbox.maxX)/2,
+    z:(target.hitbox.minZ+target.hitbox.maxZ)/2}:
+    {x:target.root.position.x,z:target.root.position.z};
+  const walls=[...buildingInstances.values()].filter(b=>b.type==='wall'&&
+    !b.destroyed&&enemyOf(actor,b)&&b!==target);
+  const dx=to.x-from.x,dz=to.z-from.z,denom=dx*dx+dz*dz;
+  let first=null,order=Infinity;
+  for(const wall of walls){
+    if(!window.FightersFootprints.segmentBlocked(from,to,wall.hitbox))continue;
+    const h=wall.hitbox,cx=(h.minX+h.maxX)/2,cz=(h.minZ+h.maxZ)/2;
+    const t=denom>0?((cx-from.x)*dx+(cz-from.z)*dz)/denom:0;
+    if(t<order){first=wall;order=t;}
+  }
+  return first||target;
+}
 function fireBolt(actor,target,duration){
+  target=interceptMagicWithWall(actor,target);
   const mesh=boltPool.pop()||new THREE.Mesh(boltGeometry,boltMaterials[actor.kind]);
   mesh.material=boltMaterials[actor.kind];
   const start=actor.root.position.clone().add(new THREE.Vector3(0,1.3,0));
@@ -4505,7 +4682,7 @@ function tickUnit(actor,dt){
       const range=actor.role==='ranged'?actor.profile.range+.3:
         isBuilding(target)?BUILDING_CONTACT+.22:actor.weapon?2.35:1.85;
       if(enemyOf(actor,target)&&targetDistance(actor,target)<range)
-        dealDamage(target,actor.profile.damage,actor);
+        dealDamage(interceptMagicWithWall(actor,target),actor.profile.damage,actor);
     }
     if(actor.attack===action&&action.elapsed>=action.duration){
       actor.attack=null;animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop',true);
@@ -4605,10 +4782,11 @@ function stepOrcStrategy(dt){
         (navigatorRTS.segmentClear(source,goal)||!!navigatorRTS.plan(source,goal));
     }):null;
   const context={
-    ready:true,running,paused,gold:gold.orc,
+    ready:true,running,paused,gold:gold.orc,wood:wood.orc,
     buildings:[...buildingInstances.values()].filter(b=>!b.destroyed&&b.clanId==='orcs').map(b=>({
       id:b.id,type:b.type,level:b.level,queue:b.queue.map(j=>({kind:j.kind})),
-      health:b.health,maxHealth:b.maxHealth,hitbox:b.hitbox,destroyed:b.destroyed
+      health:b.health,maxHealth:b.maxHealth,hitbox:b.hitbox,destroyed:b.destroyed,
+      x:b.root.position.x,z:b.root.position.z,axis:b.wallAxis
     })),
     orcs:aliveOrcs.map(u=>({id:u.id,x:u.root.position.x,z:u.root.position.z,
       health:u.health,maxHealth:u.maxHealth,dead:u.dead,
@@ -4625,7 +4803,7 @@ function stepOrcStrategy(dt){
   const actions=orcDirector.update(dt,context,validBuildPosition);
   for(const action of actions){
     if(action.type==='build'){
-      scheduleBuild(action.building,action.x,action.z,{byAI:true});
+      scheduleBuild(action.building,action.x,action.z,{byAI:true,axis:action.axis});
     }else if(action.type==='train'){
       const b=buildingInstances.get(action.buildingId);
       if(b&&!b.destroyed)queueOrder(b,'orc',action.role||'melee');
@@ -5654,7 +5832,15 @@ window.__fightersQA={
   route:(from,to)=>navigatorRTS.plan(from,to),
   setFaction:changeFaction,beginBuild,build:(type,x,z)=>type==='garden'?buildGarden(x,z):
     type==='stone-circle'?buildStoneCircle(x,z):buildOrc(type,x,z),
+  buildWall:(x,z,axis)=>buildWall(x,z,{axis}),
+  scheduleConstruction:(type,x,z,axis)=>scheduleBuild(type,x,z,{axis}),
+  magicIntercept:(kind,index,targetId)=>{
+    const actor=units.filter(u=>u.kind===kind&&!u.dead)[index];
+    const target=liveBuildings().find(b=>b.id===targetId);
+    return actor&&target?interceptMagicWithWall(actor,target)?.id:null;
+  },
   canBuild:(x,z,type)=>validBuildPosition(x,z,type),
+  canBuildAxis:(x,z,type,axis)=>validBuildPosition(x,z,type,axis),
   setRally:(x,z)=>setRally(selectedBuilding,{x,z}),
   sound:()=>orcSound.snapshot(),
   witchSound:()=>witchSound.snapshot(),

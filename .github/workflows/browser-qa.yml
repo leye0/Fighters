@@ -6,6 +6,7 @@ on:
       - 'docs/index.html'
       - 'docs/rts-map.js'
       - 'docs/rts-footprint.js'
+      - 'docs/rts-walls.js'
       - 'docs/rts-navigation.js'
       - 'docs/rts-fog.js'
       - 'docs/rts-sound.js'
@@ -32,6 +33,7 @@ on:
       - 'scripts/test-rts-sound.mjs'
       - 'scripts/test-rts-fog.mjs'
       - 'scripts/test-rts-footprint.mjs'
+      - 'scripts/test-rts-walls.mjs'
       - 'docs/rts-unit-physics.js'
       - 'scripts/test-rts-unit-physics.mjs'
       - 'docs/orc-strategy.js'
@@ -87,6 +89,7 @@ jobs:
       - name: Test deterministic navigation and orc strategic planning
         run: |
           node scripts/test-rts-footprint.mjs
+          node scripts/test-rts-walls.mjs
           node scripts/test-rts-navigation.mjs
           node scripts/test-rts-map.mjs
           node scripts/test-rts-fog.mjs
