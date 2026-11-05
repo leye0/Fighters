@@ -2,11 +2,112 @@
   "sounds": [
     {
       "category": "interaction",
-      "name": "Witch_Interaction",
-      "path": "interaction/Witch_Interaction.mp3",
-      "source_url": "https://freesound.org/people/InSintesi/sounds/349052/",
-      "author": "InSintesi",
-      "title": "Witch's whisper.wav",
+      "name": "Yes_Excited",
+      "path": "interaction/Yes_Excited.mp3",
+      "utterance": "yes",
+      "freesound_id": 353103,
+      "source_url": "https://freesound.org/people/musamdu/sounds/353103/",
+      "author": "musamdu",
+      "title": "Girl Screams 'Yes!'",
+      "license": "CC0"
+    },
+    {
+      "category": "interaction",
+      "name": "Yes_Dignified",
+      "path": "interaction/Yes_Dignified.mp3",
+      "utterance": "yes",
+      "freesound_id": 235073,
+      "source_url": "https://freesound.org/people/Reitanna/sounds/235073/",
+      "author": "Reitanna",
+      "title": "mnyes2.wav",
+      "license": "CC0"
+    },
+    {
+      "category": "interaction",
+      "name": "Yes_RealReaction",
+      "path": "interaction/Yes_RealReaction.mp3",
+      "utterance": "yes",
+      "freesound_id": 242693,
+      "source_url": "https://freesound.org/people/Reitanna/sounds/242693/",
+      "author": "Reitanna",
+      "title": "oh yes!.wav",
+      "license": "CC0"
+    },
+    {
+      "category": "interaction",
+      "name": "Yes_YepYep",
+      "path": "interaction/Yes_YepYep.mp3",
+      "utterance": "yes",
+      "freesound_id": 547354,
+      "source_url": "https://freesound.org/people/Legnalegna55/sounds/547354/",
+      "author": "Legnalegna55",
+      "title": "YEP YEP.",
+      "license": "CC0"
+    },
+    {
+      "category": "interaction",
+      "name": "Yes_OhYeah",
+      "path": "interaction/Yes_OhYeah.mp3",
+      "utterance": "yes",
+      "freesound_id": 539277,
+      "source_url": "https://freesound.org/people/Legnalegna55/sounds/539277/",
+      "author": "Legnalegna55",
+      "title": "OH YEAH",
+      "license": "CC0"
+    },
+    {
+      "category": "interaction",
+      "name": "Yes_Playful",
+      "path": "interaction/Yes_Playful.mp3",
+      "utterance": "yes",
+      "freesound_id": 572608,
+      "source_url": "https://freesound.org/people/melisandepope/sounds/572608/",
+      "author": "melisandepope",
+      "title": "Yeah03.wav",
+      "license": "CC0"
+    },
+    {
+      "category": "interaction",
+      "name": "Yes_Clear",
+      "path": "interaction/Yes_Clear.mp3",
+      "utterance": "yes",
+      "freesound_id": 71466,
+      "source_url": "https://freesound.org/people/NoiseCollector/sounds/71466/",
+      "author": "NoiseCollector",
+      "title": "yes.wav",
+      "license": "CC BY 3.0"
+    },
+    {
+      "category": "interaction",
+      "name": "Yes_Morena",
+      "path": "interaction/Yes_Morena.mp3",
+      "utterance": "yes",
+      "freesound_id": 157506,
+      "source_url": "https://freesound.org/people/MatteusNova/sounds/157506/",
+      "author": "MatteusNova",
+      "title": "The word yes",
+      "license": "CC BY 4.0"
+    },
+    {
+      "category": "interaction",
+      "name": "Uhu_Assured",
+      "path": "interaction/Uhu_Assured.mp3",
+      "utterance": "uhu",
+      "freesound_id": 264610,
+      "source_url": "https://freesound.org/people/shadoWisp/sounds/264610/",
+      "author": "shadoWisp",
+      "title": "uh huh.wav",
+      "license": "CC BY 3.0"
+    },
+    {
+      "category": "interaction",
+      "name": "Uhu_Cartoon",
+      "path": "interaction/Uhu_Cartoon.mp3",
+      "utterance": "uhu",
+      "freesound_id": 436443,
+      "source_url": "https://freesound.org/people/Iceofdoom/sounds/436443/",
+      "author": "Iceofdoom",
+      "title": "Uh Huh - Little Cartoon Female",
       "license": "CC BY 4.0"
     },
     {
@@ -29,7 +130,7 @@
     }
   ],
   "counts": {
-    "interaction": 1,
+    "interaction": 10,
     "creation": 1,
     "destruction": 0,
     "work": 1
