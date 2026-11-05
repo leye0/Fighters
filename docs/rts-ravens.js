@@ -13,8 +13,9 @@
   // Halve the explored surface of a flying raven (area scales with r²).
   const SCOUT_SIGHT=2.2;
   class Flock{
-    constructor(trees,{count=2,halfSize=28}={}){
+    constructor(trees,{count=2,halfSize=28,clampPosition=null}={}){
       this.trees=trees;this.count=count;this.halfSize=halfSize;
+      this.clampPosition=clampPosition;
       this.reset();
     }
     random(){this.seed=(1664525*this.seed+1013904223)>>>0;return this.seed/4294967296;}
@@ -44,8 +45,10 @@
       return pool[Math.floor(this.random()*pool.length)];
     }
     takeFlight(raven,goal,arrival='perched',treeIndex=null){
-      const to={x:clamp(goal.x,-this.halfSize+1,this.halfSize-1),
-        z:clamp(goal.z,-this.halfSize+1,this.halfSize-1),y:goal.y};
+      const point=this.clampPosition?this.clampPosition(goal.x,goal.z,1):
+        {x:clamp(goal.x,-this.halfSize+1,this.halfSize-1),
+          z:clamp(goal.z,-this.halfSize+1,this.halfSize-1)};
+      const to={...point,y:goal.y};
       raven.flight={from:{x:raven.x,y:raven.y,z:raven.z},to,
         duration:Math.max(.75,distance(raven,to)/5.8),elapsed:0,arrival,treeIndex};
       raven.mode='flying';raven.treeIndex=null;
@@ -61,8 +64,9 @@
     orderMove(id,destination){
       const raven=this.ravens.find(raven=>raven.id===id);
       if(!raven)return null;
-      raven.scoutCenter={x:clamp(destination.x,-this.halfSize+2,this.halfSize-2),
-        z:clamp(destination.z,-this.halfSize+2,this.halfSize-2)};
+      raven.scoutCenter=this.clampPosition?this.clampPosition(destination.x,destination.z,2):
+        {x:clamp(destination.x,-this.halfSize+2,this.halfSize-2),
+          z:clamp(destination.z,-this.halfSize+2,this.halfSize-2)};
       raven.scoutSteps=4;
       this.takeFlight(raven,{...raven.scoutCenter,y:6.4},'scout');
       return raven;

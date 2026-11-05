@@ -12,12 +12,12 @@
   const RESERVED=[[-23.5,-17.5,6.8],[22,20,8.0],[15,20,5.5],
     [-12,-21,4.6],[8,-10,4.5],[1,26,4.5]];
   const STARTING_SHRUBS=[[-18,-9.5],[-21,-10.5]];
-  function createLayout(trees=[],seed=0x4ba9a123){
+  function createLayout(trees=[],seed=0x4ba9a123,map=null){
     let state=seed>>>0;
     const random=()=>{state=(1664525*state+1013904223)>>>0;return state/4294967296;};
     const bushes=[];
     function add(x,z){
-      if(Math.abs(x)>25||Math.abs(z)>25||
+      if((map?!map.contains(x,z,1):Math.abs(x)>25||Math.abs(z)>25)||
         RESERVED.some(([rx,rz,r])=>Math.hypot(x-rx,z-rz)<r)||
         trees.some(t=>Math.hypot(x-t.x,z-t.z)<1.55)||
         bushes.some(b=>Math.hypot(x-b.x,z-b.z)<2.35)||
@@ -29,13 +29,16 @@
     }
     for(const [x,z] of STARTING_SHRUBS)add(x,z);
     for(let trial=0;trial<BUSH_COUNT*110&&bushes.length<BUSH_COUNT;trial++){
-      const x=-24+random()*48,z=-24+random()*48;
+      const candidate=map?map.toWorld((random()*2-1)*(map.HALF-1.6),
+        (random()*2-1)*(map.HALF-1.6)):
+        {x:-24+random()*48,z:-24+random()*48};
+      const {x,z}=candidate;
       add(x,z);
     }
     return bushes;
   }
   class WildBerries{
-    constructor(trees=[]){this.bushes=createLayout(trees);this.reset();}
+    constructor(trees=[],{map=null}={}){this.bushes=createLayout(trees,0x4ba9a123,map);this.reset();}
     reset(){
       this.eaten=0;this.producedFood=0;
       for(const bush of this.bushes){bush.stage=FIRST_STAGE;bush.elapsed=0;}

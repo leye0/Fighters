@@ -40,6 +40,10 @@ partagent un seul modèle GLB de 24 Kio, sous [licence CC0](docs/models/STANDING
 
 Orks & Sorcières est un prototype de **stratégie en temps réel** en 3D isométrique. À l'écran de démarrage, le joueur choisit d'incarner les **sorcières** ou les **orks**. Il contrôle uniquement son camp; l'autre faction est autonome et peut développer son village, produire des troupes, récolter des ressources, explorer, défendre ses bâtiments et attaquer. Le beat ’em up et ses gestes de combat direct ne font plus partie du jeu.
 
+### Carte carrée en projection isométrique
+
+La caméra conserve son azimut à 45° et son élévation isométrique. Le terrain jouable est orienté et dimensionné pour **apparaître carré à l'écran**, plutôt qu'en losange. La mini-carte carrée reprend exactement les axes visuels du terrain (gauche/droite, haut/bas), et son cadre montre l'emprise réelle de la caméra. Les personnages et les bâtiments conservent leurs coordonnées physiques X/Z; `docs/rts-map.js` centralise la conversion de ces coordonnées, les limites de navigation et les clics sur la mini-carte. Le brouillard de guerre garde des rayons de vision circulaires dans le monde 3D.
+
 ## Commandes
 
 | Action | Ordinateur | Téléphone/tablette |

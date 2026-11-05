@@ -48,8 +48,9 @@
    }
  }
  class Navigator {
-   constructor({halfSize=28,cellSize=1,radius=.38}={}){
-     this.halfSize=halfSize;this.cellSize=cellSize;this.radius=radius;this.version=0;this.obstacles=[];
+   constructor({halfSize=28,cellSize=1,radius=.38,region=null}={}){
+     this.halfSize=halfSize;this.cellSize=cellSize;this.radius=radius;this.region=region;
+     this.version=0;this.obstacles=[];
      this.side=Math.ceil(2*halfSize/cellSize);
      this._blockedCache=new Int8Array(this.side*this.side).fill(-1);
    }
@@ -64,12 +65,15 @@
      this.version++;
    }
    clamp(p){
+     if(this.region)return this.region.clamp(p.x,p.z,this.radius+.08);
      const edge=this.halfSize-this.radius-.08;
      return {x:clamp(p.x,-edge,edge),z:clamp(p.z,-edge,edge)};
    }
    pointClear(p){
      const limit=this.halfSize-this.radius-.05;
-     return Math.abs(p.x)<=limit&&Math.abs(p.z)<=limit&&!this.obstacles.some(b=>
+     return Math.abs(p.x)<=limit&&Math.abs(p.z)<=limit&&
+       (!this.region||this.region.contains(p.x,p.z,this.radius+.05))&&
+       !this.obstacles.some(b=>
        b.shape==='polygon'?footprint.pointBlocked(p,b,this.radius):
          pointInside(b,p.x,p.z,this.radius));
    }
@@ -95,7 +99,8 @@
      const x=-this.halfSize+c.x*this.cellSize,z=-this.halfSize+c.z*this.cellSize;
      const pad=this.radius+.04;
      const rect={minX:x,maxX:x+this.cellSize,minZ:z,maxZ:z+this.cellSize};
-     const blocked=this.obstacles.some(b=>b.shape==='polygon'?
+     const blocked=(this.region&&!this.region.contains(x+this.cellSize/2,
+       z+this.cellSize/2,this.radius+.05))||this.obstacles.some(b=>b.shape==='polygon'?
        footprint.cellBlocked(rect,b,pad):
        x<=b.maxX+pad&&x+this.cellSize>=b.minX-pad&&
          z<=b.maxZ+pad&&z+this.cellSize>=b.minZ-pad);
