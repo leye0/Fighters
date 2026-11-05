@@ -1244,6 +1244,9 @@ async function run(){
  await evaluate("window.__fightersQA.passive('orc');window.__fightersQA.selectUnit('witch',0)");
 
  await evaluate("window.__fightersQA.moveUnitTo('witch',0,18.5,21)");
+ // This fixture tests death/removal, not siege duration: a full-health hut
+ // now deliberately takes far longer to demolish than the original 100-HP one.
+ await evaluate('window.__fightersQA.setBuildingHealth('+JSON.stringify(hutId)+',60)');
  check(await evaluate("window.__fightersQA.attackBuilding("+JSON.stringify(hutId)+")"),
   'Attack-building order was rejected');
  await evaluate('window.__fightersQA.advance(4)');
