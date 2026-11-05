@@ -1717,7 +1717,9 @@ function pickUnit(x,y,includeEnemies=false){
   // Touch targets encompass the projected 3D silhouette, not a single point
   // at the actor's feet. This makes tiny Quaternius witches usable on phones.
   let found=null,best=Infinity;
-  const radius=viewport.clientWidth<760?41:30;
+  // Keep unit selection close to the rendered silhouette: oversized touch
+  // capsules steal ground movement orders from nearby empty terrain.
+  const radius=viewport.clientWidth<760?13:10;
   const rect=viewport.getBoundingClientRect();
   const screen=(p)=>({
     x:rect.left+(p.x+1)*rect.width/2,
