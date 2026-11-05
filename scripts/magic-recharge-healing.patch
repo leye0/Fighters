@@ -1,0 +1,288 @@
+diff --git a/docs/index.html b/docs/index.html
+index 3350635..02c52bf 100644
+--- a/docs/index.html
++++ b/docs/index.html
+@@ -487,15 +487,15 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
+ <script src="./rts-forest.js"></script>
+ <script src="./rts-berries.js"></script>
+ <script src="./rts-ravens.js"></script>
+-<script src="./rts-healing.js"></script>
++<script src="./rts-healing.js?v=magic-20261105"></script>
+ <script src="./rts-repair.js"></script>
+-<script src="./rts-souls.js"></script>
++<script src="./rts-souls.js?v=magic-20261105"></script>
+ </head>
+ <body>
+ <div class="game-shell"><section class="arcade">
+ <div class="hud">
+   <div class="hero-hud"><div class="hud-kicker">FIGHTERS · RTS</div><strong id="faction-title">SORCIÈRES</strong><small id="selection-summary">Sélectionnez une unité ou la maison</small><small id="ai-status" class="ai-status">Village orc · en développement</small></div>
+-  <div class="score"><div id="hud-gold-chip" title="Or de la faction sélectionnée"><small>💰 OR</small><strong id="hud-gold">2000</strong></div><div id="hud-wood-chip" title="Bois rapporté par les ouvriers"><small>🪵 BOIS</small><strong id="hud-wood">250</strong></div><div id="hud-food-chip" title="Réserves alimentaires de la faction"><small id="hud-food-label">🌾 VIVRES</small><strong id="hud-food">45</strong></div><div id="hud-magic-chip" title="Magie accumulée en siphonnant les âmes"><small>🔮 MAGIE</small><strong id="hud-magic">0</strong><div class="hud-magic-track"><div id="hud-magic-fill"></div></div></div><div id="hud-units-chip" title="Unités des sorcières et des orcs"><small>⚔️ UNITÉS</small><strong id="unit-count">0 : 0</strong></div></div>
++  <div class="score"><div id="hud-gold-chip" title="Or de la faction sélectionnée"><small>💰 OR</small><strong id="hud-gold">2000</strong></div><div id="hud-wood-chip" title="Bois rapporté par les ouvriers"><small>🪵 BOIS</small><strong id="hud-wood">250</strong></div><div id="hud-food-chip" title="Réserves alimentaires de la faction"><small id="hud-food-label">🌾 VIVRES</small><strong id="hud-food">45</strong></div><div id="hud-magic-chip" title="Magie : +20 par esprit siphonné, +5 toutes les 30 s. Les soins coûtent 1 magie pour 15 PV."><small>🔮 MAGIE</small><strong id="hud-magic">0</strong><div class="hud-magic-track"><div id="hud-magic-fill"></div></div></div><div id="hud-units-chip" title="Unités des sorcières et des orcs"><small>⚔️ UNITÉS</small><strong id="unit-count">0 : 0</strong></div></div>
+   <button id="pause" class="pause-compact" aria-label="Pause" title="Pause (P)" disabled>Ⅱ</button>
+ </div>
+ <div id="viewport" class="viewport" aria-label="Carte de stratégie en temps réel"><div class="scanlines"></div><div id="banner" class="banner"></div><div id="selection-rectangle" hidden></div><div id="order-pings" aria-hidden="true"></div><div id="order-prompt" role="status" aria-live="polite" hidden></div>
+@@ -3103,7 +3103,7 @@ function refreshHUD(){
+   setText('hud-food-label',activeFaction==='witch'?'🌾 VIVRES':'🍖 VIANDE');
+   $('hud-food-chip').title=activeFaction==='witch'? 'Blé et baies · consommation des sorcières':
+     'Lièvres et dépouilles de sorcières · les orcs mangent moins souvent';
+-  setText('hud-magic',magic+'/'+soulRules.MAX_MAGIC);
++  setText('hud-magic',(Math.round(magic*10)/10)+'/'+soulRules.MAX_MAGIC);
+   $('hud-magic-fill').style.width=100*magic/soulRules.MAX_MAGIC+'%';
+   $('hud-gold-chip').title='Or des '+(activeFaction==='witch'?'sorcières':'orcs');
+   $('hud-wood-chip').title='Bois des '+(activeFaction==='witch'?'sorcières':'orcs');
+@@ -3173,7 +3173,7 @@ function refreshHUD(){
+       title.textContent=names[b.type]||'Bâtiment';
+       const friendly=b.clanId===(activeFaction==='orc'?'orcs':'witch');
+       info.textContent=b.type==='stone-circle'?
+-        'Sanctuaire : les sorcières au centre récupèrent 11 PV/s. Les blessées y reviennent au calme.':
++        'Sanctuaire : 11 PV/s par sorcière, pour 1 magie / 15 PV restaurés. Les blessées y reviennent au calme.':
+         b.type==='garden'?'Cultures : trois stades, prêtes au troisième.':
+         b.type==='mine'?
+         'Gisement d’or neutre et indestructible · exploitable par les ouvriers des deux clans.':
+@@ -4674,14 +4674,18 @@ function stepFarming(dt){
+ function stepHealing(dt){
+   const circles=[...buildingInstances.values()].filter(b=>
+     b.type==='stone-circle'&&!b.destroyed);
++  const resting=[];
+   for(const witch of units){
+     if(witch.kind!=='witch'||witch.dead)continue;
+     witch.healRetry=Math.max(0,witch.healRetry-dt);
+     if(witch.health>=witch.maxHealth)continue;
+     const point={x:witch.root.position.x,z:witch.root.position.z};
+     if(circles.some(b=>stoneHealing.inside(point,b.root.position)))
+-      witch.health=stoneHealing.restore(witch.health,witch.maxHealth,dt);
++      resting.push(witch);
+   }
++  // One shared magic budget for every circle; scarce magic is split fairly
++  // rather than silently healing the first unit in the array for free.
++  if(resting.length)magic=stoneHealing.restoreGroup(resting,dt,magic).magic;
+   healingAssignmentElapsed+=dt;
+   if(healingAssignmentElapsed<.85)return;
+   healingAssignmentElapsed=0;
+@@ -5133,6 +5137,7 @@ let accumulator=0,uiElapsed=0;
+ function stepGame(dt){
+   if(!ready||!running||paused)return;
+   stepProduction(dt);
++  magic=soulRules.magicAfterTime(magic,dt);
+   stepHealing(dt);
+   assignSoulHarvesters(dt);
+   stepFarming(dt);
+@@ -5628,12 +5633,14 @@ window.__fightersQA={
+       foragers:units.filter(u=>u.berryJob&&!u.dead).map(u=>({id:u.id,
+         index:u.berryJob.index,progress:u.berryJob.progress}))},
+     healing:{modelLoaded:!!standingStoneModel,healPerSecond:stoneHealing.HEAL_PER_SECOND,
++      healthPerMagic:stoneHealing.HEALTH_PER_MAGIC,
+       circles:[...buildingInstances.values()].filter(b=>b.type==='stone-circle'&&!b.destroyed)
+         .map(b=>({id:b.id,x:b.root.position.x,z:b.root.position.z,
+           stones:b.root.children.filter(n=>n.name.startsWith('standing-stone-')).length,
+           navigableCenter:navigatorRTS.pointClear(b.root.position)})),
+       retreating:units.filter(u=>!!u.healJob&&!u.dead).map(u=>({id:u.id,circleId:u.healJob.id}))},
+     souls:{magic,maxMagic:soulRules.MAX_MAGIC,perCorpse:soulRules.SOUL_VALUE,
++      passiveMagicPer30Seconds:soulRules.PASSIVE_MAGIC_PER_30_SECONDS,
+       corpseLifetime:soulRules.CORPSE_SECONDS,buildUnlocked:circleUnlocked(),
+       arcanistUnlocked:arcanistUnlocked(),activeSpirits:soulEffects.length,
+       spirits:soulEffects.map(e=>({sameGeometry:e.sameGeometry,samePose:e.samePose,
+diff --git a/docs/rts-healing.js b/docs/rts-healing.js
+index 0ff082b..043cb7f 100644
+--- a/docs/rts-healing.js
++++ b/docs/rts-healing.js
+@@ -6,6 +6,9 @@
+ })(typeof globalThis==='object'?globalThis:this,function(){
+   'use strict';
+   const RADIUS=1.4,HEAL_PER_SECOND=11,RETREAT_AT=.70,RECOVER_TO=.96;
++  // One soul (20 magic) pays for 300 health points; passive regeneration
++  // (5 magic / 30s) can sustain limited healing without harvested souls.
++  const HEALTH_PER_MAGIC=15;
+   const HOSTILE_SAFETY_DISTANCE=9;
+   function inside(unit,circle){
+     return Math.hypot(unit.x-circle.x,unit.z-circle.z)<=RADIUS;
+@@ -14,6 +17,35 @@
+     if(!Number.isFinite(dt)||dt<0)throw Error('Invalid healing time');
+     return Math.min(maximum,Math.max(0,current)+HEAL_PER_SECOND*dt);
+   }
++  // All witches sharing a sanctuary are healed at the same proportional rate
++  // when magic is scarce. Spend only on *actual* restored HP, never on a
++  // full-health unit or excess time. The group is mutated in place.
++  function restoreGroup(witches,dt,availableMagic){
++    if(!Number.isFinite(dt)||dt<0)throw Error('Invalid healing time');
++    if(!Number.isFinite(availableMagic)||availableMagic<0)
++      throw Error('Invalid magic budget');
++    const requests=[];
++    let requested=0;
++    for(const witch of witches){
++      if(!Number.isFinite(witch.health)||!Number.isFinite(witch.maxHealth)||
++        witch.maxHealth<=0)throw Error('Invalid healing target');
++      const base=Math.min(witch.maxHealth,Math.max(0,witch.health));
++      const amount=Math.max(0,restore(base,witch.maxHealth,dt)-base);
++      requests.push({witch,base,amount});
++      requested+=amount;
++    }
++    const fraction=requested>0?
++      Math.min(1,availableMagic*HEALTH_PER_MAGIC/requested):0;
++    let healed=0;
++    for(const {witch,base,amount} of requests){
++      const gained=amount*fraction;
++      witch.health=base+gained;
++      healed+=gained;
++    }
++    const spent=Math.min(availableMagic,healed/HEALTH_PER_MAGIC);
++    const remaining=availableMagic-spent;
++    return {magic:remaining<1e-9?0:remaining,healed,spent};
++  }
+   function needsRest(unit){
+     return unit.maxHealth>0&&unit.health/unit.maxHealth<RETREAT_AT;
+   }
+@@ -25,6 +57,6 @@
+       .sort((a,b)=>Math.hypot(unit.x-a.x,unit.z-a.z)-
+         Math.hypot(unit.x-b.x,unit.z-b.z))[0]||null;
+   }
+-  return Object.freeze({RADIUS,HEAL_PER_SECOND,RETREAT_AT,RECOVER_TO,
+-    HOSTILE_SAFETY_DISTANCE,inside,restore,needsRest,recovered,nearestCircle});
++  return Object.freeze({RADIUS,HEAL_PER_SECOND,HEALTH_PER_MAGIC,RETREAT_AT,RECOVER_TO,
++    HOSTILE_SAFETY_DISTANCE,inside,restore,restoreGroup,needsRest,recovered,nearestCircle});
+ });
+diff --git a/docs/rts-souls.js b/docs/rts-souls.js
+index 3899900..8f50513 100644
+--- a/docs/rts-souls.js
++++ b/docs/rts-souls.js
+@@ -7,11 +7,17 @@
+   'use strict';
+   const CORPSE_SECONDS=120,MAX_CORPSES=40,SOUL_SIGHT=8,
+     SOUL_APPROACH=.9,SOUL_SECONDS=1.35,SOUL_VALUE=20,MAX_MAGIC=100;
++  const PASSIVE_MAGIC_PER_30_SECONDS=5;
+   const canBuildCircle=buildings=>buildings.some(b=>
+     b.type==='witch-house'&&b.clanId==='witch'&&!b.destroyed&&b.level>=2);
+   const canTrainMage=buildings=>buildings.some(b=>
+     b.type==='stone-circle'&&b.clanId==='witch'&&!b.destroyed);
+   const magicAfterSoul=magic=>Math.min(MAX_MAGIC,Math.max(0,magic)+SOUL_VALUE);
++  function magicAfterTime(magic,seconds){
++    if(!Number.isFinite(magic)||!Number.isFinite(seconds)||seconds<0)
++      throw Error('Invalid magic regeneration time');
++    return Math.min(MAX_MAGIC,Math.max(0,magic)+PASSIVE_MAGIC_PER_30_SECONDS*seconds/30);
++  }
+   function nearestSoul(mage,corpses,available=()=>true){
+     let nearest=null,minimum=SOUL_SIGHT;
+     for(const corpse of corpses){
+@@ -23,5 +29,6 @@
+     return nearest;
+   }
+   return {CORPSE_SECONDS,MAX_CORPSES,SOUL_SIGHT,SOUL_APPROACH,SOUL_SECONDS,
+-    SOUL_VALUE,MAX_MAGIC,canBuildCircle,canTrainMage,magicAfterSoul,nearestSoul};
++    SOUL_VALUE,MAX_MAGIC,PASSIVE_MAGIC_PER_30_SECONDS,canBuildCircle,canTrainMage,
++    magicAfterSoul,magicAfterTime,nearestSoul};
+ });
+diff --git a/scripts/browser-qa.mjs b/scripts/browser-qa.mjs
+index 60f9234..eb8f74c 100644
+--- a/scripts/browser-qa.mjs
++++ b/scripts/browser-qa.mjs
+@@ -1198,6 +1198,8 @@ async function run(){
+  check(stoneBuilt,'Witch worker did not finish the stone circle');
+  s=await evaluate('window.__fightersQA.snapshot()');
+  const sanctuary=s.healing.circles[0];
++ check(s.healing.healthPerMagic===15&&s.souls.passiveMagicPer30Seconds===5,
++   'Healing must cost 1 magic per 15 HP and magic must regenerate 5/30s');
+  check(sanctuary.stones===6&&sanctuary.navigableCenter&&
+    s.buildings.some(b=>b.id===sanctuary.id&&b.health===850),
+    'Six actual menhirs must surround a walkable magic center: '+JSON.stringify(sanctuary));
+@@ -1268,6 +1270,7 @@ async function run(){
+    'Arcanist production must finish after sanctuary unlock');
+  const soulCorpseId=await evaluate('window.__fightersQA.spawnTestCorpseNearArcanist()');
+  s=await evaluate('window.__fightersQA.snapshot()');
++ const magicBeforeSoul=s.souls.magic;
+  check(s.souls.corpses.some(c=>c.id===soulCorpseId&&c.remaining>110),
+    'Fallen characters must leave persistent bodies');
+  const spirit=await evaluate("(()=>{for(let i=0;i<24;i++){"+
+@@ -1279,9 +1282,10 @@ async function run(){
+  await screenshot('rts-soul-corpse-clone');
+  await evaluate('window.__fightersQA.advance(1.5)');
+  s=await evaluate('window.__fightersQA.snapshot()');
+- check(s.souls.magic===20&&s.souls.activeSpirits===0&&
++ check(s.souls.magic>=magicBeforeSoul+19&&s.souls.magic<=magicBeforeSoul+22&&
++   s.souls.activeSpirits===0&&
+    s.souls.corpses.some(c=>c.id===soulCorpseId&&c.claimed&&c.remaining>100),
+-   'Spirit must increase magic once while the body stays on the ground: '+JSON.stringify(s.souls));
++   'Spirit must add 20 magic on top of passive regeneration while the corpse persists: '+JSON.stringify(s.souls));
+  console.log('PASS SOULS: house upgrade, circle unlock, Arcanist training, persistent corpse, exact 3D white soul and magic gauge.');
+  await evaluate('window.__fightersQA.damageBuilding('+JSON.stringify(sanctuary.id)+',999999)');
+  s=await evaluate('window.__fightersQA.snapshot()');
+diff --git a/scripts/test-rts-healing.mjs b/scripts/test-rts-healing.mjs
+index 2bd16d8..32cc6b5 100644
+--- a/scripts/test-rts-healing.mjs
++++ b/scripts/test-rts-healing.mjs
+@@ -1,5 +1,6 @@
+ import assert from 'node:assert/strict';
+ import {createRequire} from 'node:module';
++import {readFileSync} from 'node:fs';
+ const require=createRequire(import.meta.url);
+ const healing=require('../docs/rts-healing.js');
+ const witch={x:0,z:0,health:45,maxHealth:85};
+@@ -15,7 +16,34 @@ assert.equal(healing.restore(45,85,2),67);
+ assert.equal(healing.restore(80,85,2),85);
+ assert.equal(healing.restore(84.5,85,0),84.5);
+ assert.throws(()=>healing.restore(45,85,-1),/Invalid healing time/);
++assert.equal(healing.HEALTH_PER_MAGIC,15,'one magic point should restore fifteen HP');
++const wounded={health:40,maxHealth:85};
++let bill=healing.restoreGroup([wounded],1,3);
++assert.equal(wounded.health,51);
++assert(Math.abs(bill.spent-11/15)<1e-9);
++assert(Math.abs(bill.magic-(3-11/15))<1e-9);
++const empty={health:30,maxHealth:85};
++bill=healing.restoreGroup([empty],3,0);
++assert.equal(empty.health,30,'empty magic reserves cannot heal for free');
++assert.equal(bill.spent,0);
++const pair=[{health:20,maxHealth:85},{health:40,maxHealth:85}];
++bill=healing.restoreGroup(pair,2,1);
++assert.equal(pair[0].health,27.5);
++assert.equal(pair[1].health,47.5,'two resting witches share scarce magic equally');
++assert.equal(bill.magic,0);
++assert(Math.abs(bill.spent-1)<1e-9);
++const almostFull={health:84,maxHealth:85};
++bill=healing.restoreGroup([almostFull],2,5);
++assert.equal(almostFull.health,85,'never overheal');
++assert(Math.abs(bill.spent-1/15)<1e-9,'charge only for actual HP restored');
++bill=healing.restoreGroup([almostFull],2,bill.magic);
++assert.equal(bill.spent,0,'full health costs nothing');
++assert.throws(()=>healing.restoreGroup([wounded],-1,1),/Invalid healing time/);
++assert.throws(()=>healing.restoreGroup([wounded],1,-1),/Invalid magic budget/);
++const game=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
++assert(game.includes('magic=stoneHealing.restoreGroup(resting,dt,magic).magic'),
++  'the actual circle must debit the shared in-game magic reserve');
+ assert.equal(healing.recovered({health:80,maxHealth:85}),false);
+ assert.equal(healing.recovered({health:82,maxHealth:85}),true);
+ assert.equal(healing.needsRest({health:70,maxHealth:85}),false);
+-console.log('PASS standing stone circle: resting threshold, safe selection, radius, bounded healing');
++console.log('PASS standing stone circle: safe retreat, low-cost magic healing, proportional sharing, no free healing and health cap');
+diff --git a/scripts/test-rts-souls.mjs b/scripts/test-rts-souls.mjs
+index 9de9e7b..c9bcae5 100644
+--- a/scripts/test-rts-souls.mjs
++++ b/scripts/test-rts-souls.mjs
+@@ -1,4 +1,5 @@
+ import assert from 'node:assert/strict';
++import {readFileSync} from 'node:fs';
+ import souls from '../docs/rts-souls.js';
+ const buildings=[{type:'witch-house',clanId:'witch',level:1,destroyed:false}];
+ assert.equal(souls.canBuildCircle(buildings),false,'House must be upgraded first');
+@@ -14,6 +15,17 @@ assert.equal(souls.canTrainMage(buildings),false);
+ assert(souls.CORPSE_SECONDS>=90,'Corpses remain for a long time');
+ assert.equal(souls.magicAfterSoul(0),20);
+ assert.equal(souls.magicAfterSoul(95),souls.MAX_MAGIC);
++assert.equal(souls.PASSIVE_MAGIC_PER_30_SECONDS,5);
++assert.equal(souls.magicAfterTime(0,30),5);
++assert.equal(souls.magicAfterTime(5,30),10);
++assert.equal(souls.magicAfterTime(10,60),20);
++assert.equal(souls.magicAfterTime(99,30),souls.MAX_MAGIC);
++assert.equal(souls.magicAfterTime(0,0),0);
++assert.throws(()=>souls.magicAfterTime(0,-1),/Invalid magic regeneration time/);
++assert.throws(()=>souls.magicAfterTime(0,Number.NaN),/Invalid magic regeneration time/);
++const game=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
++assert(game.includes('magic=soulRules.magicAfterTime(magic,dt)'),
++  'each active game tick must regenerate magic independent of spirit siphoning');
+ const corpse=(x,z,extra={})=>({x,z,dead:true,deadTime:100,...extra});
+ const visible=[corpse(2,2),corpse(1,1,{soulClaimed:true}),
+   corpse(3,3,{soulReservedBy:7}),corpse(4,4,{deadTime:1}),corpse(12,0)];
+@@ -21,4 +33,4 @@ assert.equal(souls.nearestSoul({x:0,z:0},visible),visible[0]);
+ assert.equal(souls.nearestSoul({x:0,z:0},visible,()=>false),null);
+ visible[0].soulClaimed=true;
+ assert.equal(souls.nearestSoul({x:0,z:0},visible),null,'Souls cannot be collected twice');
+-console.log('PASS magical progression, persistent corpses, exclusive souls and capped magic');
++console.log('PASS magical progression, souls +20, passive magic +5/30s, persistent corpses and cap');
