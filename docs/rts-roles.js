@@ -17,7 +17,7 @@
     orc:Object.freeze({
       worker:Object.freeze({name:'Ouvrier',icon:'⛏️',cost:65,health:80,speed:2.9,damage:0,range:0,sight:0,garment:0x978251}),
       melee:Object.freeze({name:'Guerrier',icon:'🗡️',cost:100,health:110,speed:2.75,damage:14,range:2.1,sight:9,garment:0xb45e47}),
-      ranged:Object.freeze({name:'Lanceur',icon:'🎯',cost:130,health:78,speed:2.7,damage:10,range:6.2,sight:10,garment:0x668d65})
+      ranged:Object.freeze({name:'Lanceur-mage',icon:'🪄',cost:130,health:78,speed:2.7,damage:10,range:6.2,sight:10,garment:0x668d65})
     })
   });
   function profile(clan,role){

@@ -69,7 +69,8 @@
    const fighters=own.filter(u=>u.role!=='worker');
    // An enemy base is a strategic target only after a real line-of-sight discovery.
    const enemyBaseKnown=state.enemyBaseKnown===true;
-   const barrack=buildings.find(b=>b.type==='barrack');
+   const barracks=buildings.filter(b=>b.type==='barrack');
+   const barrack=barracks.sort((a,b)=>(a.queue?.length||0)-(b.queue?.length||0))[0];
    // Neutral deposits are handled by miners, never as clan infrastructure.
    const base={x:19,z:18};
    const attackers=enemy.filter(u=>u.role!=='worker'&&
@@ -91,13 +92,15 @@
     if(site)orders.push({type:'build',building:'barrack',x:site.x,z:site.z,reason:'restore_recruitment'});
    }
    const cap=state.unitCap||15;
+   const committed=state.populationCommitted??own.length;
    // Keep a defensive reserve while building an attacking group.
-   if(barrack&&own.length<cap&&queueLength(barrack)<2){
-    const role=workers.length===0?'worker':this.tickCount%3===0?'ranged':'melee';
+   if(barrack&&committed<cap&&queueLength(barrack)<2){
+    const role=workers.length<2?'worker':
+      this.tickCount%3===0&&state.cauldronAvailable!==false?'ranged':'melee';
     const price=role==='worker'?65:role==='ranged'?130:100;
     if(canSpend(price,this.clock<30?100:30))
      orders.push({type:'train',buildingId:barrack.id,role,
-       reason:workers.length===0?'restore_workers':fighters.length<6?'reinforce':'prepare_raid'});
+       reason:workers.length<2?'restore_workers':fighters.length<6?'reinforce':'prepare_raid'});
    }
    // Natural deposits are fixed world resources. The AI may train miners and
    // upgrade an existing mine, but NEVER create or place an additional mine.
@@ -119,6 +122,16 @@
        return(a.level-b.level)||priorities[a.type]-priorities[b.type];
       })[0];
     if(target)orders.push({type:'upgrade',buildingId:target.id,reason:'development'});
+   }
+   // The population ceiling is real: expand living space before recruitment
+   // stalls permanently. Upgrade only when no new building can be placed.
+   // A fresh level-one hut is cheaper and provides more places than upgrading
+   // an existing one. Do not spend the expansion budget on upgrades first.
+   if(committed>=cap-1&&cap<32&&!orders.some(o=>o.type==='build')){
+    const hut=buildings.filter(b=>b.type==='hut'&&b.level<3&&
+      !b.queue.some(q=>q.kind==='upgrade')).sort((a,b)=>a.level-b.level)[0];
+    if(hut&&canSpend(160+hut.level*100,50))
+      orders.unshift({type:'upgrade',buildingId:hut.id,reason:'housing'});
    }
    // Reserve one real fighter to explore unknown terrain. The waypoint comes
    // exclusively from the orcs' own fog grid, not from any enemy location.
@@ -155,8 +168,11 @@
    const build=economic.find(o=>o.type==='build');
    const train=economic.find(o=>o.type==='train');
    const upgrade=economic.find(o=>o.type==='upgrade');
-   const priorityBuild=build?.reason==='restore_recruitment'||build?.reason==='income';
-   const choice=priorityBuild?build:
+   const committed=state.populationCommitted??state.orcs.filter(o=>!o.dead).length;
+   const priorityBuild=build?.reason==='restore_recruitment'||build?.reason==='income'||
+     (build?.building==='hut'&&committed>=(state.unitCap||15)-1);
+   const housing=upgrade?.reason==='housing';
+   const choice=priorityBuild?build:housing?upgrade:
      upgrade&&this.tickCount%5===0?upgrade:
      build&&this.tickCount%3===0?build:
      train||build||upgrade;
