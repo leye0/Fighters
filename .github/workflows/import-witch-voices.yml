@@ -19,13 +19,17 @@ concurrency:
 jobs:
   import:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Import Witch interaction and creation audio
+      - name: Install audio tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Import and normalize licensed Witch acknowledgements
         run: python3 scripts/import-witch-voices.py
 
       - name: Validate category files and licenses
@@ -35,8 +39,10 @@ jobs:
           from pathlib import Path
           root=Path("docs/sounds/witches")
           catalog=json.loads((root/"manifest.json").read_text())
-          assert catalog["counts"]["interaction"]==1
+          assert catalog["counts"]["interaction"]==10
+          assert {s["utterance"] for s in catalog["sounds"] if s["category"]=="interaction"}=={"yes","uhu"}
           assert catalog["counts"]["creation"]==1
+          assert catalog["counts"]["work"]==1
           assert all((root/sound["path"]).is_file() for sound in catalog["sounds"])
           assert (root/"ATTRIBUTION.md").is_file()
           print("Licensed sounds verified:",catalog["counts"])

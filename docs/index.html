@@ -1088,10 +1088,18 @@ function playOrcVoice(category,position){
   void orcSound.play(category,()=>running&&!paused&&visibleToPlayer(x,z));
   return true;
 }
-function playWitchVoice(category,position){
+function playWitchVoice(category,actorOrPosition){
+  const actor=actorOrPosition?.root?actorOrPosition:null;
+  const position=actor?.root.position||actorOrPosition;
   if(!running||paused||!position||!visibleToPlayer(position.x,position.z))return false;
   const {x,z}=position;
-  void witchSound.play(category,()=>running&&!paused&&visibleToPlayer(x,z));
+  const preset=category==='interaction'?actor?.witchVoice:null;
+  const options=preset?{
+    path:preset.path,
+    playbackRate:preset.rate*(.985+Math.random()*.03),
+    detuneCents:preset.cents+(Math.random()-.5)*20
+  }:{};
+  void witchSound.play(category,()=>running&&!paused&&visibleToPlayer(x,z),options);
   return true;
 }
 // A single hammer sound is shared by both clans and capped globally, so an
@@ -1121,7 +1129,7 @@ function acknowledgePlayerOrder(actors){
     return acknowledgeOrcOrder(members);
   const actor=members.find(a=>a.kind==='witch'&&!a.dead&&
     visibleToPlayer(a.root.position.x,a.root.position.z));
-  if(actor)playWitchVoice('interaction',actor.root.position);
+  if(actor)playWitchVoice('interaction',actor);
 }
 let lastOrcAiVoice=-Infinity;
 function acknowledgeOrcAiOrder(actors){
@@ -1594,6 +1602,26 @@ const WITCH_HAIR_COLORS=[
   {name:'green',hex:0x4fa46a}
 ];
 const hairStyleDeck=[],hairColorDeck=[];
+// Fifteen shuffled identities. A witch keeps her recording and voice character
+// across repeated selections and orders, with only tiny per-utterance changes.
+const WITCH_VOICE_PRESETS=Object.freeze([
+  {path:'interaction/Yes_Excited.mp3',rate:1.00,cents:-10},
+  {path:'interaction/Yes_Dignified.mp3',rate:.95,cents:-30},
+  {path:'interaction/Yes_RealReaction.mp3',rate:1.03,cents:15},
+  {path:'interaction/Yes_YepYep.mp3',rate:.98,cents:-20},
+  {path:'interaction/Yes_OhYeah.mp3',rate:1.04,cents:10},
+  {path:'interaction/Yes_Playful.mp3',rate:1.01,cents:30},
+  {path:'interaction/Yes_Clear.mp3',rate:.97,cents:-15},
+  {path:'interaction/Yes_Morena.mp3',rate:1.02,cents:20},
+  {path:'interaction/Uhu_Assured.mp3',rate:.96,cents:-20},
+  {path:'interaction/Uhu_Cartoon.mp3',rate:1.04,cents:25},
+  {path:'interaction/Yes_Excited.mp3',rate:.94,cents:-45},
+  {path:'interaction/Yes_Dignified.mp3',rate:1.05,cents:45},
+  {path:'interaction/Yes_Playful.mp3',rate:.95,cents:-35},
+  {path:'interaction/Uhu_Assured.mp3',rate:1.04,cents:40},
+  {path:'interaction/Uhu_Cartoon.mp3',rate:.96,cents:-35}
+]);
+const witchVoiceDeck=[];
 function shuffledDraw(deck,options){
   if(!deck.length){
     deck.push(...options);
@@ -1853,6 +1881,7 @@ function spawnUnit(kind,x,z,index=0,role='melee'){
   const profile=roles.profile(kind,role);
   const root=new THREE.Group(),visual=cloneSkeleton(source.scene);
   const appearance=kind==='witch'?randomWitchHair():null;
+  const witchVoice=kind==='witch'?shuffledDraw(witchVoiceDeck,WITCH_VOICE_PRESETS):null;
   const outfitInfo=costumeLayers(visual,kind,index,role,appearance);
   const bounds=new THREE.Box3().setFromObject(visual);
   const center=bounds.getCenter(new THREE.Vector3());
@@ -1874,7 +1903,7 @@ function spawnUnit(kind,x,z,index=0,role='melee'){
     orcFoodJob:null,
     healJob:null,healRetry:0,soulJob:null,soulClaimed:false,soulReservedBy:null,
     workTool:null,hammerTool:null,pickTool:null,chopTool:null,
-    weapon:null,selectionRing:marker,outfitInfo
+    weapon:null,selectionRing:marker,outfitInfo,witchVoice
   };
   // A single sword asset is cloned as a lightweight scene node for melee orcs.
   // Workers and ranged units never allocate weapons.
@@ -3229,7 +3258,7 @@ function showBanner(message){
 }
 function startSession(){
   if(!ready||(chosenFaction==='orc'&&!orcVillage))return;
-  hairStyleDeck.length=0;hairColorDeck.length=0;
+  hairStyleDeck.length=0;hairColorDeck.length=0;witchVoiceDeck.length=0;
   clearOrderPings();clearBolts();lastOrcAiVoice=-Infinity;
   for(const effect of soulEffects)disposeSoulEffect(effect);
   soulEffects.length=0;magic=0;soulAssignmentElapsed=0;
@@ -3688,7 +3717,7 @@ function tickSoulHarvester(actor,dt){
   }
   corpse.soulClaimed=true;cancelSoulJob(actor);
   animation(actor,'Idle_Loop');
-  playWitchVoice('interaction',actor.root.position);
+  playWitchVoice('interaction',actor);
   beginSoulEffect(corpse,actor);
   return true;
 }

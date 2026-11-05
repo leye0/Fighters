@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
+import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
 const {Engine}=require('../docs/rts-sound.js');
 
@@ -12,6 +13,7 @@ const manifest={sounds:[
   {category:'short',path:'../../wrong.mp3'},
 ]};
 let currentTime=1000,downloads=0,starts=0,stops=0;
+const startedSources=[];
 class FakeAudioContext{
   state='suspended';
   destination={};
@@ -25,8 +27,10 @@ class FakeAudioContext{
   }
   createGain(){return {gain:{value:1},connect(){},disconnect(){}};}
   createBufferSource(){
-    return {buffer:null,onended:null,playbackRate:{value:1},connect(){},disconnect(){},
-      start(){starts++;},stop(){stops++;this.onended?.();}};
+    return {buffer:null,onended:null,playbackRate:{value:1},detune:{value:0},
+      connect(){},disconnect(){},
+      start(){starts++;startedSources.push(this);},
+      stop(){stops++;this.onended?.();}};
   }
 }
 const fetcher=async url=>{
@@ -109,9 +113,11 @@ assert.equal(deferred.snapshot().played,0);
 assert.equal(deferred.snapshot().active,0);
 
 // Witch catalog intentionally has no destruction sound until the licensed
-// Pixabay original is supplied. The two Freesound voices must still work.
+// Pixabay original is supplied. Pinned voice recordings remain fog-safe.
 const witchManifest={sounds:[
   {category:'interaction',path:'interaction/Witch_Interaction.mp3'},
+  {category:'interaction',path:'interaction/Yes_Excited.mp3'},
+  {category:'interaction',path:'interaction/Uhu_Assured.mp3'},
   {category:'creation',path:'creation/Witch_Creation.mp3'},
   {category:'work',path:'work/Hammer.mp3'},
   {category:'destruction',path:'../unlicensed-preview.mp3'},
@@ -127,12 +133,27 @@ const witch=new Engine({
 });
 assert.equal(witch.unlock(),true);
 await witch.load();
-assert.deepEqual(witch.snapshot().available,{interaction:1,creation:1,destruction:0,work:1},
+assert.deepEqual(witch.snapshot().available,{interaction:3,creation:1,destruction:0,work:1},
   'licensed Witch categories load, unsafe preview is not accepted');
 assert.equal(await witch.play('interaction',()=>false),false,
   'an unseen Witch must be inaudible');
 assert.equal(await witch.play('interaction',()=>true),true,
-  'Witch selection and orders play the whisper');
+  'Witch selection and orders play a valid acknowledgement');
+witch.reset();
+assert.equal(await witch.play('interaction',()=>true,{
+  path:'interaction/Uhu_Assured.mp3',playbackRate:.96,detuneCents:-25
+}),true,'a Witch keeps her own uh-huh recording');
+assert.equal([...witch.lastSound.values()].at(-1),'interaction/Uhu_Assured.mp3');
+assert.equal(startedSources.at(-1).playbackRate.value,.96);
+assert.equal(startedSources.at(-1).detune.value,-25);
+witch.reset();
+assert.equal(await witch.play('interaction',()=>true,{
+  path:'../../evil.mp3',playbackRate:99,detuneCents:1000
+}),true,'a non-manifest request safely falls back to the catalog');
+assert.notEqual([...witch.lastSound.values()].at(-1),'../../evil.mp3');
+assert.equal(startedSources.at(-1).playbackRate.value,1.12);
+assert.equal(startedSources.at(-1).detune.value,100);
+witch.reset();
 assert.equal(await witch.play('creation',()=>true),true,
   'Witch training plays the laugh');
 assert.equal(await witch.play('work',()=>true),true,
@@ -151,5 +172,23 @@ assert.equal(await witch.play('interaction',()=>true),true,
   'voice must become playable again after browser suspension');
 witch.reset();
 assert.equal(witch.snapshot().active,0);
+
+// All fifteen shuffled Witch identities must refer to a source slated for
+// import. A source can have two nuanced persona variants, never a new random
+// recording on each selection.
+const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const importer=readFileSync(new URL('./import-witch-voices.py',import.meta.url),'utf8');
+const presetBlock=html.match(/const WITCH_VOICE_PRESETS=Object.freeze\(\[([\s\S]*?)\]\);/)?.[1];
+assert(presetBlock,'witch voice persona catalog must exist');
+const presets=[...presetBlock.matchAll(/path:'interaction\/([A-Za-z][A-Za-z0-9_-]*)\.mp3',rate:([\d.]+),cents:([-\d]+)/g)];
+assert.equal(presets.length,15,'exactly fifteen voice identities');
+assert.equal(new Set(presets.map(p=>p[1])).size,10,'ten distinct source recordings');
+for(const [,name,rate,cents] of presets){
+  assert(importer.includes(`("${name}",`),`missing licensed source for ${name}`);
+  assert(+rate>=.94&&+rate<=1.05,'persona speed must be subtle');
+  assert(Math.abs(+cents)<=45,'persona pitch must be subtle');
+}
+assert(html.includes('shuffledDraw(witchVoiceDeck,WITCH_VOICE_PRESETS)'),
+  'witch voice is assigned once when she spawns');
 
 console.log('PASS RTS sound engines: Orc random pools and fog; Witch categories, iOS resume, visibility, pause, reset and bounded memory.');

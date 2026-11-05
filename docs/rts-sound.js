@@ -209,7 +209,9 @@
         return false;
       }
     }
-    async play(category,canHear=()=>true){
+    // A unit may request its own licensed recording. The path must already be
+    // in the manifest: never let a caller construct an arbitrary fetch URL.
+    async play(category,canHear=()=>true,options={}){
       if(!this.categories.includes(category))return false;
       if(!this.canPlay(canHear)){
         if(typeof canHear==='function'){
@@ -226,8 +228,11 @@
       if(this.active.size>=this.maxActive)return false;
       const paths=groups[category];
       if(!paths?.length)return false;
+      const pinned=typeof options.path==='string'&&paths.includes(options.path)?
+        options.path:null;
       const previous=this.lastSound.get(category);
-      const available=paths.length>1?paths.filter(path=>path!==previous):paths;
+      const available=pinned?[pinned]:paths.length>1?
+        paths.filter(path=>path!==previous):paths;
       const path=available[Math.min(available.length-1,
         Math.floor(Math.max(0,this.random())*available.length))];
       if(!path)return false;
@@ -239,6 +244,10 @@
       const source=this.context.createBufferSource();
       const gain=this.context.createGain();
       source.buffer=buffer;gain.gain.value=MIX[category].gain;
+      if(Number.isFinite(options.playbackRate))
+        source.playbackRate.value=Math.max(.88,Math.min(1.12,options.playbackRate));
+      if(source.detune&&Number.isFinite(options.detuneCents))
+        source.detune.value=Math.max(-100,Math.min(100,options.detuneCents));
       source.connect(gain);gain.connect(this.context.destination);
       const voice={source,gain};
       this.active.add(voice);
