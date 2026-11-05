@@ -1,0 +1,79 @@
+name: Generate and install all Witch and Orc role voices
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/install-voice-catalog.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: fighters-production-voices
+  cancel-in-progress: false
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare audio tools
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Download user-approved Witch catalog and battle shouts
+        uses: actions/download-artifact@v4
+        with:
+          name: fighters-witch-voice-catalog-shouts
+          run-id: 42073177154
+          github-token: ${{ github.token }}
+          path: approved-witches
+      - name: Verify existing sound routing before replacing assets
+        run: node scripts/test-rts-sound.mjs
+      - name: Produce 12 Witch battle cries and 52 Orc role lines
+        env:
+          REPLICATE_API_KEY: ${{ secrets.REPLICATE_API_KEY }}
+        run: |
+          python3 scripts/install_voice_catalog.py --approved-witches approved-witches
+      - name: Wire the pre-generated catalog into the game atomically
+        run: git apply scripts/voice-integration.patch
+      - name: Validate all voice manifests, paths, phrases and sound engine
+        run: |
+          node scripts/test-rts-sound.mjs
+          node scripts/test-voice-catalog.mjs
+          node --check docs/rts-sound.js
+      - name: Keep a review artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fighters-final-production-voices
+          path: generated-voices/final/
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Commit the approved, fully validated voice library
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A docs/sounds/witches docs/sounds/orcs docs/index.html docs/rts-sound.js scripts/test-rts-sound.mjs
+          git diff --cached --check
+          git diff --cached --quiet && { echo 'Expected voice assets to change'; exit 1; }
+          git commit -m 'Install 104 role-based Witch and Orc voices'
+          git push origin HEAD:main
+      - name: Deploy the new voices to the playable GitHub Pages game
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref main

@@ -1,0 +1,307 @@
+diff --git a/docs/index.html b/docs/index.html
+index 71fbd8d..b178b4e 100644
+--- a/docs/index.html
++++ b/docs/index.html
+@@ -956,9 +956,11 @@ let qaPassiveKind=null;
+ const fogOfWar=new window.FightersFog.FogGrid({
+   halfSize:arena.worldHalf,cellSize:.5,radius:7.5,fade:1.25
+ });
+-const orcSound=new window.FightersSound.Engine();
++const orcSound=new window.FightersSound.Engine({
++  categories:['interaction','creation','attack','loud','work']
++});
+ const witchSound=new window.FightersSound.Engine({
+-  categories:['interaction','creation','destruction','work'],
++  categories:['interaction','creation','attack','destruction','work'],
+   allowEmptyCategories:['destruction'],
+   manifestUrl:'./sounds/witches/manifest.json',
+   rootUrl:'./sounds/witches/'
+@@ -1083,11 +1085,18 @@ function visibleToPlayer(x,z){
+ }
+ // Units in explored terrain remain visible and audible; units in the
+ // never-discovered black territory remain hidden and silent.
+-function playOrcVoice(category,position){
++const ROLE_VOICE=Object.freeze({
++  witch:Object.freeze({worker:'worker',melee:'guard',ranged:'arcane'}),
++  orc:Object.freeze({worker:'worker',melee:'warrior',ranged:'shaman'})
++});
++function playOrcVoice(category,actorOrPosition){
++  const actor=actorOrPosition?.root?actorOrPosition:null;
++  const position=actor?.root.position||actorOrPosition;
+   if(!running||paused||!position||!visibleToPlayer(position.x,position.z))return false;
+   const {x,z}=position;
+   // The callback is evaluated again after asynchronous MP3 fetch/decode.
+-  void orcSound.play(category,()=>running&&!paused&&visibleToPlayer(x,z));
++  void orcSound.play(category,()=>running&&!paused&&visibleToPlayer(x,z),
++    actor?{voice:ROLE_VOICE.orc[actor.role]}:{});
+   return true;
+ }
+ function playWitchVoice(category,actorOrPosition){
+@@ -1095,12 +1104,7 @@ function playWitchVoice(category,actorOrPosition){
+   const position=actor?.root.position||actorOrPosition;
+   if(!running||paused||!position||!visibleToPlayer(position.x,position.z))return false;
+   const {x,z}=position;
+-  const preset=category==='interaction'?actor?.witchVoice:null;
+-  const options=preset?{
+-    path:preset.path,
+-    playbackRate:preset.rate*(.985+Math.random()*.03),
+-    detuneCents:preset.cents+(Math.random()-.5)*20
+-  }:{};
++  const options=actor?{voice:ROLE_VOICE.witch[actor.role]}:{};
+   void witchSound.play(category,()=>running&&!paused&&visibleToPlayer(x,z),options);
+   return true;
+ }
+@@ -1123,15 +1127,20 @@ function acknowledgeOrcOrder(actors){
+   // A single voice for a whole squad, never one voice per unit.
+   const actor=[...actors].find(a=>a.kind==='orc'&&!a.dead&&
+     visibleToPlayer(a.root.position.x,a.root.position.z));
+-  if(actor)playOrcVoice('short',actor.root.position);
++  if(actor)playOrcVoice('interaction',actor);
+ }
+-function acknowledgePlayerOrder(actors){
++function acknowledgePlayerOrder(actors,category='interaction'){
+   const members=[...actors];
+-  if(members.some(actor=>actor.kind==='orc'&&!actor.dead))
+-    return acknowledgeOrcOrder(members);
++  if(members.some(actor=>actor.kind==='orc'&&!actor.dead)){
++    if(category==='interaction')return acknowledgeOrcOrder(members);
++    const actor=members.find(a=>a.kind==='orc'&&!a.dead&&
++      visibleToPlayer(a.root.position.x,a.root.position.z));
++    if(actor)playOrcVoice(category,actor);
++    return;
++  }
+   const actor=members.find(a=>a.kind==='witch'&&!a.dead&&
+     visibleToPlayer(a.root.position.x,a.root.position.z));
+-  if(actor)playWitchVoice('interaction',actor);
++  if(actor)playWitchVoice(category,actor);
+ }
+ let lastOrcAiVoice=-Infinity;
+ function acknowledgeOrcAiOrder(actors){
+@@ -1141,7 +1150,7 @@ function acknowledgeOrcAiOrder(actors){
+   if(now-lastOrcAiVoice<3500)return;
+   const actor=[...actors].find(a=>a.kind==='orc'&&!a.dead&&
+     visibleToPlayer(a.root.position.x,a.root.position.z));
+-  if(actor&&playOrcVoice('short',actor.root.position))lastOrcAiVoice=now;
++  if(actor&&playOrcVoice('interaction',actor))lastOrcAiVoice=now;
+ }
+ 
+ // Warcraft II's always-visible minimap. One 112×112 CPU buffer is reused;
+@@ -1605,26 +1614,6 @@ const WITCH_HAIR_COLORS=[
+   {name:'green',hex:0x4fa46a}
+ ];
+ const hairStyleDeck=[],hairColorDeck=[];
+-// Fifteen shuffled identities. A witch keeps her recording and voice character
+-// across repeated selections and orders, with only tiny per-utterance changes.
+-const WITCH_VOICE_PRESETS=Object.freeze([
+-  {path:'interaction/Yes_Excited.mp3',rate:1.00,cents:-10},
+-  {path:'interaction/Yes_Dignified.mp3',rate:.95,cents:-30},
+-  {path:'interaction/Yes_RealReaction.mp3',rate:1.03,cents:15},
+-  {path:'interaction/Yes_YepYep.mp3',rate:.98,cents:-20},
+-  {path:'interaction/Yes_OhYeah.mp3',rate:1.04,cents:10},
+-  {path:'interaction/Yes_Playful.mp3',rate:1.01,cents:30},
+-  {path:'interaction/Yes_Clear.mp3',rate:.97,cents:-15},
+-  {path:'interaction/Yes_Morena.mp3',rate:1.02,cents:20},
+-  {path:'interaction/Uhu_Assured.mp3',rate:.96,cents:-20},
+-  {path:'interaction/Uhu_Cartoon.mp3',rate:1.04,cents:25},
+-  {path:'interaction/Yes_Excited.mp3',rate:.94,cents:-45},
+-  {path:'interaction/Yes_Dignified.mp3',rate:1.05,cents:45},
+-  {path:'interaction/Yes_Playful.mp3',rate:.95,cents:-35},
+-  {path:'interaction/Uhu_Assured.mp3',rate:1.04,cents:40},
+-  {path:'interaction/Uhu_Cartoon.mp3',rate:.96,cents:-35}
+-]);
+-const witchVoiceDeck=[];
+ function shuffledDraw(deck,options){
+   if(!deck.length){
+     deck.push(...options);
+@@ -1884,7 +1873,6 @@ function spawnUnit(kind,x,z,index=0,role='melee'){
+   const profile=roles.profile(kind,role);
+   const root=new THREE.Group(),visual=cloneSkeleton(source.scene);
+   const appearance=kind==='witch'?randomWitchHair():null;
+-  const witchVoice=kind==='witch'?shuffledDraw(witchVoiceDeck,WITCH_VOICE_PRESETS):null;
+   const outfitInfo=costumeLayers(visual,kind,index,role,appearance);
+   const bounds=new THREE.Box3().setFromObject(visual);
+   const center=bounds.getCenter(new THREE.Vector3());
+@@ -1910,7 +1898,7 @@ function spawnUnit(kind,x,z,index=0,role='melee'){
+     orcFoodJob:null,
+     healJob:null,healRetry:0,soulJob:null,soulClaimed:false,soulReservedBy:null,
+     workTool:null,hammerTool:null,pickTool:null,chopTool:null,
+-    weapon:null,selectionRing:marker,outfitInfo,witchVoice
++    weapon:null,selectionRing:marker,outfitInfo
+   };
+   // A single sword asset is cloned as a lightweight scene node for melee orcs.
+   // Workers and ranged units never allocate weapons.
+@@ -2250,8 +2238,8 @@ function finishTraining(building,kind,role='melee'){
+   if(!position){showBanner('SORTIE BLOQUÉE');return;}
+   const actor=spawnUnit(kind,position.x,position.z,units.filter(u=>u.kind===kind).length,role);
+   if(building.rally)actor.destination=navigatorRTS.findSafeGoal(building.rally);
+-  if(kind==='orc')playOrcVoice('long',actor.root.position);
+-  else if(kind==='witch')playWitchVoice('creation',actor.root.position);
++  if(kind==='orc')playOrcVoice('creation',actor);
++  else if(kind==='witch')playWitchVoice('creation',actor);
+   showBanner(role==='melee'?(kind==='witch'?'SORCIÈRE FORMÉE':'ORC FORMÉ'):
+     roles.profile(kind,role).name.toUpperCase()+' FORMÉ(E)');
+ }
+@@ -3417,7 +3405,7 @@ function showBanner(message){
+ }
+ function startSession(){
+   if(!ready||(chosenFaction==='orc'&&!orcVillage))return;
+-  hairStyleDeck.length=0;hairColorDeck.length=0;witchVoiceDeck.length=0;
++  hairStyleDeck.length=0;hairColorDeck.length=0;
+   clearOrderPings();clearBolts();lastOrcAiVoice=-Infinity;
+   for(const effect of soulEffects)disposeSoulEffect(effect);
+   soulEffects.length=0;magic=0;soulAssignmentElapsed=0;
+@@ -3590,7 +3578,9 @@ function orderAttack(actors,target){
+     actor.approachCache=null;
+     issued++;
+   }
+-  if(issued){attackMode=false;pingAttackTarget(target);acknowledgePlayerOrder(actors);refreshHUD();}
++  if(issued){attackMode=false;pingAttackTarget(target);
++    acknowledgePlayerOrder(actors.filter(actor=>actor.attackOrder===target),'attack');
++    refreshHUD();}
+   return issued>0;
+ }
+ function removeRallyMarker(b){
+diff --git a/docs/rts-sound.js b/docs/rts-sound.js
+index 1209cc3..b5a43af 100644
+--- a/docs/rts-sound.js
++++ b/docs/rts-sound.js
+@@ -19,6 +19,7 @@
+     work:{gain:.22,cooldown:450},
+     interaction:{gain:.34,cooldown:450},
+     creation:{gain:.40,cooldown:1050},
++    attack:{gain:.48,cooldown:600},
+     destruction:{gain:.38,cooldown:320}
+   };
+   const VALID_PATH=/^[a-z]+\/[A-Za-z][A-Za-z0-9_-]*\.mp3$/;
+@@ -40,6 +41,7 @@
+       this.maxActive=maxActive;this.maxCached=maxCached;this.maxPending=maxPending;
+       this.context=null;this.loading=null;this.hammerBuffer=null;
+       this.catalog=Object.fromEntries(this.categories.map(type=>[type,[]]));
++      this.voices=Object.fromEntries(this.categories.map(type=>[type,Object.create(null)]));
+       this.cache=new Map();this.pending=new Map();this.controllers=new Set();
+       this.active=new Set();this.lastSound=new Map();this.lastTime=new Map();
+       this.paused=false;this.generation=0;this.lastError=null;
+@@ -53,16 +55,21 @@
+           return response.json();
+         }).then(data=>{
+           const groups=Object.fromEntries(this.categories.map(type=>[type,[]]));
++          const voices=Object.fromEntries(this.categories.map(type=>[type,Object.create(null)]));
+           for(const sound of data.sounds||[]){
+             if(!this.categories.includes(sound.category)||
+               typeof sound.path!=='string'||!VALID_PATH.test(sound.path)||
+               !sound.path.startsWith(sound.category+'/'))continue;
+             groups[sound.category].push(sound.path);
++            if(typeof sound.voice==='string'&&/^[a-z]+$/.test(sound.voice)){
++              (voices[sound.category][sound.voice]??=[]).push(sound.path);
++            }
+           }
+           if(this.categories.some(type=>groups[type].length===0&&
+             !this.allowEmptyCategories.has(type)))
+             throw Error('Sound categories are incomplete');
+           this.catalog=groups;
++          this.voices=voices;
+           return groups;
+         }).catch(error=>{
+           this.stats.loadErrors++;this.lastError=String(error);
+@@ -226,11 +233,15 @@
+       const groups=await this.load();
+       if(!groups||!this.canPlay(canHear))return false;
+       if(this.active.size>=this.maxActive)return false;
+-      const paths=groups[category];
++      // A character's role is resolved against the verified manifest, never
++      // interpolated into a URL. Missing roles are silent, not another voice.
++      const voiceRole=typeof options.voice==='string'?options.voice:null;
++      const paths=voiceRole?this.voices[category]?.[voiceRole]:groups[category];
+       if(!paths?.length)return false;
+       const pinned=typeof options.path==='string'&&paths.includes(options.path)?
+         options.path:null;
+-      const previous=this.lastSound.get(category);
++      const historyKey=voiceRole?category+':'+voiceRole:category;
++      const previous=this.lastSound.get(historyKey);
+       const available=pinned?[pinned]:paths.length>1?
+         paths.filter(path=>path!==previous):paths;
+       const path=available[Math.min(available.length-1,
+@@ -257,7 +268,7 @@
+       };
+       try{
+         source.start();
+-        this.lastSound.set(category,path);
++        this.lastSound.set(historyKey,path);
+         this.lastTime.set(category,this.now());
+         this.stats.played++;
+         return true;
+diff --git a/scripts/test-rts-sound.mjs b/scripts/test-rts-sound.mjs
+index 212e457..e8215c2 100644
+--- a/scripts/test-rts-sound.mjs
++++ b/scripts/test-rts-sound.mjs
+@@ -173,22 +173,54 @@ assert.equal(await witch.play('interaction',()=>true),true,
+ witch.reset();
+ assert.equal(witch.snapshot().active,0);
+ 
+-// All fifteen shuffled Witch identities must refer to a source slated for
+-// import. A source can have two nuanced persona variants, never a new random
+-// recording on each selection.
++// The game uses one stable timbre per role; events vary within that role.
++// Attack orders must use the battle-cry pool, never the quiet acknowledgement.
+ const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+-const importer=readFileSync(new URL('./import-witch-voices.py',import.meta.url),'utf8');
+-const presetBlock=html.match(/const WITCH_VOICE_PRESETS=Object.freeze\(\[([\s\S]*?)\]\);/)?.[1];
+-assert(presetBlock,'witch voice persona catalog must exist');
+-const presets=[...presetBlock.matchAll(/path:'interaction\/([A-Za-z][A-Za-z0-9_-]*)\.mp3',rate:([\d.]+),cents:([-\d]+)/g)];
+-assert.equal(presets.length,15,'exactly fifteen voice identities');
+-assert.equal(new Set(presets.map(p=>p[1])).size,10,'ten distinct source recordings');
+-for(const [,name,rate,cents] of presets){
+-  assert(importer.includes(`("${name}",`),`missing licensed source for ${name}`);
+-  assert(+rate>=.94&&+rate<=1.05,'persona speed must be subtle');
+-  assert(Math.abs(+cents)<=45,'persona pitch must be subtle');
++assert(html.includes("categories:['interaction','creation','attack','loud','work']"),
++  'Orc battle cries are loaded alongside the death-grunt effects');
++assert(html.includes("categories:['interaction','creation','attack','destruction','work']"),
++  'Witch battle cries are loaded');
++assert(html.includes("acknowledgePlayerOrder(actors.filter(actor=>actor.attackOrder===target),'attack')"),
++  'attack commands must trigger forceful speech');
++assert(!html.includes('WITCH_VOICE_PRESETS'),
++  'unpredictable old Freesound Witch acknowledgements are retired');
++for(const [faction,roles] of Object.entries({
++  witch:['worker','guard','arcane'],orc:['worker','warrior','shaman']
++})){
++  for(const role of roles)assert(html.includes(`${role}:'${role}'`)||
++    html.includes(`:'${role}'`),`missing ${faction} voice ${role}`);
+ }
+-assert(html.includes('shuffledDraw(witchVoiceDeck,WITCH_VOICE_PRESETS)'),
+-  'witch voice is assigned once when she spawns');
+ 
+-console.log('PASS RTS sound engines: Orc random pools and fog; Witch categories, iOS resume, visibility, pause, reset and bounded memory.');
++const voices={sounds:[
++  {category:'interaction',path:'interaction/worker_01.mp3',voice:'worker'},
++  {category:'interaction',path:'interaction/worker_02.mp3',voice:'worker'},
++  {category:'interaction',path:'interaction/guard_01.mp3',voice:'guard'},
++  {category:'attack',path:'attack/worker_01.mp3',voice:'worker'},
++  {category:'attack',path:'attack/guard_01.mp3',voice:'guard'},
++]};
++let time=50000;
++const roleEngine=new Engine({categories:['interaction','attack'],
++  contextFactory:()=>new FakeAudioContext(),now:()=>time,random:()=>0,
++  fetcher:async url=>url.endsWith('manifest.json')?
++    {ok:true,json:async()=>voices}:
++    {ok:true,arrayBuffer:async()=>new ArrayBuffer(80)}
++});
++roleEngine.unlock();await roleEngine.load();
++assert.equal(await roleEngine.play('interaction',()=>true,{voice:'guard'}),true);
++assert.equal(roleEngine.lastSound.get('interaction:guard'),'interaction/guard_01.mp3');
++time+=500;
++assert.equal(await roleEngine.play('interaction',()=>true,{voice:'worker'}),true);
++assert.equal(roleEngine.lastSound.get('interaction:worker'),'interaction/worker_01.mp3');
++time+=500;
++assert.equal(await roleEngine.play('interaction',()=>true,{voice:'worker'}),true);
++assert.equal(roleEngine.lastSound.get('interaction:worker'),'interaction/worker_02.mp3',
++  'one role rotates its four phrases without repeating the immediately previous one');
++time+=500;
++assert.equal(await roleEngine.play('attack',()=>true,{voice:'guard'}),true);
++assert.equal(roleEngine.lastSound.get('attack:guard'),'attack/guard_01.mp3');
++time+=700;
++assert.equal(await roleEngine.play('attack',()=>true,{voice:'elder'}),false,
++  'unknown voice must stay silent rather than playing another role');
++roleEngine.reset();
++
++console.log('PASS RTS sound engines: role-stable Orc/Witch creation, selection and attack; fog, iOS resume, pause, reset and bounded memory.');
