@@ -1623,8 +1623,10 @@ function costumeLayers(visual,kind,index,role,appearance=null){
     const skin=orcAppearance.SKIN_COLORS[index%orcAppearance.SKIN_COLORS.length];
     const originals=Array.isArray(body.material)?body.material:[body.material];
     const materials=originals.map(mat=>sharedRoleMaterial(mat,'orc-skin-'+skin,m=>{
-      m.color?.setHex(skin);m.emissive?.setHex(0x133d04);
-      m.emissiveIntensity=.55;m.roughness=.91;
+      // The original face texture is dark. A little same-hue emission keeps
+      // the green vivid at RTS distance without losing the facial details.
+      m.color?.setHex(skin);m.emissive?.setHex(skin);
+      m.emissiveIntensity=.4;m.roughness=.91;
     }));
     body.material=Array.isArray(body.material)?materials:materials[0];
   }
@@ -5189,7 +5191,8 @@ window.__fightersQA={
     const skin=Array.isArray(body?.material)?body.material[0]:body?.material;
     const socket=actor.weapon?.socket||actor.workTool?.parent;
     return {role:actor.role,skinColor:skin?.color?.getHex(),
-      glow:skin?.emissive?.getHex(),bones:body?.skeleton.bones.length,
+      glow:skin?.emissive?.getHex(),glowIntensity:skin?.emissiveIntensity,
+      bones:body?.skeleton.bones.length,
       garmentMeshes:garments.length,
       bulkyMeshes:garments.filter(m=>m.geometry.userData.orcBulky).length,
       changedVertices:garments.reduce((n,m)=>n+(m.geometry.userData.orcChangedVertices||0),0),
