@@ -106,7 +106,7 @@ async function run(){
  await call('Input.dispatchMouseEvent',{type:'mouseReleased',x:startRect.x,y:startRect.y,button:'left',clickCount:1});
  await until("window.__fightersQA.witchSound().contextState==='running'",'user-unlocked Witch AudioContext',10000);
  await until("window.__fightersQA.witchSound().available.interaction>0",'Witch MP3 manifest',10000);
- await until("window.__fightersQA.sound().available.short>0",'Orc MP3 manifest',10000);
+ await until("window.__fightersQA.sound().available.interaction>0&&window.__fightersQA.sound().available.attack>0",'Orc role voice catalog',10000);
  await evaluate("window.__fightersQA.selectUnit('witch',0)");
  // On cold SwiftShader runs, the first MP3 decode can arrive after the
  // engine's 1.8s freshness window. Reissue the real selection, as for Orcs.
