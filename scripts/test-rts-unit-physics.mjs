@@ -49,6 +49,24 @@ assert.equal(stuck.navWatch.stalls,0);
 assert.equal(watchMovement(stuck,stuck.root.position,{x:-5,z:0},1/60),0,
  'A new waypoint must not inherit an older blocked command');
 
+// Repeated replans and a moving enemy used to reset the timer every time;
+// a character standing still could therefore walk in place indefinitely.
+const chasing=unit(78,0,0);
+for(let stall=1;stall<=3;stall++){
+ let observed=0;
+ for(let frame=0;frame<120;frame++){
+  const movingTarget={x:5+frame*.025,z:Math.sin(frame*.08)*2};
+  const result=watchMovement(chasing,chasing.root.position,movingTarget,1/60);
+  observed=Math.max(observed,result);
+ }
+ assert.equal(observed,stall,
+  'Moving waypoints must not hide repeated stalls on stationary units');
+}
+chasing.navWatch=null;
+assert.equal(watchMovement(chasing,chasing.root.position,{x:10,z:0},1/60),0,
+ 'An explicit new command must restart the movement watchdog');
+assert.equal(chasing.navWatch.stalls,0);
+
 const pressed=unit(99,0,0),crowd=[pressed,...Array.from({length:4},(_,i)=>
  unit(100+i,.85,i*.28-.42))];
 pressed.unstickSeconds=2;

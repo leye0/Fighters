@@ -49,17 +49,21 @@
  // Watch actual displacement over time, not the fact that a walk animation
  // was requested. An agent can oscillate beside a wall or be pushed back by
  // separation on every frame while step() still returns a nonzero movement.
- // Return the number of consecutive stalled windows; a changed waypoint or
- // meaningful movement immediately restores the normal steering behaviour.
+ // Return the number of consecutive stalled windows. Replanning a path or
+ // chasing a moving target must not erase evidence of a stationary unit;
+ // actual displacement (or an explicit order resetting navWatch) does.
  function watchMovement(agent,position,waypoint,dt){
   let watch=agent.navWatch;
   const gap=distance(position,waypoint);
-  if(!watch||distance(watch.waypoint,waypoint)>.55){
+  if(!watch){
    agent.navWatch={waypoint:{...waypoint},origin:{...position},gap,
     elapsed:0,stalls:0};
    return 0;
   }
-  if(distance(position,watch.origin)>.48||gap<watch.gap-.22){
+  if(distance(watch.waypoint,waypoint)>.55){
+   watch.waypoint={...waypoint};watch.gap=gap;
+  }
+  if(distance(position,watch.origin)>.48){
    watch.origin={...position};watch.gap=gap;watch.elapsed=0;watch.stalls=0;
    return 0;
   }
