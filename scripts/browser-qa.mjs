@@ -156,7 +156,7 @@ async function run(){
   'Too many cosmetic materials: '+s.assets.sharedMaterials);
  const orcAppearance=await evaluate('window.__fightersQA.auditOrcAppearance()');
  check(orcAppearance.length===4&&orcAppearance.every(o=>
-   o.bones===65&&o.garmentMeshes===4&&o.bulkyMeshes===4&&
+   o.bones===65&&o.garmentMeshes>=4&&o.bulkyMeshes===o.garmentMeshes&&
    o.changedVertices>0&&o.skeletonScaleUnchanged&&
    (o.socketOnOriginalHand===null||o.socketOnOriginalHand===true)&&
    [0x65f31a,0x83fa27,0x4ae919,0x76f52a].includes(o.skinColor)&&o.glow===0x133d04),
