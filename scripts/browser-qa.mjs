@@ -40,6 +40,17 @@ async function evaluate(expression){
  if(result.exceptionDetails)throw Error('Browser error: '+JSON.stringify(result.exceptionDetails));
  return result.result.value;
 }
+async function findWitchSite(type){
+  // Search an actual ring around the mother house. The 8-unit proximity rule
+  // deliberately invalidated the old far-east fixtures; these options cover
+  // all directions while staying close enough for a worker to reach.
+  return evaluate("(()=>{const q=window.__fightersQA;"+
+    "for(const r of [7,8.5,10,11.5,13,14.5])for(let i=0;i<32;i++){"+
+    "const a=i*Math.PI/16,x=Math.round((-23.5+r*Math.cos(a))*2)/2,"+
+    "z=Math.round((-17.5+r*Math.sin(a))*2)/2;"+
+    "if(q.canBuild(x,z,"+JSON.stringify(type)+"))return {x,z};}"+
+    "return null})()");
+}
 async function until(expression,label,timeout=90000){
  const deadline=Date.now()+timeout;
  while(Date.now()<deadline){
@@ -403,9 +414,7 @@ async function run(){
      'Reset must restore every tree and release all log bundle scene nodes');
  }
  console.log('PASS FORESTRY: both clans axe-fell actual CC0 trees to tiny CC0 log bundles; reset clears them.');
- const noWoodSite=await evaluate("(()=>{for(let z=-12;z>=-17;z-=2)"+
-   "for(let x=-8;x>=-16;x-=2)if(window.__fightersQA.canBuild(x,z,'witch-house'))"+
-   "return {x,z};return null})()");
+ const noWoodSite=await findWitchSite('witch-house');
  check(noWoodSite,'Need a legal house site for the wood-cost regression');
  await evaluate("window.__fightersQA.setWood('witch',0)");
  check(!await evaluate('window.__fightersQA.orderBuild("witch-house",'+
@@ -757,8 +766,15 @@ async function run(){
    'Advanced Build submenu did not open');
  await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).find(b=>b.querySelector('.action-name')?.textContent==='Retour')?.click();window.__fightersQA.selectOrcBarrack()");
 
+ // The newer 8-unit settlement rule disallows the original isolated
+ // (8,-10) fixture. Find a real attached site with a usable traversal lane.
+ const hutSite=await evaluate("(()=>{const q=window.__fightersQA;"+
+   "for(let z=10;z<=27;z++)for(let x=9;x<=27;x++){"+
+   "if(q.canBuild(x,z,'hut')&&q.isClear(x-5,z)&&q.isClear(x+5,z))"+
+   "return {x,z,from:x-5,to:x+5};}return null})()");
+ check(hutSite,'No contiguous 8-unit orc hut site with a pathfinding lane');
  check(await evaluate("window.__fightersQA.beginBuild('hut')"),'Hut placement action refused');
- check(await evaluate("!!window.__fightersQA.build('hut',8,-10)"),'Orc hut construction failed');
+ check(await evaluate("!!window.__fightersQA.build('hut',"+hutSite.x+','+hutSite.z+")"),'Orc hut construction failed');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.buildings.every(b=>b.hitbox.shape==='polygon'&&b.hitbox.vertexCount>10),
    'Orc buildings must all use real GLB-projected multi-polygons');
@@ -766,25 +782,31 @@ async function run(){
   'Second hut must be a unique placed building');
  check(s.orcFood.housingCap===16,
    'Second level-one hut must provide six more population slots');
- check(!await evaluate("!!window.__fightersQA.build('hut',8,-10)"),
+ check(!await evaluate("!!window.__fightersQA.build('hut',"+hutSite.x+','+hutSite.z+")"),
   'Colliding building placement must be refused');
- check(!await evaluate('window.__fightersQA.isClear(8,-10)'),
+ check(!await evaluate('window.__fightersQA.isClear('+hutSite.x+','+hutSite.z+')'),
   'Real solid building collider must block its centre');
  const newHut=s.buildings.find(b=>!b.initial);
- check(newHut?.hitbox.minX<8&&newHut.hitbox.maxX>8,'Constructed hut hitbox does not cover mesh');
+ check(newHut?.hitbox.minX<hutSite.x&&newHut.hitbox.maxX>hutSite.x,
+   'Constructed hut hitbox does not cover mesh');
  const house=s.house.hitbox;
  check(!await evaluate('window.__fightersQA.isClear('+((house.minX+house.maxX)/2)+','+
   ((house.minZ+house.maxZ)/2)+')'),'Witch house collider is not solid');
 
  // Original WarConquer-inspired A* must route around our ACTUAL placed hut.
- const planned=await evaluate('window.__fightersQA.route({x:4,z:-10},{x:13,z:-10})');
+ const planned=await evaluate('window.__fightersQA.route({x:'+hutSite.from+',z:'+hutSite.z+
+   '},{x:'+hutSite.to+',z:'+hutSite.z+'})');
  check(planned?.waypoints?.length>=2,'Pathfinding did not detour around the hut');
- await evaluate("window.__fightersQA.moveUnitTo('orc',0,4,-10);window.__fightersQA.selectUnit('orc',0);window.__fightersQA.move(13,-10)");
+ await evaluate("window.__fightersQA.moveUnitTo('orc',0,"+hutSite.from+','+hutSite.z+
+   ");window.__fightersQA.selectUnit('orc',0);window.__fightersQA.move("+
+   hutSite.to+','+hutSite.z+")");
  const travel=await evaluate("window.__fightersQA.auditTravel('orc',0,10)");
  check(travel.blocked===0,'A moving orc crossed a building collider: '+JSON.stringify(travel));
- check(travel.end.x>11,'Orc did not navigate around hut to destination: '+JSON.stringify(travel));
+ check(travel.end.x>hutSite.to-2,
+   'Orc did not navigate around hut to destination: '+JSON.stringify(travel));
 
  // Tap the projected real ground polygon, never the oversized 3D roof AABB.
+ await evaluate('window.__fightersQA.centerCamera('+hutSite.x+','+hutSite.z+')');
  const clicked=await evaluate("(function(){const s=window.__fightersQA.snapshot();const b=s.buildings.find(b=>!b.initial);const p=window.__fightersQA.buildingScreenPoint(b.id);window.__fightersQA.tap(p.x,p.y);return window.__fightersQA.snapshot().selectedBuildingId===b.id})()");
  check(clicked,'Exact building X/Z polygon picking failed');
  await screenshot('rts-orc-building-panel');
@@ -1071,7 +1093,7 @@ async function run(){
   'Non-worker character was assigned mining');
  // A construction order debits once, sends the worker to the real X/Z
  // perimeter and creates the structure only after its work animation.
- const site=await evaluate("(()=>{for(let z=-12;z>=-17;z-=2)for(let x=-8;x>=-16;x-=2)if(window.__fightersQA.canBuild(x,z,'witch-house'))return {x,z};return null})()");
+ const site=await findWitchSite('witch-house');
  check(site,'No safe witch house construction site');
  const buildingsBefore=s.buildings.length,goldBeforeBuild=s.gold.witch,
   woodBeforeBuild=s.wood.witch;
@@ -1116,9 +1138,7 @@ async function run(){
  await evaluate('window.__fightersQA.advance(8.1)');
  check((await evaluate('window.__fightersQA.snapshot()')).souls.buildUnlocked,
    'Upgraded house did not unlock stone-circle construction');
- const stoneSite=await evaluate("(()=>{for(let z=-11;z>=-25;z-=1)"+
-   "for(let x=-8;x>=-24;x-=1)if(window.__fightersQA.canBuild(x,z,'stone-circle'))"+
-   "return {x,z};return null})()");
+ const stoneSite=await findWitchSite('stone-circle');
  check(stoneSite,'No buildable spot for the witch healing circle');
  check(await evaluate('window.__fightersQA.orderBuild("stone-circle",'+
    stoneSite.x+','+stoneSite.z+')'),'Witch worker could not start a healing circle');
@@ -1224,8 +1244,7 @@ async function run(){
 
  // The wheat-only CC BY model has three distinct growth stages. Stage 3 stays ripe
  // until a physical witch worker harvests, then the crop begins again at 1.
- const gardenSite=await evaluate("(()=>{for(let z=-9;z>=-23;z-=2)for(let x=-8;x>=-24;x-=2)"+
-   "if(window.__fightersQA.canBuild(x,z,'garden'))return {x,z};return null})()");
+ const gardenSite=await findWitchSite('garden');
  check(gardenSite,'No buildable garden site on witch territory');
  check(await evaluate('window.__fightersQA.orderBuild("garden",'+gardenSite.x+','+gardenSite.z+')'),
    'Witch worker could not begin garden construction');
@@ -1335,6 +1354,46 @@ async function run(){
  check(await evaluate("document.querySelector('.order-ping.attack')!==null"),
    'Attack order needs a red fading reticle');
  await until("window.__fightersQA.snapshot().ui.activePings===0",'red order reticle cleanup',10000);
+
+ // Reuse this match: test real stone geometry, navigation, and the worker's
+ // bottom-to-top wall construction before combat's next scheduled reset.
+ await until('window.__fightersQA.snapshot().blueprints.length===5',
+   'Orc blueprint load for stone-wall acceptance',100000);
+ await evaluate("window.__fightersQA.setFaction('orc')");
+ const wallSite=await evaluate("(()=>{const q=window.__fightersQA;"+
+   "const s=q.snapshot();const structures=s.buildings.filter(b=>b.clanId==='orcs'&&b.type!=='wall');"+
+   "const sites=window.FightersWalls.perimeter(structures);"+
+   "for(const p of sites){const dx=p.axis==='x'?3.2:0,dz=p.axis==='z'?3.2:0;"+
+   "if(q.canBuildAxis(p.x,p.z,'wall',p.axis)&&"+
+   "q.canBuildAxis(p.x+dx,p.z+dz,'wall',p.axis))"+
+   "return {...p,dx,dz};}return null})()");
+ check(wallSite,'No terrain supports two contiguous orc stone-wall sections');
+ check(await evaluate('window.__fightersQA.beginBuild("wall")'),
+   'Workers must be offered a stone-wall action in their construction menu');
+ check(await evaluate('!!window.__fightersQA.buildWall('+wallSite.x+','+wallSite.z+','+
+   JSON.stringify(wallSite.axis)+')'), 'Could not erect first stone wall');
+ let wallState=await evaluate('window.__fightersQA.snapshot()');
+ const first=wallState.buildings.find(b=>b.type==='wall');
+ check(first&&first.health===280&&first.clanId==='orcs',
+   'Stone wall needs ownership, health and a building collision shape');
+ check(!await evaluate('window.__fightersQA.isClear('+first.x+','+first.z+')'),
+   'The stone wall must be a hard unit-navigation obstacle');
+ check(await evaluate('window.__fightersQA.scheduleConstruction("wall",'+
+   (wallSite.x+wallSite.dx)+','+(wallSite.z+wallSite.dz)+','+
+   JSON.stringify(wallSite.axis)+')'),
+   'Worker must be able to schedule a neighboring wall segment');
+ wallState=await evaluate('window.__fightersQA.snapshot()');
+ check(wallState.construction.some(job=>job.type==='wall'&&job.previewVisible),
+   'A wall under construction must render its rising stone preview');
+ await evaluate('window.__fightersQA.advance(30)');
+ wallState=await evaluate('window.__fightersQA.snapshot()');
+ check(wallState.buildings.filter(b=>b.type==='wall'&&!b.destroyed).length===2&&
+   !wallState.construction.some(job=>job.type==='wall'),
+   'Worker must finish a second wall with a connected, solid joint');
+ check(!await evaluate('window.__fightersQA.isClear('+
+   (wallSite.x+wallSite.dx)+','+(wallSite.z+wallSite.dz)+')'),
+   'Finished wall must enter navigation immediately');
+ console.log('PASS STONE WALL WEBGL: build action, two connected instanced sections, worker reveal and solid navigation.');
  }
 
  if(group==='all'||group==='combat'){

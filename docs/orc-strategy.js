@@ -4,10 +4,11 @@
  * UMD API for Node regression tests and browser runtime.
  */
 (function(root,factory){
- const api=factory();
+ const api=factory(root.FightersWalls||
+  (typeof require==='function'?require('./rts-walls.js'):null));
  if(typeof module==='object'&&module.exports)module.exports=api;
  else root.FightersOrcStrategy=api;
-})(typeof globalThis==='object'?globalThis:this,function(){
+})(typeof globalThis==='object'?globalThis:this,function(walls){
  'use strict';
  const TYPES=['barrack','hut','cauldron','factory'];
  const COST={barrack:180,hut:120,cauldron:200,factory:250};
@@ -52,10 +53,12 @@
    this.mode='develop';this.history=[];this.enabled=options.enabled!==false;
    this.lastThreat=-100;this.upgradeAt=options.upgradeAt??35;
    this.tickCount=0;
+   this.wallPerimeter=null;
   }
   reset(){
    this.clock=0;this.cooldown=0;this.lastRaid=-100;this.raidNumber=0;
    this.mode='develop';this.history=[];this.lastThreat=-100;this.tickCount=0;
+   this.wallPerimeter=null;
   }
   snapshot(){
    return {clock:this.clock,mode:this.mode,raids:this.raidNumber,
@@ -64,12 +67,14 @@
   decide(state,valid){
    if(!this.enabled||!state.ready||!state.running||state.paused)return [];
    const buildings=state.buildings.filter(b=>!b.destroyed);
+   const structures=buildings.filter(b=>b.type!=='wall');
+   const ramparts=buildings.filter(b=>b.type==='wall');
    const own=state.orcs.filter(u=>!u.dead),enemy=state.witches.filter(u=>!u.dead);
    const workers=own.filter(u=>u.role==='worker');
    const fighters=own.filter(u=>u.role!=='worker');
    // An enemy base is a strategic target only after a real line-of-sight discovery.
    const enemyBaseKnown=state.enemyBaseKnown===true;
-   const barracks=buildings.filter(b=>b.type==='barrack');
+   const barracks=structures.filter(b=>b.type==='barrack');
    const barrack=barracks.sort((a,b)=>(a.queue?.length||0)-(b.queue?.length||0))[0];
    // Neutral deposits are handled by miners, never as clan infrastructure.
    const base={x:19,z:18};
@@ -88,7 +93,7 @@
    }
    // Recover a destroyed barrack before trying to train.
    if(!barrack&&canSpend(COST.barrack,40)){
-    const site=planSite('barrack',buildings,valid);
+    const site=planSite('barrack',structures,valid);
     if(site)orders.push({type:'build',building:'barrack',x:site.x,z:site.z,reason:'restore_recruitment'});
    }
    const cap=state.unitCap||15;
@@ -106,17 +111,28 @@
    // upgrade an existing mine, but NEVER create or place an additional mine.
    const wishlist=['hut','barrack','cauldron','factory','hut'];
    const desired={hut:2,barrack:2,cauldron:2,factory:2};
-   if(this.clock>18&&buildings.length<12){
+   if(this.clock>18&&structures.length<12){
     for(const type of wishlist){
-     if(buildings.filter(b=>b.type===type).length>=desired[type])continue;
+     if(structures.filter(b=>b.type===type).length>=desired[type])continue;
      if(!canSpend(COST[type],type==='barrack'?100:160))continue;
-     const site=planSite(type,buildings,valid);
+     const site=planSite(type,structures,valid);
      if(site){orders.push({type:'build',building:type,x:site.x,z:site.z,reason:'planned_district'});break;}
     }
    }
+   // Stone fortification is an *outer* ring, offset from the buildings to
+   // intercept 6.2 m magic bolts, with a two-section west gate and interior
+   // space reserved for future huts. Its original footprint stays stable as
+   // the economy expands: no wandering walls around each new building.
+   if(walls&&this.clock>35&&ramparts.length<30&&
+      canSpend(32,220)&&state.wood>=10){
+    if(!this.wallPerimeter)this.wallPerimeter=walls.perimeter(structures);
+    const site=walls.planWall(buildings,valid,{perimeter:this.wallPerimeter});
+    if(site)orders.push({type:'build',building:'wall',x:site.x,z:site.z,
+      axis:site.axis,reason:'protect_village_'+site.side});
+   }
    // Upgrade sustainably once a settlement is established.
    if(this.clock>this.upgradeAt&&canSpend(270,170)){
-    const target=buildings.filter(b=>b.level<3&&!b.queue.some(o=>o.kind==='upgrade'))
+    const target=structures.filter(b=>b.level<3&&!b.queue.some(o=>o.kind==='upgrade'))
       .sort((a,b)=>{
        const priorities={barrack:0,mine:1,hut:2,factory:3,cauldron:4};
        return(a.level-b.level)||priorities[a.type]-priorities[b.type];
@@ -128,7 +144,7 @@
    // A fresh level-one hut is cheaper and provides more places than upgrading
    // an existing one. Do not spend the expansion budget on upgrades first.
    if(committed>=cap-1&&cap<32&&!orders.some(o=>o.type==='build')){
-    const hut=buildings.filter(b=>b.type==='hut'&&b.level<3&&
+    const hut=structures.filter(b=>b.type==='hut'&&b.level<3&&
       !b.queue.some(q=>q.kind==='upgrade')).sort((a,b)=>a.level-b.level)[0];
     if(hut&&canSpend(160+hut.level*100,50))
       orders.unshift({type:'upgrade',buildingId:hut.id,reason:'housing'});
@@ -165,7 +181,8 @@
    const tactical=decisions.filter(o=>!['build','train','upgrade'].includes(o.type));
    // Reserve cycles for infrastructure and tech. A persistent training demand
    // must NEVER starve expansion; the city needs mines to fund future units.
-   const build=economic.find(o=>o.type==='build');
+   const build=economic.find(o=>o.type==='build'&&o.building!=='wall');
+   const wall=economic.find(o=>o.type==='build'&&o.building==='wall');
    const train=economic.find(o=>o.type==='train');
    const upgrade=economic.find(o=>o.type==='upgrade');
    const committed=state.populationCommitted??state.orcs.filter(o=>!o.dead).length;
@@ -175,7 +192,8 @@
    const choice=priorityBuild?build:housing?upgrade:
      upgrade&&this.tickCount%5===0?upgrade:
      build&&this.tickCount%3===0?build:
-     train||build||upgrade;
+     wall&&this.tickCount%4===0?wall:
+     train||build||upgrade||wall;
    const actions=choice?[...tactical,choice]:tactical;
    for(const action of actions){
     this.history.push({t:Math.round(this.clock*10)/10,...action});

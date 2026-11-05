@@ -1,5 +1,26 @@
 # Orks & Sorcières — prototype RTS
 
+## Remparts orcs
+
+Les ouvriers orcs peuvent maintenant construire des **petits murs de pierre**
+depuis « Bât. base » (32 or, 10 bois par segment). Les assises en maçonnerie,
+les pierres de couvrement et les piliers d'extrémité sont composés de quelques
+maillages instanciés partagés. Les segments s'alignent et se raccordent aux
+angles à 90°, bloquent réellement les déplacements des unités et interceptent
+les projectiles magiques ennemis. Ils apparaissent du sol vers le haut pendant
+les six secondes du chantier, peuvent être attaqués, détruits et réparés.
+
+La règle de placement s'applique aux deux factions : un nouveau bâtiment doit
+être au plus à **8 unités** du contour d'un bâtiment allié existant (hors mur
+et gisement neutre). Un mur peut commencer à **16 unités** du contour d'un
+bâtiment orc ou se prolonger à **1 unité** au plus d'un autre mur; les murs
+peuvent toucher leurs voisins pour ne laisser aucune brèche. L'IA propose un
+rempart à distance des édifices, réserve une entrée occidentale de 6,4 unités,
+évite les constructions trop serrées et vérifie que sa pose ne condamne pas
+la dernière sortie navigable du village. Les pierres n'offrent pas de vision
+magique supplémentaire et ne prolongent pas la partie lorsque les derniers
+véritables bâtiments orcs sont détruits.
+
 ## Camp orc : huttes, chaudron et nourriture
 
 Les **huttes** déterminent désormais la population maximale des orcs : une base
