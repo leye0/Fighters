@@ -1,0 +1,59 @@
+name: Generate Witch catalog and audition Orcs
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/generate-voice-catalog.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: fighters-generate-voice-catalog
+  cancel-in-progress: false
+
+jobs:
+  voices:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare audio tools
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Reuse approved Witch voice samples
+        uses: actions/download-artifact@v4
+        with:
+          name: fighters-witch-voice-audition
+          run-id: 42065805147
+          github-token: ${{ github.token }}
+          path: approved-witch-seeds
+      - name: Generate Orc trials and 52 Witch phrases
+        env:
+          REPLICATE_API_KEY: ${{ secrets.REPLICATE_API_KEY }}
+        run: python3 scripts/generate_voice_catalog.py --seeds approved-witch-seeds
+      - name: Upload Orc audition
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fighters-orc-voice-audition
+          path: generated-voices/orcs/
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Upload Witch catalog
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fighters-witch-voice-catalog
+          path: generated-voices/witches/
+          if-no-files-found: warn
+          retention-days: 30
