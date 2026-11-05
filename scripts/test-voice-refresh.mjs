@@ -25,7 +25,9 @@ for(const [faction,roles] of Object.entries(roleNames)){
   if(faction==='orcs'){
     assert(['ffmpeg-rubberband','ffmpeg-rate-and-atempo']
       .includes(manifest.dialogue_processing?.method));
-    assert.equal(manifest.dialogue_processing.pitch_factor,.72);
+    assert.equal(manifest.dialogue_processing.pitch_factor,.75);
+    assert.equal(manifest.dialogue_processing.original_revision,
+      '9b8239db721835042a5a217006256dfb4d4cb675');
     assert.equal(manifest.dialogue_processing.tempo_factor,1);
     assert.equal(manifest.dialogue_processing.processed_clips,52);
   }else{

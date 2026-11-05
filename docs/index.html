@@ -928,13 +928,15 @@ const soulEffects=[];
 let magic=0,soulAssignmentElapsed=0;
 let female=null,male=null,swordModel=null,clothingFemale=null,clothingMale=null,hairBuns=null,hairBuzzed=null,hairParted=null,hairLong=null;
 const sharedClipCatalog=new Map(),sharedCostumeMaterials=new Map();
-// One shared, bright ground-level ring per selected unit. Disable depth testing
-// so paved streets, model feet and shallow building surfaces cannot bury it.
+// One shared, translucent ground-level ring per selected unit. Disable depth
+// testing so paved streets and shallow building surfaces cannot bury it.
 const sharedSelectionGeometry=new THREE.RingGeometry(.71,.88,40);
 const sharedSelectionMaterials={witch:new THREE.MeshBasicMaterial({
-    color:0xbaff68,side:THREE.DoubleSide,depthTest:false,depthWrite:false,toneMapped:false}),
+    color:0xbaff68,transparent:true,opacity:.38,side:THREE.DoubleSide,
+    depthTest:false,depthWrite:false,toneMapped:false}),
   orc:new THREE.MeshBasicMaterial({
-    color:0xffd279,side:THREE.DoubleSide,depthTest:false,depthWrite:false,toneMapped:false})};
+    color:0xffd279,transparent:true,opacity:.38,side:THREE.DoubleSide,
+    depthTest:false,depthWrite:false,toneMapped:false})};
 const INITIAL_WOOD=Object.freeze({witch:250,orc:350});
 let ready=false,running=false,paused=false,activeFaction='witch',gold={witch:2000,orc:900},
   wood={...INITIAL_WOOD},buildMode=null;

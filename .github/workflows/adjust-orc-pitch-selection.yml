@@ -1,0 +1,53 @@
+name: Lift Orc pitch slightly and soften selection rings
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/adjust-orc-pitch-selection.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: fighters-adjust-orc-pitch
+  cancel-in-progress: false
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install audio processing tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Retune the 52 Orc dialogues from their untouched recordings
+        run: python3 scripts/retune-orc-speech.py
+      - name: Verify stable Witch voices, Orc pitch, and game regressions
+        run: |
+          node scripts/test-voice-refresh.mjs
+          node scripts/test-rts-sound.mjs
+          node scripts/test-rts-roles.mjs
+          git diff --check
+      - name: Commit tuned Orc MP3s and publishable presentation
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/sounds/orcs
+          git diff --cached --check
+          git commit -m 'Lighten Orc pitch to 75 percent while preserving tempo'
+          git push origin HEAD:main
+      - name: Publish the updated game
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref main
