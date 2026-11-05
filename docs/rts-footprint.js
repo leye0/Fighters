@@ -146,6 +146,22 @@
    return a.polygons.some(poly=>inside(point(poly[0][0]),b))||
      b.polygons.some(poly=>inside(point(poly[0][0]),a));
  }
+ function withinClearance(a,b,clearance=0){
+   if(!Number.isFinite(clearance)||clearance<0)throw Error('Invalid construction clearance');
+   if(a.maxX+clearance<b.minX||b.maxX+clearance<a.minX||
+     a.maxZ+clearance<b.minZ||b.maxZ+clearance<a.minZ)return false;
+   // Convert legacy rectangular obstacles (tree trunks, etc.) to real edges.
+   // A mere overlap of bounding boxes would incorrectly reject open corners
+   // of concave buildings, and would not enforce a one-unit walkable gap.
+   const contour=shape=>shape.shape==='polygon'?shape:shapeFromPolygons([[[
+     [shape.minX,shape.minZ],[shape.maxX,shape.minZ],
+     [shape.maxX,shape.maxZ],[shape.minX,shape.maxZ]]]]);
+   const x=contour(a),y=contour(b);
+   if(polygonsOverlap(x,y))return true;
+   for(const [p,q] of edges(x))for(const [r,s] of edges(y))
+     if(segmentDistance(p,q,r,s)<clearance+EPS)return true;
+   return false;
+ }
  function cellBlocked(rect,shape,radius=0){
    if(shape.shape!=='polygon')
      return rect.minX<=shape.maxX+radius&&rect.maxX>=shape.minX-radius&&
@@ -167,5 +183,5 @@
  }
  return {shapeFromPolygons,pointSegment,segmentDistance,segmentsIntersect,
    inside,edges,closestBoundary,distanceTo,pointBlocked,segmentBlocked,
-   polygonsOverlap,cellBlocked,translated};
+   polygonsOverlap,withinClearance,cellBlocked,translated};
 });

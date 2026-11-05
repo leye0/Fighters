@@ -534,6 +534,7 @@ const CAMERA_OFFSET=new THREE.Vector3(18,18,18);
 const camera=new THREE.OrthographicCamera(-11,11,11,-11,.1,180);
 camera.position.copy(CAMERA_OFFSET);
 const ARENA_HALF=28,ARENA_SIZE=2*ARENA_HALF;
+const BUILD_CLEARANCE=1;
 const SPAWNS={hero:{x:-22,z:-22},enemies:{x:22,z:22}};
 const WITCH_HOUSE={x:-23.5,z:-17.5,maxFootprint:5.2,doorHeading:Math.PI/4};
 let witchHouse=null;
@@ -900,7 +901,9 @@ const fogShader=new THREE.ShaderMaterial({
       vec2 world=origin+right*vUv.x+up*vUv.y;
       vec2 uv=(world+vec2(halfSize))/worldSize;
       if(uv.x<0.0||uv.y<0.0||uv.x>=1.0||uv.y>=1.0){
-        gl_FragColor=vec4(0.0,0.0,0.0,1.0);return;
+        // The playable ground ends here, not the rendered world. Trees,
+        // roofs and silhouettes may extend beyond the ground's edge.
+        gl_FragColor=vec4(0.0,0.0,0.0,0.0);return;
       }
       vec2 coverage=texture2D(mask,uv).rg;
       // Never visited: black. Once explored, terrain remains fully revealed.
@@ -1647,7 +1650,8 @@ function spawnUnit(kind,x,z,index=0,role='melee'){
     heading:{x:kind==='witch'?1:-1,z:0},facing:1,attack:null,stun:0,cooldown:rand(.25,1),dead:false,deadTime:0,
     speed:profile.speed,destination:null,attackOrder:null,route:null,routeVersion:-1,
     routeGoal:null,routeAge:0,approachCache:null,approachAge:0,
-    mineJob:null,constructJob:null,farmJob:null,treeJob:null,woodJob:null,carryBundle:null,berryJob:null,
+    mineJob:null,constructJob:null,farmJob:null,carryWheat:null,
+    treeJob:null,woodJob:null,carryBundle:null,berryJob:null,
     healJob:null,healRetry:0,soulJob:null,soulClaimed:false,soulReservedBy:null,
     workTool:null,hammerTool:null,chopTool:null,
     weapon:null,selectionRing:marker,outfitInfo
@@ -1833,7 +1837,7 @@ function issueMove(destination,{spacing=1.35,withinRadius=Infinity}={}){
   const actors=[...selected].filter(actor=>!actor.dead&&actor.kind===activeFaction);
   for(const actor of actors){cancelConstruction(actor);cancelWoodJob(actor);
     cancelSoulJob(actor);
-    actor.mineJob=null;actor.farmJob=null;actor.treeJob=null;actor.berryJob=null;
+    actor.mineJob=null;cancelFarmJob(actor);actor.treeJob=null;actor.berryJob=null;
     actor.healJob=null;}
   // Make one reservation per soldier, BEFORE movement begins. The old grid
   // independently snapped blocked offsets to the same nearest safe cell.
@@ -2096,13 +2100,14 @@ function validBuildPosition(x,z,type='hut'){
   if(!proposed)return false;
   const clan=buildFaction(type),geometry=window.FightersFootprints;
   const minX=clan==='witch'?-ARENA_HALF:0,maxX=clan==='witch'?0:ARENA_HALF;
-  if(proposed.minX<minX||proposed.maxX>maxX||
-    proposed.minZ<-ARENA_HALF||proposed.maxZ>ARENA_HALF)return false;
+  if(proposed.minX<minX+BUILD_CLEARANCE||proposed.maxX>maxX-BUILD_CLEARANCE||
+    proposed.minZ<-ARENA_HALF+BUILD_CLEARANCE||
+    proposed.maxZ>ARENA_HALF-BUILD_CLEARANCE)return false;
   // The same true projected X/Z polygons govern construction and collision.
-  if(forestObstacles.some(tree=>geometry.polygonsOverlap(proposed,tree))||
-     wildBerries.bushes.some(b=>geometry.distanceTo({x:b.x,z:b.z},proposed)<.65)||
-     liveBuildings().some(b=>geometry.polygonsOverlap(proposed,b.hitbox))||
-     pendingBuilds.some(job=>geometry.polygonsOverlap(proposed,job.site.hitbox)))return false;
+  if(forestObstacles.some(tree=>geometry.withinClearance(proposed,tree,BUILD_CLEARANCE))||
+     wildBerries.bushes.some(b=>geometry.distanceTo({x:b.x,z:b.z},proposed)<1.65)||
+     liveBuildings().some(b=>geometry.withinClearance(proposed,b.hitbox,BUILD_CLEARANCE))||
+     pendingBuilds.some(job=>geometry.withinClearance(proposed,job.site.hitbox,BUILD_CLEARANCE)))return false;
   // The garden is cultivated ground, not a solid building: occupying a bed
   // must not prevent the gardener from finishing construction inside it.
   return type==='garden'||type==='stone-circle'||units.every(actor=>actor.dead||
@@ -2478,7 +2483,7 @@ function scheduleBuild(type,x,z,{byAI=false}={}){
   const job={type,x,z,cost,woodCost,site,byAI,progress:0};
   pendingBuilds.push(job);gold[clan]-=cost;wood[clan]-=woodCost;
   cancelWoodJob(worker);
-  worker.mineJob=null;worker.farmJob=null;worker.treeJob=null;worker.berryJob=null;
+  worker.mineJob=null;cancelFarmJob(worker);worker.treeJob=null;worker.berryJob=null;
   worker.constructJob=job;worker.destination=null;
   worker.workHitTimer=0;
   worker.attackOrder=null;worker.route=null;worker.approachCache=null;
@@ -2544,7 +2549,7 @@ function stopSelectedUnits(){
   for(const unit of selected){
     cancelSoulJob(unit);
     cancelConstruction(unit);cancelWoodJob(unit);unit.treeJob=null;
-    unit.mineJob=null;unit.farmJob=null;unit.berryJob=null;unit.healJob=null;
+    unit.mineJob=null;cancelFarmJob(unit);unit.berryJob=null;unit.healJob=null;
     unit.destination=null;unit.attackOrder=null;unit.route=null;
   }
   acknowledgePlayerOrder(selected);
@@ -2987,7 +2992,7 @@ function removeRallyMarker(b){
 function releaseActor(actor){
   cancelSoulJob(actor);
   if(actor.dead)for(const mage of units)if(mage.soulJob===actor)cancelSoulJob(mage);
-  cancelConstruction(actor);cancelWoodJob(actor);
+  cancelConstruction(actor);cancelWoodJob(actor);cancelFarmJob(actor);
   selected.delete(actor);
   actor.mixer.stopAllAction();actor.mixer.uncacheRoot(actor.visual);
   // Every SkeletonUtils.clone owns one or more GPU bone textures. Removing
@@ -3050,7 +3055,7 @@ function destroyBuilding(building){
   }
   for(const actor of units){
     if(actor.mineJob?.mineId===building.id)actor.mineJob=null;
-    if(actor.farmJob?.gardenId===building.id)actor.farmJob=null;
+    if(actor.farmJob?.gardenId===building.id)cancelFarmJob(actor);
     if(actor.healJob?.id===building.id)actor.healJob=null;
   }
   if(building.type==='garden')farming.removeGarden(building.id);
@@ -3087,7 +3092,7 @@ function dealDamage(target,amount,attacker){
   target.health=Math.max(0,target.health-amount);target.stun=.24;
   if(!target.health){
     cancelSoulJob(target);
-    cancelConstruction(target);cancelWoodJob(target);
+    cancelConstruction(target);cancelWoodJob(target);cancelFarmJob(target);
     if(target.kind==='orc')playOrcVoice('loud',target.root.position);
     else if(target.kind==='witch')playWitchVoice('destruction',target.root.position);
     target.dead=true;target.deadTime=soulRules.CORPSE_SECONDS;
@@ -3305,7 +3310,7 @@ function orderMine(actors,mine){
   for(const actor of actors){
     if(!canMine(actor,mine))continue;
     cancelConstruction(actor);cancelWoodJob(actor);
-    actor.farmJob=null;actor.treeJob=null;
+    cancelFarmJob(actor);actor.treeJob=null;
     actor.mineJob={mineId:mine.id,progress:0,cycles:0};
     actor.destination=null;actor.route=null;actor.approachCache=null;
     issued++;
@@ -3380,7 +3385,7 @@ function orderCollectWood(actors,index,{byAI=false}={}){
     if(actor.dead||!roles.isWorker(actor)||
       (deposit.reservedBy&&deposit.reservedBy!==actor.id))continue;
     cancelConstruction(actor);cancelWoodJob(actor);
-    actor.mineJob=null;actor.farmJob=null;actor.treeJob=null;actor.berryJob=null;
+    actor.mineJob=null;cancelFarmJob(actor);actor.treeJob=null;actor.berryJob=null;
     actor.woodJob={index,phase:'pickup',progress:0,amount:0,goal:null};
     deposit.reservedBy=actor.id;
     actor.destination=null;actor.attackOrder=null;actor.route=null;
@@ -3395,6 +3400,34 @@ function woodStoreFor(actor){
   const homes=liveBuildings().filter(b=>b.clanId===clan&&b.type!=='garden');
   homes.sort((a,b)=>targetDistance(actor,a)-targetDistance(actor,b));
   return homes[0]||null;
+}
+function safeWitchWoodLocation(tree){
+  if(!tree||!fogOfWar.exploredAt(tree.x,tree.z,'witch'))return false;
+  // Keep automatic gatherers out of the Orc village, even before its
+  // buildings have been discovered. Also respect any scouted Orc expansion.
+  if(Math.hypot(tree.x-SPAWNS.enemies.x,tree.z-SPAWNS.enemies.z)<11)return false;
+  return liveBuildings().every(b=>b.clanId!=='orcs'||
+    !knownEnemyBuildings.witch.has(b.id)||
+    window.FightersFootprints.distanceTo(tree,b.hitbox)>=7);
+}
+function continueWitchWoodRun(actor){
+  if(actor.kind!=='witch'||actor.dead||actor.destination||actor.constructJob||
+    actor.farmJob||actor.mineJob||actor.treeJob||actor.woodJob)return false;
+  const candidates=forestLayout.map((tree,index)=>({tree,index,d:
+    Math.hypot(actor.root.position.x-tree.x,actor.root.position.z-tree.z)}))
+    .filter(({tree})=>safeWitchWoodLocation(tree))
+    .sort((a,b)=>a.d-b.d);
+  // Collect already-felled bundles first; only one worker may reserve each.
+  for(const {tree,index} of candidates){
+    const deposit=woodDeposits.get(index);
+    if(!tree.felled||!deposit||deposit.reservedBy||!treeChopGoal(actor,tree))continue;
+    if(orderCollectWood([actor],index,{byAI:true}))return true;
+  }
+  for(const {tree,index} of candidates){
+    if(!tree.felled&&treeChopGoal(actor,tree)&&orderChop([actor],index,{byAI:true}))
+      return true;
+  }
+  return false;
 }
 function tickWoodWorker(actor,dt){
   const job=actor.woodJob;
@@ -3429,6 +3462,7 @@ function tickWoodWorker(actor,dt){
   if(actor.carryBundle)actor.carryBundle.visible=false;
   actor.woodJob=null;animation(actor,'Idle_Loop');
   showBanner('BOIS LIVRÉ : +'+job.amount+' 🪵');refreshHUD();
+  continueWitchWoodRun(actor);
   return true;
 }
 function assignOrcLumberjack(){
@@ -3452,19 +3486,19 @@ function assignOrcLumberjack(){
     if(goal&&orderChop([actor],index))return;
   }
 }
-function orderChop(actors,index){
+function orderChop(actors,index,{byAI=false}={}){
   const tree=forestLayout[index];
   if(!tree||tree.felled)return false;
   let assigned=0;
   for(const actor of actors){
     if(actor.dead||!roles.isWorker(actor))continue;
     cancelConstruction(actor);cancelWoodJob(actor);
-    actor.mineJob=null;actor.farmJob=null;actor.berryJob=null;
+    actor.mineJob=null;cancelFarmJob(actor);actor.berryJob=null;
     actor.treeJob={index,progress:0,goal:null};
     actor.destination=null;actor.attackOrder=null;actor.route=null;
     actor.approachCache=null;assigned++;
   }
-  if(assigned){showBanner('COUPE DU BOIS');acknowledgePlayerOrder(actors);refreshHUD();}
+  if(assigned){if(!byAI){showBanner('COUPE DU BOIS');acknowledgePlayerOrder(actors);}refreshHUD();}
   return assigned>0;
 }
 function treeChopGoal(actor,tree){
@@ -3510,6 +3544,30 @@ function gardenHarvestGoal(garden,index){
   const z=(Math.floor(index/2)-1)*1.10;
   return {x:garden.root.position.x+x,z:garden.root.position.z+z};
 }
+function mountCarriedWheat(actor){
+  if(!actor.carryWheat){
+    const bundle=new THREE.Group();
+    const matureWheat=cropCatalog?.get(0)?.[2];
+    if(matureWheat){
+      const model=matureWheat.clone(true);
+      model.scale.setScalar(.43);bundle.add(model);
+    }else{
+      // Small fallback only until the licensed wheat asset finishes loading.
+      for(let i=0;i<5;i++){
+        const stalk=new THREE.Mesh(farmGeometry.stem,farmMaterial.produce);
+        stalk.scale.set(.3,.7,.3);stalk.position.set((i-2)*.10,.29,0);
+        bundle.add(stalk);
+      }
+    }
+    bundle.position.set(0,.95,.30);actor.root.add(bundle);
+    actor.carryWheat=bundle;
+  }
+  actor.carryWheat.visible=true;
+}
+function cancelFarmJob(actor){
+  actor.farmJob=null;
+  if(actor.carryWheat)actor.carryWheat.visible=false;
+}
 function orderHarvest(actors,garden){
   if(!garden||garden.type!=='garden'||garden.destroyed)return false;
   let assigned=0;
@@ -3517,7 +3575,8 @@ function orderHarvest(actors,garden){
     if(actor.kind!=='witch'||actor.dead||!roles.isWorker(actor))continue;
     cancelConstruction(actor);cancelWoodJob(actor);
     actor.mineJob=null;actor.treeJob=null;actor.berryJob=null;
-    actor.farmJob={gardenId:garden.id,plotIndex:-1,progress:0};
+    cancelFarmJob(actor);
+    actor.farmJob={gardenId:garden.id,plotIndex:-1,progress:0,phase:'harvest',amount:0};
     actor.destination=null;actor.attackOrder=null;actor.route=null;actor.approachCache=null;
     assigned++;
   }
@@ -3537,7 +3596,7 @@ function assignGardenWorkers(dt){
     workers.sort((a,b)=>targetDistance(a,garden)-targetDistance(b,garden));
     const worker=workers[0];
     if(!worker)continue;
-    worker.farmJob={gardenId:garden.id,plotIndex:-1,progress:0};
+    worker.farmJob={gardenId:garden.id,plotIndex:-1,progress:0,phase:'harvest',amount:0};
     worker.route=null;worker.approachCache=null;
   }
 }
@@ -3546,7 +3605,22 @@ function tickGardenWorker(actor,dt){
   if(!job)return false;
   const garden=buildingInstances.get(job.gardenId);
   if(!garden||garden.type!=='garden'||garden.destroyed){
-    actor.farmJob=null;return false;
+    cancelFarmJob(actor);return false;
+  }
+  if(job.phase==='carry'){
+    const homes=liveBuildings().filter(b=>b.type==='witch-house'&&b.clanId==='witch');
+    homes.sort((a,b)=>targetDistance(actor,a)-targetDistance(actor,b));
+    const home=homes[0];
+    if(!home){animation(actor,'Idle_Loop');return true;}
+    if(targetDistance(actor,home)>BUILDING_CONTACT){
+      const goal=approachBuilding(actor,home);
+      if(goal){const status=navigateActor(actor,goal,dt,'engage');
+        if(status!=='moving')animation(actor,'Idle_Loop');}
+      return true;
+    }
+    farming.deliver(job.amount);
+    cancelFarmJob(actor);animation(actor,'Idle_Loop');refreshHUD();
+    return true;
   }
   if(job.plotIndex<0){
     const reserved=units.filter(u=>u!==actor&&!u.dead&&
@@ -3570,7 +3644,10 @@ function tickGardenWorker(actor,dt){
   if(job.progress>=window.FightersFarming.HARVEST_SECONDS){
     const yieldAmount=farming.harvest(garden.id,job.plotIndex);
     job.plotIndex=-1;job.progress=0;
-    if(yieldAmount){syncGardenVisual(garden);refreshHUD();}
+    if(yieldAmount){
+      job.amount=yieldAmount;job.phase='carry';
+      mountCarriedWheat(actor);syncGardenVisual(garden);refreshHUD();
+    }
   }
   return true;
 }
@@ -4444,6 +4521,7 @@ window.__fightersQA={
       collecting:units.filter(u=>!!u.soulJob&&!u.dead).map(u=>({id:u.id,corpseId:u.soulJob.id}))},
     farming:{...farming.snapshot(),workers:units.filter(u=>u.farmJob&&!u.dead).map(u=>({
       id:u.id,gardenId:u.farmJob.gardenId,plotIndex:u.farmJob.plotIndex,
+      phase:u.farmJob.phase,amount:u.farmJob.amount,carrying:!!u.carryWheat?.visible,
       progress:u.farmJob.progress,x:u.root.position.x,z:u.root.position.z}))},
     mining:{completedMiningCycles,totalMinedGold,workers:units.filter(u=>u.mineJob&&!u.dead).map(u=>({
       id:u.id,clan:u.kind,role:u.role,mineId:u.mineJob.mineId,progress:u.mineJob.progress,

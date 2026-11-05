@@ -43,6 +43,14 @@ assert(!G.segmentBlocked({x:-.5,z:0},{x:.5,z:0},hollow,.15),
 
 const other=G.shapeFromPolygons([[[[2,2],[3,2],[3,3],[2,3]]]]);
 assert(!G.polygonsOverlap(L,other),'The empty L-corner does not collide');
+assert(!G.withinClearance(L,other,.99),'Open L-corner stays available outside margin');
+assert(G.withinClearance(L,other,1),'The required one-unit building clearance is exact');
+const neighbour=G.shapeFromPolygons([[[[4.99,0],[5.99,0],[5.99,1],[4.99,1]]]]);
+assert(G.withinClearance(L,neighbour,1),'Building cannot fit with less than one-unit margin');
+assert(!G.withinClearance(L,G.translated(neighbour,.02,0),1),
+ 'Buildings separated by more than one unit are constructible');
+const trunk={shape:'aabb',minX:5,maxX:5.4,minZ:0,maxZ:.4};
+assert(G.withinClearance(L,trunk,1),'Trunk obstacle also reserves a one-unit space');
 assert(G.polygonsOverlap(L,G.translated(other,-2,0)),
  'Overlap uses true polygon geometry');
 const separate=G.shapeFromPolygons([
