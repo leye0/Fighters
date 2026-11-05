@@ -408,11 +408,11 @@ async function run(){
 
  check(await evaluate("document.querySelector('#witch-faction,#orc-faction,#zoom-in,#zoom-out,.zoom-controls,#touch-hold-indicator')===null"),
   'Zoom toolbar or legacy long-press hint was not removed');
- const fixedZoom=35/3;
+ const fixedZoom=35/(3*1.35);
  check(Math.abs(steady.cameraZoom-fixedZoom)<1e-7&&
    Math.abs(steady.cameraCenter.x+18)<.05&&
    Math.abs(steady.cameraCenter.z+14)<.05,
-   'Game must begin 3× closer and centered on starting witches: '+
+   'Game must begin 4.05× closer and centered on starting witches: '+
      JSON.stringify({zoom:steady.cameraZoom,camera:steady.cameraCenter}));
  for(const code of ['Equal','NumpadAdd','Minus','NumpadSubtract']){
    await evaluate("document.dispatchEvent(new KeyboardEvent('keydown',{code:'"+code+"',bubbles:true}))");
@@ -551,9 +551,12 @@ async function run(){
  await evaluate('window.__fightersQA.advance(3)');
  check((await evaluate('window.__fightersQA.snapshot()')).witches.length===5,
   'Upgraded house production failed');
- await evaluate('window.__fightersQA.selectWitches();window.__fightersQA.move(-3,-3)');
+ // The on-screen move marker is intentionally culled for distant orders.
+ // Check feedback at the camera centre, then separately test long travel.
+ await evaluate('window.__fightersQA.selectWitches();window.__fightersQA.move(-18,-14)');
  check(await evaluate("document.querySelector('.order-ping.move')!==null"),
    'Move order needs a blue fading marker');
+ await evaluate('window.__fightersQA.move(-3,-3)');
  await until("window.__fightersQA.snapshot().ui.activePings===0",'blue order reticle cleanup',10000);
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.selectedIds.length===5,'RTS group selection failed');
@@ -761,7 +764,7 @@ async function run(){
  // The old hold-to-select and pinch-to-zoom paths are intentionally gone.
  await call('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:2});
  const touch=(id,x,y)=>({id,x,y,force:1,radiusX:4,radiusY:4});
- const fixedMobileZoom=35/3;
+ const fixedMobileZoom=35/(3*1.35);
  await evaluate("window.__fightersQA.reset();window.__fightersQA.centerCamera(-18,-14)");
  let selectionBefore=await evaluate('window.__fightersQA.snapshot()');
  const witchScreen=await evaluate("Array.from({length:3},(_,i)=>window.__fightersQA.unitScreenPoint('witch',i))");
@@ -774,7 +777,7 @@ async function run(){
  };
  console.log('MOBILE TWO-FINGER BOUNDS:',JSON.stringify({witchScreen,bound,panelTop,zoom:selectionBefore.cameraZoom}));
  check(bound.x2>bound.x1+25&&bound.y2>bound.y1+25&&bound.y2<panelTop-6,
-   '3 starting witches must be visible at fixed 3× zoom: '+JSON.stringify({witchScreen,bound,panelTop}));
+   '3 starting witches must be visible at fixed 4.05× zoom: '+JSON.stringify({witchScreen,bound,panelTop}));
  // A true single-finger tap must select a witch, never the building behind it.
  const singleTouch=touch(77,witchScreen[2].x,witchScreen[2].y);
  await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[singleTouch]});
@@ -817,7 +820,7 @@ async function run(){
      gesture:boxState.touchGesture,counters:boxState.touchGestureCounters,witchScreen,bound
    }));
  await screenshot('rts-mobile-two-finger-selected-witches');
- console.log('PASS MOBILE TWO-FINGER SELECT: 3/3 witches selected; zoom unchanged at 35/3.');
+ console.log('PASS MOBILE TWO-FINGER SELECT: 3/3 witches selected; zoom unchanged at 35/(3*1.35).');
 
  // iPhone users rarely lift both fingers simultaneously. The FIRST release
  // must finish the selection; movement from the finger left on-screen must
@@ -1583,7 +1586,7 @@ async function run(){
  check(s.witches.length===3&&s.orcs.length===4&&
   s.buildings.filter(b=>!b.destroyed).length===6,'Reset after AI restores starting match');
  check(!errors.length,'Browser JavaScript exceptions: '+errors.join(' | '));
- console.log('PASS RTS: stable HUD, persistent shortcuts, blue/red reticles, two-tap attacks, one-finger pan, instant two-finger box selection, locked 3× zoom, destroyed buildings and strategic AI.');
+ console.log('PASS RTS: stable HUD, persistent shortcuts, blue/red reticles, two-tap attacks, one-finger pan, instant two-finger box selection, locked 4.05× zoom, destroyed buildings and strategic AI.');
 
 }
 try{await run();}finally{try{socket?.close();}catch{}chrome.kill();try{rmSync(profile,{recursive:true,force:true,maxRetries:8,retryDelay:350});}catch(error){console.warn('Chrome profile cleanup only:',error.message);}}
