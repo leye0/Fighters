@@ -43,6 +43,20 @@ def retune(directory: Path) -> int:
     if len({s["path"] for s in sounds}) != 52:
         raise RuntimeError("Duplicate audio paths")
 
+    rubberband = subprocess.run(["ffmpeg", "-hide_banner", "-h", "filter=rubberband"],
+                                capture_output=True).returncode == 0
+    if rubberband:
+        method = "ffmpeg-rubberband"
+        filters = ("rubberband=pitch=0.72:tempo=1:transients=smooth:formant=shifted,"
+                   "loudnorm=I=-19:TP=-2:LRA=7")
+    else:
+        # GitHub's standard FFmpeg build may lack librubberband. Correct the
+        # rate-induced 28% slowdown with a tempo resampler; duration stays 1x.
+        method = "ffmpeg-rate-and-atempo"
+        filters = ("aresample=24000,asetrate=24000*0.72,aresample=24000,"
+                   "atempo=1.3888888889,loudnorm=I=-19:TP=-2:LRA=7")
+    print(f"Using {method} for fixed-speed low Orc voices", flush=True)
+
     with tempfile.TemporaryDirectory(prefix="retune-orc-") as temp:
         prepared = []
         for sound in sounds:
@@ -55,8 +69,7 @@ def retune(directory: Path) -> int:
             subprocess.run([
                 "ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-y",
                 "-i", str(source), "-ac", "1", "-ar", "24000",
-                "-af", "rubberband=pitch=0.72:tempo=1:transients=smooth:formant=shifted,"
-                       "loudnorm=I=-19:TP=-2:LRA=7",
+                "-af", filters,
                 "-codec:a", "libmp3lame", "-b:a", "64k", str(target),
             ], check=True)
             new_duration = duration(target)
@@ -68,7 +81,7 @@ def retune(directory: Path) -> int:
             destination.write_bytes(source.read_bytes())
 
     manifest["dialogue_processing"] = {
-        "method": "ffmpeg-rubberband", "pitch_factor": PITCH_FACTOR,
+        "method": method, "pitch_factor": PITCH_FACTOR,
         "tempo_factor": 1.0, "processed_clips": len(sounds),
         "categories": sorted(TARGET_CATEGORIES),
     }
