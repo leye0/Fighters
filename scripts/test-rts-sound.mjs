@@ -184,6 +184,10 @@ assert(html.includes("acknowledgePlayerOrder(actors.filter(actor=>actor.attackOr
   'attack commands must trigger forceful speech');
 assert(!html.includes('WITCH_VOICE_PRESETS'),
   'unpredictable old Freesound Witch acknowledgements are retired');
+assert(html.includes('const voiceLineIndex=1+Math.floor(Math.random()*4)'),
+  'each unit draws its performer once when created');
+assert.equal((html.match(/variant:actor\.voiceLineIndex/g)||[]).length,2,
+  'both Witch and Orc dialogue must pin the same take per character');
 for(const [faction,roles] of Object.entries({
   witch:['worker','guard','arcane'],orc:['worker','warrior','shaman']
 })){
@@ -222,5 +226,19 @@ time+=700;
 assert.equal(await roleEngine.play('attack',()=>true,{voice:'elder'}),false,
   'unknown voice must stay silent rather than playing another role');
 roleEngine.reset();
+time+=700;
+assert.equal(await roleEngine.play('interaction',()=>true,{voice:'worker',variant:2}),true);
+assert.equal(roleEngine.lastSound.get('interaction:worker'),'interaction/worker_02.mp3');
+time+=500;
+assert.equal(await roleEngine.play('interaction',()=>true,{voice:'worker',variant:2}),true);
+assert.equal(roleEngine.lastSound.get('interaction:worker'),'interaction/worker_02.mp3',
+  'selecting the same character twice must play the EXACT same voice recording');
+time+=500;
+assert.equal(await roleEngine.play('attack',()=>true,{voice:'guard',variant:1}),true);
+assert.equal(roleEngine.lastSound.get('attack:guard'),'attack/guard_01.mp3');
+time+=700;
+assert.equal(await roleEngine.play('attack',()=>true,{voice:'guard',variant:99}),false,
+  'an invalid pinned voice must not silently switch to another performer');
+roleEngine.reset();
 
-console.log('PASS RTS sound engines: role-stable Orc/Witch creation, selection and attack; fog, iOS resume, pause, reset and bounded memory.');
+console.log('PASS RTS sound engines: per-character pinned Orc/Witch selection and attack; fog, iOS resume, pause, reset and bounded memory.');

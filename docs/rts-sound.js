@@ -238,8 +238,13 @@
       const voiceRole=typeof options.voice==='string'?options.voice:null;
       const paths=voiceRole?this.voices[category]?.[voiceRole]:groups[category];
       if(!paths?.length)return false;
+      // Independent TTS calls can sound like different performers even when
+      // labelled as one role. Lock each actor to one approved take for repeated
+      // selection and battle commands; never re-roll its performer per click.
+      const variant=Number.isInteger(options.variant)?options.variant:null;
+      if(variant!==null&&(variant<1||variant>paths.length))return false;
       const pinned=typeof options.path==='string'&&paths.includes(options.path)?
-        options.path:null;
+        options.path:variant===null?null:paths[variant-1];
       const historyKey=voiceRole?category+':'+voiceRole:category;
       const previous=this.lastSound.get(historyKey);
       const available=pinned?[pinned]:paths.length>1?
