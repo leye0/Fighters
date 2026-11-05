@@ -757,8 +757,15 @@ async function run(){
    'Advanced Build submenu did not open');
  await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).find(b=>b.querySelector('.action-name')?.textContent==='Retour')?.click();window.__fightersQA.selectOrcBarrack()");
 
+ // The newer 8-unit settlement rule disallows the original isolated
+ // (8,-10) fixture. Find a real attached site with a usable traversal lane.
+ const hutSite=await evaluate("(()=>{const q=window.__fightersQA;"+
+   "for(let z=10;z<=27;z++)for(let x=9;x<=27;x++){"+
+   "if(q.canBuild(x,z,'hut')&&q.isClear(x-5,z)&&q.isClear(x+5,z))"+
+   "return {x,z,from:x-5,to:x+5};}return null})()");
+ check(hutSite,'No contiguous 8-unit orc hut site with a pathfinding lane');
  check(await evaluate("window.__fightersQA.beginBuild('hut')"),'Hut placement action refused');
- check(await evaluate("!!window.__fightersQA.build('hut',8,-10)"),'Orc hut construction failed');
+ check(await evaluate("!!window.__fightersQA.build('hut',"+hutSite.x+','+hutSite.z+")"),'Orc hut construction failed');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.buildings.every(b=>b.hitbox.shape==='polygon'&&b.hitbox.vertexCount>10),
    'Orc buildings must all use real GLB-projected multi-polygons');
@@ -766,23 +773,28 @@ async function run(){
   'Second hut must be a unique placed building');
  check(s.orcFood.housingCap===16,
    'Second level-one hut must provide six more population slots');
- check(!await evaluate("!!window.__fightersQA.build('hut',8,-10)"),
+ check(!await evaluate("!!window.__fightersQA.build('hut',"+hutSite.x+','+hutSite.z+")"),
   'Colliding building placement must be refused');
- check(!await evaluate('window.__fightersQA.isClear(8,-10)'),
+ check(!await evaluate('window.__fightersQA.isClear('+hutSite.x+','+hutSite.z+')'),
   'Real solid building collider must block its centre');
  const newHut=s.buildings.find(b=>!b.initial);
- check(newHut?.hitbox.minX<8&&newHut.hitbox.maxX>8,'Constructed hut hitbox does not cover mesh');
+ check(newHut?.hitbox.minX<hutSite.x&&newHut.hitbox.maxX>hutSite.x,
+   'Constructed hut hitbox does not cover mesh');
  const house=s.house.hitbox;
  check(!await evaluate('window.__fightersQA.isClear('+((house.minX+house.maxX)/2)+','+
   ((house.minZ+house.maxZ)/2)+')'),'Witch house collider is not solid');
 
  // Original WarConquer-inspired A* must route around our ACTUAL placed hut.
- const planned=await evaluate('window.__fightersQA.route({x:4,z:-10},{x:13,z:-10})');
+ const planned=await evaluate('window.__fightersQA.route({x:'+hutSite.from+',z:'+hutSite.z+
+   '},{x:'+hutSite.to+',z:'+hutSite.z+'})');
  check(planned?.waypoints?.length>=2,'Pathfinding did not detour around the hut');
- await evaluate("window.__fightersQA.moveUnitTo('orc',0,4,-10);window.__fightersQA.selectUnit('orc',0);window.__fightersQA.move(13,-10)");
+ await evaluate("window.__fightersQA.moveUnitTo('orc',0,"+hutSite.from+','+hutSite.z+
+   ");window.__fightersQA.selectUnit('orc',0);window.__fightersQA.move("+
+   hutSite.to+','+hutSite.z+")");
  const travel=await evaluate("window.__fightersQA.auditTravel('orc',0,10)");
  check(travel.blocked===0,'A moving orc crossed a building collider: '+JSON.stringify(travel));
- check(travel.end.x>11,'Orc did not navigate around hut to destination: '+JSON.stringify(travel));
+ check(travel.end.x>hutSite.to-2,
+   'Orc did not navigate around hut to destination: '+JSON.stringify(travel));
 
  // Tap the projected real ground polygon, never the oversized 3D roof AABB.
  const clicked=await evaluate("(function(){const s=window.__fightersQA.snapshot();const b=s.buildings.find(b=>!b.initial);const p=window.__fightersQA.buildingScreenPoint(b.id);window.__fightersQA.tap(p.x,p.y);return window.__fightersQA.snapshot().selectedBuildingId===b.id})()");

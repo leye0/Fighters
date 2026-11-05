@@ -93,7 +93,7 @@
    }
    // Recover a destroyed barrack before trying to train.
    if(!barrack&&canSpend(COST.barrack,40)){
-    const site=planSite('barrack',buildings,valid);
+    const site=planSite('barrack',structures,valid);
     if(site)orders.push({type:'build',building:'barrack',x:site.x,z:site.z,reason:'restore_recruitment'});
    }
    const cap=state.unitCap||15;
@@ -115,7 +115,7 @@
     for(const type of wishlist){
      if(structures.filter(b=>b.type===type).length>=desired[type])continue;
      if(!canSpend(COST[type],type==='barrack'?100:160))continue;
-     const site=planSite(type,buildings,valid);
+     const site=planSite(type,structures,valid);
      if(site){orders.push({type:'build',building:type,x:site.x,z:site.z,reason:'planned_district'});break;}
     }
    }
