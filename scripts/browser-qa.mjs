@@ -129,6 +129,17 @@ async function run(){
  await evaluate('window.__fightersQA.reset()');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.witches.length===3&&s.orcs.length===4,'Starting troops');
+ check(s.house.maxHealth>=1400&&s.buildings.filter(b=>b.clanId==='orcs'&&b.type!=='mine')
+   .every(b=>b.maxHealth>=400),'Clan buildings must survive sustained assaults');
+ await evaluate('window.__fightersQA.enableWitchAI(true)');
+ check(await evaluate("window.__fightersQA.strikeUnit('orc',0,'witch',1,5)"),
+   'Could not simulate an assault on a witch worker');
+ const struck=await evaluate('window.__fightersQA.snapshot()');
+ check(struck.witches.filter(u=>u.role!=='worker').every(u=>
+   u.attackTargetId===struck.orcs[0].id),
+   'Nearby autonomous witch guards must retaliate when a worker is struck');
+ await evaluate('window.__fightersQA.reset()');
+ s=await evaluate('window.__fightersQA.snapshot()');
  check(s.wood.witch===250&&s.wood.orc===350,'Wood reserve must belong to each faction');
  check(s.witches.map(u=>u.role).join(',')==='melee,worker,ranged',
   'Witches must start with worker, melee and ranged roles');
@@ -973,17 +984,22 @@ async function run(){
   'Witch worker could not start a construction job');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.buildings.length===buildingsBefore&&s.construction.length===1&&
+  s.construction[0].previewVisible&&s.constructionPreviewCount===1&&
   s.gold.witch===goldBeforeBuild-230&&s.wood.witch===woodBeforeBuild-75,
   'Construction must reserve both gold and wood and wait for worker');
-  const constructionSwing=await evaluate("(()=>{let seen=false;for(let i=0;i<38;i++){"+
-    "window.__fightersQA.advance(1);seen ||= window.__fightersQA.snapshot().witches.some(u=>"+
+  const constructionVisual=await evaluate("(()=>{let seen=false,revealed=false;for(let i=0;i<38;i++){"+
+    "window.__fightersQA.advance(1);const s=window.__fightersQA.snapshot();"+
+    "revealed ||= s.construction.some(j=>j.revealFraction>.2&&j.revealFraction<.95);"+
+    "seen ||= s.witches.some(u=>"+
     "u.role==='worker'&&u.animation==='Work_Swing'&&u.hammerToolVisible&&"+
-    "!u.pickToolVisible&&!u.workToolVisible);}return seen})()");
+    "!u.pickToolVisible&&!u.workToolVisible);}return {seen,revealed}})()");
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.construction.length===0&&s.buildings.length===buildingsBefore+1&&
+  s.constructionPreviewCount===0&&
   s.buildings.some(b=>b.type==='witch-house'&&b.clanId==='witch'),
   'Witch worker did not finish a real house: '+JSON.stringify(s.construction));
-  check(constructionSwing,'House construction must show a hammer, never a scythe');
+  check(constructionVisual.seen,'House construction must show a hammer, never a scythe');
+  check(constructionVisual.revealed,'The actual building must reveal from bottom to top during work');
  console.log('PASS ECONOMIC ROLES: witch mined gold, constructed a shared-model house; soldiers cannot mine, workers cannot fight.');
  await evaluate('window.__fightersQA.reset()');
  s=await evaluate('window.__fightersQA.snapshot()');
@@ -1100,7 +1116,7 @@ async function run(){
    s.souls.corpses.some(c=>c.id===soulCorpseId&&c.claimed&&c.remaining>100),
    'Spirit must increase magic once while the body stays on the ground: '+JSON.stringify(s.souls));
  console.log('PASS SOULS: house upgrade, circle unlock, Arcanist training, persistent corpse, exact 3D white soul and magic gauge.');
- await evaluate('window.__fightersQA.damageBuilding('+JSON.stringify(sanctuary.id)+',500)');
+ await evaluate('window.__fightersQA.damageBuilding('+JSON.stringify(sanctuary.id)+',999999)');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.healing.circles.length===0&&s.buildings.every(b=>b.id!==sanctuary.id),
    'Destroyed circles must be removed along with their menhir obstacles');

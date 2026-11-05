@@ -38,6 +38,10 @@ assert.equal(economy.food,rules.STARTING_FOOD);
 assert.equal(economy.eatCorpse('witch-1'),rules.CORPSE_FOOD,'Reset clears reservations');
 
 const field=new rules.Hares({count:16,walkable:(x,z)=>Math.abs(x)<27&&Math.abs(z)<27});
+assert(rules.HARE_FLEE_SPEED<2.75*.6,
+  'An orc must be decisively faster than a fleeing hare');
+assert(rules.HARE_CAPTURE_DISTANCE>=1,
+  'Orcs need a forgiving physical grab distance');
 const start=field.hares.map(({x,z})=>({x,z}));
 assert.equal(field.hares.length,16,'Many hares must roam');
 field.step(1,[]);
@@ -59,4 +63,17 @@ assert(field.hares[0].active,'Wildlife renews after a finite delay');
 field.reset();
 assert.deepEqual(field.hares.map(({x,z})=>({x,z})),start,
   'New matches restore a reproducible wildlife distribution');
+const chase=new rules.Hares({count:1,walkable:()=>true});
+chase.hares[0].x=0;chase.hares[0].z=0;
+const hunter={x:0,z:3.1};
+let chaseSeconds=0;
+while(chaseSeconds<4){
+  const prey=chase.hares[0],gap=Math.hypot(prey.x-hunter.x,prey.z-hunter.z);
+  if(gap<=rules.HARE_CAPTURE_DISTANCE)break;
+  chase.step(.05,[hunter]);
+  const dx=prey.x-hunter.x,dz=prey.z-hunter.z,norm=Math.hypot(dx,dz);
+  hunter.x+=2.75*.05*dx/norm;hunter.z+=2.75*.05*dz/norm;
+  chaseSeconds+=.05;
+}
+assert(chaseSeconds<3,'An ordinary orc must catch a nearby hare in open ground');
 console.log('PASS orc food: cauldron technology, hut housing, hunger, carcasses, roaming/respawning hares.');

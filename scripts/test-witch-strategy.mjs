@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const {Director,planSite}=require('../docs/witch-strategy.js');
+const {Director,planSite,defendersNear}=require('../docs/witch-strategy.js');
 const {FogGrid}=require('../docs/rts-fog.js');
 
 const house={id:'home',type:'witch-house',x:-23,z:-17,level:1,
@@ -27,6 +27,8 @@ assert(fog.frontier('witch',{x:-18,z:-15},valid),'Witches must have a scout fron
 const director=new Director();
 const worker={id:1,role:'worker',x:-17,z:-14};
 const guard=(id,x=-16,z=-13)=>({id,role:'melee',x,z,health:85,maxHealth:85});
+assert.deepEqual(defendersNear([worker,guard(2),guard(3,5,5)],{x:-17,z:-14}),[2],
+ 'Only nearby combat witches, not workers or far-away guards, retaliate');
 const state={ready:true,running:true,paused:false,homeId:'home',buildings:[house],
  pendingBuilds:[],gold:2000,wood:250,food:45,
  circleUnlocked:false,arcanistUnlocked:false,witches:[worker,guard(2),guard(3)],
@@ -78,6 +80,12 @@ actions=director.update(3,state,valid);
 assert(actions.some(a=>a.type==='defend'),
  'A visible threat near home should trigger immediate defense');
 assert.equal(director.mode,'defend');
+// A scout or worker attacked away from the village still needs protection.
+state.orcs=[{id:91,x:11,z:11,role:'melee'}];
+state.witches.push({id:92,role:'worker',x:12,z:12});
+actions=director.update(3,state,valid);
+assert(actions.some(a=>a.type==='defend'),
+ 'A visible raider near an outlying witch must trigger a response');
 director.reset();
 assert.equal(director.snapshot().raids,0);
 assert.equal(director.snapshot().decisions.length,0);

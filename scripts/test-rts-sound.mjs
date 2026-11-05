@@ -15,12 +15,17 @@ let currentTime=1000,downloads=0,starts=0,stops=0;
 class FakeAudioContext{
   state='suspended';
   destination={};
+  sampleRate=44100;
   resume(){this.state='running';return Promise.resolve();}
   suspend(){this.state='suspended';return Promise.resolve();}
   decodeAudioData(){return Promise.resolve({duration:.8});}
+  createBuffer(channels,length){
+    const samples=Array.from({length:channels},()=>new Float32Array(length));
+    return {getChannelData:index=>samples[index]};
+  }
   createGain(){return {gain:{value:1},connect(){},disconnect(){}};}
   createBufferSource(){
-    return {buffer:null,onended:null,connect(){},disconnect(){},
+    return {buffer:null,onended:null,playbackRate:{value:1},connect(){},disconnect(){},
       start(){starts++;},stop(){stops++;this.onended?.();}};
   }
 }
@@ -60,6 +65,16 @@ engine.reset();
 assert.equal(engine.snapshot().active,0,'reset must release every voice');
 assert.equal(engine.snapshot().pending,0,'reset must clear pending work');
 assert.equal(stops,3,'all active AudioBufferSources must stop on reset');
+const synthesizerDownloads=downloads;
+assert.equal(engine.playHammer(()=>false),false,'Unseen hammer strikes must be silent');
+assert.equal(engine.playHammer(()=>true),true,'Hammer strike is synthesized on first use');
+assert.equal(engine.snapshot().hammerSynthReady,true);
+assert(engine.hammerBuffer.getChannelData(0).some(sample=>Math.abs(sample)>.05),
+  'The hammer must contain a strong percussive transient');
+assert.equal(engine.playHammer(()=>true),false,'Rapid strikes remain throttled');
+assert.equal(downloads,synthesizerDownloads,'A hammer needs no remote MP3 download');
+engine.reset();
+assert.equal(engine.snapshot().active,0,'reset must also release the synthetic strike');
 const beforeHammerDownloads=downloads;
 assert.equal(await engine.play('work',()=>false),false,
   'unseen construction must not make noise');

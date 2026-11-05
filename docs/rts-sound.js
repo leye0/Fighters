@@ -38,7 +38,7 @@
         throw Error('Unknown sound category');
       this.allowEmptyCategories=new Set(allowEmptyCategories);
       this.maxActive=maxActive;this.maxCached=maxCached;this.maxPending=maxPending;
-      this.context=null;this.loading=null;
+      this.context=null;this.loading=null;this.hammerBuffer=null;
       this.catalog=Object.fromEntries(this.categories.map(type=>[type,[]]));
       this.cache=new Map();this.pending=new Map();this.controllers=new Set();
       this.active=new Set();this.lastSound=new Map();this.lastTime=new Map();
@@ -163,6 +163,52 @@
         (typeof canHear!=='function'||canHear());}
       catch(_){return false;}
     }
+    // Original layered hammer impact: deep wooden strike, a ringing steel
+    // overtone and a short noisy contact. Generated once per AudioContext,
+    // without downloads or the old, thin repeating MP3 sample.
+    makeHammerBuffer(){
+      const rate=this.context.sampleRate||44100,length=Math.ceil(rate*.3);
+      const buffer=this.context.createBuffer(2,length,rate);
+      let seed=0x5fb827a3;
+      for(let i=0;i<length;i++){
+        const t=i/rate,env=Math.min(1,t*1800);
+        seed=(1664525*seed+1013904223)>>>0;
+        const noise=(seed/2147483648-1)*Math.exp(-t*88);
+        const body=Math.sin(2*Math.PI*(185*t-95*t*t))*.43*Math.exp(-t*27);
+        const metal=Math.sin(2*Math.PI*(795*t+170*t*t))*.31*Math.exp(-t*16);
+        const chime=Math.sin(2*Math.PI*1490*t)*.13*Math.exp(-t*35);
+        for(let channel=0;channel<2;channel++){
+          const sample=body+metal*(channel===0?1:.94)+
+            chime*(channel===0?.9:1)+noise*.16;
+          buffer.getChannelData(channel)[i]=sample*env;
+        }
+      }
+      return buffer;
+    }
+    playHammer(canHear=()=>true){
+      if(!this.categories.includes('work')||!this.canPlay(canHear))return false;
+      const now=this.now(),last=this.lastTime.get('work')??-Infinity;
+      if(now-last<MIX.work.cooldown){this.stats.cooldownBlocked++;return false;}
+      if(this.active.size>=this.maxActive)return false;
+      if(typeof this.context.createBuffer!=='function')return this.play('work',canHear);
+      try{
+        if(!this.hammerBuffer)this.hammerBuffer=this.makeHammerBuffer();
+        const source=this.context.createBufferSource(),gain=this.context.createGain();
+        source.buffer=this.hammerBuffer;
+        source.playbackRate.value=.92+this.random()*.18;
+        gain.gain.value=.30;
+        source.connect(gain);gain.connect(this.context.destination);
+        const voice={source,gain};this.active.add(voice);
+        source.onended=()=>{
+          this.active.delete(voice);source.disconnect();gain.disconnect();
+        };
+        source.start();this.lastTime.set('work',now);this.stats.played++;
+        return true;
+      }catch(error){
+        this.lastError='Hammer synthesis: '+String(error);
+        return false;
+      }
+    }
     async play(category,canHear=()=>true){
       if(!this.categories.includes(category))return false;
       if(!this.canPlay(canHear)){
@@ -217,6 +263,7 @@
         [type,this.catalog[type].length])),
         active:this.active.size,cached:this.cache.size,pending:this.pending.size,
         paused:this.paused,contextState:this.context?.state||'locked',
+        hammerSynthReady:!!this.hammerBuffer,
         lastError:this.lastError,...this.stats};
     }
   }

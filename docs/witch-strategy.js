@@ -14,6 +14,10 @@
   return building.hitbox?{x:(building.hitbox.minX+building.hitbox.maxX)/2,
    z:(building.hitbox.minZ+building.hitbox.maxZ)/2}:building;
  }
+ function defendersNear(witches,position,radius=18){
+  return witches.filter(u=>!u.dead&&u.role!=='worker'&&
+   distance(u,position)<=radius).map(u=>u.id);
+ }
  function planSite(type,buildings,valid){
   if(!COST[type]||typeof valid!=='function')return null;
   const occupied=buildings.filter(b=>!b.destroyed).map(b=>({...center(b),type:b.type}));
@@ -51,7 +55,10 @@
    const pending=state.pendingBuilds||[];
    const home=houses.find(b=>b.id===state.homeId)||houses[0];
    const enemies=state.orcs.filter(u=>!u.dead);
-   const attackers=enemies.filter(u=>buildings.some(b=>distance(u,center(b))<9));
+   // An attack against a patrol or worker is also an attack on the village;
+   // waiting for raiders to reach a building left outlying witches undefended.
+   const attackers=enemies.filter(u=>buildings.some(b=>distance(u,center(b))<13)||
+     own.some(w=>distance(u,w)<7));
    const threatened=attackers.length>0;
    if(threatened)this.lastThreat=this.clock;
    this.mode=threatened?'defend':this.clock-this.lastThreat<10?'recover':
@@ -142,5 +149,5 @@
    return actions;
   }
  }
- return {Director,planSite,COST};
+ return {Director,planSite,defendersNear,COST};
 });

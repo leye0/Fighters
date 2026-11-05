@@ -10,6 +10,8 @@
   const HARE_COUNT=16,HARE_FOOD=9,CORPSE_FOOD=42;
   const FOOD_PER_ORC_SECOND=.027,STARTING_FOOD=45,STARVATION_DAMAGE=2.3;
   const HUNT_SIGHT=10,EAT_SECONDS=1.6,RESPAWN_SECONDS=48;
+  // Hares still flee visibly, but an orc must gain ground reliably during a hunt.
+  const HARE_FLEE_SPEED=1.35,HARE_WANDER_SPEED=.7,HARE_CAPTURE_DISTANCE=1.2;
   const BASE_HOUSING=4,HUT_CAPACITY=Object.freeze([0,6,10,14]);
   const MAX_POPULATION=32;
   const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
@@ -105,7 +107,7 @@
         // A caught hare stays put while the orc completes the eating action.
         if(hare.caughtBy!=null){hare.moving=false;continue;}
         hare.turnIn-=dt;
-        let danger=null,closest=4;
+        let danger=null,closest=3.2;
         for(const orc of orcs){
           const d=distance(hare,orc);
           if(d<closest){danger=orc;closest=d;}
@@ -117,7 +119,7 @@
           hare.heading+=((this.random()*2)-1)*2.7;
           hare.turnIn=1.1+this.random()*3.8;
         }
-        const speed=danger?2.05:.7;
+        const speed=danger?HARE_FLEE_SPEED:HARE_WANDER_SPEED;
         const x=hare.x+Math.sin(hare.heading)*speed*dt;
         const z=hare.z+Math.cos(hare.heading)*speed*dt;
         if(Math.abs(x)>this.halfSize-1.3||Math.abs(z)>this.halfSize-1.3||
@@ -133,6 +135,7 @@
   }
   return Object.freeze({Economy,Hares,housingCap,hasCauldron,HARE_COUNT,
     HARE_FOOD,CORPSE_FOOD,FOOD_PER_ORC_SECOND,STARTING_FOOD,STARVATION_DAMAGE,
-    HUNT_SIGHT,EAT_SECONDS,RESPAWN_SECONDS,BASE_HOUSING,HUT_CAPACITY,
+    HUNT_SIGHT,EAT_SECONDS,RESPAWN_SECONDS,HARE_FLEE_SPEED,
+    HARE_WANDER_SPEED,HARE_CAPTURE_DISTANCE,BASE_HOUSING,HUT_CAPACITY,
     MAX_POPULATION});
 });
