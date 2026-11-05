@@ -173,22 +173,54 @@ assert.equal(await witch.play('interaction',()=>true),true,
 witch.reset();
 assert.equal(witch.snapshot().active,0);
 
-// All fifteen shuffled Witch identities must refer to a source slated for
-// import. A source can have two nuanced persona variants, never a new random
-// recording on each selection.
+// The game uses one stable timbre per role; events vary within that role.
+// Attack orders must use the battle-cry pool, never the quiet acknowledgement.
 const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
-const importer=readFileSync(new URL('./import-witch-voices.py',import.meta.url),'utf8');
-const presetBlock=html.match(/const WITCH_VOICE_PRESETS=Object.freeze\(\[([\s\S]*?)\]\);/)?.[1];
-assert(presetBlock,'witch voice persona catalog must exist');
-const presets=[...presetBlock.matchAll(/path:'interaction\/([A-Za-z][A-Za-z0-9_-]*)\.mp3',rate:([\d.]+),cents:([-\d]+)/g)];
-assert.equal(presets.length,15,'exactly fifteen voice identities');
-assert.equal(new Set(presets.map(p=>p[1])).size,10,'ten distinct source recordings');
-for(const [,name,rate,cents] of presets){
-  assert(importer.includes(`("${name}",`),`missing licensed source for ${name}`);
-  assert(+rate>=.94&&+rate<=1.05,'persona speed must be subtle');
-  assert(Math.abs(+cents)<=45,'persona pitch must be subtle');
+assert(html.includes("categories:['interaction','creation','attack','loud','work']"),
+  'Orc battle cries are loaded alongside the death-grunt effects');
+assert(html.includes("categories:['interaction','creation','attack','destruction','work']"),
+  'Witch battle cries are loaded');
+assert(html.includes("acknowledgePlayerOrder(actors.filter(actor=>actor.attackOrder===target),'attack')"),
+  'attack commands must trigger forceful speech');
+assert(!html.includes('WITCH_VOICE_PRESETS'),
+  'unpredictable old Freesound Witch acknowledgements are retired');
+for(const [faction,roles] of Object.entries({
+  witch:['worker','guard','arcane'],orc:['worker','warrior','shaman']
+})){
+  for(const role of roles)assert(html.includes(`${role}:'${role}'`)||
+    html.includes(`:'${role}'`),`missing ${faction} voice ${role}`);
 }
-assert(html.includes('shuffledDraw(witchVoiceDeck,WITCH_VOICE_PRESETS)'),
-  'witch voice is assigned once when she spawns');
 
-console.log('PASS RTS sound engines: Orc random pools and fog; Witch categories, iOS resume, visibility, pause, reset and bounded memory.');
+const voices={sounds:[
+  {category:'interaction',path:'interaction/worker_01.mp3',voice:'worker'},
+  {category:'interaction',path:'interaction/worker_02.mp3',voice:'worker'},
+  {category:'interaction',path:'interaction/guard_01.mp3',voice:'guard'},
+  {category:'attack',path:'attack/worker_01.mp3',voice:'worker'},
+  {category:'attack',path:'attack/guard_01.mp3',voice:'guard'},
+]};
+let time=50000;
+const roleEngine=new Engine({categories:['interaction','attack'],
+  contextFactory:()=>new FakeAudioContext(),now:()=>time,random:()=>0,
+  fetcher:async url=>url.endsWith('manifest.json')?
+    {ok:true,json:async()=>voices}:
+    {ok:true,arrayBuffer:async()=>new ArrayBuffer(80)}
+});
+roleEngine.unlock();await roleEngine.load();
+assert.equal(await roleEngine.play('interaction',()=>true,{voice:'guard'}),true);
+assert.equal(roleEngine.lastSound.get('interaction:guard'),'interaction/guard_01.mp3');
+time+=500;
+assert.equal(await roleEngine.play('interaction',()=>true,{voice:'worker'}),true);
+assert.equal(roleEngine.lastSound.get('interaction:worker'),'interaction/worker_01.mp3');
+time+=500;
+assert.equal(await roleEngine.play('interaction',()=>true,{voice:'worker'}),true);
+assert.equal(roleEngine.lastSound.get('interaction:worker'),'interaction/worker_02.mp3',
+  'one role rotates its four phrases without repeating the immediately previous one');
+time+=500;
+assert.equal(await roleEngine.play('attack',()=>true,{voice:'guard'}),true);
+assert.equal(roleEngine.lastSound.get('attack:guard'),'attack/guard_01.mp3');
+time+=700;
+assert.equal(await roleEngine.play('attack',()=>true,{voice:'elder'}),false,
+  'unknown voice must stay silent rather than playing another role');
+roleEngine.reset();
+
+console.log('PASS RTS sound engines: role-stable Orc/Witch creation, selection and attack; fog, iOS resume, pause, reset and bounded memory.');

@@ -1,123 +1,486 @@
 {
+  "generator": "qwen/qwen3-tts",
+  "generated_at": "2026-11-05T19:04:53.065892+00:00",
+  "faction": "witches",
+  "voice_roles": [
+    "worker",
+    "guard",
+    "arcane",
+    "elder"
+  ],
+  "categories": {
+    "creation": 20,
+    "interaction": 16,
+    "attack": 16
+  },
   "sounds": [
     {
-      "category": "interaction",
-      "name": "Yes_Excited",
-      "path": "interaction/Yes_Excited.mp3",
-      "utterance": "yes",
-      "freesound_id": 353103,
-      "source_url": "https://freesound.org/people/musamdu/sounds/353103/",
-      "author": "musamdu",
-      "title": "Girl Screams 'Yes!'",
-      "license": "CC0"
-    },
-    {
-      "category": "interaction",
-      "name": "Yes_Dignified",
-      "path": "interaction/Yes_Dignified.mp3",
-      "utterance": "yes",
-      "freesound_id": 235073,
-      "source_url": "https://freesound.org/people/Reitanna/sounds/235073/",
-      "author": "Reitanna",
-      "title": "mnyes2.wav",
-      "license": "CC0"
-    },
-    {
-      "category": "interaction",
-      "name": "Yes_RealReaction",
-      "path": "interaction/Yes_RealReaction.mp3",
-      "utterance": "yes",
-      "freesound_id": 242693,
-      "source_url": "https://freesound.org/people/Reitanna/sounds/242693/",
-      "author": "Reitanna",
-      "title": "oh yes!.wav",
-      "license": "CC0"
-    },
-    {
-      "category": "interaction",
-      "name": "Yes_YepYep",
-      "path": "interaction/Yes_YepYep.mp3",
-      "utterance": "yes",
-      "freesound_id": 547354,
-      "source_url": "https://freesound.org/people/Legnalegna55/sounds/547354/",
-      "author": "Legnalegna55",
-      "title": "YEP YEP.",
-      "license": "CC0"
-    },
-    {
-      "category": "interaction",
-      "name": "Yes_OhYeah",
-      "path": "interaction/Yes_OhYeah.mp3",
-      "utterance": "yes",
-      "freesound_id": 539277,
-      "source_url": "https://freesound.org/people/Legnalegna55/sounds/539277/",
-      "author": "Legnalegna55",
-      "title": "OH YEAH",
-      "license": "CC0"
-    },
-    {
-      "category": "interaction",
-      "name": "Yes_Playful",
-      "path": "interaction/Yes_Playful.mp3",
-      "utterance": "yes",
-      "freesound_id": 572608,
-      "source_url": "https://freesound.org/people/melisandepope/sounds/572608/",
-      "author": "melisandepope",
-      "title": "Yeah03.wav",
-      "license": "CC0"
-    },
-    {
-      "category": "interaction",
-      "name": "Yes_Clear",
-      "path": "interaction/Yes_Clear.mp3",
-      "utterance": "yes",
-      "freesound_id": 71466,
-      "source_url": "https://freesound.org/people/NoiseCollector/sounds/71466/",
-      "author": "NoiseCollector",
-      "title": "yes.wav",
-      "license": "CC BY 3.0"
-    },
-    {
-      "category": "interaction",
-      "name": "Yes_Morena",
-      "path": "interaction/Yes_Morena.mp3",
-      "utterance": "yes",
-      "freesound_id": 157506,
-      "source_url": "https://freesound.org/people/MatteusNova/sounds/157506/",
-      "author": "MatteusNova",
-      "title": "The word yes",
-      "license": "CC BY 4.0"
-    },
-    {
-      "category": "interaction",
-      "name": "Uhu_Assured",
-      "path": "interaction/Uhu_Assured.mp3",
-      "utterance": "uhu",
-      "freesound_id": 264610,
-      "source_url": "https://freesound.org/people/shadoWisp/sounds/264610/",
-      "author": "shadoWisp",
-      "title": "uh huh.wav",
-      "license": "CC BY 3.0"
-    },
-    {
-      "category": "interaction",
-      "name": "Uhu_Cartoon",
-      "path": "interaction/Uhu_Cartoon.mp3",
-      "utterance": "uhu",
-      "freesound_id": 436443,
-      "source_url": "https://freesound.org/people/Iceofdoom/sounds/436443/",
-      "author": "Iceofdoom",
-      "title": "Uh Huh - Little Cartoon Female",
-      "license": "CC BY 4.0"
+      "category": "creation",
+      "voice": "worker",
+      "path": "creation/worker_01.mp3",
+      "text": "Hi!",
+      "duration_seconds": 1.04,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
     },
     {
       "category": "creation",
-      "name": "Witch_Creation",
-      "path": "creation/Witch_Creation.mp3",
-      "source_url": "https://freesound.org/people/NikoMyth/sounds/348142/",
-      "author": "NikoMyth",
-      "title": "Witch's Laugh.wav",
-      "license": "CC0"
+      "voice": "worker",
+      "path": "creation/worker_02.mp3",
+      "text": "Hello!",
+      "duration_seconds": 0.96,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "creation",
+      "voice": "worker",
+      "path": "creation/worker_03.mp3",
+      "text": "Here I am!",
+      "duration_seconds": 1.12,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "creation",
+      "voice": "worker",
+      "path": "creation/worker_04.mp3",
+      "text": "Good morning!",
+      "duration_seconds": 1.2,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "creation",
+      "voice": "worker",
+      "path": "creation/worker_05.mp3",
+      "text": "The coven is ready!",
+      "duration_seconds": 1.12,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "interaction",
+      "voice": "worker",
+      "path": "interaction/worker_01.mp3",
+      "text": "Yes?",
+      "duration_seconds": 1.2,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "interaction",
+      "voice": "worker",
+      "path": "interaction/worker_02.mp3",
+      "text": "At your service!",
+      "duration_seconds": 1.2,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "interaction",
+      "voice": "worker",
+      "path": "interaction/worker_03.mp3",
+      "text": "I'm listening.",
+      "duration_seconds": 1.44,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "interaction",
+      "voice": "worker",
+      "path": "interaction/worker_04.mp3",
+      "text": "What is your wish?",
+      "duration_seconds": 1.52,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "attack",
+      "voice": "worker",
+      "path": "attack/worker_01.mp3",
+      "text": "Attack!",
+      "duration_seconds": 0.72,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
+    },
+    {
+      "category": "attack",
+      "voice": "worker",
+      "path": "attack/worker_02.mp3",
+      "text": "For the Wiccans!",
+      "duration_seconds": null,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-direct-voice-design-shout"
+    },
+    {
+      "category": "attack",
+      "voice": "worker",
+      "path": "attack/worker_03.mp3",
+      "text": "For the witches!",
+      "duration_seconds": 0.96,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
+    },
+    {
+      "category": "attack",
+      "voice": "worker",
+      "path": "attack/worker_04.mp3",
+      "text": "Fight!",
+      "duration_seconds": 0.64,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
+    },
+    {
+      "category": "creation",
+      "voice": "guard",
+      "path": "creation/guard_01.mp3",
+      "text": "Hi!",
+      "duration_seconds": 0.64,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "creation",
+      "voice": "guard",
+      "path": "creation/guard_02.mp3",
+      "text": "Hello!",
+      "duration_seconds": 0.88,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "creation",
+      "voice": "guard",
+      "path": "creation/guard_03.mp3",
+      "text": "Here I am!",
+      "duration_seconds": 1.04,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "creation",
+      "voice": "guard",
+      "path": "creation/guard_04.mp3",
+      "text": "Good morning!",
+      "duration_seconds": 0.96,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "creation",
+      "voice": "guard",
+      "path": "creation/guard_05.mp3",
+      "text": "The coven is ready!",
+      "duration_seconds": 1.44,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "interaction",
+      "voice": "guard",
+      "path": "interaction/guard_01.mp3",
+      "text": "Yes?",
+      "duration_seconds": 1.04,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "interaction",
+      "voice": "guard",
+      "path": "interaction/guard_02.mp3",
+      "text": "At your service!",
+      "duration_seconds": 1.36,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "interaction",
+      "voice": "guard",
+      "path": "interaction/guard_03.mp3",
+      "text": "I'm listening.",
+      "duration_seconds": 1.2,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "interaction",
+      "voice": "guard",
+      "path": "interaction/guard_04.mp3",
+      "text": "What is your wish?",
+      "duration_seconds": 1.36,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "attack",
+      "voice": "guard",
+      "path": "attack/guard_01.mp3",
+      "text": "Attack!",
+      "duration_seconds": 0.72,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
+    },
+    {
+      "category": "attack",
+      "voice": "guard",
+      "path": "attack/guard_02.mp3",
+      "text": "For the Wiccans!",
+      "duration_seconds": null,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-direct-voice-design-shout"
+    },
+    {
+      "category": "attack",
+      "voice": "guard",
+      "path": "attack/guard_03.mp3",
+      "text": "For the witches!",
+      "duration_seconds": 1.12,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
+    },
+    {
+      "category": "attack",
+      "voice": "guard",
+      "path": "attack/guard_04.mp3",
+      "text": "Fight!",
+      "duration_seconds": 0.64,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
+    },
+    {
+      "category": "creation",
+      "voice": "arcane",
+      "path": "creation/arcane_01.mp3",
+      "text": "Hi!",
+      "duration_seconds": 0.72,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "creation",
+      "voice": "arcane",
+      "path": "creation/arcane_02.mp3",
+      "text": "Hello!",
+      "duration_seconds": 1.12,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "creation",
+      "voice": "arcane",
+      "path": "creation/arcane_03.mp3",
+      "text": "Here I am!",
+      "duration_seconds": 0.88,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "creation",
+      "voice": "arcane",
+      "path": "creation/arcane_04.mp3",
+      "text": "Good morning!",
+      "duration_seconds": 0.72,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "creation",
+      "voice": "arcane",
+      "path": "creation/arcane_05.mp3",
+      "text": "The coven is ready!",
+      "duration_seconds": 1.84,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "interaction",
+      "voice": "arcane",
+      "path": "interaction/arcane_01.mp3",
+      "text": "Yes?",
+      "duration_seconds": 1.04,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "interaction",
+      "voice": "arcane",
+      "path": "interaction/arcane_02.mp3",
+      "text": "At your service!",
+      "duration_seconds": 1.04,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "interaction",
+      "voice": "arcane",
+      "path": "interaction/arcane_03.mp3",
+      "text": "I'm listening.",
+      "duration_seconds": 0.8,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "interaction",
+      "voice": "arcane",
+      "path": "interaction/arcane_04.mp3",
+      "text": "What is your wish?",
+      "duration_seconds": 1.12,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "attack",
+      "voice": "arcane",
+      "path": "attack/arcane_01.mp3",
+      "text": "Attack!",
+      "duration_seconds": 0.72,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
+    },
+    {
+      "category": "attack",
+      "voice": "arcane",
+      "path": "attack/arcane_02.mp3",
+      "text": "For the Wiccans!",
+      "duration_seconds": null,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-direct-voice-design-shout"
+    },
+    {
+      "category": "attack",
+      "voice": "arcane",
+      "path": "attack/arcane_03.mp3",
+      "text": "For the witches!",
+      "duration_seconds": 1.52,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
+    },
+    {
+      "category": "attack",
+      "voice": "arcane",
+      "path": "attack/arcane_04.mp3",
+      "text": "Fight!",
+      "duration_seconds": 0.8,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
+    },
+    {
+      "category": "creation",
+      "voice": "elder",
+      "path": "creation/elder_01.mp3",
+      "text": "Hi!",
+      "duration_seconds": 1.2,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "creation",
+      "voice": "elder",
+      "path": "creation/elder_02.mp3",
+      "text": "Hello!",
+      "duration_seconds": 1.12,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "creation",
+      "voice": "elder",
+      "path": "creation/elder_03.mp3",
+      "text": "Here I am!",
+      "duration_seconds": 1.36,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "creation",
+      "voice": "elder",
+      "path": "creation/elder_04.mp3",
+      "text": "Good morning!",
+      "duration_seconds": 1.2,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "creation",
+      "voice": "elder",
+      "path": "creation/elder_05.mp3",
+      "text": "The coven is ready!",
+      "duration_seconds": 1.76,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "interaction",
+      "voice": "elder",
+      "path": "interaction/elder_01.mp3",
+      "text": "Yes?",
+      "duration_seconds": 0.88,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "interaction",
+      "voice": "elder",
+      "path": "interaction/elder_02.mp3",
+      "text": "At your service!",
+      "duration_seconds": 1.28,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "interaction",
+      "voice": "elder",
+      "path": "interaction/elder_03.mp3",
+      "text": "I'm listening.",
+      "duration_seconds": 1.6,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "interaction",
+      "voice": "elder",
+      "path": "interaction/elder_04.mp3",
+      "text": "What is your wish?",
+      "duration_seconds": 1.76,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-character-voice"
+    },
+    {
+      "category": "attack",
+      "voice": "elder",
+      "path": "attack/elder_01.mp3",
+      "text": "Attack!",
+      "duration_seconds": 0.8,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
+    },
+    {
+      "category": "attack",
+      "voice": "elder",
+      "path": "attack/elder_02.mp3",
+      "text": "For the Wiccans!",
+      "duration_seconds": null,
+      "model": "qwen/qwen3-tts",
+      "performance": "approved-direct-voice-design-shout"
+    },
+    {
+      "category": "attack",
+      "voice": "elder",
+      "path": "attack/elder_03.mp3",
+      "text": "For the witches!",
+      "duration_seconds": 2.0,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
+    },
+    {
+      "category": "attack",
+      "voice": "elder",
+      "path": "attack/elder_04.mp3",
+      "text": "Fight!",
+      "duration_seconds": 0.72,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
     },
     {
       "category": "work",
@@ -128,11 +491,5 @@
       "title": "Blacksmith's Hammer",
       "license": "CC0"
     }
-  ],
-  "counts": {
-    "interaction": 10,
-    "creation": 1,
-    "destruction": 0,
-    "work": 1
-  }
+  ]
 }

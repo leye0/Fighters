@@ -19,6 +19,7 @@
     work:{gain:.22,cooldown:450},
     interaction:{gain:.34,cooldown:450},
     creation:{gain:.40,cooldown:1050},
+    attack:{gain:.48,cooldown:600},
     destruction:{gain:.38,cooldown:320}
   };
   const VALID_PATH=/^[a-z]+\/[A-Za-z][A-Za-z0-9_-]*\.mp3$/;
@@ -40,6 +41,7 @@
       this.maxActive=maxActive;this.maxCached=maxCached;this.maxPending=maxPending;
       this.context=null;this.loading=null;this.hammerBuffer=null;
       this.catalog=Object.fromEntries(this.categories.map(type=>[type,[]]));
+      this.voices=Object.fromEntries(this.categories.map(type=>[type,Object.create(null)]));
       this.cache=new Map();this.pending=new Map();this.controllers=new Set();
       this.active=new Set();this.lastSound=new Map();this.lastTime=new Map();
       this.paused=false;this.generation=0;this.lastError=null;
@@ -53,16 +55,21 @@
           return response.json();
         }).then(data=>{
           const groups=Object.fromEntries(this.categories.map(type=>[type,[]]));
+          const voices=Object.fromEntries(this.categories.map(type=>[type,Object.create(null)]));
           for(const sound of data.sounds||[]){
             if(!this.categories.includes(sound.category)||
               typeof sound.path!=='string'||!VALID_PATH.test(sound.path)||
               !sound.path.startsWith(sound.category+'/'))continue;
             groups[sound.category].push(sound.path);
+            if(typeof sound.voice==='string'&&/^[a-z]+$/.test(sound.voice)){
+              (voices[sound.category][sound.voice]??=[]).push(sound.path);
+            }
           }
           if(this.categories.some(type=>groups[type].length===0&&
             !this.allowEmptyCategories.has(type)))
             throw Error('Sound categories are incomplete');
           this.catalog=groups;
+          this.voices=voices;
           return groups;
         }).catch(error=>{
           this.stats.loadErrors++;this.lastError=String(error);
@@ -226,11 +233,15 @@
       const groups=await this.load();
       if(!groups||!this.canPlay(canHear))return false;
       if(this.active.size>=this.maxActive)return false;
-      const paths=groups[category];
+      // A character's role is resolved against the verified manifest, never
+      // interpolated into a URL. Missing roles are silent, not another voice.
+      const voiceRole=typeof options.voice==='string'?options.voice:null;
+      const paths=voiceRole?this.voices[category]?.[voiceRole]:groups[category];
       if(!paths?.length)return false;
       const pinned=typeof options.path==='string'&&paths.includes(options.path)?
         options.path:null;
-      const previous=this.lastSound.get(category);
+      const historyKey=voiceRole?category+':'+voiceRole:category;
+      const previous=this.lastSound.get(historyKey);
       const available=pinned?[pinned]:paths.length>1?
         paths.filter(path=>path!==previous):paths;
       const path=available[Math.min(available.length-1,
@@ -257,7 +268,7 @@
       };
       try{
         source.start();
-        this.lastSound.set(category,path);
+        this.lastSound.set(historyKey,path);
         this.lastTime.set(category,this.now());
         this.stats.played++;
         return true;
