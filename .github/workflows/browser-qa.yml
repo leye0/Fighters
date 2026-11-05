@@ -37,7 +37,9 @@ on:
       - 'docs/orc-strategy.js'
       - 'docs/witch-strategy.js'
       - 'docs/rts-roles.js'
+      - 'docs/orc-appearance.js'
       - 'scripts/test-rts-roles.mjs'
+      - 'scripts/test-orc-appearance.mjs'
       - 'scripts/test-orc-strategy.mjs'
       - 'scripts/test-witch-strategy.mjs'
       - 'scripts/compress-character-assets.sh'
@@ -88,6 +90,7 @@ jobs:
           node scripts/test-orc-strategy.mjs
           node scripts/test-witch-strategy.mjs
           node scripts/test-rts-roles.mjs
+          node scripts/test-orc-appearance.mjs
           node scripts/test-rts-farming.mjs
           node scripts/test-rts-orc-food.mjs
           node scripts/test-rts-forest.mjs
