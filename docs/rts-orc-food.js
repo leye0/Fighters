@@ -17,6 +17,21 @@
   const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
   const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 
+  // Low-poly hares have no supplied rig animation. This shared pose gives
+  // them a readable two-beat hop and a subtle breathing/ear-bob while idle.
+  function hareAnimationPose(hare,elapsed=0){
+    if(!hare?.active)return {height:0,pitch:0,stretch:1,squash:1};
+    if(!hare.moving){
+      const breath=Math.sin(elapsed*2.8+hare.id*.9);
+      return {height:0,pitch:.018*breath,stretch:1+.02*breath,
+        squash:1-.015*breath};
+    }
+    const leap=Math.abs(Math.sin(hare.hopPhase));
+    const recoil=Math.sin(hare.hopPhase*2);
+    return {height:.26*leap,pitch:.13*recoil,
+      stretch:1+.16*leap,squash:1-.11*leap};
+  }
+
   function housingCap(buildings){
     return Math.min(MAX_POPULATION,BASE_HOUSING+buildings.reduce((cap,b)=>
       cap+(b.type==='hut'&&b.clanId==='orcs'&&!b.destroyed?
@@ -133,7 +148,7 @@
       }
     }
   }
-  return Object.freeze({Economy,Hares,housingCap,hasCauldron,HARE_COUNT,
+  return Object.freeze({Economy,Hares,housingCap,hasCauldron,hareAnimationPose,HARE_COUNT,
     HARE_FOOD,CORPSE_FOOD,FOOD_PER_ORC_SECOND,STARTING_FOOD,STARVATION_DAMAGE,
     HUNT_SIGHT,EAT_SECONDS,RESPAWN_SECONDS,HARE_FLEE_SPEED,
     HARE_WANDER_SPEED,HARE_CAPTURE_DISTANCE,BASE_HOUSING,HUT_CAPACITY,

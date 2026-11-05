@@ -47,6 +47,15 @@ assert.equal(field.hares.length,16,'Many hares must roam');
 field.step(1,[]);
 assert(field.hares.some((hare,i)=>Math.hypot(hare.x-start[i].x,hare.z-start[i].z)>.1),
   'Hares must visibly move without player orders');
+const leaping={...field.hares[1],moving:true,hopPhase:Math.PI/2};
+const airborne=rules.hareAnimationPose(leaping,field.elapsed);
+assert(airborne.height>.2&&airborne.stretch>1&&airborne.squash<1,
+  'An animated running hare must actually leap, extend and tuck its body');
+const landing=rules.hareAnimationPose({...leaping,hopPhase:0},field.elapsed);
+assert.equal(landing.height,0,'A hop must return the hare to the ground');
+const atRest=rules.hareAnimationPose({...leaping,moving:false},field.elapsed);
+assert.equal(atRest.height,0,'A stationary or caught hare must stay grounded');
+assert(Math.abs(atRest.pitch)<.03,'A resting hare breathes without pitching out of control');
 assert(field.catch(0,'orc-1'),'A nearby orc must be able to capture a hare');
 assert(!field.catch(0,'orc-2'),'Two orcs cannot capture the same hare');
 const captured={x:field.hares[0].x,z:field.hares[0].z};

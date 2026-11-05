@@ -138,6 +138,35 @@ async function run(){
  check(struck.witches.filter(u=>u.role!=='worker').every(u=>
    u.attackTargetId===struck.orcs[0].id),
    'Nearby autonomous witch guards must retaliate when a worker is struck');
+ // Village alarms must travel across the whole map, even outside local sight.
+ await evaluate('window.__fightersQA.reset();window.__fightersQA.enableWitchAI(true)');
+ check(await evaluate('window.__fightersQA.placeUnit("witch",0,0,0)'),
+   'Could not position a distant witch defender');
+ check(await evaluate("window.__fightersQA.strikeBuilding('orc',0,'witch-house-01',650)"),
+   'Could not simulate a raid on the witch headquarters');
+ let alarm=await evaluate('window.__fightersQA.snapshot()');
+ check(alarm.witches[0].attackTargetId===alarm.orcs[0].id&&
+   alarm.witches[2].attackTargetId===alarm.orcs[0].id&&
+   alarm.witches[1].repairTargetId==='witch-house-01',
+   'Far-away witches must defend their village and a worker must urgently repair the house: '+
+   JSON.stringify({witches:alarm.witches,house:alarm.house}));
+ await evaluate('window.__fightersQA.advance(.5)');
+ alarm=await evaluate('window.__fightersQA.snapshot()');
+ check(alarm.witches[0].attackTargetId===alarm.orcs[0].id,
+   'A village defender must keep the emergency order while the AI plans its next raid');
+ await evaluate('window.__fightersQA.reset();window.__fightersQA.enableOrcAI(true)');
+ check(await evaluate('window.__fightersQA.placeUnit("orc",0,0,0)'),
+   'Could not position a distant orc defender');
+ const emergencyHut=(await evaluate('window.__fightersQA.snapshot()')).buildings.find(b=>b.type==='hut');
+ check(await evaluate('window.__fightersQA.strikeBuilding("witch",0,'+
+   JSON.stringify(emergencyHut.id)+',160)'),
+   'Could not simulate an attack on the orc village');
+ alarm=await evaluate('window.__fightersQA.snapshot()');
+ check(alarm.orcs.filter(u=>u.role!=='worker').every(u=>
+   u.attackTargetId===alarm.witches[0].id)&&
+   alarm.orcs[1].repairTargetId===emergencyHut.id,
+   'Distant orcs must rush to defend the hut and the worker must repair it: '+
+   JSON.stringify(alarm.orcs));
  await evaluate('window.__fightersQA.reset()');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.wood.witch===250&&s.wood.orc===350,'Wood reserve must belong to each faction');
@@ -608,6 +637,16 @@ async function run(){
  check(s.hares.models===16&&s.hares.animals.length===16&&
    s.hares.animals.every(h=>h.active),
    'Sixteen independent hares should share a genuine loaded 3D model');
+ const hareAnimation=await evaluate("(()=>{let highest=0,landings=0;"+
+   "for(let i=0;i<8;i++){window.__fightersQA.advance(.21);"+
+   "for(const h of window.__fightersQA.snapshot().hares.animals){"+
+   "if(h.moving){highest=Math.max(highest,h.hopHeight);"+
+   "if(h.hopHeight<.05)landings++;"+
+   "if(Math.abs(h.renderedHeight-h.hopHeight)>.0001)throw Error('Hare mesh not animated');"+
+   "}}}return {highest,landings}})()");
+ check(hareAnimation.highest>.16&&hareAnimation.landings>0,
+   'Running hares must visibly jump, stretch and land instead of sliding: '+
+   JSON.stringify(hareAnimation));
  check(s.orcFood.housingCap===10&&s.orcFood.mageUnlocked,
    'Initial hut must house six extra orcs and cauldron must unlock mages');
  const deposits=s.buildings.filter(b=>b.type==='mine');
@@ -962,16 +1001,21 @@ async function run(){
  const witchGoldBefore=s.gold.witch;
  check(await evaluate("window.__fightersQA.orderMine('witch',1,'neutral-gold-mine')"),
   'Witch worker could not take a mine job');
-  const miningSwing=await evaluate("(()=>{const seen={witch:false,orc:false};"+
+  const miningSwing=await evaluate("(()=>{const seen={witch:false,orc:false};let cargo=false,unpaid=false;"+
     "for(let i=0;i<38;i++){window.__fightersQA.advance(1);const s=window.__fightersQA.snapshot();"+
+    "if(s.mining.workers.some(w=>w.clan==='witch'&&w.phase==='carry'&&w.carrying)){"+
+    "cargo=true;if(s.gold.witch==="+witchGoldBefore+")unpaid=true;}"+
     "for(const kind of ['witch','orc'])if(s[kind==='witch'?'witches':'orcs'].some(u=>"+
     "u.role==='worker'&&u.animation==='Work_Swing'&&u.pickToolVisible&&"+
-    "!u.workToolVisible&&!u.hammerToolVisible&&!u.chopToolVisible))seen[kind]=true;}return seen})()");
+    "!u.workToolVisible&&!u.hammerToolVisible&&!u.chopToolVisible))seen[kind]=true;}return {...seen,cargo,unpaid}})()");
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.gold.witch>witchGoldBefore&&s.mining.totalMinedGold>0,
   'Witch worker never mined physical gold: '+JSON.stringify(s.mining));
   check(miningSwing.witch&&miningSwing.orc,
     'Workers of both clans must swing a pickaxe, not a scythe/axe, when mining: '+JSON.stringify(miningSwing));
+ check(miningSwing.cargo&&miningSwing.unpaid,
+   'Gold must be visibly carried and NOT credited before arrival at a friendly base: '+
+   JSON.stringify(miningSwing));
  check(s.mining.workers.every(u=>u.role==='worker'),
   'Non-worker character was assigned mining');
  // A construction order debits once, sends the worker to the real X/Z
