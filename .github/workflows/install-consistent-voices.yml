@@ -29,8 +29,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Confirm audio conversion availability
-        run: ffmpeg -hide_banner -version
+      - name: Install FFmpeg for consistent audio durations
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          ffmpeg -hide_banner -version
       - name: Apply per-unit phrase rotations
         run: git apply scripts/consistent-voices.patch
       - name: Verify game phrase rotations before generating audio
