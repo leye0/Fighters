@@ -153,6 +153,8 @@ async function run(){
  // alert independently without reconstructing all seven animated units.
  check(await evaluate('window.__fightersQA.placeUnit("witch",0,0,0)'),
    'Could not position a distant witch defender');
+ check(await evaluate('window.__fightersQA.placeUnitBesideBuilding("orc",0,"witch-house-01")'),
+   'Could not position a raider at the witch headquarters');
  check(await evaluate("window.__fightersQA.strikeBuilding('orc',0,'witch-house-01',650)"),
    'Could not simulate a raid on the witch headquarters');
  let alarm=await evaluate('window.__fightersQA.snapshot()');
@@ -169,6 +171,9 @@ async function run(){
  check(await evaluate('window.__fightersQA.placeUnit("orc",0,0,0)'),
    'Could not position a distant orc defender');
  const emergencyHut=(await evaluate('window.__fightersQA.snapshot()')).buildings.find(b=>b.type==='hut');
+ check(await evaluate('window.__fightersQA.placeUnitBesideBuilding("witch",0,'+
+   JSON.stringify(emergencyHut.id)+')'),
+   'Could not position a witch raider at the orc hut');
  check(await evaluate('window.__fightersQA.strikeBuilding("witch",0,'+
    JSON.stringify(emergencyHut.id)+',160)'),
    'Could not simulate an attack on the orc village');
@@ -215,6 +220,48 @@ async function run(){
    'Orcs must be bright green and broad with the original animated hands and rig: '+
    JSON.stringify(orcAppearance));
  console.log('PASS ORC SILHOUETTES AND GRIPS:',JSON.stringify(orcAppearance));
+ // The HUMAN clan also needs an alarm. Previously disabling its AI disabled
+ // every building-hit response and left grouped fighters idling during raids.
+ await evaluate('window.__fightersQA.enableWitchAI(false)');
+ check(await evaluate('window.__fightersQA.placeUnitBesideBuilding("orc",0,"witch-house-01")'),
+   'Could not place the attacker at the player witches village');
+ check(await evaluate("window.__fightersQA.strikeUnit('orc',0,'witch',1,4)"),
+   'Could not trigger a local attack on a player witch worker');
+ let playerAlarm=await evaluate('window.__fightersQA.snapshot()');
+ check(playerAlarm.witches.filter(u=>u.role!=='worker').every(u=>
+   u.attackTargetId===playerAlarm.orcs[0].id),
+   'Player guards must protect a worker without requiring autonomous AI');
+ check(await evaluate("window.__fightersQA.strikeBuilding('orc',0,'witch-house-01',10)"),
+   'Could not trigger the player-controlled witch village alarm');
+ playerAlarm=await evaluate('window.__fightersQA.snapshot()');
+ check(playerAlarm.witches.filter(u=>u.role!=='worker').every(u=>
+   u.attackTargetId===playerAlarm.orcs[0].id&&u.defenseAnchor),
+   'Idle player witches must rush to defend their home despite AI being disabled');
+ check(await evaluate('window.__fightersQA.moveUnitTo("orc",0,0,0)'),
+   'Could not move the raider past the village defense leash');
+ await evaluate('window.__fightersQA.advance(.12)');
+ playerAlarm=await evaluate('window.__fightersQA.snapshot()');
+ check(playerAlarm.witches.filter(u=>u.role!=='worker').every(u=>
+   u.attackTargetId!==playerAlarm.orcs[0].id&&!u.defenseAnchor),
+   'Defenders must release a raider that flees far beyond the village leash');
+ await evaluate('window.__fightersQA.enableOrcAI(false)');
+ const playerHut=(await evaluate('window.__fightersQA.snapshot()')).buildings.find(b=>b.type==='hut');
+ check(await evaluate('window.__fightersQA.placeUnitBesideBuilding("witch",0,'+
+   JSON.stringify(playerHut.id)+')'),
+   'Could not place the attacker at the player orcs village');
+ check(await evaluate("window.__fightersQA.strikeUnit('witch',0,'orc',1,4)"),
+   'Could not trigger a local attack on a player orc worker');
+ playerAlarm=await evaluate('window.__fightersQA.snapshot()');
+ check(playerAlarm.orcs.filter(u=>u.role!=='worker').every(u=>
+   u.attackTargetId===playerAlarm.witches[0].id),
+   'Player orc guards must protect a worker without autonomous AI');
+ check(await evaluate('window.__fightersQA.strikeBuilding("witch",0,'+
+   JSON.stringify(playerHut.id)+',10)'),
+   'Could not trigger the player-controlled orc village alarm');
+ playerAlarm=await evaluate('window.__fightersQA.snapshot()');
+ check(playerAlarm.orcs.filter(u=>u.role!=='worker').every(u=>
+   u.attackTargetId===playerAlarm.witches[0].id&&u.defenseAnchor),
+   'Idle player orcs must also defend without an autonomous director');
  await evaluate('window.__fightersQA.spawnWitches(20)');
  const hairCrowd=(await evaluate('window.__fightersQA.snapshot()')).witches;
  check(new Set(hairCrowd.map(u=>u.hairStyle)).size===5&&

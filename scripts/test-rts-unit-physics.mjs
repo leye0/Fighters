@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-const {RADIUS,sweptCircleHit,freeForUnit,step,separate,formationGoals}=require('../docs/rts-unit-physics.js');
+const {RADIUS,sweptCircleHit,freeForUnit,watchMovement,step,separate,formationGoals}=require('../docs/rts-unit-physics.js');
 const {Navigator}=require('../docs/rts-navigation.js');
 const unit=(id,x,z)=>({id,dead:false,root:{position:{x,z}}});
 const nav=new Navigator({halfSize:28,radius:RADIUS});
@@ -28,6 +28,33 @@ for(let i=0;i<150&&p.x<4.99;i++){
 }
 assert(p.x>4.7,'Crowd steering must eventually reach destination');
 assert(sideDrift>.04,'Agent should favor a free lane rather than walking directly through a neighbor');
+
+// A walk loop with negligible net displacement is not genuine progress. Give
+// the engine time to retry forward movement, then surface a blocked command.
+const stuck=unit(77,0,0),waypoint={x:5,z:0};
+assert.equal(watchMovement(stuck,stuck.root.position,waypoint,1/60),0);
+for(let stall=1;stall<=3;stall++){
+  // Simulate tiny back-and-forth motions which look animated but go nowhere.
+  for(let frame=0;frame<70;frame++){
+    stuck.root.position.x=frame%2?.02:0;
+    assert.equal(watchMovement(stuck,stuck.root.position,waypoint,1/60),0);
+  }
+  assert.equal(watchMovement(stuck,stuck.root.position,waypoint,.7),stall,
+    'Stalled movement must be detected even while the character oscillates');
+}
+stuck.root.position.x=.8;
+assert.equal(watchMovement(stuck,stuck.root.position,waypoint,1/60),0,
+ 'Meaningful physical progress must reset the stuck watchdog');
+assert.equal(stuck.navWatch.stalls,0);
+assert.equal(watchMovement(stuck,stuck.root.position,{x:-5,z:0},1/60),0,
+ 'A new waypoint must not inherit an older blocked command');
+
+const pressed=unit(99,0,0),crowd=[pressed,...Array.from({length:4},(_,i)=>
+ unit(100+i,.85,i*.28-.42))];
+pressed.unstickSeconds=2;
+const emergencyStep=step({x:0,z:0},{x:3,z:0},.08,pressed,crowd,nav);
+assert(emergencyStep&&emergencyStep.x>.079&&Math.abs(emergencyStep.z)<1e-8,
+ 'A stuck unit must temporarily walk forward through soft crowd pressure');
 
 // A narrow corridor has no free passing lane. Units must be able to overlap
 // temporarily, instead of freezing at the mouth of the passage.
@@ -83,4 +110,4 @@ for(const destination of [{x:8,z:7},{x:26.8,z:26.8},{x:0,z:0},{x:-26,z:-26}]){
  const again=formationGoals(formation,destination,nav);
  assert.deepEqual(goals,again,'Group movement must assign stable deterministic slots');
 }
-console.log('PASS soft RTS crowds: reserved 20-unit formations, preferred lanes, open-field dispersion, last-resort overlap and hard building walls.');
+console.log('PASS soft RTS crowds: reserved formations, escape from stalls, preferred lanes, dispersion and hard building walls.');
