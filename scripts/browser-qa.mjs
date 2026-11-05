@@ -154,6 +154,15 @@ async function run(){
  }
  check(s.assets.sharedMaterials<120,
   'Too many cosmetic materials: '+s.assets.sharedMaterials);
+ const orcAppearance=await evaluate('window.__fightersQA.auditOrcAppearance()');
+ check(orcAppearance.length===4&&orcAppearance.every(o=>
+   o.bones===65&&o.garmentMeshes===4&&o.bulkyMeshes===4&&
+   o.changedVertices>0&&o.skeletonScaleUnchanged&&
+   (o.socketOnOriginalHand===null||o.socketOnOriginalHand===true)&&
+   [0x65f31a,0x83fa27,0x4ae919,0x76f52a].includes(o.skinColor)&&o.glow===0x133d04),
+   'Orcs must be bright green and broad with the original animated hands and rig: '+
+   JSON.stringify(orcAppearance));
+ console.log('PASS ORC SILHOUETTES AND GRIPS:',JSON.stringify(orcAppearance));
  await evaluate('window.__fightersQA.spawnWitches(20)');
  const hairCrowd=(await evaluate('window.__fightersQA.snapshot()')).witches;
  check(new Set(hairCrowd.map(u=>u.hairStyle)).size===5&&

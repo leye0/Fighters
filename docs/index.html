@@ -451,6 +451,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 <script src="./orc-strategy.js"></script>
 <script src="./witch-strategy.js"></script>
 <script src="./rts-roles.js"></script>
+<script src="./orc-appearance.js"></script>
 <script src="./rts-fog.js"></script>
 <script src="./rts-sound.js"></script>
 <script src="./rts-farming.js"></script>
@@ -1517,6 +1518,7 @@ function animation(actor,name,force=false){
 // The official Peasant meshes carry exactly the same named 65-bone Quaternius rig.
 // Skin the garments/hair with this actor's own skeleton, never copy foreign joints.
 const headGeometryCache=new WeakMap();
+const orcAppearance=window.FightersOrcAppearance;
 const WITCH_HAIR_STYLES=['short','long','very-long','ponytail','side-buns'];
 const WITCH_HAIR_COLORS=[
   {name:'black',hex:0x191718},{name:'blonde',hex:0xe9c87e},
@@ -1578,10 +1580,14 @@ function addPonytail(skeleton,color){
   tail.position.set(0,-.14,-.18);
   head.add(tail);
 }
-function headOnlyGeometry(body){
-  if(headGeometryCache.has(body.geometry))return headGeometryCache.get(body.geometry);
+function exposedSkinGeometry(body,kind){
+  const key=kind==='orc'?'orc':'witch';
+  let variants=headGeometryCache.get(body.geometry);
+  if(variants?.[key])return variants[key];
   const geom=body.geometry,si=geom.getAttribute('skinIndex'),sw=geom.getAttribute('skinWeight');
-  const active=new Set(body.skeleton.bones.flatMap((b,i)=>['Head','neck_01'].includes(b.name)?[i]:[]));
+  const active=new Set(body.skeleton.bones.flatMap((b,i)=>
+    ['Head','neck_01'].includes(b.name)||kind==='orc'&&
+      /(?:hand|thumb|index|middle|ring|pinky|finger)/i.test(b.name)?[i]:[]));
   const score=v=>{let sum=0;for(let k=0;k<4;k++)if(active.has(si.getComponent(v,k)))sum+=sw.getComponent(v,k);return sum;};
   const ix=geom.getIndex(),indices=[];
   for(let k=0;k<(ix?ix.count:geom.getAttribute('position').count);k+=3){
@@ -1590,7 +1596,8 @@ function headOnlyGeometry(body){
   }
   if(indices.length<60)throw Error('Impossible d’isoler la tête du corps Quaternius');
   const cut=geom.clone();cut.setIndex(indices);cut.clearGroups();cut.computeBoundingSphere();
-  headGeometryCache.set(geom,cut);
+  if(!variants){variants={};headGeometryCache.set(geom,variants);}
+  variants[key]=cut;
   return cut;
 }
 // Materials and geometry are shared across every instance of the same role.
@@ -1611,16 +1618,19 @@ function costumeLayers(visual,kind,index,role,appearance=null){
   if(!body)throw Error('Le squelette du personnage est introuvable : '+bodyName);
   const skeleton=body.skeleton,profile=roles.profile(kind,role);
   if(kind==='orc'){
-    // Four shared skin variants; never clone body materials once per orc.
-    const skin=[0x62845a,0x718c58,0x536f4a,0x7e8e5c][index%4];
+    // Saturated green visible on the face AND the gripped hands. Reuse each
+    // variant's material across actors rather than allocating per unit.
+    const skin=orcAppearance.SKIN_COLORS[index%orcAppearance.SKIN_COLORS.length];
     const originals=Array.isArray(body.material)?body.material:[body.material];
     const materials=originals.map(mat=>sharedRoleMaterial(mat,'orc-skin-'+skin,m=>{
-      m.color?.setHex(skin);m.emissive?.setHex(0x101a0a);m.roughness=.94;
+      m.color?.setHex(skin);m.emissive?.setHex(0x133d04);
+      m.emissiveIntensity=.55;m.roughness=.91;
     }));
     body.material=Array.isArray(body.material)?materials:materials[0];
   }
-  // Reuse the original 65-bone rig; expose only the head beneath a costume.
-  body.geometry=headOnlyGeometry(body);
+  // Keep the original body skinning; the orcs' fingers stay green on their
+  // native hand joints even when swinging or carrying objects.
+  body.geometry=exposedSkinGeometry(body,kind);
   const clothing=kind==='witch'?clothingFemale:clothingMale;
   const hairstyle=kind==='witch'?({short:hairParted,long:hairLong,
     'very-long':hairLong,ponytail:hairParted,'side-buns':hairBuns}[appearance.style]):
@@ -1643,8 +1653,10 @@ function costumeLayers(visual,kind,index,role,appearance=null){
           else if(kind==='witch')m.color.setHex(appearance.color.hex);
           else m.color.multiply(new THREE.Color(index%2?0x302a28:0x63452e));
         }));
-      const geometry=kind==='witch'&&type==='hair'&&appearance.style==='very-long'?
-        veryLongHairGeometry(o.geometry):o.geometry;
+      const geometry=kind==='orc'&&type==='garment'?
+        orcAppearance.bulkyGarmentGeometry(o.geometry,skeleton.bones):
+        kind==='witch'&&type==='hair'&&appearance.style==='very-long'?
+          veryLongHairGeometry(o.geometry):o.geometry;
       const layer=new THREE.SkinnedMesh(geometry,Array.isArray(o.material)?materials:materials[0]);
       layer.name=type+'_'+o.name;layer.userData.costumeLayer=type;
       layer.frustumCulled=false;
@@ -5168,6 +5180,22 @@ window.__fightersQA={
       outfitGeometryShared:meshes.every(m=>m.garment?.geometry===meshes[0]?.garment?.geometry),
       uniqueOutfitMaterials:new Set(meshes.map(m=>m.garment?.material)).size};
   },
+  auditOrcAppearance:()=>units.filter(a=>a.kind==='orc'&&!a.dead).map(actor=>{
+    let body=null;const garments=[];
+    actor.visual.traverse(o=>{
+      if(o.isSkinnedMesh&&o.name==='SuperHero_Male')body=o;
+      if(o.userData.costumeLayer==='garment')garments.push(o);
+    });
+    const skin=Array.isArray(body?.material)?body.material[0]:body?.material;
+    const socket=actor.weapon?.socket||actor.workTool?.parent;
+    return {role:actor.role,skinColor:skin?.color?.getHex(),
+      glow:skin?.emissive?.getHex(),bones:body?.skeleton.bones.length,
+      garmentMeshes:garments.length,
+      bulkyMeshes:garments.filter(m=>m.geometry.userData.orcBulky).length,
+      changedVertices:garments.reduce((n,m)=>n+(m.geometry.userData.orcChangedVertices||0),0),
+      socketOnOriginalHand:socket?socket.parent?.name==='hand_r':null,
+      skeletonScaleUnchanged:body?.skeleton.bones.every(b=>b.scale.distanceTo(new THREE.Vector3(1,1,1))<1e-6)};
+  }),
   spawnWitches:(targetCount=20)=>{
     let total=units.filter(u=>u.kind==='witch'&&!u.dead).length;
     while(total<Math.min(35,targetCount)){
