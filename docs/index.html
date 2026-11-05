@@ -1122,9 +1122,9 @@ let cameraFollow={x:0,z:0};
 const cameraLook=new THREE.Vector3(0,1.15,0);
 const clock=new THREE.Clock();
 const rand=(min,max)=>min+Math.random()*(max-min);
-// Fixed orthographic scale: the initial 35-unit half-height was three times
-// farther out. Camera translation still works; no input may modify this zoom.
-const CAMERA_ZOOM=35/3;
+// Fixed orthographic scale: 35% closer than the previous 3x zoom (now 4.05x
+// the original view). Camera translation works; input cannot modify zoom.
+const CAMERA_ZOOM=35/(3*1.35);
 const cameraZoom=CAMERA_ZOOM;
 let cameraDrag=null;
 const activeTouches=new Map();
