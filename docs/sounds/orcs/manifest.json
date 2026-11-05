@@ -662,13 +662,14 @@
   ],
   "dialogue_processing": {
     "method": "ffmpeg-rubberband",
-    "pitch_factor": 0.72,
+    "pitch_factor": 0.75,
     "tempo_factor": 1.0,
     "processed_clips": 52,
     "categories": [
       "attack",
       "creation",
       "interaction"
-    ]
+    ],
+    "original_revision": "9b8239db721835042a5a217006256dfb4d4cb675"
   }
 }
