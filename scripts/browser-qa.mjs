@@ -55,6 +55,10 @@ async function screenshot(name){
 }
 async function run(){
  await connect();await call('Page.enable');await call('Runtime.enable');
+ const group=process.env.FIGHTERS_QA_GROUP||'all';
+ check(['all','visual','economy','combat'].includes(group),
+   'Unknown Chrome QA group: '+group);
+ let s;
  const errors=[];
  socket.addEventListener('message',event=>{
   const msg=JSON.parse(event.data);
@@ -73,6 +77,7 @@ async function run(){
    'two real CC0 red/dead tree GLBs with WebP textures',30000);
  await until('window.__fightersQA.snapshot().ravens.loaded===true',
    'real locally compressed animated crow GLB',30000);
+ if(group==='all'||group==='visual'){
  const ravens=await evaluate('window.__fightersQA.snapshot().ravens');
  check(ravens.animated===2&&ravens.birds.length===2&&
    ravens.birds.every(b=>b.y>3.5),
@@ -122,7 +127,7 @@ async function run(){
  // Audio only changed selection and the viewed faction. Reuse that match for
  // raven scouting and the emergency defense tests before resetting the world.
  await evaluate("window.__fightersQA.setFaction('witch')");
- let s=await evaluate('window.__fightersQA.snapshot()');
+ s=await evaluate('window.__fightersQA.snapshot()');
  await evaluate('window.__fightersQA.selectRaven(0)');
  check((await evaluate('window.__fightersQA.snapshot().ravens.selectedId'))==='raven-1'&&
    await evaluate('document.querySelector("#command-title").textContent')==='Corbeau familier'&&
@@ -978,6 +983,14 @@ async function run(){
    'Portrait-phone camera must display at least three revealed trees: '+JSON.stringify(mobileForest));
  await screenshot('rts-mobile-fixed-camera');
  await call('Emulation.clearDeviceMetricsOverride');
+ }
+
+ if(group==='all'||group==='economy'){
+ // These assets were awaited by the visual group in the serial version.
+ await until('window.__fightersQA.snapshot().blueprints.length===5',
+   'Real Orc building models for economy QA',100000);
+ await until('window.__fightersQA.snapshot().hares.loaded',
+   'Real animated hares for economy QA',30000);
 
  await evaluate('window.__fightersQA.reset()');
  s=await evaluate('window.__fightersQA.snapshot()');
@@ -1015,7 +1028,9 @@ async function run(){
     "cargo=true;if(s.gold.witch==="+witchGoldBefore+")unpaid=true;}"+
     "for(const kind of ['witch','orc'])if(s[kind==='witch'?'witches':'orcs'].some(u=>"+
     "u.role==='worker'&&u.animation==='Work_Swing'&&u.pickToolVisible&&"+
-    "!u.workToolVisible&&!u.hammerToolVisible&&!u.chopToolVisible))seen[kind]=true;}return {...seen,cargo,unpaid}})()");
+    "!u.workToolVisible&&!u.hammerToolVisible&&!u.chopToolVisible))seen[kind]=true;"+
+    "if(seen.witch&&seen.orc&&cargo&&unpaid&&s.gold.witch>"+witchGoldBefore+
+    "&&s.mining.totalMinedGold>0)break;}return {...seen,cargo,unpaid}})()");
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.gold.witch>witchGoldBefore&&s.mining.totalMinedGold>0,
   'Witch worker never mined physical gold: '+JSON.stringify(s.mining));
@@ -1044,7 +1059,9 @@ async function run(){
     "revealed ||= s.construction.some(j=>j.revealFraction>.2&&j.revealFraction<.95);"+
     "seen ||= s.witches.some(u=>"+
     "u.role==='worker'&&u.animation==='Work_Swing'&&u.hammerToolVisible&&"+
-    "!u.pickToolVisible&&!u.workToolVisible);}return {seen,revealed}})()");
+    "!u.pickToolVisible&&!u.workToolVisible);"+
+    "if(seen&&revealed&&s.construction.length===0&&s.buildings.length>"+buildingsBefore+
+    ")break;}return {seen,revealed}})()");
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.construction.length===0&&s.buildings.length===buildingsBefore+1&&
   s.constructionPreviewCount===0&&
@@ -1290,6 +1307,15 @@ async function run(){
  check(await evaluate("document.querySelector('.order-ping.attack')!==null"),
    'Attack order needs a red fading reticle');
  await until("window.__fightersQA.snapshot().ui.activePings===0",'red order reticle cleanup',10000);
+ }
+
+ if(group==='all'||group==='combat'){
+ await until('window.__fightersQA.snapshot().blueprints.length===5',
+   'Real Orc building models for combat QA',100000);
+ await until('window.__fightersQA.snapshot().hares.loaded',
+   'Real hares for combat QA',30000);
+ const hutId=(await evaluate('window.__fightersQA.snapshot()')).buildings
+   .find(b=>b.type==='hut'&&!b.destroyed).id;
  await evaluate('window.__fightersQA.reset()');
 
  // Real native animation, target acquisition, damage and destruction.
@@ -1756,11 +1782,12 @@ async function run(){
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.orcFood.corpsesEaten===1&&s.orcFood.food>15,
    'An orc should feast once on a witch corpse for a substantial food reward');
+ }
  check(!errors.length,'Browser JavaScript exceptions: '+errors.join(' | '));
  console.log('CHROME_QA_FULL_MATCH_RESETS',
    await evaluate('window.__fightersQaResetCount()'),
-   '(excludes explicit start-button matches)');
- console.log('PASS RTS: stable HUD, persistent shortcuts, blue/red reticles, two-tap attacks, one-finger pan, instant two-finger box selection, locked 4.05× zoom, destroyed buildings and strategic AI.');
+   '(excludes explicit start-button matches; group='+group+')');
+ console.log('PASS RTS CHROME QA GROUP:',group);
 
 }
 try{await run();}finally{try{socket?.close();}catch{}chrome.kill();try{rmSync(profile,{recursive:true,force:true,maxRetries:8,retryDelay:350});}catch(error){console.warn('Chrome profile cleanup only:',error.message);}}

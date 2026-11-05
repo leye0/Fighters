@@ -69,8 +69,13 @@ permissions:
   contents: read
 jobs:
   chrome:
+    name: Chrome ${{ matrix.group }}
     runs-on: ubuntu-24.04
     timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [visual, economy, combat]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -133,13 +138,14 @@ jobs:
       - name: Exercise RTS factions, queues, selection and construction in Chrome SwiftShader
         env:
           FIGHTERS_URL: http://127.0.0.1:8000/
+          FIGHTERS_QA_GROUP: ${{ matrix.group }}
         run: |
           google-chrome --version
           node scripts/browser-qa.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: fighters-real-webgl-rts-qa
+          name: fighters-real-webgl-rts-qa-${{ matrix.group }}
           path: captures/
           retention-days: 3
           if-no-files-found: ignore
