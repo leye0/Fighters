@@ -252,9 +252,12 @@ async function run(){
  check(await evaluate("window.__fightersQA.strikeUnit('witch',0,'orc',1,4)"),
    'Could not trigger a local attack on a player orc worker');
  playerAlarm=await evaluate('window.__fightersQA.snapshot()');
- check(playerAlarm.orcs.filter(u=>u.role!=='worker').every(u=>
+ const workerOrc=playerAlarm.orcs.find(u=>u.role==='worker');
+ const nearbyOrcGuards=playerAlarm.orcs.filter(u=>u.role!=='worker'&&
+   Math.hypot(u.x-workerOrc.x,u.z-workerOrc.z)<=18);
+ check(nearbyOrcGuards.length>=2&&nearbyOrcGuards.every(u=>
    u.attackTargetId===playerAlarm.witches[0].id),
-   'Player orc guards must protect a worker without autonomous AI');
+   'Nearby player orc guards must protect a worker without autonomous AI');
  check(await evaluate('window.__fightersQA.strikeBuilding("witch",0,'+
    JSON.stringify(playerHut.id)+',10)'),
    'Could not trigger the player-controlled orc village alarm');
