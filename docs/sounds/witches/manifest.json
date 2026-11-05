@@ -1,6 +1,6 @@
 {
-  "generator": "qwen/qwen3-tts",
-  "generated_at": "2026-11-05T19:04:53.065892+00:00",
+  "generator": "minimax/speech-02-turbo",
+  "generated_at": "2026-11-05T22:05:48.062374+00:00",
   "faction": "witches",
   "voice_roles": [
     "worker",
@@ -19,468 +19,572 @@
       "voice": "worker",
       "path": "creation/worker_01.mp3",
       "text": "Hi!",
-      "duration_seconds": 1.04,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 0.9,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_5XWHQ4IK",
+      "voice_reference_sha256": "54802853c7bb0d92ac2950ec79866b6a6632ec7cd833c3edf78d89d7ce53922a"
     },
     {
       "category": "creation",
       "voice": "worker",
       "path": "creation/worker_02.mp3",
       "text": "Hello!",
-      "duration_seconds": 0.96,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 0.975,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_5XWHQ4IK",
+      "voice_reference_sha256": "54802853c7bb0d92ac2950ec79866b6a6632ec7cd833c3edf78d89d7ce53922a"
     },
     {
       "category": "creation",
       "voice": "worker",
       "path": "creation/worker_03.mp3",
       "text": "Here I am!",
-      "duration_seconds": 1.12,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 1.184,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_5XWHQ4IK",
+      "voice_reference_sha256": "54802853c7bb0d92ac2950ec79866b6a6632ec7cd833c3edf78d89d7ce53922a"
     },
     {
       "category": "creation",
       "voice": "worker",
       "path": "creation/worker_04.mp3",
       "text": "Good morning!",
-      "duration_seconds": 1.2,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 1.149,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_5XWHQ4IK",
+      "voice_reference_sha256": "54802853c7bb0d92ac2950ec79866b6a6632ec7cd833c3edf78d89d7ce53922a"
     },
     {
       "category": "creation",
       "voice": "worker",
       "path": "creation/worker_05.mp3",
       "text": "The coven is ready!",
-      "duration_seconds": 1.12,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 1.44,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_5XWHQ4IK",
+      "voice_reference_sha256": "54802853c7bb0d92ac2950ec79866b6a6632ec7cd833c3edf78d89d7ce53922a"
     },
     {
       "category": "interaction",
       "voice": "worker",
       "path": "interaction/worker_01.mp3",
       "text": "Yes?",
-      "duration_seconds": 1.2,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 0.894,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_5XWHQ4IK",
+      "voice_reference_sha256": "54802853c7bb0d92ac2950ec79866b6a6632ec7cd833c3edf78d89d7ce53922a"
     },
     {
       "category": "interaction",
       "voice": "worker",
       "path": "interaction/worker_02.mp3",
       "text": "At your service!",
-      "duration_seconds": 1.2,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 1.4,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_5XWHQ4IK",
+      "voice_reference_sha256": "54802853c7bb0d92ac2950ec79866b6a6632ec7cd833c3edf78d89d7ce53922a"
     },
     {
       "category": "interaction",
       "voice": "worker",
       "path": "interaction/worker_03.mp3",
       "text": "I'm listening.",
-      "duration_seconds": 1.44,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 1.231,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_5XWHQ4IK",
+      "voice_reference_sha256": "54802853c7bb0d92ac2950ec79866b6a6632ec7cd833c3edf78d89d7ce53922a"
     },
     {
       "category": "interaction",
       "voice": "worker",
       "path": "interaction/worker_04.mp3",
       "text": "What is your wish?",
-      "duration_seconds": 1.52,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 1.358,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_5XWHQ4IK",
+      "voice_reference_sha256": "54802853c7bb0d92ac2950ec79866b6a6632ec7cd833c3edf78d89d7ce53922a"
     },
     {
       "category": "attack",
       "voice": "worker",
       "path": "attack/worker_01.mp3",
       "text": "Attack!",
-      "duration_seconds": 0.72,
-      "model": "qwen/qwen3-tts",
-      "performance": "direct-voice-design-battle-cry"
+      "duration_seconds": 1.034,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-battle-cry",
+      "voice_id": "R8_5XWHQ4IK",
+      "voice_reference_sha256": "54802853c7bb0d92ac2950ec79866b6a6632ec7cd833c3edf78d89d7ce53922a"
     },
     {
       "category": "attack",
       "voice": "worker",
       "path": "attack/worker_02.mp3",
       "text": "For the Wiccans!",
-      "duration_seconds": null,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-direct-voice-design-shout"
+      "duration_seconds": 1.428,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-battle-cry",
+      "voice_id": "R8_5XWHQ4IK",
+      "voice_reference_sha256": "54802853c7bb0d92ac2950ec79866b6a6632ec7cd833c3edf78d89d7ce53922a"
     },
     {
       "category": "attack",
       "voice": "worker",
       "path": "attack/worker_03.mp3",
       "text": "For the witches!",
-      "duration_seconds": 0.96,
-      "model": "qwen/qwen3-tts",
-      "performance": "direct-voice-design-battle-cry"
+      "duration_seconds": 1.347,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-battle-cry",
+      "voice_id": "R8_5XWHQ4IK",
+      "voice_reference_sha256": "54802853c7bb0d92ac2950ec79866b6a6632ec7cd833c3edf78d89d7ce53922a"
     },
     {
       "category": "attack",
       "voice": "worker",
       "path": "attack/worker_04.mp3",
       "text": "Fight!",
-      "duration_seconds": 0.64,
-      "model": "qwen/qwen3-tts",
-      "performance": "direct-voice-design-battle-cry"
+      "duration_seconds": 0.987,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-battle-cry",
+      "voice_id": "R8_5XWHQ4IK",
+      "voice_reference_sha256": "54802853c7bb0d92ac2950ec79866b6a6632ec7cd833c3edf78d89d7ce53922a"
     },
     {
       "category": "creation",
       "voice": "guard",
       "path": "creation/guard_01.mp3",
       "text": "Hi!",
-      "duration_seconds": 0.64,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 0.766,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_104GADXI",
+      "voice_reference_sha256": "bef4c3c287441e9616ea014cf2e9297ad407241d4b4842a00d5eec0a73240493"
     },
     {
       "category": "creation",
       "voice": "guard",
       "path": "creation/guard_02.mp3",
       "text": "Hello!",
-      "duration_seconds": 0.88,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 0.929,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_104GADXI",
+      "voice_reference_sha256": "bef4c3c287441e9616ea014cf2e9297ad407241d4b4842a00d5eec0a73240493"
     },
     {
       "category": "creation",
       "voice": "guard",
       "path": "creation/guard_03.mp3",
       "text": "Here I am!",
-      "duration_seconds": 1.04,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 1.149,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_104GADXI",
+      "voice_reference_sha256": "bef4c3c287441e9616ea014cf2e9297ad407241d4b4842a00d5eec0a73240493"
     },
     {
       "category": "creation",
       "voice": "guard",
       "path": "creation/guard_04.mp3",
       "text": "Good morning!",
-      "duration_seconds": 0.96,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 1.184,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_104GADXI",
+      "voice_reference_sha256": "bef4c3c287441e9616ea014cf2e9297ad407241d4b4842a00d5eec0a73240493"
     },
     {
       "category": "creation",
       "voice": "guard",
       "path": "creation/guard_05.mp3",
       "text": "The coven is ready!",
-      "duration_seconds": 1.44,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 1.567,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_104GADXI",
+      "voice_reference_sha256": "bef4c3c287441e9616ea014cf2e9297ad407241d4b4842a00d5eec0a73240493"
     },
     {
       "category": "interaction",
       "voice": "guard",
       "path": "interaction/guard_01.mp3",
       "text": "Yes?",
-      "duration_seconds": 1.04,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 0.975,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_104GADXI",
+      "voice_reference_sha256": "bef4c3c287441e9616ea014cf2e9297ad407241d4b4842a00d5eec0a73240493"
     },
     {
       "category": "interaction",
       "voice": "guard",
       "path": "interaction/guard_02.mp3",
       "text": "At your service!",
-      "duration_seconds": 1.36,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 1.44,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_104GADXI",
+      "voice_reference_sha256": "bef4c3c287441e9616ea014cf2e9297ad407241d4b4842a00d5eec0a73240493"
     },
     {
       "category": "interaction",
       "voice": "guard",
       "path": "interaction/guard_03.mp3",
       "text": "I'm listening.",
-      "duration_seconds": 1.2,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 1.184,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_104GADXI",
+      "voice_reference_sha256": "bef4c3c287441e9616ea014cf2e9297ad407241d4b4842a00d5eec0a73240493"
     },
     {
       "category": "interaction",
       "voice": "guard",
       "path": "interaction/guard_04.mp3",
       "text": "What is your wish?",
-      "duration_seconds": 1.36,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 1.405,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_104GADXI",
+      "voice_reference_sha256": "bef4c3c287441e9616ea014cf2e9297ad407241d4b4842a00d5eec0a73240493"
     },
     {
       "category": "attack",
       "voice": "guard",
       "path": "attack/guard_01.mp3",
       "text": "Attack!",
-      "duration_seconds": 0.72,
-      "model": "qwen/qwen3-tts",
-      "performance": "direct-voice-design-battle-cry"
+      "duration_seconds": 0.836,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-battle-cry",
+      "voice_id": "R8_104GADXI",
+      "voice_reference_sha256": "bef4c3c287441e9616ea014cf2e9297ad407241d4b4842a00d5eec0a73240493"
     },
     {
       "category": "attack",
       "voice": "guard",
       "path": "attack/guard_02.mp3",
       "text": "For the Wiccans!",
-      "duration_seconds": null,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-direct-voice-design-shout"
+      "duration_seconds": 1.312,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-battle-cry",
+      "voice_id": "R8_104GADXI",
+      "voice_reference_sha256": "bef4c3c287441e9616ea014cf2e9297ad407241d4b4842a00d5eec0a73240493"
     },
     {
       "category": "attack",
       "voice": "guard",
       "path": "attack/guard_03.mp3",
       "text": "For the witches!",
-      "duration_seconds": 1.12,
-      "model": "qwen/qwen3-tts",
-      "performance": "direct-voice-design-battle-cry"
+      "duration_seconds": 1.196,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-battle-cry",
+      "voice_id": "R8_104GADXI",
+      "voice_reference_sha256": "bef4c3c287441e9616ea014cf2e9297ad407241d4b4842a00d5eec0a73240493"
     },
     {
       "category": "attack",
       "voice": "guard",
       "path": "attack/guard_04.mp3",
       "text": "Fight!",
-      "duration_seconds": 0.64,
-      "model": "qwen/qwen3-tts",
-      "performance": "direct-voice-design-battle-cry"
+      "duration_seconds": 0.871,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-battle-cry",
+      "voice_id": "R8_104GADXI",
+      "voice_reference_sha256": "bef4c3c287441e9616ea014cf2e9297ad407241d4b4842a00d5eec0a73240493"
     },
     {
       "category": "creation",
       "voice": "arcane",
       "path": "creation/arcane_01.mp3",
       "text": "Hi!",
-      "duration_seconds": 0.72,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 0.894,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_LOYGPYAO",
+      "voice_reference_sha256": "d0a09c0ff60bec4c65a392a441a4d98d7dd17d4cc86ec8d2474ba3c5cea4b8f6"
     },
     {
       "category": "creation",
       "voice": "arcane",
       "path": "creation/arcane_02.mp3",
       "text": "Hello!",
-      "duration_seconds": 1.12,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 0.975,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_LOYGPYAO",
+      "voice_reference_sha256": "d0a09c0ff60bec4c65a392a441a4d98d7dd17d4cc86ec8d2474ba3c5cea4b8f6"
     },
     {
       "category": "creation",
       "voice": "arcane",
       "path": "creation/arcane_03.mp3",
       "text": "Here I am!",
-      "duration_seconds": 0.88,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 1.2,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_LOYGPYAO",
+      "voice_reference_sha256": "d0a09c0ff60bec4c65a392a441a4d98d7dd17d4cc86ec8d2474ba3c5cea4b8f6"
     },
     {
       "category": "creation",
       "voice": "arcane",
       "path": "creation/arcane_04.mp3",
       "text": "Good morning!",
-      "duration_seconds": 0.72,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 1.149,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_LOYGPYAO",
+      "voice_reference_sha256": "d0a09c0ff60bec4c65a392a441a4d98d7dd17d4cc86ec8d2474ba3c5cea4b8f6"
     },
     {
       "category": "creation",
       "voice": "arcane",
       "path": "creation/arcane_05.mp3",
       "text": "The coven is ready!",
-      "duration_seconds": 1.84,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 1.5,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_LOYGPYAO",
+      "voice_reference_sha256": "d0a09c0ff60bec4c65a392a441a4d98d7dd17d4cc86ec8d2474ba3c5cea4b8f6"
     },
     {
       "category": "interaction",
       "voice": "arcane",
       "path": "interaction/arcane_01.mp3",
       "text": "Yes?",
-      "duration_seconds": 1.04,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 0.848,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_LOYGPYAO",
+      "voice_reference_sha256": "d0a09c0ff60bec4c65a392a441a4d98d7dd17d4cc86ec8d2474ba3c5cea4b8f6"
     },
     {
       "category": "interaction",
       "voice": "arcane",
       "path": "interaction/arcane_02.mp3",
       "text": "At your service!",
-      "duration_seconds": 1.04,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 1.4,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_LOYGPYAO",
+      "voice_reference_sha256": "d0a09c0ff60bec4c65a392a441a4d98d7dd17d4cc86ec8d2474ba3c5cea4b8f6"
     },
     {
       "category": "interaction",
       "voice": "arcane",
       "path": "interaction/arcane_03.mp3",
       "text": "I'm listening.",
-      "duration_seconds": 0.8,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 1.231,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_LOYGPYAO",
+      "voice_reference_sha256": "d0a09c0ff60bec4c65a392a441a4d98d7dd17d4cc86ec8d2474ba3c5cea4b8f6"
     },
     {
       "category": "interaction",
       "voice": "arcane",
       "path": "interaction/arcane_04.mp3",
       "text": "What is your wish?",
-      "duration_seconds": 1.12,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 1.358,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_LOYGPYAO",
+      "voice_reference_sha256": "d0a09c0ff60bec4c65a392a441a4d98d7dd17d4cc86ec8d2474ba3c5cea4b8f6"
     },
     {
       "category": "attack",
       "voice": "arcane",
       "path": "attack/arcane_01.mp3",
       "text": "Attack!",
-      "duration_seconds": 0.72,
-      "model": "qwen/qwen3-tts",
-      "performance": "direct-voice-design-battle-cry"
+      "duration_seconds": 1.068,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-battle-cry",
+      "voice_id": "R8_LOYGPYAO",
+      "voice_reference_sha256": "d0a09c0ff60bec4c65a392a441a4d98d7dd17d4cc86ec8d2474ba3c5cea4b8f6"
     },
     {
       "category": "attack",
       "voice": "arcane",
       "path": "attack/arcane_02.mp3",
       "text": "For the Wiccans!",
-      "duration_seconds": null,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-direct-voice-design-shout"
+      "duration_seconds": 1.231,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-battle-cry",
+      "voice_id": "R8_LOYGPYAO",
+      "voice_reference_sha256": "d0a09c0ff60bec4c65a392a441a4d98d7dd17d4cc86ec8d2474ba3c5cea4b8f6"
     },
     {
       "category": "attack",
       "voice": "arcane",
       "path": "attack/arcane_03.mp3",
       "text": "For the witches!",
-      "duration_seconds": 1.52,
-      "model": "qwen/qwen3-tts",
-      "performance": "direct-voice-design-battle-cry"
+      "duration_seconds": 1.428,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-battle-cry",
+      "voice_id": "R8_LOYGPYAO",
+      "voice_reference_sha256": "d0a09c0ff60bec4c65a392a441a4d98d7dd17d4cc86ec8d2474ba3c5cea4b8f6"
     },
     {
       "category": "attack",
       "voice": "arcane",
       "path": "attack/arcane_04.mp3",
       "text": "Fight!",
-      "duration_seconds": 0.8,
-      "model": "qwen/qwen3-tts",
-      "performance": "direct-voice-design-battle-cry"
+      "duration_seconds": 0.9,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-battle-cry",
+      "voice_id": "R8_LOYGPYAO",
+      "voice_reference_sha256": "d0a09c0ff60bec4c65a392a441a4d98d7dd17d4cc86ec8d2474ba3c5cea4b8f6"
     },
     {
       "category": "creation",
       "voice": "elder",
       "path": "creation/elder_01.mp3",
       "text": "Hi!",
-      "duration_seconds": 1.2,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 0.801,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_C3USF9W3",
+      "voice_reference_sha256": "f18a203b4520354b84642c51316aef8c873c12e63bef783e60ccd47ead0e7a8f"
     },
     {
       "category": "creation",
       "voice": "elder",
       "path": "creation/elder_02.mp3",
       "text": "Hello!",
-      "duration_seconds": 1.12,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 0.929,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_C3USF9W3",
+      "voice_reference_sha256": "f18a203b4520354b84642c51316aef8c873c12e63bef783e60ccd47ead0e7a8f"
     },
     {
       "category": "creation",
       "voice": "elder",
       "path": "creation/elder_03.mp3",
       "text": "Here I am!",
-      "duration_seconds": 1.36,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 1.184,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_C3USF9W3",
+      "voice_reference_sha256": "f18a203b4520354b84642c51316aef8c873c12e63bef783e60ccd47ead0e7a8f"
     },
     {
       "category": "creation",
       "voice": "elder",
       "path": "creation/elder_04.mp3",
       "text": "Good morning!",
-      "duration_seconds": 1.2,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 1.1,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_C3USF9W3",
+      "voice_reference_sha256": "f18a203b4520354b84642c51316aef8c873c12e63bef783e60ccd47ead0e7a8f"
     },
     {
       "category": "creation",
       "voice": "elder",
       "path": "creation/elder_05.mp3",
       "text": "The coven is ready!",
-      "duration_seconds": 1.76,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 1.358,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_C3USF9W3",
+      "voice_reference_sha256": "f18a203b4520354b84642c51316aef8c873c12e63bef783e60ccd47ead0e7a8f"
     },
     {
       "category": "interaction",
       "voice": "elder",
       "path": "interaction/elder_01.mp3",
       "text": "Yes?",
-      "duration_seconds": 0.88,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 0.975,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_C3USF9W3",
+      "voice_reference_sha256": "f18a203b4520354b84642c51316aef8c873c12e63bef783e60ccd47ead0e7a8f"
     },
     {
       "category": "interaction",
       "voice": "elder",
       "path": "interaction/elder_02.mp3",
       "text": "At your service!",
-      "duration_seconds": 1.28,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 1.358,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_C3USF9W3",
+      "voice_reference_sha256": "f18a203b4520354b84642c51316aef8c873c12e63bef783e60ccd47ead0e7a8f"
     },
     {
       "category": "interaction",
       "voice": "elder",
       "path": "interaction/elder_03.mp3",
       "text": "I'm listening.",
-      "duration_seconds": 1.6,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 1.184,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_C3USF9W3",
+      "voice_reference_sha256": "f18a203b4520354b84642c51316aef8c873c12e63bef783e60ccd47ead0e7a8f"
     },
     {
       "category": "interaction",
       "voice": "elder",
       "path": "interaction/elder_04.mp3",
       "text": "What is your wish?",
-      "duration_seconds": 1.76,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-character-voice"
+      "duration_seconds": 1.358,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-character-voice",
+      "voice_id": "R8_C3USF9W3",
+      "voice_reference_sha256": "f18a203b4520354b84642c51316aef8c873c12e63bef783e60ccd47ead0e7a8f"
     },
     {
       "category": "attack",
       "voice": "elder",
       "path": "attack/elder_01.mp3",
       "text": "Attack!",
-      "duration_seconds": 0.8,
-      "model": "qwen/qwen3-tts",
-      "performance": "direct-voice-design-battle-cry"
+      "duration_seconds": 1.034,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-battle-cry",
+      "voice_id": "R8_C3USF9W3",
+      "voice_reference_sha256": "f18a203b4520354b84642c51316aef8c873c12e63bef783e60ccd47ead0e7a8f"
     },
     {
       "category": "attack",
       "voice": "elder",
       "path": "attack/elder_02.mp3",
       "text": "For the Wiccans!",
-      "duration_seconds": null,
-      "model": "qwen/qwen3-tts",
-      "performance": "approved-direct-voice-design-shout"
+      "duration_seconds": 1.266,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-battle-cry",
+      "voice_id": "R8_C3USF9W3",
+      "voice_reference_sha256": "f18a203b4520354b84642c51316aef8c873c12e63bef783e60ccd47ead0e7a8f"
     },
     {
       "category": "attack",
       "voice": "elder",
       "path": "attack/elder_03.mp3",
       "text": "For the witches!",
-      "duration_seconds": 2.0,
-      "model": "qwen/qwen3-tts",
-      "performance": "direct-voice-design-battle-cry"
+      "duration_seconds": 1.428,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-battle-cry",
+      "voice_id": "R8_C3USF9W3",
+      "voice_reference_sha256": "f18a203b4520354b84642c51316aef8c873c12e63bef783e60ccd47ead0e7a8f"
     },
     {
       "category": "attack",
       "voice": "elder",
       "path": "attack/elder_04.mp3",
       "text": "Fight!",
-      "duration_seconds": 0.72,
-      "model": "qwen/qwen3-tts",
-      "performance": "direct-voice-design-battle-cry"
+      "duration_seconds": 0.952,
+      "model": "minimax/speech-02-turbo",
+      "performance": "consistent-role-battle-cry",
+      "voice_id": "R8_C3USF9W3",
+      "voice_reference_sha256": "f18a203b4520354b84642c51316aef8c873c12e63bef783e60ccd47ead0e7a8f"
     },
     {
       "category": "work",
@@ -491,5 +595,31 @@
       "title": "Blacksmith's Hammer",
       "license": "CC0"
     }
-  ]
+  ],
+  "stable_voice_identities": {
+    "worker": {
+      "model": "minimax/speech-02-turbo",
+      "voice_id": "R8_5XWHQ4IK",
+      "approved_shout_sha256": "54802853c7bb0d92ac2950ec79866b6a6632ec7cd833c3edf78d89d7ce53922a",
+      "reference_seconds": 10.56
+    },
+    "guard": {
+      "model": "minimax/speech-02-turbo",
+      "voice_id": "R8_104GADXI",
+      "approved_shout_sha256": "bef4c3c287441e9616ea014cf2e9297ad407241d4b4842a00d5eec0a73240493",
+      "reference_seconds": 11.68
+    },
+    "arcane": {
+      "model": "minimax/speech-02-turbo",
+      "voice_id": "R8_LOYGPYAO",
+      "approved_shout_sha256": "d0a09c0ff60bec4c65a392a441a4d98d7dd17d4cc86ec8d2474ba3c5cea4b8f6",
+      "reference_seconds": 12.88
+    },
+    "elder": {
+      "model": "minimax/speech-02-turbo",
+      "voice_id": "R8_C3USF9W3",
+      "approved_shout_sha256": "f18a203b4520354b84642c51316aef8c873c12e63bef783e60ccd47ead0e7a8f",
+      "reference_seconds": 10.56
+    }
+  }
 }

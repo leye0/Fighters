@@ -26,6 +26,7 @@
   class Engine{
     constructor({fetcher,contextFactory,random,now,
       manifestUrl='./sounds/orcs/manifest.json',rootUrl='./sounds/orcs/',
+      assetVersion='',
       categories=DEFAULT_TYPES,allowEmptyCategories=[],
       maxActive=4,maxCached=12,maxPending=3}={}){
       this.fetcher=fetcher||((url,options)=>root.fetch(url,options));
@@ -34,6 +35,7 @@
       this.random=random||Math.random;
       this.now=now||(()=>Date.now());
       this.manifestUrl=manifestUrl;this.rootUrl=rootUrl;
+      this.assetVersion=/^[a-zA-Z0-9-]*$/.test(assetVersion)?assetVersion:'';
       this.categories=[...categories];
       if(this.categories.some(type=>!Object.hasOwn(MIX,type)))
         throw Error('Unknown sound category');
@@ -44,6 +46,9 @@
       this.voices=Object.fromEntries(this.categories.map(type=>[type,Object.create(null)]));
       this.cache=new Map();this.pending=new Map();this.controllers=new Set();
       this.active=new Set();this.lastSound=new Map();this.lastTime=new Map();
+      // One shuffled phrase deck per character and event; the voice itself
+      // remains that character's role. No immediate repeats at deck rollover.
+      this.phraseDecks=new Map();
       this.paused=false;this.generation=0;this.lastError=null;
       this.stats={played:0,visibilityBlocked:0,cooldownBlocked:0,loadErrors:0};
     }
@@ -124,6 +129,7 @@
         voice.source.disconnect();voice.gain.disconnect();
       }
       this.active.clear();this.lastTime.clear();this.lastSound.clear();
+      this.phraseDecks.clear();
       // Keep at most maxCached decoded buffers between matches, never one
       // Audio element or WebAudio node per unit.
     }
@@ -141,7 +147,8 @@
       const task=(async()=>{
         const timer=setTimeout(()=>controller.abort(),6000);
         try{
-          const response=await this.fetcher(this.rootUrl+path,{signal:controller.signal});
+          const url=this.rootUrl+path+(this.assetVersion?'?v='+this.assetVersion:'');
+          const response=await this.fetcher(url,{signal:controller.signal});
           if(!response.ok)throw Error('Sound preview HTTP '+response.status);
           const bytes=await response.arrayBuffer();
           const buffer=await this.context.decodeAudioData(bytes);
@@ -169,6 +176,27 @@
       try{return !!this.context&&!this.paused&&this.context.state==='running'&&
         (typeof canHear!=='function'||canHear());}
       catch(_){return false;}
+    }
+    phraseFor(unitId,category,role,paths){
+      const key=category+':'+(role||'any')+':'+unitId;
+      let deck=this.phraseDecks.get(key);
+      if(!deck){deck={remaining:[],last:null};this.phraseDecks.set(key,deck);}
+      if(!deck.remaining.length){
+        const shuffled=[...paths];
+        for(let i=shuffled.length-1;i>0;i--){
+          const j=Math.min(i,Math.floor(Math.max(0,this.random())*(i+1)));
+          [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];
+        }
+        if(shuffled.length>1&&shuffled[0]===deck.last)
+          [shuffled[0],shuffled[1]]=[shuffled[1],shuffled[0]];
+        deck.remaining=shuffled;
+      }
+      const chosen=deck.remaining[0];
+      return {path:chosen,consume:()=>{
+        // A pending/failed audio fetch must not spend the next phrase, and
+        // two overlapping requests may never consume each other's turn.
+        if(deck.remaining[0]===chosen)deck.last=deck.remaining.shift();
+      }};
     }
     // Original layered hammer impact: deep wooden strike, a ringing steel
     // overtone and a short noisy contact. Generated once per AudioContext,
@@ -238,16 +266,20 @@
       const voiceRole=typeof options.voice==='string'?options.voice:null;
       const paths=voiceRole?this.voices[category]?.[voiceRole]:groups[category];
       if(!paths?.length)return false;
-      // Independent TTS calls can sound like different performers even when
-      // labelled as one role. Lock each actor to one approved take for repeated
-      // selection and battle commands; never re-roll its performer per click.
+      // A role is a consistent voice identity; each unit rotates the distinct
+      // sentences of that role/event without immediately repeating a phrase.
+      // Explicit variants remain available for auditions and compatibility.
       const variant=Number.isInteger(options.variant)?options.variant:null;
       if(variant!==null&&(variant<1||variant>paths.length))return false;
       const pinned=typeof options.path==='string'&&paths.includes(options.path)?
         options.path:variant===null?null:paths[variant-1];
       const historyKey=voiceRole?category+':'+voiceRole:category;
       const previous=this.lastSound.get(historyKey);
-      const available=pinned?[pinned]:paths.length>1?
+      const unitId=Number.isInteger(options.unitId)&&options.unitId>=0?
+        options.unitId:null;
+      const phrase=unitId!==null&&!pinned?
+        this.phraseFor(unitId,category,voiceRole,paths):null;
+      const available=pinned?[pinned]:phrase?[phrase.path]:paths.length>1?
         paths.filter(path=>path!==previous):paths;
       const path=available[Math.min(available.length-1,
         Math.floor(Math.max(0,this.random())*available.length))];
@@ -273,6 +305,7 @@
       };
       try{
         source.start();
+        phrase?.consume();
         this.lastSound.set(historyKey,path);
         this.lastTime.set(category,this.now());
         this.stats.played++;

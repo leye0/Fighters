@@ -185,9 +185,13 @@ assert(html.includes("acknowledgePlayerOrder(actors.filter(actor=>actor.attackOr
 assert(!html.includes('WITCH_VOICE_PRESETS'),
   'unpredictable old Freesound Witch acknowledgements are retired');
 assert(html.includes('const voiceLineIndex=1+Math.floor(Math.random()*4)'),
-  'each unit draws its performer once when created');
-assert.equal((html.match(/variant:actor\.voiceLineIndex/g)||[]).length,2,
-  'both Witch and Orc dialogue must pin the same take per character');
+  'existing Orcs keep their previously approved stable recording');
+assert(html.includes('voice:ROLE_VOICE.witch[actor.role],unitId:actor.id'),
+  'Witches must cycle phrases per actor ID in a stable role voice');
+assert(html.includes('voice:ROLE_VOICE.orc[actor.role],variant:actor.voiceLineIndex'),
+  'Orcs retain their recording while its pitch is lowered');
+assert(html.includes("assetVersion:'deep-orcs-20261105'"),
+  'retuned Orc MP3s must bypass older browser caches');
 for(const [faction,roles] of Object.entries({
   witch:['worker','guard','arcane'],orc:['worker','warrior','shaman']
 })){
@@ -198,18 +202,27 @@ for(const [faction,roles] of Object.entries({
 const voices={sounds:[
   {category:'interaction',path:'interaction/worker_01.mp3',voice:'worker'},
   {category:'interaction',path:'interaction/worker_02.mp3',voice:'worker'},
+  {category:'interaction',path:'interaction/worker_03.mp3',voice:'worker'},
+  {category:'interaction',path:'interaction/worker_04.mp3',voice:'worker'},
   {category:'interaction',path:'interaction/guard_01.mp3',voice:'guard'},
   {category:'attack',path:'attack/worker_01.mp3',voice:'worker'},
+  {category:'attack',path:'attack/worker_02.mp3',voice:'worker'},
+  {category:'attack',path:'attack/worker_03.mp3',voice:'worker'},
+  {category:'attack',path:'attack/worker_04.mp3',voice:'worker'},
   {category:'attack',path:'attack/guard_01.mp3',voice:'guard'},
+  ...Array.from({length:5},(_,i)=>({category:'creation',
+    path:`creation/worker_0${i+1}.mp3`,voice:'worker'})),
 ]};
 let time=50000;
-const roleEngine=new Engine({categories:['interaction','attack'],
+const roleEngine=new Engine({categories:['interaction','attack','creation'],
   contextFactory:()=>new FakeAudioContext(),now:()=>time,random:()=>0,
+  maxActive:35,assetVersion:'deep-orcs-20261105',
   fetcher:async url=>url.endsWith('manifest.json')?
     {ok:true,json:async()=>voices}:
     {ok:true,arrayBuffer:async()=>new ArrayBuffer(80)}
 });
 roleEngine.unlock();await roleEngine.load();
+assert.equal(roleEngine.phraseDecks.size,0);
 assert.equal(await roleEngine.play('interaction',()=>true,{voice:'guard'}),true);
 assert.equal(roleEngine.lastSound.get('interaction:guard'),'interaction/guard_01.mp3');
 time+=500;
@@ -227,12 +240,41 @@ assert.equal(await roleEngine.play('attack',()=>true,{voice:'elder'}),false,
   'unknown voice must stay silent rather than playing another role');
 roleEngine.reset();
 time+=700;
-assert.equal(await roleEngine.play('interaction',()=>true,{voice:'worker',variant:2}),true);
-assert.equal(roleEngine.lastSound.get('interaction:worker'),'interaction/worker_02.mp3');
+const selections=[];
+for(let i=0;i<9;i++){
+  time+=500;
+  assert.equal(await roleEngine.play('interaction',()=>true,{voice:'worker',unitId:17}),true);
+  selections.push(roleEngine.lastSound.get('interaction:worker'));
+}
+assert.equal(new Set(selections.slice(0,4)).size,4,
+  'one Witch speaks all four selection phrases before any repeats');
+assert.equal(new Set(selections.slice(4,8)).size,4,
+  'the second deck must also contain all four phrases');
+for(let i=1;i<selections.length;i++)
+  assert.notEqual(selections[i],selections[i-1],
+    'no immediate repetition, including at the deck rollover');
+const attacks=[];
+for(let i=0;i<4;i++){
+  time+=700;
+  assert.equal(await roleEngine.play('attack',()=>true,{voice:'worker',unitId:17}),true);
+  attacks.push(roleEngine.lastSound.get('attack:worker'));
+}
+assert.equal(new Set(attacks).size,4,'all four battle cries must be available');
+const greetings=[];
+for(let i=0;i<5;i++){
+  time+=1100;
+  assert.equal(await roleEngine.play('creation',()=>true,{voice:'worker',unitId:17}),true);
+  greetings.push(roleEngine.lastSound.get('creation:worker'));
+}
+assert.equal(new Set(greetings).size,5,'all five greetings must be available');
+time+=1100;
+assert.equal(await roleEngine.play('interaction',()=>true,{voice:'worker',unitId:18}),true);
+assert.equal(roleEngine.phraseDecks.size,4,
+  'each character and event uses its own separate phrase deck');
 time+=500;
 assert.equal(await roleEngine.play('interaction',()=>true,{voice:'worker',variant:2}),true);
 assert.equal(roleEngine.lastSound.get('interaction:worker'),'interaction/worker_02.mp3',
-  'selecting the same character twice must play the EXACT same voice recording');
+  'an Orc-style explicit pinned recording still works');
 time+=500;
 assert.equal(await roleEngine.play('attack',()=>true,{voice:'guard',variant:1}),true);
 assert.equal(roleEngine.lastSound.get('attack:guard'),'attack/guard_01.mp3');
@@ -240,5 +282,6 @@ time+=700;
 assert.equal(await roleEngine.play('attack',()=>true,{voice:'guard',variant:99}),false,
   'an invalid pinned voice must not silently switch to another performer');
 roleEngine.reset();
+assert.equal(roleEngine.phraseDecks.size,0,'reset releases every actor phrase deck');
 
-console.log('PASS RTS sound engines: per-character pinned Orc/Witch selection and attack; fog, iOS resume, pause, reset and bounded memory.');
+console.log('PASS RTS sound engines: 5/4/4 Witch phrases per role identity, pinned Orc voices, fog, iOS, and bounded memory.');

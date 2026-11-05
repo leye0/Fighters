@@ -481,7 +481,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 <script src="./rts-roles.js"></script>
 <script src="./orc-appearance.js"></script>
 <script src="./rts-fog.js"></script>
-<script src="./rts-sound.js?v=unit-voice-20261105"></script>
+<script src="./rts-sound.js?v=voice-lines-20261105"></script>
 <script src="./rts-farming.js"></script>
 <script src="./rts-orc-food.js"></script>
 <script src="./rts-forest.js"></script>
@@ -957,13 +957,15 @@ const fogOfWar=new window.FightersFog.FogGrid({
   halfSize:arena.worldHalf,cellSize:.5,radius:7.5,fade:1.25
 });
 const orcSound=new window.FightersSound.Engine({
-  categories:['interaction','creation','attack','loud','work']
+  categories:['interaction','creation','attack','loud','work'],
+  assetVersion:'deep-orcs-20261105'
 });
 const witchSound=new window.FightersSound.Engine({
   categories:['interaction','creation','attack','destruction','work'],
   allowEmptyCategories:['destruction'],
   manifestUrl:'./sounds/witches/manifest.json',
-  rootUrl:'./sounds/witches/'
+  rootUrl:'./sounds/witches/',
+  assetVersion:'role-witch-shouts-20261105'
 });
 // Each clan keeps its own permanent memory of enemy structures; never share it.
 const knownEnemyBuildings={witch:new Set(),orc:new Set()};
@@ -1086,8 +1088,8 @@ function visibleToPlayer(x,z){
 // Units in explored terrain remain visible and audible; units in the
 // never-discovered black territory remain hidden and silent.
 const ROLE_VOICE=Object.freeze({
-  witch:Object.freeze({worker:'worker',melee:'guard',ranged:'arcane'}),
-  orc:Object.freeze({worker:'worker',melee:'warrior',ranged:'shaman'})
+  witch:Object.freeze({worker:'worker',melee:'guard',ranged:'arcane',elder:'elder'}),
+  orc:Object.freeze({worker:'worker',melee:'warrior',ranged:'shaman',brute:'brute'})
 });
 function playOrcVoice(category,actorOrPosition){
   const actor=actorOrPosition?.root?actorOrPosition:null;
@@ -1096,8 +1098,7 @@ function playOrcVoice(category,actorOrPosition){
   const {x,z}=position;
   // The callback is evaluated again after asynchronous MP3 fetch/decode.
   void orcSound.play(category,()=>running&&!paused&&visibleToPlayer(x,z),
-    actor?{voice:ROLE_VOICE.orc[actor.role],
-      ...(category==='interaction'||category==='attack'?{variant:actor.voiceLineIndex}:{})}:{});
+    actor?{voice:ROLE_VOICE.orc[actor.role],variant:actor.voiceLineIndex}:{});
   return true;
 }
 function playWitchVoice(category,actorOrPosition){
@@ -1105,8 +1106,7 @@ function playWitchVoice(category,actorOrPosition){
   const position=actor?.root.position||actorOrPosition;
   if(!running||paused||!position||!visibleToPlayer(position.x,position.z))return false;
   const {x,z}=position;
-  const options=actor?{voice:ROLE_VOICE.witch[actor.role],
-    ...(category==='interaction'||category==='attack'?{variant:actor.voiceLineIndex}:{})}:{};
+  const options=actor?{voice:ROLE_VOICE.witch[actor.role],unitId:actor.id}:{};
   void witchSound.play(category,()=>running&&!paused&&visibleToPlayer(x,z),options);
   return true;
 }
@@ -1875,9 +1875,8 @@ function spawnUnit(kind,x,z,index=0,role='melee'){
   const profile=roles.profile(kind,role);
   const root=new THREE.Group(),visual=cloneSkeleton(source.scene);
   const appearance=kind==='witch'?randomWitchHair():null;
-  // The voice line is selected ONCE when a character is born. Four variants
-  // remain available across units, but one individual never changes its
-  // recorded performer or emotional energy on consecutive clicks.
+  // Orcs still keep their previously approved fixed recording. Witch units
+  // rotate all phrases cloned from the same role's reference voice.
   const voiceLineIndex=1+Math.floor(Math.random()*4);
   const outfitInfo=costumeLayers(visual,kind,index,role,appearance);
   const bounds=new THREE.Box3().setFromObject(visual);

@@ -10,8 +10,8 @@ const supported={creation:5,interaction:4,attack:4};
 for(const [faction,voices] of Object.entries(expected)){
   const dir=join('docs','sounds',faction);
   const manifest=JSON.parse(readFileSync(join(dir,'manifest.json'),'utf8'));
-  const utterances=manifest.sounds.filter(s=>s.model==='qwen/qwen3-tts');
-  assert.equal(utterances.length,52,`${faction}: 52 new lines expected`);
+  const utterances=manifest.sounds.filter(s=>Object.hasOwn(supported,s.category));
+  assert.equal(utterances.length,52,`${faction}: 52 distinct role/event lines expected`);
   assert.deepEqual(manifest.voice_roles,voices);
   const paths=new Set();
   for(const sound of utterances){
@@ -44,10 +44,18 @@ for(const [faction,voices] of Object.entries(expected)){
   }else{
     assert(!manifest.sounds.some(s=>s.path?.includes('Yes_')||
       s.path?.includes('Uhu_')),'erratic Witch voices are retired');
+    assert.equal(Object.keys(manifest.stable_voice_identities||{}).length,4,
+      'all four Witch role identities must have one cloned MiniMax voice ID');
     for(const voice of voices){
-      const agreed=utterances.find(s=>s.path===`attack/${voice}_02.mp3`);
-      assert.equal(agreed.performance,'approved-direct-voice-design-shout',
-        `the approved ${voice} "For the Wiccans!" must be preserved exactly`);
+      const identity=manifest.stable_voice_identities[voice];
+      const roleLines=utterances.filter(s=>s.voice===voice);
+      assert.equal(new Set(roleLines.map(s=>s.voice_id)).size,1,
+        `all ${voice} phrases must use the same persistent voice ID`);
+      assert(roleLines.every(s=>s.voice_id===identity.voice_id),
+        `${voice} must use its approved-voice-derived identity for all events`);
+      assert(roleLines.filter(s=>s.category==='attack').every(s=>
+        s.performance==='consistent-role-battle-cry'),
+        `${voice} attack lines must use emotional battle delivery`);
     }
   }
 }

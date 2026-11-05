@@ -659,5 +659,16 @@
       "source_url": "https://opengameart.org/content/blacksmiths-hammer",
       "license": "CC0"
     }
-  ]
+  ],
+  "dialogue_processing": {
+    "method": "ffmpeg-rubberband",
+    "pitch_factor": 0.72,
+    "tempo_factor": 1.0,
+    "processed_clips": 52,
+    "categories": [
+      "attack",
+      "creation",
+      "interaction"
+    ]
+  }
 }
