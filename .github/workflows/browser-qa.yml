@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'docs/index.html'
+      - 'docs/rts-map.js'
       - 'docs/rts-footprint.js'
       - 'docs/rts-navigation.js'
       - 'docs/rts-fog.js'
@@ -42,6 +43,7 @@ on:
       - 'scripts/compress-character-assets.sh'
       - 'scripts/build-runtime-characters.mjs'
       - 'scripts/test-rts-navigation.mjs'
+      - 'scripts/test-rts-map.mjs'
       - 'scripts/browser-qa.mjs'
       - 'scripts/verify-costumes.mjs'
       - 'crops_low_poly.glb'
@@ -79,6 +81,7 @@ jobs:
         run: |
           node scripts/test-rts-footprint.mjs
           node scripts/test-rts-navigation.mjs
+          node scripts/test-rts-map.mjs
           node scripts/test-rts-fog.mjs
           node scripts/test-rts-sound.mjs
           node scripts/test-rts-unit-physics.mjs

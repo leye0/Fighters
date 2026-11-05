@@ -36,7 +36,7 @@
     [15,20,7.8],[1,26,4.4],
     // Canonical orc construction site exercised in the playable browser QA.
     [8,-10,5.0]];
-  function createLayout(){
+  function createLayout({map=null}={}){
     let seed=0x7194fa21;
     const random=()=>{seed=(1664525*seed+1013904223)>>>0;return seed/4294967296;};
     const trees=[...STARTING_GLADE,...ORC_STARTING_GLADE].map(tree=>({...tree}));
@@ -67,7 +67,23 @@
         created++;
       }
     }
-    return trees;
+    if(!map)return trees;
+    // Keep the established home groves, relocating only trees that used to
+    // occupy the corners outside the new camera-aligned playable boundary.
+    const placed=trees.filter(tree=>map.contains(tree.x,tree.z,tree.radius+.85));
+    for(let trial=0;placed.length<trees.length&&trial<trees.length*200;trial++){
+      const mapX=(random()*2-1)*(map.HALF-1.8);
+      const mapZ=(random()*2-1)*(map.HALF-1.8);
+      const {x,z}=map.toWorld(mapX,mapZ);
+      if(RESERVED.some(([rx,rz,r])=>Math.hypot(x-rx,z-rz)<r)||
+        placed.some(t=>Math.hypot(t.x-x,t.z-z)<2.15))continue;
+      const type=TYPES[Math.floor(random()*TYPES.length)];
+      placed.push({x,z,type,angle:random()*Math.PI*2,
+        height:(type==='dead'?4.8:5.4)*(.83+random()*.34),
+        radius:type==='dead'?.38:.46});
+    }
+    if(placed.length!==trees.length)throw Error('Cannot distribute the forest inside the map');
+    return placed;
   }
   function obstacles(layout){
     // Keep stable IDs after harvesting; existing routes must not suddenly

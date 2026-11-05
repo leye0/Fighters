@@ -377,8 +377,21 @@ async function run(){
   'Warcraft II HUD must be a compact left sidebar, not a huge bottom panel: '+
   JSON.stringify(warcraftHud));
  const miniPan=await evaluate("(()=>{const c=document.querySelector('#war2-minimap'),r=c.getBoundingClientRect();c.dispatchEvent(new MouseEvent('click',{clientX:r.left+r.width*.25,clientY:r.top+r.height*.25,bubbles:true}));return window.__fightersQA.snapshot().cameraCenter})()");
- check(Math.abs(miniPan.x+14)<1&&Math.abs(miniPan.z+14)<1,
-  'Clicking the minimap must recenter the camera: '+JSON.stringify(miniPan));
+ const expectedMiniPan=await evaluate('window.__fightersQA.mapToWorld(-14,-14)');
+ check(Math.hypot(miniPan.x-expectedMiniPan.x,miniPan.z-expectedMiniPan.z)<1,
+  'Clicking the square minimap must recenter the isometric camera: '+JSON.stringify(miniPan));
+ const mapCorners=await evaluate('window.__fightersQA.mapCorners()');
+ const minCornerX=Math.min(...mapCorners.map(c=>c.x));
+ const maxCornerX=Math.max(...mapCorners.map(c=>c.x));
+ const minCornerY=Math.min(...mapCorners.map(c=>c.y));
+ const maxCornerY=Math.max(...mapCorners.map(c=>c.y));
+ check(Math.abs((maxCornerX-minCornerX)-(maxCornerY-minCornerY))<1&&
+   mapCorners.every(c=>(Math.abs(c.x-minCornerX)<1||Math.abs(c.x-maxCornerX)<1)&&
+     (Math.abs(c.y-minCornerY)<1||Math.abs(c.y-maxCornerY)<1)),
+   'The world terrain itself must project as a square in isometric view: '+JSON.stringify(mapCorners));
+ check(await evaluate('!window.__fightersQA.isClear(54,54)&&'+
+   '!window.__fightersQA.isClear(-54,54)&&window.__fightersQA.isClear(0,0)'),
+   'Navigation must obey the new camera-aligned map boundaries');
  await evaluate("window.__fightersQA.centerCamera(-18,-14)");
  console.log('PASS WARCRAFT II DESKTOP HUD: left minimap/sidebar, thin resource bar, icon commands.');
  check(s.projection==='orthographic','Expected RTS orthographic camera');
@@ -428,8 +441,8 @@ async function run(){
  // Warcraft fog: unknown terrain is black, walking discovers it, memory persists,
  // and restarting clears every previously explored tile.
  const fogState=await evaluate('window.__fightersQA.snapshot().fog');
- check(fogState.activeFaction==='witch'&&fogState.size===112&&
-   fogState.bytes===150528&&fogState.visibleCells>0&&
+ check(fogState.activeFaction==='witch'&&fogState.size===224&&
+   fogState.bytes===602112&&fogState.visibleCells>0&&
    fogState.exploredCells<fogState.cells/3,
    'Fog must use a compact, local starting discovery area: '+JSON.stringify(fogState));
  const hidden=await evaluate('window.__fightersQA.fogAt(22,21)');

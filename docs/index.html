@@ -445,6 +445,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 }
 </style>
 <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
+<script src="./rts-map.js"></script>
 <script src="./rts-footprint.js"></script>
 <script src="./rts-navigation.js"></script>
 <script src="./rts-unit-physics.js"></script>
@@ -538,7 +539,8 @@ scene.fog = new THREE.FogExp2(0x0a1325,.018);
 const CAMERA_OFFSET=new THREE.Vector3(18,18,18);
 const camera=new THREE.OrthographicCamera(-11,11,11,-11,.1,180);
 camera.position.copy(CAMERA_OFFSET);
-const ARENA_HALF=28,ARENA_SIZE=2*ARENA_HALF;
+const arena=window.FightersMap;
+const ARENA_HALF=arena.HALF,ARENA_SIZE=arena.SIZE;
 const BUILD_CLEARANCE=1;
 const SPAWNS={hero:{x:-22,z:-22},enemies:{x:22,z:22}};
 const WITCH_HOUSE={x:-23.5,z:-17.5,maxFootprint:5.2,doorHeading:Math.PI/4};
@@ -559,10 +561,12 @@ const witchBuilding={
 };
 let buildingSelectionRing=null;
 const UNIT_RADIUS=window.FightersUnitPhysics.RADIUS;
-const navigatorRTS=new window.FightersNavigation.Navigator({halfSize:ARENA_HALF,cellSize:1,radius:UNIT_RADIUS});
-const forestLayout=window.FightersForest.createLayout();
+const navigatorRTS=new window.FightersNavigation.Navigator({
+  halfSize:arena.worldHalf,cellSize:1,radius:UNIT_RADIUS,region:arena
+});
+const forestLayout=window.FightersForest.createLayout({map:arena});
 let forestObstacles=window.FightersForest.obstacles(forestLayout);
-const ravenFlock=new window.FightersRavens.Flock(forestLayout);
+const ravenFlock=new window.FightersRavens.Flock(forestLayout,{clampPosition:arena.clamp});
 function buildingVisualBounds(root){
   root.updateMatrixWorld(true);
   const b=new THREE.Box3().setFromObject(root);
@@ -876,10 +880,11 @@ const roles=window.FightersRoles;
 const farming=new window.FightersFarming.Economy();
 const orcFoodRules=window.FightersOrcFood;
 const orcFood=new orcFoodRules.Economy();
-const hareField=new orcFoodRules.Hares({walkable:(x,z)=>navigatorRTS.pointClear({x,z})});
+const hareField=new orcFoodRules.Hares({halfSize:arena.worldHalf,
+  walkable:(x,z)=>navigatorRTS.pointClear({x,z})});
 let orcForageElapsed=0,orcFamineAlerted=false;
 let farmAssignmentElapsed=0,farmSerial=0,famineAlerted=false;
-const wildBerries=new window.FightersBerries.WildBerries(forestLayout);
+const wildBerries=new window.FightersBerries.WildBerries(forestLayout,{map:arena});
 let berryAssignmentElapsed=0;
 const ROLE_IDS=roles.ROLE_IDS,ROLE_DEFINITIONS=roles.DEFINITIONS;
 const ORC_COSTS={barrack:180,hut:120,cauldron:200,factory:250};
@@ -913,9 +918,11 @@ let witchStrategyAccumulator=0;
 let ravenMoveMode=false;
 let completedMiningCycles=0,totalMinedGold=0;
 let qaPassiveKind=null;
-// Warcraft-style map exploration: one 112×112 RGBA texture (49 KiB) is
-// rendered across the viewport; both factions' discovery grids use ~147 KiB.
-const fogOfWar=new window.FightersFog.FogGrid({halfSize:ARENA_HALF,cellSize:.5,radius:7.5,fade:1.25});
+// Fog stays in physical X/Z coordinates so sight radii remain circular even
+// though the battlefield's visible boundaries follow isometric screen axes.
+const fogOfWar=new window.FightersFog.FogGrid({
+  halfSize:arena.worldHalf,cellSize:.5,radius:7.5,fade:1.25
+});
 const orcSound=new window.FightersSound.Engine();
 const witchSound=new window.FightersSound.Engine({
   categories:['interaction','creation','destruction','work'],
@@ -934,7 +941,7 @@ const fogShader=new THREE.ShaderMaterial({
   uniforms:{
     mask:{value:fogTexture},origin:{value:new THREE.Vector2()},
     right:{value:new THREE.Vector2()},up:{value:new THREE.Vector2()},
-    halfSize:{value:ARENA_HALF},worldSize:{value:ARENA_SIZE},
+    halfSize:{value:arena.worldHalf},worldSize:{value:arena.worldHalf*2},
     exploredBrightness:{value:1.0}
   },
   vertexShader:`varying vec2 vUv;
@@ -1095,21 +1102,29 @@ function acknowledgeOrcAiOrder(actors){
 // it consumes ~49 KiB, without textures, GLBs or a second WebGL renderer.
 const minimap=$('war2-minimap'),minimapContext=minimap.getContext('2d',{alpha:false});
 const minimapRaster=document.createElement('canvas');
-minimapRaster.width=fogOfWar.size;minimapRaster.height=fogOfWar.size;
+minimapRaster.width=112;minimapRaster.height=112;
 const minimapRasterContext=minimapRaster.getContext('2d',{alpha:false});
-const minimapImage=minimapRasterContext.createImageData(fogOfWar.size,fogOfWar.size);
+const minimapImage=minimapRasterContext.createImageData(112,112);
 // Raven scouting permanently discovers terrain but never creates a moving
 // bright patch that would betray each bird's position on the minimap.
-const minimapGroundFog=new window.FightersFog.FogGrid();
+const minimapGroundFog=new window.FightersFog.FogGrid({halfSize:arena.worldHalf});
 let minimapElapsed=0;
-function miniX(x){return (x+ARENA_HALF)/ARENA_SIZE*minimap.width;}
-function miniZ(z){return (z+ARENA_HALF)/ARENA_SIZE*minimap.height;}
+function miniPoint(x,z){
+  const p=arena.toMap(x,z);
+  return {x:(p.x+ARENA_HALF)/ARENA_SIZE*minimap.width,
+    y:(p.z+ARENA_HALF)/ARENA_SIZE*minimap.height};
+}
 function drawMinimap(){
   const fog=fogOfWar.maps[activeFaction],paint=minimapImage.data;
   minimapGroundFog.update(activeFaction,groundSightSources(activeFaction));
   const groundVisible=minimapGroundFog.maps[activeFaction].visible;
-  for(let i=0,j=0;i<fog.explored.length;i++,j+=4){
-    const light=Math.max(groundVisible[i],fog.explored[i]*.28)/255;
+  // Resample the world-space visibility grids into the square camera-aligned
+  // map. A simple X/Z drawImage would recreate the old diamond discrepancy.
+  for(let row=0;row<112;row++)for(let col=0;col<112;col++){
+    const world=arena.toWorld((col+.5)/112*ARENA_SIZE-ARENA_HALF,
+      (row+.5)/112*ARENA_SIZE-ARENA_HALF);
+    const index=fogOfWar.index(world.x,world.z),j=(row*112+col)*4;
+    const light=index<0?0:Math.max(groundVisible[index],fog.explored[index]*.28)/255;
     paint[j]=Math.round(7+46*light);
     paint[j+1]=Math.round(10+90*light);
     paint[j+2]=Math.round(11+54*light);
@@ -1127,26 +1142,38 @@ function drawMinimap(){
         b.clanId!=='neutral'&&!knownEnemyBuildings[activeFaction].has(b.id)))continue;
     minimapContext.fillStyle=b.type==='mine'?'#d4c36e':
       b.clanId===(activeFaction==='witch'?'witch':'orcs')?'#b2d3ce':'#c16c57';
-    minimapContext.fillRect(miniX(box.minX),miniZ(box.minZ),
-      Math.max(2,miniX(box.maxX)-miniX(box.minX)),
-      Math.max(2,miniZ(box.maxZ)-miniZ(box.minZ)));
+    const corners=[[box.minX,box.minZ],[box.maxX,box.minZ],
+      [box.maxX,box.maxZ],[box.minX,box.maxZ]].map(([bx,bz])=>miniPoint(bx,bz));
+    minimapContext.beginPath();
+    corners.forEach((p,i)=>i?minimapContext.lineTo(p.x,p.y):minimapContext.moveTo(p.x,p.y));
+    minimapContext.closePath();minimapContext.fill();
   }
   for(const actor of units){
     if(actor.dead||actor.kind!==activeFaction&&!fogOfWar.exploredAt(
       actor.root.position.x,actor.root.position.z,activeFaction))continue;
     minimapContext.fillStyle=actor.kind===activeFaction?'#c6f4a3':'#ff7b76';
-    minimapContext.fillRect(miniX(actor.root.position.x)-1,miniZ(actor.root.position.z)-1,3,3);
+    const p=miniPoint(actor.root.position.x,actor.root.position.z);
+    minimapContext.fillRect(p.x-1,p.y-1,3,3);
   }
   minimapContext.strokeStyle='#f6f1c3';
   minimapContext.lineWidth=1;
-  const x=miniX(cameraFollow.x),y=miniZ(cameraFollow.z);
-  minimapContext.strokeRect(x-6,y-6,12,12);
+  const rect=viewport.getBoundingClientRect();
+  const footprint=[[rect.left,rect.top],[rect.right,rect.top],
+    [rect.right,rect.bottom],[rect.left,rect.bottom]]
+    .map(([x,y])=>worldPoint(x,y)).filter(Boolean).map(p=>miniPoint(p.x,p.z));
+  if(footprint.length===4){
+    minimapContext.beginPath();
+    footprint.forEach((p,i)=>i?minimapContext.lineTo(p.x,p.y):
+      minimapContext.moveTo(p.x,p.y));
+    minimapContext.closePath();minimapContext.stroke();
+  }
 }
 function minimapCenterAt(clientX,clientY){
   const rect=minimap.getBoundingClientRect();
   if(!rect.width||!rect.height)return;
-  cameraFollow.x=clamp((clientX-rect.left)/rect.width*ARENA_SIZE-ARENA_HALF,-26,26);
-  cameraFollow.z=clamp((clientY-rect.top)/rect.height*ARENA_SIZE-ARENA_HALF,-26,26);
+  const world=arena.toWorld((clientX-rect.left)/rect.width*ARENA_SIZE-ARENA_HALF,
+    (clientY-rect.top)/rect.height*ARENA_SIZE-ARENA_HALF);
+  cameraFollow=arena.clamp(world.x,world.z,2);
   positionCamera();drawMinimap();
 }
 minimap.addEventListener('pointerdown',event=>event.stopPropagation());
@@ -1157,8 +1184,8 @@ minimap.addEventListener('keydown',event=>{
   const offsets={ArrowLeft:[-4,0],ArrowRight:[4,0],ArrowUp:[0,-4],ArrowDown:[0,4]};
   const step=offsets[event.key];if(!step||!running||paused)return;
   event.preventDefault();event.stopPropagation();
-  cameraFollow.x=clamp(cameraFollow.x+step[0],-26,26);
-  cameraFollow.z=clamp(cameraFollow.z+step[1],-26,26);
+  const delta=arena.toWorld(step[0],step[1]);
+  cameraFollow=arena.clamp(cameraFollow.x+delta.x,cameraFollow.z+delta.z,2);
   positionCamera();drawMinimap();
 });
 let cameraFollow={x:0,z:0};
@@ -1175,8 +1202,8 @@ function panCamera(dx,dy){
   const box=viewport.getBoundingClientRect(),cx=box.left+box.width/2,cy=box.top+box.height/2;
   const before=worldPoint(cx,cy),after=worldPoint(cx+dx,cy+dy);
   if(before&&after){
-    cameraFollow.x=clamp(cameraFollow.x+before.x-after.x,-26,26);
-    cameraFollow.z=clamp(cameraFollow.z+before.z-after.z,-26,26);
+    cameraFollow=arena.clamp(cameraFollow.x+before.x-after.x,
+      cameraFollow.z+before.z-after.z,2);
     positionCamera();
   }
 }
@@ -1195,19 +1222,25 @@ function box(w,h,d,color,x,y,z,emissive=0x000000){
   const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color,roughness:.85,emissive,emissiveIntensity:emissive? .42:0}));
   mesh.position.set(x,y,z);scene.add(mesh);return mesh;
 }
+function mapBox(width,height,depth,color,mapX,mapZ,y){
+  const mesh=new THREE.Mesh(new THREE.BoxGeometry(width,height,depth*Math.sqrt(3)),
+    new THREE.MeshStandardMaterial({color,roughness:.98}));
+  const p=arena.toWorld(mapX,mapZ);
+  mesh.position.set(p.x,y,p.z);mesh.rotation.y=Math.PI/4;scene.add(mesh);
+  return mesh;
+}
 function buildTerrain(){
-  // Dark woodland terrain for the fantasy RTS, replacing the old neon city.
-  const ground=new THREE.Mesh(new THREE.PlaneGeometry(ARENA_SIZE,ARENA_SIZE),
-    new THREE.MeshStandardMaterial({color:0x344739,roughness:.98}));
-  ground.rotation.x=-Math.PI/2;ground.position.y=-.045;scene.add(ground);
-  // A few broad, muted earth tracks retain easy visual orientation for RTS.
-  box(ARENA_SIZE,.013,7.5,0x3c4135,0,-.025,0);
-  box(7.5,.013,ARENA_SIZE,0x3c4135,0,-.024,0);
+  // The terrain's X/Z footprint is a 45-degree rotated rectangle, stretched
+  // by sqrt(3) along the camera's depth axis. Its isometric projection is an
+  // exact square, matching the map and the WASD/screen pan directions.
+  mapBox(ARENA_SIZE,.045,ARENA_SIZE,0x344739,0,0,-.045);
+  mapBox(ARENA_SIZE,.013,7.5,0x3c4135,0,0,-.015);
+  mapBox(7.5,.013,ARENA_SIZE,0x3c4135,0,0,-.014);
   const edge=ARENA_HALF+.14;
-  box(ARENA_SIZE+.45,.10,.20,0x505b49,0,.012,-edge);
-  box(ARENA_SIZE+.45,.10,.20,0x505b49,0,.012,edge);
-  box(.20,.10,ARENA_SIZE+.45,0x505b49,-edge,.012,0);
-  box(.20,.10,ARENA_SIZE+.45,0x505b49,edge,.012,0);
+  mapBox(ARENA_SIZE+.45,.10,.20,0x505b49,0,-edge,.012);
+  mapBox(ARENA_SIZE+.45,.10,.20,0x505b49,0,edge,.012);
+  mapBox(.20,.10,ARENA_SIZE+.45,0x505b49,-edge,0,.012);
+  mapBox(.20,.10,ARENA_SIZE+.45,0x505b49,edge,0,.012);
 }
 buildTerrain();
 // House is a genuine GLB asset, not a procedural stand-in. Its local front
@@ -2249,10 +2282,13 @@ function validBuildPosition(x,z,type='hut'){
   const proposed=buildShape(type,x,z);
   if(!proposed)return false;
   const clan=buildFaction(type),geometry=window.FightersFootprints;
-  const minX=clan==='witch'?-ARENA_HALF:0,maxX=clan==='witch'?0:ARENA_HALF;
+  const minX=clan==='witch'?-arena.worldHalf:0,
+    maxX=clan==='witch'?0:arena.worldHalf;
+  // Keep the existing faction territories on their world X side, but test
+  // every silhouette vertex against the actual screen-square battlefield.
   if(proposed.minX<minX+BUILD_CLEARANCE||proposed.maxX>maxX-BUILD_CLEARANCE||
-    proposed.minZ<-ARENA_HALF+BUILD_CLEARANCE||
-    proposed.maxZ>ARENA_HALF-BUILD_CLEARANCE)return false;
+    proposed.polygons.some(poly=>poly.some(ring=>ring.some(([px,pz])=>
+      !arena.contains(px,pz,BUILD_CLEARANCE)))))return false;
   // The same true projected X/Z polygons govern construction and collision.
   if(forestObstacles.some(tree=>geometry.withinClearance(proposed,tree,BUILD_CLEARANCE))||
      wildBerries.bushes.some(b=>geometry.distanceTo({x:b.x,z:b.z},proposed)<1.65)||
@@ -4531,6 +4567,7 @@ function animateStoneCircles(dt){
   }
 }
 function positionCamera(){
+  cameraFollow=arena.clamp(cameraFollow.x,cameraFollow.z,2);
   cameraLook.set(cameraFollow.x,1.15,cameraFollow.z);
   camera.position.copy(cameraLook).add(CAMERA_OFFSET);camera.lookAt(cameraLook);
 }
@@ -5325,6 +5362,8 @@ window.__fightersQA={
     return actor?screenPoint(actor):null;
   },
   centerCamera:(x,z)=>{cameraFollow.x=x;cameraFollow.z=z;positionCamera();},
+  mapToWorld:arena.toWorld,
+  mapCorners:()=>arena.corners().map(point=>screenGroundPoint(point.x,point.z)),
   clearPings:clearOrderPings,
   auditTravel:(kind,index,seconds)=>{
     const a=units.filter(u=>u.kind===kind&&!u.dead)[index];
