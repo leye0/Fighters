@@ -63,6 +63,11 @@ async function run(){
  });
  await call('Page.navigate',{url:root+'?qa=1'});
  await until('window.__fightersQA?.snapshot().running===true','RTS startup');
+ // Count full world resets independently from lightweight fixture cleanup.
+ // This is deliberately a report, not a brittle cap on future test coverage.
+ await evaluate("(()=>{let resets=0;const qa=window.__fightersQA;"+
+   "const original=qa.reset;qa.reset=(...args)=>{resets++;return original(...args)};"+
+   "window.__fightersQaResetCount=()=>resets;})()");
  await until('window.__fightersQA.snapshot().witchHouseLoaded','real witch house hitbox');
  await until('window.__fightersQA.snapshot().forest.loadedSpecies===2',
    'two real CC0 red/dead tree GLBs with WebP textures',30000);
@@ -114,7 +119,9 @@ async function run(){
    'Real decoded Orc interaction SFX never played: '+JSON.stringify(await evaluate('window.__fightersQA.sound()')));
  console.log('PASS WEB AUDIO BROWSER SMOKE:',JSON.stringify(await evaluate(
    '({witch:window.__fightersQA.witchSound(),orc:window.__fightersQA.sound()})')));
- await evaluate("window.__fightersQA.reset()");
+ // Audio only changed selection and the viewed faction. Reuse that match for
+ // raven scouting and the emergency defense tests before resetting the world.
+ await evaluate("window.__fightersQA.setFaction('witch')");
  let s=await evaluate('window.__fightersQA.snapshot()');
  await evaluate('window.__fightersQA.selectRaven(0)');
  check((await evaluate('window.__fightersQA.snapshot().ravens.selectedId'))==='raven-1'&&
@@ -126,7 +133,6 @@ async function run(){
    'The commanded raven must uncover a small patch of the witches fog');
  check((await evaluate('window.__fightersQA.minimapGroundVisibilityAt(7,7)'))===0,
    'Raven-only fog vision must not reveal the bird position on the minimap');
- await evaluate('window.__fightersQA.reset()');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.witches.length===3&&s.orcs.length===4,'Starting troops');
  check(s.house.maxHealth>=1400&&s.buildings.filter(b=>b.clanId==='orcs'&&b.type!=='mine')
@@ -138,8 +144,8 @@ async function run(){
  check(struck.witches.filter(u=>u.role!=='worker').every(u=>
    u.attackTargetId===struck.orcs[0].id),
    'Nearby autonomous witch guards must retaliate when a worker is struck');
- // Village alarms must travel across the whole map, even outside local sight.
- await evaluate('window.__fightersQA.reset();window.__fightersQA.enableWitchAI(true)');
+ // Reuse this match for both village alarms; each faction can be put on
+ // alert independently without reconstructing all seven animated units.
  check(await evaluate('window.__fightersQA.placeUnit("witch",0,0,0)'),
    'Could not position a distant witch defender');
  check(await evaluate("window.__fightersQA.strikeBuilding('orc',0,'witch-house-01',650)"),
@@ -154,7 +160,7 @@ async function run(){
  alarm=await evaluate('window.__fightersQA.snapshot()');
  check(alarm.witches[0].attackTargetId===alarm.orcs[0].id,
    'A village defender must keep the emergency order while the AI plans its next raid');
- await evaluate('window.__fightersQA.reset();window.__fightersQA.enableOrcAI(true)');
+ await evaluate('window.__fightersQA.enableWitchAI(false);window.__fightersQA.enableOrcAI(true)');
  check(await evaluate('window.__fightersQA.placeUnit("orc",0,0,0)'),
    'Could not position a distant orc defender');
  const emergencyHut=(await evaluate('window.__fightersQA.snapshot()')).buildings.find(b=>b.type==='hut');
@@ -245,8 +251,8 @@ async function run(){
  await evaluate('window.__fightersQA.move(-8,-8)');
  check(!(await evaluate('window.__fightersQA.snapshot()')).repairs.length,
    'Explicit movement must cancel the repair job');
- await evaluate('window.__fightersQA.reset();window.__fightersQA.enableOrcAI(false);'+
-   'window.__fightersQA.setFaction("orc")');
+ // The witch repair cancellation has not touched Orc structures or troops.
+ await evaluate('window.__fightersQA.setFaction("orc")');
  s=await evaluate('window.__fightersQA.snapshot()');
  const orcHut=s.buildings.find(b=>b.type==='hut');
  await evaluate('window.__fightersQA.setBuildingHealth('+JSON.stringify(orcHut.id)+',30);'+
@@ -267,7 +273,6 @@ async function run(){
  console.log('PASS BUILDING REPAIR: direct taps, panel button, hammer, both clans, cancellation, ownership and caps.');
  await until('window.__fightersQA.snapshot().crops.loaded',
    'real six-stage source model for wheat and wild berry bushes',30000);
- await evaluate('window.__fightersQA.reset()');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.crops.templates===6&&s.berries.count===28&&s.berries.real&&s.berries.batches>0&&
    s.berries.forageSight===3&&
@@ -318,7 +323,7 @@ async function run(){
  check(Math.hypot(ordered.witches[0].x-guardAfter.witches[0].x,
    ordered.witches[0].z-guardAfter.witches[0].z)>.3,
    'An explicit attack order must override defensive holding');
- await evaluate("window.__fightersQA.reset();window.__fightersQA.passive(null);window.__fightersQA.enableOrcAI(true)");
+ await evaluate("window.__fightersQA.passive(null)");
  console.log('PASS WITCH GROUP DEFENSE: hold on sight, attack on command.');
  check(s.loading.compressed,'Native characters should load from optimized gzip assets');
  const fullTransfer={female:20994430,male:20683626};
@@ -337,8 +342,9 @@ async function run(){
    'real licensed low-poly log bundle model',30000);
  // A real tap on a tree (not a building) orders either faction's worker to
  // walk to its trunk, play the native chopping loop, and leave a real GLB pile.
+ await evaluate('window.__fightersQA.reset()');
  for(const [kind,workerIndex,treeIndex] of [['witch',1,0],['orc',1,5]]){
-   await evaluate("window.__fightersQA.reset();window.__fightersQA.enableOrcAI(false);"+
+   await evaluate("window.__fightersQA.enableOrcAI(false);"+
      "window.__fightersQA.setFaction('"+kind+"')");
    if(kind==='orc')await evaluate('window.__fightersQA.centerCamera(15,18)');
    await evaluate("window.__fightersQA.selectUnit('"+kind+"',"+workerIndex+")");
@@ -575,11 +581,13 @@ async function run(){
  check(ringStyle.depthTest===false&&ringStyle.renderOrder>=10,
    'Selection circles must render on top of paved ground and character feet: '+JSON.stringify(ringStyle));
  await screenshot('rts-selection-ring-prominent');
- await evaluate('window.__fightersQA.reset()');
  console.log('PASS FRIENDLY UNIT TAPS: mouse events and prominent, unobstructed selection rings.');
 
  // Building taps must hit the actual flat X/Z polygon, never the larger
  // projected 3D visual AABB or a roof overhang.
+ // Reset selection, not the whole match: a selected fighter would interpret
+ // a friendly building tap as a movement order.
+ await evaluate('window.__fightersQA.selectHouse()');
  await evaluate("window.__fightersQA.centerCamera("+
    ((housePolygon.minX+housePolygon.maxX)/2)+","+
    ((housePolygon.minZ+housePolygon.maxZ)/2)+")");
@@ -870,7 +878,7 @@ async function run(){
      JSON.stringify({point:singleTouch,selected:oneTap.selectedIds,building:oneTap.selectedBuildingId,
        gesture:oneTap.touchGesture}));
  console.log('PASS MOBILE SINGLE TAP: physical touch events select a friendly witch.');
- await evaluate('window.__fightersQA.reset()');
+ await evaluate('window.__fightersQA.selectHouse()');
  const first=touch(1,bound.x1,bound.y1),second=touch(2,bound.x1+22,bound.y1+22);
  await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[first,second]});
  let boxState=await evaluate('window.__fightersQA.snapshot()');
@@ -907,7 +915,7 @@ async function run(){
  // iPhone users rarely lift both fingers simultaneously. The FIRST release
  // must finish the selection; movement from the finger left on-screen must
  // never become an unintended pan, tap, or attack command.
- await evaluate("window.__fightersQA.reset();window.__fightersQA.centerCamera(-18,-14)");
+ await evaluate("window.__fightersQA.selectHouse();window.__fightersQA.centerCamera(-18,-14)");
  const firstLiftStart=touch(9,bound.x1,bound.y1);
  const secondLiftEnd=touch(10,bound.x2,bound.y2);
  await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[
@@ -1252,7 +1260,7 @@ async function run(){
 
  // First tap selects a witch, second tap directly attacks the enemy building.
  const hutId=(await evaluate('window.__fightersQA.snapshot()')).buildings.find(b=>b.type==='hut').id;
- await evaluate("window.__fightersQA.reset();window.__fightersQA.centerCamera(-18,-14)");
+ await evaluate("window.__fightersQA.centerCamera(-18,-14)");
  const witchPoint=await evaluate("window.__fightersQA.unitScreenPoint('witch',0)");
  check(witchPoint&&Number.isFinite(witchPoint.x),'Cannot project witch');
  await evaluate("window.__fightersQA.tap("+witchPoint.x+","+witchPoint.y+")");
@@ -1323,22 +1331,31 @@ async function run(){
   {x:10,z:19},{x:26,z:19},{x:20,z:12},{x:14,z:26},
   {x:-12,z:-13}
  ];
+ // One real match, nine independent approaches. Restore only the hut's HP
+ // between angles: resetting the entire world would needlessly rebuild all
+ // rigs, fog, forest and models nine times. Stop as soon as a *real* impact
+ // proves the approach is navigable, rather than simulating 17–37 seconds
+ // after the first hit for every direction.
+ await evaluate("window.__fightersQA.reset();window.__fightersQA.passive('orc')");
  let attempted=0;
  for(const from of sides){
-  await evaluate("window.__fightersQA.reset();window.__fightersQA.passive('orc')");
-  const state=await evaluate('window.__fightersQA.snapshot()');
-  const target=state.buildings.find(b=>b.type==='hut'&&!b.destroyed);
+  const target=(await evaluate('window.__fightersQA.snapshot()')).buildings
+    .find(b=>b.type==='hut'&&!b.destroyed);
   if(!await evaluate("window.__fightersQA.isClear("+from.x+","+from.z+")"))continue;
+  await evaluate('window.__fightersQA.setBuildingHealth('+
+    JSON.stringify(target.id)+','+target.maxHealth+')');
   await evaluate("window.__fightersQA.moveUnitTo('witch',0,"+from.x+","+from.z+");window.__fightersQA.selectUnit('witch',0)");
   check(await evaluate("window.__fightersQA.attackBuilding("+JSON.stringify(target.id)+")"),
     'Attack order failed for '+JSON.stringify(from));
-  await evaluate("window.__fightersQA.advance("+((from.x<0)?37:17)+")");
-  const after=await evaluate('window.__fightersQA.snapshot()');
-  const updated=after.buildings.find(b=>b.id===target.id);
-  check(updated.health<target.health,
+  const attack=await evaluate("(()=>{for(let second=1;second<="+
+    ((from.x<0)?42:21)+";second++){window.__fightersQA.advance(1);"+
+    "const h=window.__fightersQA.snapshot().buildings.find(b=>b.id==="+
+    JSON.stringify(target.id)+");if(h.health<"+target.maxHealth+")"+
+    "return {seconds:second,health:h.health};}return null})()");
+  check(attack?.health<target.maxHealth,
     'Witch remained idle outside enemy building attack range from '+JSON.stringify(from)+
-    ' before='+target.health+' after='+updated.health+
-    ' witch='+JSON.stringify(after.witches[0]));
+    ' before='+target.maxHealth+' result='+JSON.stringify(attack)+
+    ' witch='+JSON.stringify((await evaluate('window.__fightersQA.snapshot()')).witches[0]));
   attempted++;
  }
  check(attempted>=6,'Expected at least 6 distinct valid attack-angle trials, got '+attempted);
@@ -1346,7 +1363,8 @@ async function run(){
 
  // Regression: repeated Orc approaches must not grow the shared building
  // perimeter cache. The old unshift mutated it on every recalculation.
- await evaluate("window.__fightersQA.reset();window.__fightersQA.passive('witch');"+
+ // The Orc HQ has not been touched by the nine witch-side attack trials.
+ await evaluate("window.__fightersQA.passive('witch');"+
    "window.__fightersQA.setFaction('orc');"+
    "window.__fightersQA.moveUnitTo('orc',2,-18.2,-17.5);"+
    "window.__fightersQA.selectUnit('orc',2)");
@@ -1676,7 +1694,8 @@ async function run(){
    baseline:gpuBaseline,gpuLifecycles
  }));
 
- await evaluate('window.__fightersQA.enableOrcAI(false);window.__fightersQA.reset()');
+ // The GPU-lifecycle loop already restored a clean game after its last cycle.
+ await evaluate('window.__fightersQA.enableOrcAI(false)');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.witches.length===3&&s.orcs.length===4&&
   s.buildings.filter(b=>!b.destroyed).length===6,'Reset after AI restores starting match');
@@ -1737,8 +1756,10 @@ async function run(){
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.orcFood.corpsesEaten===1&&s.orcFood.food>15,
    'An orc should feast once on a witch corpse for a substantial food reward');
- await evaluate('window.__fightersQA.reset()');
  check(!errors.length,'Browser JavaScript exceptions: '+errors.join(' | '));
+ console.log('CHROME_QA_FULL_MATCH_RESETS',
+   await evaluate('window.__fightersQaResetCount()'),
+   '(excludes explicit start-button matches)');
  console.log('PASS RTS: stable HUD, persistent shortcuts, blue/red reticles, two-tap attacks, one-finger pan, instant two-finger box selection, locked 4.05× zoom, destroyed buildings and strategic AI.');
 
 }
