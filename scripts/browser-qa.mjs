@@ -257,6 +257,16 @@ async function run(){
      delivery.s.forestry.haulers.length===0,
      'Only physically delivered wood may be credited to the correct clan: '+
      JSON.stringify({wood:delivery.s.wood,forestry:delivery.s.forestry}));
+   if(kind==='witch'){
+     const followUp=delivery.s.forestry.workers.find(w=>w.clan==='witch');
+     check(followUp&&followUp.index!==treeIndex,
+       'Witch lumberjack must automatically start another visible, safe wood run');
+     const nextTree=delivery.s.forest.trees[followUp.index];
+     check(nextTree&&!nextTree.felled&&
+       Math.hypot(nextTree.x-22,nextTree.z-22)>=11&&
+       (await evaluate('window.__fightersQA.fogAt('+nextTree.x+','+nextTree.z+',"witch")')).explored>.2,
+       'Automatic lumber must remain on explored ground away from the enemy village');
+   }
    s=await evaluate('window.__fightersQA.snapshot()');
    check(s.buildings.every(b=>b.id!=='tree-'+treeIndex),
      'Forest trees are terrain resources, not attackable buildings');
@@ -1044,17 +1054,23 @@ async function run(){
  // Quaternius Farm_Harvest clip, with the work tool hidden.
  check(await evaluate('window.__fightersQA.orderHarvest(1,'+JSON.stringify(gardenId)+')'),
    'Witch worker could not be assigned to garden');
-  const harvestGesture=await evaluate("(()=>{let seen=false,inside=false;for(let i=0;i<26;i++){"+
-    "window.__fightersQA.advance(1);const s=window.__fightersQA.snapshot();"+
+  const harvestGesture=await evaluate("(()=>{let seen=false,inside=false,carrying=false,"+
+    "notCredited=false,delivered=false;for(let i=0;i<90;i++){"+
+    "window.__fightersQA.advance(.5);const s=window.__fightersQA.snapshot();"+
+    "if(s.farming.workers.some(w=>w.phase==='carry'&&w.carrying)){carrying=true;"+
+    "notCredited ||= s.farming.deliveredFood===0;}"+
+    "if(s.farming.deliveredFood>=8){delivered=true;break;}"+
     "for(const u of s.witches)if(u.role==='worker'&&u.animation==='Farm_Harvest'&&"+
     "!u.workToolVisible&&!u.hammerToolVisible){seen=true;inside ||= " +
     "Math.abs(u.x-("+gardenSite.x+"))<1.2&&Math.abs(u.z-("+gardenSite.z+"))<1.6;}"+
-    "}return {seen,inside};})()");
+    "}return {seen,inside,carrying,notCredited,delivered};})()");
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.farming.harvests>0&&s.farming.producedFood>=8,
    'Worker never reached and harvested mature crops: '+JSON.stringify(s.farming));
-  check(harvestGesture.seen&&harvestGesture.inside,
-    'Witch must enter the garden and pick by hand with no tool: '+JSON.stringify(harvestGesture));
+  check(harvestGesture.seen&&harvestGesture.inside&&harvestGesture.carrying&&
+    harvestGesture.notCredited&&harvestGesture.delivered&&s.farming.deliveredFood>=8,
+    'Witch must pick by hand, carry wheat home and only then stock food: '+
+    JSON.stringify({gesture:harvestGesture,farming:s.farming}));
  check(s.farming.gardens[0].stages.every(stage=>stage>=1&&stage<=3),
    'Garden must never show dead or fourth-stage crops');
  console.log('PASS GARDEN: plant inside, three real wheat stages, harvest inside by hand.');

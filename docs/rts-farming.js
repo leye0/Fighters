@@ -14,7 +14,8 @@
     constructor(){this.reset();}
     reset(){
       this.food=STARTING_FOOD;this.gardens=new Map();
-      this.harvests=0;this.producedFood=0;this.foragedFood=0;this.starvationSeconds=0;
+      this.harvests=0;this.producedFood=0;this.deliveredFood=0;
+      this.foragedFood=0;this.starvationSeconds=0;
     }
     addGarden(id){
       if(!id||this.gardens.has(id))return false;
@@ -35,7 +36,12 @@
       if(!plot||plot.stage!==LAST_STAGE)return 0;
       plot.stage=FIRST_STAGE;plot.elapsed=0;
       this.harvests++;this.producedFood+=FOOD_PER_HARVEST;
-      this.food+=FOOD_PER_HARVEST;return FOOD_PER_HARVEST;
+      // Harvest is cargo, not food in the village until physically delivered.
+      return FOOD_PER_HARVEST;
+    }
+    deliver(amount){
+      if(!Number.isFinite(amount)||amount<=0)throw Error('Invalid wheat delivery');
+      this.food+=amount;this.deliveredFood+=amount;
     }
     forage(amount){
       if(!Number.isFinite(amount)||amount<=0)throw Error('Invalid wild food amount');
@@ -61,6 +67,7 @@
     }
     snapshot(){
       return {food:this.food,harvests:this.harvests,producedFood:this.producedFood,
+        deliveredFood:this.deliveredFood,
         foragedFood:this.foragedFood,
         starvationSeconds:this.starvationSeconds,
         gardens:[...this.gardens.values()].map(g=>({id:g.id,
