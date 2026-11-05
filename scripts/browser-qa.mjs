@@ -541,9 +541,12 @@ async function run(){
  await evaluate('window.__fightersQA.advance(3)');
  check((await evaluate('window.__fightersQA.snapshot()')).witches.length===5,
   'Upgraded house production failed');
- await evaluate('window.__fightersQA.selectWitches();window.__fightersQA.move(-3,-3)');
+ // The on-screen move marker is intentionally culled for distant orders.
+ // Check feedback at the camera centre, then separately test long travel.
+ await evaluate('window.__fightersQA.selectWitches();window.__fightersQA.move(-18,-14)');
  check(await evaluate("document.querySelector('.order-ping.move')!==null"),
    'Move order needs a blue fading marker');
+ await evaluate('window.__fightersQA.move(-3,-3)');
  await until("window.__fightersQA.snapshot().ui.activePings===0",'blue order reticle cleanup',10000);
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.selectedIds.length===5,'RTS group selection failed');
