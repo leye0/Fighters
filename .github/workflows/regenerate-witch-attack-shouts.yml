@@ -1,0 +1,51 @@
+name: Regenerate aggressive Witch attack shouts
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/regenerate-witch-attack-shouts.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: fighters-witch-attack-shouts
+  cancel-in-progress: false
+
+jobs:
+  shouts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare audio tools
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Retrieve the approved 52-line Witch catalog
+        uses: actions/download-artifact@v4
+        with:
+          name: fighters-witch-voice-catalog
+          run-id: 42069178445
+          github-token: ${{ github.token }}
+          path: generated-voices/witches
+      - name: Rerecord 16 loud battle shouts
+        env:
+          REPLICATE_API_KEY: ${{ secrets.REPLICATE_API_KEY }}
+        run: python3 scripts/generate_voice_catalog.py --mode attack-shouts
+      - name: Upload revised Witch catalog
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fighters-witch-voice-catalog-shouts
+          path: generated-voices/witches/
+          if-no-files-found: warn
+          retention-days: 30

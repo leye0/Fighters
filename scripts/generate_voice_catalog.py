@@ -78,6 +78,18 @@ ORC_TESTS = {
              "Fearsome but believable, no exaggerated growls or monster noises.",
 }
 ORC_TEST_LINE = "At your command!"
+# Unlike acknowledgements, these are battle cries. Keep the forceful vocal
+# *performance* in the TTS prompt; an audio gain boost cannot turn a calm
+# reading into a convincing shouted command.
+ATTACK_DIRECTION = (
+    "This line is a FIERCE BATTLE CRY in the middle of a real fight. "
+    "SHOUT the entire sentence at full projected volume, with aggressive "
+    "energy, courage, urgency and absolute confidence. Strong chest voice, "
+    "hard consonants, battle adrenaline, fierce emphasis on the final word. "
+    "Make it sound like a warrior witch rallying sisters into combat. "
+    "NEVER soft, gentle, conversational, coy, sensual, comedic or uncertain. "
+    "A strong raw human shout, not a quiet narration or a theatrical whisper."
+)
 PLANNED_CALLS = len(WITCH_ROLES) * (1 + sum(map(len, LINES.values()))) + len(ORC_TESTS)
 MAX_CALLS = PLANNED_CALLS + len(WITCH_ROLES)  # Only if a short reference fails.
 
@@ -140,8 +152,9 @@ def download(url: str, path: Path) -> None:
     path.write_bytes(data)
 
 
-def convert(source: Path, target: Path, *, gritty: bool = False) -> float:
-    filters = "loudnorm=I=-19:TP=-3:LRA=7"
+def convert(source: Path, target: Path, *, gritty: bool = False,
+            battle: bool = False) -> float:
+    filters = "loudnorm=I=-16:TP=-2:LRA=7" if battle else "loudnorm=I=-19:TP=-3:LRA=7"
     if gritty:
         # Roughly 1.5 semitones down without slowing the sentence. This is
         # an *optional* comparison; the unprocessed Orc sample is preserved.
@@ -174,12 +187,12 @@ def wav_data_url(path: Path) -> str:
     return "data:audio/wav;base64," + base64.b64encode(data).decode("ascii")
 
 
-def synthesize(token: str, payload: dict, destination: Path) -> float:
+def synthesize(token: str, payload: dict, destination: Path, *, battle: bool = False) -> float:
     destination.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory() as temporary:
         raw = Path(temporary) / "audio.wav"
         download(predict(token, payload), raw)
-        return convert(raw, destination)
+        return convert(raw, destination, battle=battle)
 
 
 def catalog(token: str, seed_dir: Path, output: Path) -> None:
@@ -228,7 +241,7 @@ def catalog(token: str, seed_dir: Path, output: Path) -> None:
         for category, lines in LINES.items():
             for index, text in enumerate(lines, 1):
                 target = output / category / f"{role}_{index:02d}.mp3"
-                style = ("A short strong battle command, clear and assertive but not a scream."
+                style = (ATTACK_DIRECTION
                          if category == "attack" else
                          "A natural friendly greeting, alert and concise."
                          if category == "creation" else
@@ -237,7 +250,7 @@ def catalog(token: str, seed_dir: Path, output: Path) -> None:
                     "mode": "voice_clone", "language": "English", "text": text,
                     "reference_audio": mp3_data_url(reference),
                     "reference_text": ANCHOR_TEXT, "style_instruction": style,
-                }, target)
+                }, target, battle=category == "attack")
                 manifest["sounds"].append({
                     "category": category, "voice": role, "text": text,
                     "path": str(target.relative_to(output)),
@@ -257,6 +270,64 @@ def catalog(token: str, seed_dir: Path, output: Path) -> None:
         "Role voices: worker = guardian audition, guard = warrior audition, "
         "arcane = mystic audition, elder = elder audition (future role).\n"
         "Each reference and line is documented in `manifest.json`.\n",
+        encoding="utf-8",
+    )
+
+
+def regenerate_attack_shouts(token: str, output: Path) -> None:
+    """Replace only the 16 Attack MP3s in an existing reviewed catalog.
+
+    For 'For the Wiccans!' also create a direct VoiceDesign alternative to
+    compare actual shout intensity with the voice-cloned character identity.
+    """
+    manifest_path = output / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if len(manifest.get("sounds", [])) != 52:
+        raise RuntimeError("Expected the complete 52-line Witch catalog")
+    updated = 0
+    for role, identity in WITCH_ROLES.items():
+        reference = output / "references" / f"{role}.mp3"
+        if not reference.is_file():
+            raise RuntimeError(f"Missing stable Witch reference: {reference}")
+        for index, line in enumerate(LINES["attack"], 1):
+            target = output / "attack" / f"{role}_{index:02d}.mp3"
+            duration = synthesize(token, {
+                "mode": "voice_clone", "language": "English", "text": line,
+                "reference_audio": mp3_data_url(reference),
+                "reference_text": ANCHOR_TEXT,
+                "style_instruction": ATTACK_DIRECTION,
+            }, target, battle=True)
+            matches = [row for row in manifest["sounds"]
+                       if row["category"] == "attack" and row["voice"] == role
+                       and row["text"] == line]
+            if len(matches) != 1 or matches[0]["path"] != str(target.relative_to(output)):
+                raise RuntimeError(f"Manifest mismatch for {role}: {line}")
+            matches[0]["duration_seconds"] = duration
+            matches[0]["performance"] = "aggressive-full-voice-war-shout-v2"
+            updated += 1
+            print(f"SHOUT {updated:02d}/16: {role}: {line} ({duration:.2f}s)", flush=True)
+        alternative = output / "alternatives" / f"{role}_for_the_wiccans_designed.mp3"
+        synthesize(token, {
+            "mode": "voice_design", "language": "English",
+            "text": "For the Wiccans!",
+            "voice_description": identity["description"] + " " + ATTACK_DIRECTION,
+            "style_instruction": ATTACK_DIRECTION,
+        }, alternative, battle=True)
+        print(f"Alternate direct shout recorded: {role}", flush=True)
+    if updated != 16:
+        raise RuntimeError(f"Expected exactly 16 new attack shouts, got {updated}")
+    manifest["attack_performance"] = "aggressive-full-voice-war-shout-v2"
+    manifest["attack_alternatives"] = [
+        f"alternatives/{role}_for_the_wiccans_designed.mp3" for role in WITCH_ROLES
+    ]
+    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+                             encoding="utf-8")
+    (output / "README.md").write_text(
+        (output / "README.md").read_text(encoding="utf-8") +
+        "\nAll 16 attack lines were regenerated as **aggressive, confidently "
+        "shouted war cries**, mastered ~3 dB louder than selections. "
+        "The `alternatives/` folder compares direct VoiceDesign shouts "
+        "of 'For the Wiccans!' with the character-consistent voice clones.\n",
         encoding="utf-8",
     )
 
@@ -293,7 +364,8 @@ def orc_audition(token: str, output: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", choices=("witches", "orcs", "both"), default="both")
+    parser.add_argument("--mode", choices=("witches", "orcs", "both", "attack-shouts"),
+                        default="both")
     parser.add_argument("--seeds", type=Path, default=Path("scripts/voice-seeds"))
     parser.add_argument("--output", type=Path, default=Path("generated-voices"))
     parser.add_argument("--dry-run", action="store_true")
@@ -316,6 +388,8 @@ def main() -> None:
         orc_audition(token, args.output / "orcs")
     if args.mode in ("witches", "both"):
         catalog(token, args.seeds, args.output / "witches")
+    if args.mode == "attack-shouts":
+        regenerate_attack_shouts(token, args.output / "witches")
 
 
 if __name__ == "__main__":
