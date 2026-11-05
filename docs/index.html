@@ -454,6 +454,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 <script src="./rts-fog.js"></script>
 <script src="./rts-sound.js"></script>
 <script src="./rts-farming.js"></script>
+<script src="./rts-orc-food.js"></script>
 <script src="./rts-forest.js"></script>
 <script src="./rts-berries.js"></script>
 <script src="./rts-ravens.js"></script>
@@ -465,7 +466,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 <div class="game-shell"><section class="arcade">
 <div class="hud">
   <div class="hero-hud"><div class="hud-kicker">FIGHTERS · RTS</div><strong id="faction-title">SORCIÈRES</strong><small id="selection-summary">Sélectionnez une unité ou la maison</small><small id="ai-status" class="ai-status">Village orc · en développement</small></div>
-  <div class="score"><div id="hud-gold-chip" title="Or de la faction sélectionnée"><small>💰 OR</small><strong id="hud-gold">2000</strong></div><div id="hud-wood-chip" title="Bois rapporté par les ouvriers"><small>🪵 BOIS</small><strong id="hud-wood">250</strong></div><div title="Réserves de nourriture des sorcières"><small>🌾 VIVRES</small><strong id="hud-food">45</strong></div><div id="hud-magic-chip" title="Magie accumulée en siphonnant les âmes"><small>🔮 MAGIE</small><strong id="hud-magic">0</strong><div class="hud-magic-track"><div id="hud-magic-fill"></div></div></div><div title="Unités des sorcières et des orcs"><small>⚔️ UNITÉS</small><strong id="unit-count">0 : 0</strong></div></div>
+  <div class="score"><div id="hud-gold-chip" title="Or de la faction sélectionnée"><small>💰 OR</small><strong id="hud-gold">2000</strong></div><div id="hud-wood-chip" title="Bois rapporté par les ouvriers"><small>🪵 BOIS</small><strong id="hud-wood">250</strong></div><div id="hud-food-chip" title="Réserves alimentaires de la faction"><small id="hud-food-label">🌾 VIVRES</small><strong id="hud-food">45</strong></div><div id="hud-magic-chip" title="Magie accumulée en siphonnant les âmes"><small>🔮 MAGIE</small><strong id="hud-magic">0</strong><div class="hud-magic-track"><div id="hud-magic-fill"></div></div></div><div id="hud-units-chip" title="Unités des sorcières et des orcs"><small>⚔️ UNITÉS</small><strong id="unit-count">0 : 0</strong></div></div>
   <button id="pause" class="pause-compact" aria-label="Pause" title="Pause (P)" disabled>Ⅱ</button>
 </div>
 <div id="viewport" class="viewport" aria-label="Carte de stratégie en temps réel"><div class="scanlines"></div><div id="banner" class="banner"></div><div id="selection-rectangle" hidden></div><div id="order-pings" aria-hidden="true"></div><div id="order-prompt" role="status" aria-live="polite" hidden></div>
@@ -833,6 +834,39 @@ function syncRavenVisuals(dt){
   }
 }
 
+// Sixteen independent wild hares share one light, real low-poly 3D model.
+// They are scenery/food, not selectable units, fog scouts or minimap markers.
+const hareVisuals=[];
+let hareLoadPromise=null,hareModelLoaded=false;
+function loadHares(){
+  if(hareLoadPromise)return hareLoadPromise;
+  hareLoadPromise=(async()=>{
+    const {data}=await fetchAsset('https://polyfork.dev/cdn/forest-rabbit-ea2da0.glb');
+    const gltf=await loader.parseAsync(data,'');
+    const bounds=new THREE.Box3().setFromObject(gltf.scene);
+    if(bounds.isEmpty())throw Error('Modèle de lièvre vide');
+    const size=bounds.getSize(new THREE.Vector3());
+    const scale=.53/Math.max(size.x,size.z);
+    const center=bounds.getCenter(new THREE.Vector3());
+    for(const hare of hareField.hares){
+      const root=new THREE.Group(),model=cloneSkeleton(gltf.scene);
+      model.scale.setScalar(scale);
+      model.position.set(-center.x*scale,-bounds.min.y*scale,-center.z*scale);
+      root.add(model);scene.add(root);hareVisuals.push(root);
+    }
+    hareModelLoaded=true;syncHareVisuals();
+  })().catch(error=>{console.warn('Lièvres 3D indisponibles:',error);});
+  return hareLoadPromise;
+}
+function syncHareVisuals(){
+  for(let i=0;i<hareVisuals.length;i++){
+    const hare=hareField.hares[i],root=hareVisuals[i];
+    root.visible=hare.active&&fogOfWar.exploredAt(hare.x,hare.z,activeFaction);
+    root.position.set(hare.x,hare.moving ? .12*Math.max(0,Math.sin(hare.hopPhase)) : 0,hare.z);
+    root.rotation.y=hare.heading;
+  }
+}
+
 
 
 
@@ -840,6 +874,10 @@ const clamp=THREE.MathUtils.clamp;
 const TRAIN_COST=120, TRAIN_DURATION=3.5;
 const roles=window.FightersRoles;
 const farming=new window.FightersFarming.Economy();
+const orcFoodRules=window.FightersOrcFood;
+const orcFood=new orcFoodRules.Economy();
+const hareField=new orcFoodRules.Hares({walkable:(x,z)=>navigatorRTS.pointClear({x,z})});
+let orcForageElapsed=0,orcFamineAlerted=false;
 let farmAssignmentElapsed=0,farmSerial=0,famineAlerted=false;
 const wildBerries=new window.FightersBerries.WildBerries(forestLayout);
 let berryAssignmentElapsed=0;
@@ -1752,6 +1790,7 @@ function spawnUnit(kind,x,z,index=0,role='melee'){
     routeGoal:null,routeAge:0,approachCache:null,approachAge:0,
     mineJob:null,constructJob:null,repairJob:null,farmJob:null,carryWheat:null,
     treeJob:null,woodJob:null,carryBundle:null,berryJob:null,
+    orcFoodJob:null,
     healJob:null,healRetry:0,soulJob:null,soulClaimed:false,soulReservedBy:null,
     workTool:null,hammerTool:null,pickTool:null,chopTool:null,
     weapon:null,selectionRing:marker,outfitInfo
@@ -1984,6 +2023,16 @@ function trainingDuration(building,kind,role='melee'){
   const factor=role==='worker'?.9:role==='ranged'?1.25:1;
   return (kind==='orc'?ORC_TRAIN_DURATION:TRAIN_DURATION)*(1-.2*(building.level-1))*factor;
 }
+function orcHousingCap(){return orcFoodRules.housingCap(liveBuildings());}
+function orcPopulationCommitted(){
+  return units.filter(u=>u.kind==='orc'&&!u.dead).length+
+    liveBuildings().reduce((sum,b)=>sum+b.queue.filter(o=>o.kind==='orc').length,0);
+}
+function orcMageUnlocked(){return orcFoodRules.hasCauldron(liveBuildings());}
+function canTrainOrcRole(role){
+  return orcPopulationCommitted()<orcHousingCap()&&
+    (role!=='ranged'||orcMageUnlocked());
+}
 function upgradeCost(building){
   if(!building||['mine','garden','stone-circle'].includes(building.type)||building.clanId==='neutral')return null;
   return building.level>=3?null:(building.clanId==='witch'?230:160)+building.level*100;
@@ -1995,6 +2044,7 @@ function queueOrder(building,kind,role='melee'){
   if(kind==='witch'&&(faction!=='witch'||building.type!=='witch-house')||
      kind==='orc'&&(faction!=='orc'||building.type!=='barrack'))return false;
   if(kind==='witch'&&role==='ranged'&&!arcanistUnlocked())return false;
+  if(kind==='orc'&&!canTrainOrcRole(role))return false;
   let cost,duration,woodCost=0;
   if(kind==='upgrade'){
     if(building.level+building.queue.filter(j=>j.kind==='upgrade').length>=3)return false;
@@ -2706,6 +2756,7 @@ function stopSelectedUnits(){
     cancelSoulJob(unit);
     cancelConstruction(unit);cancelWoodJob(unit);cancelRepair(unit);unit.treeJob=null;
     unit.mineJob=null;cancelFarmJob(unit);unit.berryJob=null;unit.healJob=null;
+    unit.orcFoodJob=null;
     unit.destination=null;unit.attackOrder=null;unit.route=null;
   }
   acknowledgePlayerOrder(selected);
@@ -2714,13 +2765,18 @@ function stopSelectedUnits(){
 function refreshHUD(){
   setText('hud-gold',gold[activeFaction]);
   setText('hud-wood',wood[activeFaction]);
-  setText('hud-food',activeFaction==='witch'?Math.ceil(farming.food):'—');
+  setText('hud-food',Math.ceil(activeFaction==='witch'?farming.food:orcFood.food));
+  setText('hud-food-label',activeFaction==='witch'?'🌾 VIVRES':'🍖 VIANDE');
+  $('hud-food-chip').title=activeFaction==='witch'? 'Blé et baies · consommation des sorcières':
+    'Lièvres et dépouilles de sorcières · les orcs mangent moins souvent';
   setText('hud-magic',magic+'/'+soulRules.MAX_MAGIC);
   $('hud-magic-fill').style.width=100*magic/soulRules.MAX_MAGIC+'%';
   $('hud-gold-chip').title='Or des '+(activeFaction==='witch'?'sorcières':'orcs');
   $('hud-wood-chip').title='Bois des '+(activeFaction==='witch'?'sorcières':'orcs');
   setText('unit-count',units.filter(u=>u.kind==='witch'&&!u.dead).length+' : '+
     units.filter(u=>u.kind==='orc'&&!u.dead).length);
+  $('hud-units-chip').title='Sorcières : orcs · capacité orc : '+orcHousingCap()+
+    ' (augmenter avec des huttes)';
   setText('faction-title',activeFaction==='witch'?'SORCIÈRES':'ORCS');
   const director=activeFaction==='witch'?orcDirector:witchDirector;
   setText('ai-status',director.enabled?(activeFaction==='witch'?'ORCS':'SORCIÈRES')+' · '+({
@@ -2789,7 +2845,10 @@ function refreshHUD(){
         'Gisement d’or neutre et indestructible · exploitable par les ouvriers des deux clans.':
         !friendly?'Bâtiment ennemi · sélectionnez vos unités pour l’attaquer.':b.clanId==='witch'?
         'Maison des sorcières : niveau 2 pour bâtir un cercle de roches; cercle requis pour entraîner des Arcanistes.':
-        b.type==='barrack'?'Caserne orc · formation de combattants et améliorations.':
+        b.type==='barrack'?'Caserne orc · forme les guerriers et les lanceurs-mages (chaudron requis).':
+        b.type==='hut'?'Hutte orc · abrite '+orcFoodRules.HUT_CAPACITY[b.level]+
+          ' orcs. Population totale : '+orcPopulationCommitted()+' / '+orcHousingCap()+'.':
+        b.type==='cauldron'?'Chaudron orc · débloque les lanceurs-mages dans les casernes.':
         'Bâtiment orc · améliorer la structure et définir un point de rassemblement.';
       if(b.type!=='mine'){
         const track=document.createElement('div');track.className='hp-track';
@@ -2803,9 +2862,10 @@ function refreshHUD(){
           const spec=roles.profile(clan,role);
           add(spec.icon,spec.name,spec.cost,()=>queueOrder(b,clan,role),
             gold[clan]<spec.cost||b.queue.length>=MAX_QUEUE||paused||
-              (clan==='witch'&&role==='ranged'&&!arcanistUnlocked()),
+              (clan==='witch'&&role==='ranged'&&!arcanistUnlocked())||
+              (clan==='orc'&&!canTrainOrcRole(role)),
             'Former '+spec.name+' · '+(role==='worker'?'minage et construction':
-              role==='melee'?'combat rapproché':'attaque à distance')+
+              role==='melee'?'combat rapproché':'attaque magique à distance')+
               (clan==='witch'&&role==='ranged'?' et siphonnage des âmes · cercle de roches requis':''));
         }
       }
@@ -2916,7 +2976,8 @@ function refreshHUD(){
     const role=b&&['witch','orcs'].includes(b.clanId)?
       ROLE_IDS.find(id=>roles.profile(faction,id).name===action):null;
     if(role)disabled||=gold[faction]<roles.profile(faction,role).cost||b?.queue.length>=MAX_QUEUE||
-      (faction==='witch'&&role==='ranged'&&!arcanistUnlocked());
+      (faction==='witch'&&role==='ranged'&&!arcanistUnlocked())||
+      (faction==='orc'&&!canTrainOrcRole(role));
     else if(action==='Améliorer')disabled||=upgradeCost(b)===null||
       b?.queue.some(item=>item.kind==='upgrade')||
       gold[faction]<upgradeCost(b)||wood[faction]<40||b?.queue.length>=MAX_QUEUE;
@@ -3043,6 +3104,7 @@ function startSession(){
   resize();
   gold={witch:2000,orc:900};wood={...INITIAL_WOOD};
   farming.reset();farmSerial=0;farmAssignmentElapsed=0;famineAlerted=false;
+  orcFood.reset();orcForageElapsed=0;orcFamineAlerted=false;
   stoneCircleSerial=0;healingAssignmentElapsed=0;
   wildBerries.reset();berryAssignmentElapsed=0;syncBerryVisuals();
   buildMode=null;orcSpawned=false;
@@ -3068,6 +3130,8 @@ function startSession(){
   ravenFlock.reset();
   void loadRavens();
   updateNavObstacles();
+  hareField.reset();
+  void loadHares();
   loadForest();
   if(!berryBatches.length)rebuildBerryVisuals();
   void beginCropLoad();
@@ -3920,6 +3984,102 @@ function tickBerryForager(actor,dt){
   }
   return true;
 }
+function cancelOrcFoodJob(actor){
+  if(actor.orcFoodJob?.kind==='hare')
+    hareField.release(actor.orcFoodJob.id,actor.id);
+  actor.orcFoodJob=null;
+}
+function assignOrcForagers(dt){
+  if(qaPassiveKind==='orc')return;
+  orcForageElapsed+=dt;
+  if(orcForageElapsed<.8)return;
+  orcForageElapsed=0;
+  const orcs=units.filter(u=>u.kind==='orc'&&!u.dead);
+  // Do not distract the whole army from combat or scouting just to stockpile food.
+  if(orcFood.food>=Math.max(35,orcs.length*10))return;
+  let jobs=orcs.filter(u=>u.orcFoodJob).length;
+  if(jobs>=2)return;
+  const candidates=orcs.filter(u=>!u.orcFoodJob&&!u.scouting&&!u.attack&&
+    !u.attackOrder&&!u.destination&&!u.constructJob&&!u.repairJob&&!u.mineJob&&
+    !u.treeJob&&!u.woodJob&&!u.farmJob&&!u.ravenDistraction&&
+    !nearestHostile(u,8)?.target);
+  // Fallen witches are a substantial, finite meal, preferred over live hares.
+  const prey=[...units.filter(u=>u.kind==='witch'&&u.dead&&u.deadTime>2).map(u=>({
+    kind:'corpse',id:u.id,x:u.root.position.x,z:u.root.position.z
+  }))];
+  if(hareModelLoaded)prey.push(...hareField.hares.filter(h=>h.active&&h.caughtBy==null).map(h=>({
+    kind:'hare',id:h.id,x:h.x,z:h.z
+  })));
+  for(const target of prey){
+    if(jobs>=2)break;
+    if(orcs.some(u=>u.orcFoodJob?.kind===target.kind&&u.orcFoodJob?.id===target.id))continue;
+    if(!fogOfWar.exploredAt(target.x,target.z,'orc'))continue;
+    let nearest=null,minimum=orcFoodRules.HUNT_SIGHT;
+    for(const orc of candidates){
+      if(orc.orcFoodJob)continue;
+      const distance=Math.hypot(orc.root.position.x-target.x,orc.root.position.z-target.z);
+      if(distance>=minimum)continue;
+      if(!navigatorRTS.segmentClear(orc.root.position,target)&&
+        !navigatorRTS.plan(orc.root.position,target))continue;
+      minimum=distance;nearest=orc;
+    }
+    if(!nearest)continue;
+    nearest.orcFoodJob={kind:target.kind,id:target.id,progress:0};
+    nearest.route=null;nearest.approachCache=null;jobs++;
+  }
+}
+function tickOrcForager(actor,dt){
+  const job=actor.orcFoodJob;
+  if(!job)return false;
+  if(actor.attackOrder||actor.destination||actor.attack||actor.constructJob||
+    actor.repairJob||actor.mineJob||actor.treeJob||actor.woodJob||
+    nearestHostile(actor,8)?.target){cancelOrcFoodJob(actor);return false;}
+  const target=job.kind==='hare'?hareField.hares[job.id]:
+    units.find(u=>u.id===job.id);
+  const edible=job.kind==='hare'?(target?.active&&
+    (target.caughtBy==null||target.caughtBy===actor.id)):
+    target?.kind==='witch'&&target.dead&&target.deadTime>0;
+  if(!edible){cancelOrcFoodJob(actor);return false;}
+  const position=job.kind==='hare'?target:target.root.position;
+  if(Math.hypot(actor.root.position.x-position.x,actor.root.position.z-position.z)>.8){
+    job.progress=0;
+    const result=navigateActor(actor,position,dt,'engage');
+    if(result==='blocked')cancelOrcFoodJob(actor);
+    if(result!=='moving')animation(actor,'Idle_Loop');
+    return true;
+  }
+  if(job.kind==='hare'&&target.caughtBy==null&&!hareField.catch(job.id,actor.id)){
+    cancelOrcFoodJob(actor);return false;
+  }
+  faceDirection(actor,position.x-actor.root.position.x,position.z-actor.root.position.z);
+  animation(actor,FARM_HARVEST);
+  job.progress+=dt;
+  if(job.progress>=orcFoodRules.EAT_SECONDS){
+    if(job.kind==='hare'){
+      if(hareField.eat(job.id))orcFood.eatHare();
+    }else if(orcFood.eatCorpse(target.id)){
+      target.deadTime=0;
+      for(const mage of units)if(mage.soulJob===target)cancelSoulJob(mage);
+    }
+    cancelOrcFoodJob(actor);animation(actor,'Idle_Loop');refreshHUD();
+  }
+  return true;
+}
+function stepOrcFood(dt){
+  const orcs=units.filter(u=>u.kind==='orc'&&!u.dead);
+  hareField.step(dt,orcs.map(u=>u.root.position));
+  const result=orcFood.step(dt,orcs.length);
+  assignOrcForagers(dt);
+  if(orcFood.food>0)orcFamineAlerted=false;
+  else if(!orcFamineAlerted){orcFamineAlerted=true;showBanner('FAMINE : LES ORCS PERDENT DES PV');}
+  if(result.starvedSeconds>0){
+    const damage=result.starvedSeconds*orcFoodRules.STARVATION_DAMAGE;
+    for(const orc of orcs){
+      if(orc.health<=damage)dealDamage(orc,damage,null);
+      else orc.health-=damage;
+    }
+  }
+}
 function stepFarming(dt){
   wildBerries.step(dt);syncBerryVisuals();
   const witches=units.filter(u=>u.kind==='witch'&&!u.dead);
@@ -4066,7 +4226,10 @@ function tickRavenDistraction(actor,dt){
   return true;
 }
 function tickUnit(actor,dt){
-  if(actor.dead){actor.deadTime-=dt;return;}
+  if(actor.dead){
+    if(actor.orcFoodJob)cancelOrcFoodJob(actor);
+    actor.deadTime-=dt;return;
+  }
   if(qaPassiveKind===actor.kind)return;
   actor.approachAge+=dt;
   actor.stun=Math.max(0,actor.stun-dt);actor.cooldown=Math.max(0,actor.cooldown-dt);
@@ -4098,6 +4261,7 @@ function tickUnit(actor,dt){
   if(tickHealingRetreat(actor,dt))return;
   if(tickSoulHarvester(actor,dt))return;
   if(tickBerryForager(actor,dt))return;
+  if(tickOrcForager(actor,dt))return;
   if(roles.isWorker(actor)){
     if(tickConstructWorker(actor,dt)||tickRepairWorker(actor,dt)||tickMineWorker(actor,dt)||
       tickTreeWorker(actor,dt)||tickWoodWorker(actor,dt)||tickGardenWorker(actor,dt))return;
@@ -4197,7 +4361,8 @@ function stepOrcStrategy(dt){
       fogOfWar.exploredAt(u.root.position.x,u.root.position.z,'orc')).map(u=>({
       id:u.id,x:u.root.position.x,z:u.root.position.z,role:u.role,dead:u.dead
     })),
-    enemyBaseKnown,scoutTarget,unitCap:16
+    enemyBaseKnown,scoutTarget,unitCap:orcHousingCap(),
+    populationCommitted:orcPopulationCommitted(),cauldronAvailable:orcMageUnlocked()
   };
   const actions=orcDirector.update(dt,context,validBuildPosition);
   for(const action of actions){
@@ -4326,6 +4491,7 @@ function stepGame(dt){
   stepHealing(dt);
   assignSoulHarvesters(dt);
   stepFarming(dt);
+  stepOrcFood(dt);
   stepOrcStrategy(dt);
   stepWitchStrategy(dt);
   if(ravenModelLoaded)
@@ -4380,6 +4546,7 @@ function frame(){
   if(!paused)for(const actor of units){applyFacing(actor);actor.mixer.update(dt);}
   animateStoneCircles(dt);
   syncRavenVisuals(dt);
+  syncHareVisuals();
   positionCamera();
   for(const building of buildingInstances.values())updateHealthBar(building);
   renderer.render(scene,camera);
@@ -4782,6 +4949,13 @@ window.__fightersQA={
       birds:ravenFlock.ravens.map(bird=>({id:bird.id,x:bird.x,y:bird.y,z:bird.z,
         mode:bird.mode,treeIndex:bird.treeIndex,scouting:!!bird.scoutCenter})),
       distractedOrcs:units.filter(unit=>unit.kind==='orc'&&!!unit.ravenDistraction).length},
+    hares:{loaded:hareModelLoaded,models:hareVisuals.length,
+      animals:hareField.hares.map(h=>({id:h.id,x:h.x,z:h.z,active:h.active,
+        moving:h.moving,respawnIn:h.respawnIn})),
+      foragers:units.filter(u=>u.kind==='orc'&&u.orcFoodJob&&!u.dead).map(u=>({
+        unitId:u.id,...u.orcFoodJob}))},
+    orcFood:{...orcFood.snapshot(),housingCap:orcHousingCap(),
+      populationCommitted:orcPopulationCommitted(),mageUnlocked:orcMageUnlocked()},
     ready,running,paused,activeFaction,cameraZoom,cameraCenter:{...cameraFollow},
     fog:{activeFaction,...fogOfWar.stats(activeFaction),
       exploredBrightness:fogShader.uniforms.exploredBrightness.value,
@@ -4887,6 +5061,7 @@ window.__fightersQA={
       chopTool:a.chopTool?.name||null,chopToolVisible:!!a.chopTool?.visible,
       visible:a.root.visible,
       repairTargetId:a.repairJob?.buildingId||null,
+      foodTarget:a.orcFoodJob?{...a.orcFoodJob}:null,
       heading:{...a.heading},combatTargetId:a.attack?.target?.id||null,
       attackTargetId:a.attackOrder?.id||null,miningTargetId:a.mineJob?.mineId||null,
       destination:a.destination?{...a.destination}:null,pathLength:a.route?.waypoints.length??0,
@@ -4954,6 +5129,23 @@ window.__fightersQA={
   buildGarden:(x,z)=>buildGarden(x,z),
   buildStoneCircle:(x,z)=>buildStoneCircle(x,z),
   setFood:value=>{farming.food=Math.max(0,Number(value)||0);refreshHUD();},
+  setOrcFood:value=>{orcFood.food=Math.max(0,Number(value)||0);refreshHUD();},
+  placeHareNearOrc:(hareIndex=0,orcIndex=0)=>{
+    const hare=hareField.hares[hareIndex],orc=units.filter(u=>u.kind==='orc'&&!u.dead)[orcIndex];
+    if(!hare||!orc)return false;
+    const p=navigatorRTS.findSafeGoal({x:orc.root.position.x-.5,z:orc.root.position.z-.5});
+    if(!p)return false;
+    hare.x=p.x;hare.z=p.z;hare.active=true;hare.turnIn=3;hare.respawnIn=0;
+    syncHareVisuals();return true;
+  },
+  spawnWitchCorpseNearOrc:(orcIndex=0)=>{
+    const orc=units.filter(u=>u.kind==='orc'&&!u.dead)[orcIndex];
+    if(!orc)return null;
+    const position=orc.root.position;
+    const witch=spawnUnit('witch',position.x+.4,position.z+.4,0,'melee');
+    dealDamage(witch,witch.health,null);
+    return witch.id;
+  },
   setWood:(clan,value)=>{if(clan==='witch'||clan==='orc'){
     wood[clan]=Math.max(0,Math.floor(Number(value)||0));refreshHUD();}},
   setBerryStage:(index,stage)=>{

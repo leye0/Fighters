@@ -568,7 +568,14 @@ async function run(){
 
  await until('window.__fightersQA.snapshot().blueprints.length===5',
   'Five real orc building blueprints',100000);
+ await until('window.__fightersQA.snapshot().hares.loaded',
+  'External real low-poly hare GLB',30000);
  s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.hares.models===16&&s.hares.animals.length===16&&
+   s.hares.animals.every(h=>h.active),
+   'Sixteen independent hares should share a genuine loaded 3D model');
+ check(s.orcFood.housingCap===10&&s.orcFood.mageUnlocked,
+   'Initial hut must house six extra orcs and cauldron must unlock mages');
  const deposits=s.buildings.filter(b=>b.type==='mine');
  check(s.buildings.filter(b=>b.clanId==='orcs').length===4&&
   deposits.length===2&&deposits.every(b=>b.clanId==='neutral'&&
@@ -619,7 +626,7 @@ async function run(){
  await evaluate("window.__fightersQA.setFaction('orc');window.__fightersQA.selectOrcBarrack()");
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.selectedBuilding==='barrack','Orc barrack contextual selection');
- check(await evaluate("['Ouvrier','Guerrier','Lanceur'].every(name=>Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.textContent.includes(name)))"),
+ check(await evaluate("['Ouvrier','Guerrier','Lanceur-mage'].every(name=>Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.textContent.includes(name)))"),
   'Orc barrack must produce all three role types');
  check(await evaluate("window.__fightersQA.trainOrc()"),'Orc production refused');
  await evaluate('window.__fightersQA.advance(4.6)');
@@ -671,6 +678,8 @@ async function run(){
    'Orc buildings must all use real GLB-projected multi-polygons');
  check(s.buildings.length===7&&s.buildings.filter(b=>b.type==='hut').length===2,
   'Second hut must be a unique placed building');
+ check(s.orcFood.housingCap===16,
+   'Second level-one hut must provide six more population slots');
  check(!await evaluate("!!window.__fightersQA.build('hut',8,-10)"),
   'Colliding building placement must be refused');
  check(!await evaluate('window.__fightersQA.isClear(8,-10)'),
@@ -1611,6 +1620,38 @@ async function run(){
  check(s.activeFaction==='witch'&&s.chosenFaction==='witch'&&
    s.witches.length===3&&s.witchAI.decisions.length===0,
    'Choosing witches for a new match must reset the witch AI');
+ // Orc hunger must progress independently of the witch food reserve.
+ const orcHealth=s.orcs[0].health;
+ await evaluate('window.__fightersQA.setOrcFood(0);window.__fightersQA.advance(2)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.orcFood.food===0&&s.orcs[0].health<orcHealth,
+   'Starving orcs must lose HP even when witch food is available');
+ await evaluate('window.__fightersQA.reset()');
+ const cauldron=(await evaluate('window.__fightersQA.snapshot()')).buildings
+   .find(b=>b.type==='cauldron');
+ check(cauldron,'Starting orc cauldron missing');
+ await evaluate('window.__fightersQA.damageBuilding('+JSON.stringify(cauldron.id)+',99999)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(!s.orcFood.mageUnlocked&&
+   !await evaluate("window.__fightersQA.trainRole('orc','ranged')"),
+   'Lanceur-mage training must require a living cauldron');
+ await evaluate('window.__fightersQA.reset();window.__fightersQA.setOrcFood(15)');
+ check(await evaluate('window.__fightersQA.placeHareNearOrc(0,0)'),
+   'Could not set up a visible hare near the orc army');
+ await evaluate('window.__fightersQA.advance(15)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.orcFood.haresEaten>0&&s.hares.animals.some(h=>!h.active),
+   'Hungry orcs must catch, eat and remove a roaming hare: '+
+     JSON.stringify({food:s.orcFood,hares:s.hares,orcs:s.orcs.map(u=>({
+       id:u.id,x:u.x,z:u.z,destination:u.destination,health:u.health}))}));
+ await evaluate('window.__fightersQA.reset();window.__fightersQA.setOrcFood(15)');
+ check(await evaluate('window.__fightersQA.spawnWitchCorpseNearOrc()')!=null,
+   'Could not set up a witch corpse for the orc feast');
+ await evaluate('window.__fightersQA.advance(4)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.orcFood.corpsesEaten===1&&s.orcFood.food>15,
+   'An orc should feast once on a witch corpse for a substantial food reward');
+ await evaluate('window.__fightersQA.reset()');
  check(!errors.length,'Browser JavaScript exceptions: '+errors.join(' | '));
  console.log('PASS RTS: stable HUD, persistent shortcuts, blue/red reticles, two-tap attacks, one-finger pan, instant two-finger box selection, locked 4.05× zoom, destroyed buildings and strategic AI.');
 

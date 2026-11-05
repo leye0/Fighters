@@ -1,5 +1,29 @@
 # Orks & Sorcières — prototype RTS
 
+## Camp orc : huttes, chaudron et nourriture
+
+Les **huttes** déterminent désormais la population maximale des orcs : une base
+de quatre places, puis six, dix ou quatorze places par hutte de niveau 1, 2 ou 3.
+Les unités déjà entraînées restent présentes si une hutte est détruite, mais
+aucune nouvelle unité ne peut être produite tant que la capacité manque.
+L'IA prend en compte cette limite et améliore les huttes pour poursuivre son expansion.
+
+Le **chaudron** est indispensable pour entraîner des **Lanceurs-mages** dans
+les casernes. Ces combattants à distance utilisent des projectiles magiques;
+si tous les chaudrons tombent, leur recrutement est bloqué jusqu'à reconstruction.
+
+Les orcs ont aussi leur propre réserve de vivres. Ils consomment **0,027 unité
+par orc et par seconde**, contre 0,06 pour une sorcière, et subissent des dégâts
+de famine lorsque la réserve est vide. Les orcs libres peuvent chasser et manger
+un des **seize lièvres sauvages** qui se déplacent et bondissent librement dans
+la forêt (+9 vivres, renouvellement après 48 à 63 secondes). Ils privilégient
+les **corps de sorcières** lorsqu'ils en trouvent après la bataille : un corps
+ne peut être consommé qu'une seule fois et rapporte **42 vivres**. Le combat et
+les ordres explicites restent prioritaires sur la recherche de nourriture.
+Les lièvres sont des animaux neutres, non sélectionnables et invisibles sur la
+mini-carte; leur modèle low-poly est partagé et chargé à la demande depuis le
+[CDN officiel Polyfork](docs/HARE_ASSET_LICENSE.md).
+
 **[Démo jouable](https://www.streamlev.com/Fighters/)** · [Laboratoire des 86 animations](https://www.streamlev.com/Fighters/motion-lab.html) · [Tests Chrome/WebGL](https://github.com/leye0/Fighters/actions/workflows/browser-qa.yml)
 
 ### Cercle de roches

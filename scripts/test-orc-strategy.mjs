@@ -23,6 +23,35 @@ assert.equal(planSite('mine',starting,valid),null,
  'Mines are fixed natural deposits and cannot be planned or constructed');
 assert(!Object.hasOwn(COST,'mine'),'Build cost catalog must not list mines');
 
+// A hut creates a real supply ceiling; the director may not queue beyond it.
+const capDirector=new Director();
+const cappedState={ready:true,running:true,paused:false,gold:900,
+ buildings:starting,orcs:[
+  {id:1,role:'worker',dead:false},{id:2,role:'worker',dead:false},
+  {id:3,role:'melee',dead:false},{id:4,role:'melee',dead:false}],
+ witches:[],enemyBaseKnown:false,scoutTarget:null,
+ unitCap:4,populationCommitted:4,cauldronAvailable:false};
+assert(!capDirector.update(3,cappedState,()=>false).some(o=>o.type==='train'),
+  'At housing capacity the orcs must stop recruiting');
+cappedState.unitCap=10;
+for(let i=0;i<4;i++){
+ const orders=capDirector.update(3,cappedState,()=>false);
+ assert(!orders.some(o=>o.type==='train'&&o.role==='ranged'),
+   'The director must not recruit mages without a cauldron');
+}
+cappedState.populationCommitted=10;
+assert(capDirector.decide(cappedState,()=>false).some(o=>
+ o.type==='upgrade'&&o.reason==='housing'),
+ 'A filled settlement must upgrade huts if no expansion site exists');
+capDirector.clock=21;
+const buildableCapOrders=capDirector.decide(cappedState,valid);
+assert(buildableCapOrders.some(o=>o.type==='build'&&o.building==='hut'),
+ 'A filled settlement with room to expand must plan a new hut');
+assert(!buildableCapOrders.some(o=>o.reason==='housing'),
+ 'A cheaper new hut must precede a housing upgrade');
+assert(capDirector.update(3,cappedState,valid).some(o=>o.type==='build'),
+ 'Hut construction must win the economic tick over additional recruitment');
+
 const fog=new FogGrid();
 fog.update('witch',[{x:-20,z:-18}]);
 fog.update('orc',[{x:19,z:18}]);
