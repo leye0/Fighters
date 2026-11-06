@@ -47,6 +47,9 @@ modules (`docs/rts-contracts.d.ts`).
 - `docs/rts-ai-commands.js` : exécution des intentions des deux IA (construction,
   entraînement, reconnaissance, attaques, défense) ; les directeurs `*-strategy.js`
   choisissent les intentions et ne manipulent pas directement les objets 3D.
+- `docs/rts-ai-observations.js` : constitution des observations remises aux deux
+  directeurs, avec filtrage par le brouillard de guerre ; conserver les champs,
+  les règles de visibilité et le moment de lecture des compteurs.
 - `docs/rts-assets.js` : transfert binaire avec gzip, fallback et métriques ;
   aucune logique Three.js, scène ni DOM. Le parsing des GLB appartient
   maintenant à `rts-model-assets.js` et leur installation visuelle à `game.js`.

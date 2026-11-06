@@ -4304,25 +4304,12 @@ function stepOrcStrategy(dt){
       return navigatorRTS.pointClear(goal)&&
         (navigatorRTS.segmentClear(source,goal)||!!navigatorRTS.plan(source,goal));
     }):null;
-  const context={
-    ready:true,running,paused,gold:matchResources.gold.orc,wood:matchResources.wood.orc,
-    buildings:[...buildingInstances.values()].filter(b=>!b.destroyed&&b.clanId==='orcs').map(b=>({
-      id:b.id,type:b.type,level:b.level,queue:b.queue.map(j=>({kind:j.kind})),
-      health:b.health,maxHealth:b.maxHealth,hitbox:b.hitbox,destroyed:b.destroyed,
-      x:b.root.position.x,z:b.root.position.z,axis:b.wallAxis
-    })),
-    orcs:aliveOrcs.map(u=>({id:u.id,x:u.root.position.x,z:u.root.position.z,
-      health:u.health,maxHealth:u.maxHealth,dead:u.dead,
-      role:u.role,attackOrder:!!u.attackOrder||!!u.raiding,mining:!!u.mineJob,
-      scouting:!!u.scouting,destination:!!u.destination,foraging:!!u.orcFoodJob})),
-    // Hidden witches cannot trigger omniscient defense orders.
-    witches:units.filter(u=>u.kind==='witch'&&!u.dead&&
-      fogOfWar.exploredAt(u.root.position.x,u.root.position.z,'orc')).map(u=>({
-      id:u.id,x:u.root.position.x,z:u.root.position.z,role:u.role,dead:u.dead
-    })),
-    enemyBaseKnown,scoutTarget,unitCap:orcHousingCap(),
-    populationCommitted:orcPopulationCommitted(),cauldronAvailable:orcMageUnlocked()
-  };
+  const context=window.FightersAiObservations.orc({
+    running,paused,gold:matchResources.gold.orc,wood:matchResources.wood.orc,
+    buildingInstances,aliveOrcs,units,fogOfWar,enemyBaseKnown,scoutTarget,
+    unitCap:orcHousingCap,populationCommitted:orcPopulationCommitted,
+    cauldronAvailable:orcMageUnlocked
+  });
   const actions=orcDirector.update(dt,context,validBuildPosition);
   aiCommands.orc(actions,{aliveOrcs,enemyBaseKnown});
 }
@@ -4350,24 +4337,12 @@ function stepWitchStrategy(dt){
       return navigatorRTS.pointClear(goal)&&
         (navigatorRTS.segmentClear(source,goal)||!!navigatorRTS.plan(source,goal));
     }):null;
-  const state={ready:true,running,paused,gold:matchResources.gold.witch,
-    wood:matchResources.wood.witch,
-    food:farming.food,homeId:witchBuilding.id,circleUnlocked:circleUnlocked(),
-    arcanistUnlocked:arcanistUnlocked(),
-    pendingBuilds:pendingBuilds.filter(job=>buildFaction(job.type)==='witch')
-      .map(job=>({type:job.type})),
-    buildings:buildings.map(b=>({id:b.id,type:b.type,level:b.level,
-      queue:b.queue.map(j=>({kind:j.kind})),health:b.health,
-      maxHealth:b.maxHealth,hitbox:b.hitbox,destroyed:b.destroyed})),
-    witches:aliveWitches.map(u=>({id:u.id,x:u.root.position.x,z:u.root.position.z,
-      role:u.role,health:u.health,maxHealth:u.maxHealth,scouting:!!u.scouting,
-      attackOrder:!!u.attackOrder||!!u.raiding,destination:!!u.destination,
-      mining:!!u.mineJob,repairing:!!u.repairJob,healing:!!u.healJob})),
-    // No enemy positions or buildings outside the witches' own sight/memory.
-    orcs:units.filter(u=>u.kind==='orc'&&!u.dead&&
-      fogOfWar.visibleAt(u.root.position.x,u.root.position.z,'witch'))
-      .map(u=>({id:u.id,x:u.root.position.x,z:u.root.position.z,role:u.role})),
-    enemyTarget:enemyTarget?{id:enemyTarget.id}:null,scoutTarget,unitCap:17};
+  const state=window.FightersAiObservations.witch({
+    running,paused,gold:matchResources.gold.witch,wood:matchResources.wood.witch,
+    food:farming.food,homeId:witchBuilding.id,circleUnlocked,arcanistUnlocked,
+    pendingBuilds,buildFaction,buildings,aliveWitches,units,fogOfWar,
+    enemyTarget,scoutTarget
+  });
   const actions=witchDirector.update(dt,state,validBuildPosition);
   aiCommands.witch(actions,{aliveWitches,buildings,enemyTarget});
 }

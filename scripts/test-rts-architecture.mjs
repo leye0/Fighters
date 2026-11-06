@@ -38,6 +38,7 @@ const boundaries=[
   ['rts-minimap','FightersMinimap'],
   ['rts-hud','FightersHud'],
   ['rts-ai-commands','FightersAiCommands'],
+  ['rts-ai-observations','FightersAiObservations'],
   ['rts-assets','FightersAssets'],
   ['rts-model-assets','FightersModelAssets']
 ];

@@ -14,7 +14,8 @@ dans [`../refactor.md`](../refactor.md).
    global ; leur fabrique reçoit des fonctions/objets explicitement injectés.
 4. Les directeurs `orc-strategy.js` et `witch-strategy.js` prennent des
    observations filtrées par le brouillard de guerre et rendent des intentions.
-   `rts-ai-commands.js` interprète ces intentions avec les mêmes opérations de
+   `rts-ai-observations.js` construit ces observations sans leur donner le
+   monde vivant ; `rts-ai-commands.js` interprète les intentions avec les mêmes opérations de
    monde que le joueur, sans participer à leur décision.
 
 ## Ownership recommandé pour plusieurs agents
@@ -24,7 +25,7 @@ dans [`../refactor.md`](../refactor.md).
 | Simulation et déplacements | `rts-simulation.js`, `rts-unit-tick.js`, `rts-unit-physics.js`, `rts-navigation.js` | `test-rts-simulation.mjs`, `test-rts-unit-tick.mjs`, `test-rts-unit-physics.mjs`, `test-rts-navigation.mjs` |
 | État de partie | `rts-match-state.js` (or, bois et magie), `game.js` (état restant, transitoire) | `test-rts-match-state.mjs`, Chrome `economy`, `combat` |
 | Ordres et tâches | `rts-orders.js`, règles `rts-repair.js`, `rts-farming.js` | `test-rts-orders.mjs`, `test-rts-worker-orders.mjs`, `test-rts-construction-orders.mjs`, `test-rts-production-orders.mjs` |
-| IA | `orc-strategy.js`, `witch-strategy.js`, `rts-ai-commands.js` | `test-orc-strategy.mjs`, `test-witch-strategy.mjs`, `test-rts-ai-commands.mjs` |
+| IA | `orc-strategy.js`, `witch-strategy.js`, `rts-ai-observations.js`, `rts-ai-commands.js` | `test-orc-strategy.mjs`, `test-witch-strategy.mjs`, `test-rts-ai-observations.mjs`, `test-rts-ai-commands.mjs` |
 | Commandes joueur | `rts-picking.js`, `rts-camera.js`, `rts-gestures.js`, `rts-player-actions.js` | `test-rts-picking.mjs`, `test-rts-camera.mjs`, `test-rts-gestures.mjs`, `test-rts-player-actions.mjs`, QA Chrome tactile |
 | Modèles et ressources | `rts-assets.js`, `rts-model-assets.js`, `assets/runtime-assets.lock`, `scripts/use-pinned-runtime-assets.sh` | `test-rts-assets.mjs`, `test-rts-model-assets.mjs`, QA Chrome, Pages |
 | Monde et visibilité | `rts-map.js`, `rts-footprint.js`, `rts-fog.js`, `rts-forest.js` | `test-rts-map.mjs`, `test-rts-footprint.mjs`, `test-rts-fog.mjs`, `test-rts-forest.mjs` |

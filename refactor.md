@@ -112,6 +112,9 @@ qu'après modification, vérification et intégration dans `main`.
       directeurs `*-strategy.js`, exécution `rts-ai-commands.js`.
 - [x] Valider en Chrome l'exécution des actions Orc/Sorcière extraite dans
       `rts-ai-commands.js` ; run 42262289649, trois scénarios verts.
+- [ ] Extraire les observations des deux IA dans `rts-ai-observations.js`,
+      conserver les filtres de visibilité (zones explorées côté orcs,
+      visibilité actuelle côté sorcières), puis valider sous Node et Chrome.
 
 ## 3. Rendu et interface
 

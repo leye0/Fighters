@@ -52,6 +52,7 @@ on:
       - 'docs/rts-minimap.js'
       - 'docs/rts-hud.js'
       - 'docs/rts-ai-commands.js'
+      - 'docs/rts-ai-observations.js'
       - 'docs/rts-assets.js'
       - 'docs/rts-model-assets.js'
       - 'scripts/test-rts-unit-physics.mjs'
@@ -71,6 +72,7 @@ on:
       - 'scripts/test-rts-minimap.mjs'
       - 'scripts/test-rts-hud.mjs'
       - 'scripts/test-rts-ai-commands.mjs'
+      - 'scripts/test-rts-ai-observations.mjs'
       - 'scripts/test-rts-assets.mjs'
       - 'scripts/test-rts-model-assets.mjs'
       - 'docs/orc-strategy.js'
@@ -150,6 +152,7 @@ jobs:
           node scripts/test-rts-minimap.mjs
           node scripts/test-rts-hud.mjs
           node scripts/test-rts-ai-commands.mjs
+          node scripts/test-rts-ai-observations.mjs
           node scripts/test-rts-assets.mjs
           node scripts/test-rts-model-assets.mjs
           node scripts/test-orc-strategy.mjs
