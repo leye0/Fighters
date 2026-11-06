@@ -4842,8 +4842,10 @@ function assignOrcForagers(dt){
   const huntHares=orcFoodRules.shouldHuntHares(orcFood.food,orcs.length);
   let jobs=orcs.filter(u=>u.orcFoodJob).length;
   if(jobs>=orcFoodRules.MAX_HUNTERS)return;
+  // Only available orcs hunt: a scout must finish discovering the map and
+  // strategic movement/combat orders always take precedence over wildlife.
   const candidates=orcs.filter(u=>!u.orcFoodJob&&!u.attack&&
-    !u.raiding&&!u.attackOrder&&(!u.destination||orcDirector.enabled&&u.scouting)&&
+    !u.raiding&&!u.scouting&&!u.attackOrder&&!u.destination&&
     !u.constructJob&&!u.repairJob&&!u.mineJob&&
     !u.treeJob&&!u.woodJob&&!u.farmJob&&!u.ravenDistraction&&
     !u.workerRetryTime&&!nearestHostile(u,8)?.target);
@@ -4876,11 +4878,6 @@ function assignOrcForagers(dt){
     }
     if(!nearest)continue;
     nearest.orcFoodJob={kind:target.kind,id:target.id,progress:0};
-    // Autonomous scouting is resumable: the director will issue another
-    // frontier waypoint after the nearby food has been consumed.
-    if(nearest.scouting&&orcDirector.enabled){
-      nearest.scouting=false;nearest.destination=null;
-    }
     nearest.route=null;nearest.approachCache=null;jobs++;
   }
 }
