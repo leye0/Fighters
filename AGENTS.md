@@ -16,6 +16,9 @@ et le rendu actuels sont des contraintes de non-régression.
   indépendants ; modifier le fichier du scénario concerné.
 - `scripts/browser-qa/chrome-driver.mjs` : transport Chrome DevTools partagé ;
   coordonner ses changements puisqu'ils affectent tous les scénarios.
+- `scripts/prepare-runtime-assets.sh` : préparation et validation des modèles
+  utilisée à l'identique par Pages et QA ; ne pas dupliquer son contenu dans
+  les workflows.
 - `.github/workflows/` : génération, validation et publication ; éviter les
   modifications concurrentes de `main` par plusieurs jobs.
 
@@ -43,6 +46,7 @@ et le rendu actuels sont des contraintes de non-régression.
 - `node --check scripts/browser-qa.mjs` et tous les fichiers
   `scripts/browser-qa/*.mjs`
 - `git diff --check`
+- `bash -n scripts/prepare-runtime-assets.sh`
 - Pour HTML, CSS, entrées, simulation et rendu : QA réelle dans
   `.github/workflows/browser-qa.yml` (`visual`, `economy`, `combat`).
 

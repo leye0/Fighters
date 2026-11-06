@@ -24,9 +24,17 @@ qu'après modification, vérification et intégration dans `main`.
 - [x] Isoler les styles du jeu dans `docs/styles/game.css`, sans modification visuelle.
 - [x] Séparer les périmètres CSS et gameplay et faire déclencher la QA Chrome
       par les changements sous `docs/styles/**`.
-- [ ] Auditer les workflows historiques qui committent directement sur `main` ;
-      préférer des branches de résultat et une intégration contrôlée.
-- [ ] Réduire les préparations d'assets répétées entre les trois jobs Chrome.
+- [x] Auditer les workflows historiques qui committent directement sur `main` :
+      sept workflows ont `git push origin HEAD:main` et deux workflows de
+      musique poussent vers `${GITHUB_REF_NAME}` (qui peut désigner `main`).
+      Les conserver fonctionnels tant que leur mode de livraison n'est pas
+      remplacé et vérifié.
+- [ ] Migrer ces workflows de génération vers des branches de résultat et une
+      intégration contrôlée, sans interrompre les publications audio.
+- [x] Centraliser la préparation des modèles pour Pages et Chrome dans
+      `scripts/prepare-runtime-assets.sh`, avec les mêmes vérifications.
+- [x] Préparer et tester les assets une seule fois par exécution QA, puis les
+      partager aux trois jobs Chrome via un artifact éphémère.
 - [ ] Ajouter un manifeste de dépendances avec versions et fichier de verrouillage
       pour reproduire le build localement et en CI.
 
