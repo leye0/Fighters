@@ -3461,7 +3461,6 @@ function markWorkBlocked(actor){
   actor.workerRetryTime=Math.max(actor.workerRetryTime||0,6);
   actor.navWatch=null;actor.route=null;actor.approachCache=null;
 }
-const MINING_SECONDS=4.5,MINING_PAY=60;
 const goldOreGeometry=new THREE.DodecahedronGeometry(.17,0);
 const goldOreMaterials=[new THREE.MeshStandardMaterial({color:0xffc631,
   roughness:.36,metalness:.64}),new THREE.MeshStandardMaterial({color:0xffe26c,
@@ -3478,106 +3477,28 @@ function mountCarriedGold(actor){
   }
   actor.carryGold.visible=true;
 }
-function cancelMineJob(actor){
-  actor.mineJob=null;
-  if(actor.carryGold)actor.carryGold.visible=false;
-}
-function goldStoreFor(actor){
-  const clan=unitFaction(actor),preferred=actor.kind==='witch'?'witch-house':'barrack';
-  const stores=liveBuildings().filter(b=>b.clanId===clan&&b.type===preferred);
-  stores.sort((a,b)=>targetDistance(actor,a)-targetDistance(actor,b));
-  return stores[0]||woodStoreFor(actor);
-}
-function assignMiners(clan='orc'){
-  if(!running||!(clan==='orc'?orcDirector.enabled:witchDirector.enabled))return;
-  const mines=[...buildingInstances.values()].filter(b=>b.type==='mine'&&
-    b.clanId==='neutral'&&!b.destroyed&&
-    (clan==='orc'||fogOfWar.exploredAt(b.root.position.x,b.root.position.z,clan)));
-  const workers=units.filter(u=>u.kind===clan&&roles.isWorker(u)&&!u.dead&&
-    !u.constructJob&&!u.repairJob&&!u.treeJob&&!u.woodJob&&!u.farmJob&&
-    !u.workerRetryTime);
-  const limit=Math.min(mines.length,Math.max(1,Math.floor(workers.length/3)));
-  let assigned=workers.filter(u=>u.mineJob&&mines.some(b=>b.id===u.mineJob.mineId));
-  for(const worker of workers){
-    if(worker.mineJob&&!mines.some(m=>m.id===worker.mineJob.mineId))cancelMineJob(worker);
-  }
-  assigned=workers.filter(u=>u.mineJob);
-  if(assigned.length>=limit)return;
-  const needed=mines.filter(m=>!assigned.some(u=>u.mineJob.mineId===m.id));
-  for(const mine of needed){
-    if(assigned.length>=limit)break;
-    const available=workers.filter(u=>!u.mineJob&&!u.constructJob&&!u.destination&&
-      !u.berryJob&&!u.soulJob);
-    available.sort((a,b)=>targetDistance(a,mine)-targetDistance(b,mine));
-    const miner=available[0];
-    if(!miner)continue;
-    miner.mineJob={mineId:mine.id,phase:'extract',progress:0,cycles:0,amount:0};
-    miner.route=null;miner.approachCache=null;
-    assigned.push(miner);
-    if(clan==='orc')acknowledgeOrcAiOrder([miner]);
-  }
-}
-function canMine(actor,mine){
-  return roles.isWorker(actor)&&mine?.type==='mine'&&
-    mine.clanId==='neutral'&&!mine.destroyed;
-}
+const miningCycle=window.FightersMiningCycle.create({
+  units,buildingInstances,roles,fogOfWar,isRunning:()=>running,
+  directorEnabled:clan=>clan==='orc'?orcDirector.enabled:witchDirector.enabled,
+  targetDistance,acknowledgeOrcAiOrder,unitFaction,liveBuildings,woodStoreFor,
+  buildingContact:BUILDING_CONTACT,approachBuilding,navigateActor,
+  markWorkBlocked,animation,faceBuildingCenter,workSwing:WORK_SWING,playEffect,
+  mountCarriedGold,hideCarriedGold:actor=>{
+    if(actor.carryGold)actor.carryGold.visible=false;
+  },creditGold:(actor,amount)=>{
+    matchResources.gold[actor.kind]+=amount;
+    totalMinedGold+=amount;completedMiningCycles++;
+  },refreshHUD
+});
+function cancelMineJob(actor){return miningCycle.cancel(actor);}
+function assignMiners(clan='orc'){return miningCycle.assign(clan);}
 function orderMine(actors,mine){
   const issued=workerOrders.mine(actors,mine);
   if(issued){showBanner('EXTRACTION D’OR');acknowledgePlayerOrder(actors);refreshHUD();}
   return issued>0;
 }
 function tickMineWorker(actor,dt){
-  const job=actor.mineJob;
-  if(!job)return false;
-  if(job.retryWait>0){job.retryWait=Math.max(0,job.retryWait-dt);
-    animation(actor,'Idle_Loop');return true;}
-  const mine=buildingInstances.get(job.mineId);
-  if(!canMine(actor,mine)){cancelMineJob(actor);return false;}
-  // Workers are economic units: they never acquire combat targets.
-  if(job.phase==='carry'){
-    const store=goldStoreFor(actor);
-    if(!store){animation(actor,'Idle_Loop');return true;}
-    if(targetDistance(actor,store)>BUILDING_CONTACT){
-      const goal=approachBuilding(actor,store);
-      if(goal){const status=navigateActor(actor,goal,dt,'engage');
-        if(status==='blocked')job.retryWait=5;
-        if(status!=='moving')animation(actor,'Idle_Loop');}
-      else{job.retryWait=5;animation(actor,'Idle_Loop');}
-      return true;
-    }
-    // No income exists in transit: resources enter the treasury at delivery.
-    matchResources.gold[actor.kind]+=job.amount;
-    totalMinedGold+=job.amount;completedMiningCycles++;
-    job.amount=0;job.phase='extract';job.progress=0;job.cycles++;
-    if(actor.carryGold)actor.carryGold.visible=false;
-    actor.route=null;actor.approachCache=null;
-    animation(actor,'Idle_Loop');refreshHUD();return true;
-  }
-  const reach=targetDistance(actor,mine);
-  if(reach>BUILDING_CONTACT){
-    const goal=approachBuilding(actor,mine);
-    if(!goal){markWorkBlocked(actor);cancelMineJob(actor);return false;}
-    const status=navigateActor(actor,goal,dt,'engage');
-    if(status==='blocked'){markWorkBlocked(actor);cancelMineJob(actor);return false;}
-    // Mining is a physical contact task, not a loose formation move.
-    // The order-mode .36m arrival tolerance left workers .2m beyond reach.
-    if(status!=='moving')animation(actor,'Idle_Loop');
-    return true;
-  }
-  // Extract at the mine, then transport the ore to an allied headquarters.
-  faceBuildingCenter(actor,mine);
-  animation(actor,WORK_SWING);
-  job.soundTimer=(job.soundTimer||0)+dt;
-  if(job.soundTimer>=.78){
-    job.soundTimer-=.78;playEffect('mine',actor.root.position);
-  }
-  job.progress+=dt;
-  if(job.progress>=MINING_SECONDS){
-    job.progress=0;job.phase='carry';job.amount=MINING_PAY*mine.level;
-    actor.route=null;actor.approachCache=null;
-    mountCarriedGold(actor);animation(actor,'Idle_Loop');
-  }
-  return true;
+  return miningCycle.tick(actor,dt);
 }
 const TREE_CHOP_SECONDS=4.2;
 const WOOD_PICKUP_SECONDS=1.15;

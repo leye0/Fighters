@@ -44,6 +44,9 @@ modules (`docs/rts-contracts.d.ts`).
 - `docs/rts-soul-harvester.js` : sélection et réservation de cadavres visibles
   par les mages, cadence de 650 ms, poursuite, annulation et attente de la pose
   réelle `Death01`. L'effet 3D d'âme est créé séparément dans `game.js`.
+- `docs/rts-mining-cycle.js` : attribution automatique des mineurs, extraction
+  au contact et retour physique de l'or à une base alliée. Le trésor (réinitialisé
+  à chaque partie), le chargement 3D et les alertes sont injectés par `game.js`.
 - `docs/rts-unit-tick.js` : état et priorités des unités à chaque tick
   (attaque, cible, poursuite, tâches, déplacement), avec services de navigation,
   combat, animation et IA injectés une seule fois par `game.js`.
@@ -99,6 +102,8 @@ modules (`docs/rts-contracts.d.ts`).
   includes HTML, ownership, déclencheurs QA et restauration d'assets épinglés.
 - `scripts/test-rts-unit-tick.mjs` : régressions des attaques en cours, des
   nouveaux ordres, de l'ordre des tâches et des chemins bloqués.
+- `scripts/test-rts-mining-cycle.mjs` : attribution IA, brouillard, navigation,
+  durée d'extraction, transport, crédit uniquement à la livraison et annulation.
 - `docs/rts-contracts.d.ts`, `scripts/contracts-smoke.ts` : contrats progressifs
   compilés en mode strict dans `contracts.yml`, déclenché uniquement si
   les déclarations ou ce workflow changent. Pas de TypeScript au runtime.
