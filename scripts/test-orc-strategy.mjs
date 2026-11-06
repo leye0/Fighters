@@ -78,6 +78,15 @@ let state={
   health:100,maxHealth:100,attackOrder:false,dead:false})),
  witches:[],enemyBaseKnown:false,scoutTarget:{x:7,z:7},unitCap:16
 };
+const feedingDirector=new Director();
+feedingDirector.clock=15;
+const feedingState={...state,orcs:state.orcs.map(u=>({...u,role:'melee',
+  foraging:true})),gold:0};
+assert(!feedingDirector.decide(feedingState,valid).some(a=>a.type==='scout'),
+  'An AI scout must not interrupt a meal to issue a new movement order');
+feedingState.enemyBaseKnown=true;
+assert(!feedingDirector.decide(feedingState,valid).some(a=>a.type==='raid'),
+  'A raiding squad must leave feeding orcs to finish their meals');
 let actions=director.update(3,state,valid);
 assert(actions.some(a=>a.type==='train'),'AI must start recruiting');
 assert(!actions.some(a=>a.type==='raid'),'AI must not rush before developing base');

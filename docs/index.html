@@ -3867,6 +3867,13 @@ function dealDamage(target,amount,attacker){
     target.destination=null;target.attackOrder=null;
     selected.delete(target);target.selectionRing.visible=false;
     animation(target,'Death01',true);refreshHUD();
+    // The killer can visibly feast on the fallen witch after its finishing
+    // attack. Nearby living enemies still interrupt this opportunistic meal.
+    if(target.kind==='witch'&&attacker?.kind==='orc'&&!attacker.dead&&
+      !attacker.orcFoodJob){
+      attacker.orcFoodJob={kind:'corpse',id:target.id,progress:0};
+      attacker.ravenDistraction=null;
+    }
   }else animation(target,'Hit_Chest',true);
 }
 
@@ -4578,19 +4585,22 @@ function assignOrcForagers(dt){
   if(orcForageElapsed<.8)return;
   orcForageElapsed=0;
   const orcs=units.filter(u=>u.kind==='orc'&&!u.dead);
-  // Do not distract the whole army from combat or scouting just to stockpile food.
-  if(orcFood.food>=Math.max(35,orcs.length*10))return;
+  // Corpse meals are opportunistic even with a full stockpile. Hares are
+  // hunted before starvation, without pulling soldiers out of a real fight.
+  const huntHares=orcFood.food<Math.max(60,orcs.length*12);
   let jobs=orcs.filter(u=>u.orcFoodJob).length;
   if(jobs>=2)return;
-  const candidates=orcs.filter(u=>!u.orcFoodJob&&!u.scouting&&!u.attack&&
-    !u.raiding&&!u.attackOrder&&!u.destination&&!u.constructJob&&!u.repairJob&&!u.mineJob&&
+  const candidates=orcs.filter(u=>!u.orcFoodJob&&!u.attack&&
+    !u.raiding&&!u.attackOrder&&(!u.destination||orcDirector.enabled&&u.scouting)&&
+    !u.constructJob&&!u.repairJob&&!u.mineJob&&
     !u.treeJob&&!u.woodJob&&!u.farmJob&&!u.ravenDistraction&&
     !u.workerRetryTime&&!nearestHostile(u,8)?.target);
   // Fallen witches are a substantial, finite meal, preferred over live hares.
-  const prey=[...units.filter(u=>u.kind==='witch'&&u.dead&&u.deadTime>2).map(u=>({
+  const prey=[...units.filter(u=>u.kind==='witch'&&u.dead&&u.deadTime>2&&
+    !orcFood.consumedCorpses.has(u.id)).map(u=>({
     kind:'corpse',id:u.id,x:u.root.position.x,z:u.root.position.z
   }))];
-  if(hareModelLoaded)prey.push(...hareField.hares.filter(h=>h.active&&h.caughtBy==null).map(h=>({
+  if(huntHares)prey.push(...hareField.hares.filter(h=>h.active&&h.caughtBy==null).map(h=>({
     kind:'hare',id:h.id,x:h.x,z:h.z
   })));
   // Try the closest reachable meals first, while keeping fallen witches
@@ -4614,6 +4624,11 @@ function assignOrcForagers(dt){
     }
     if(!nearest)continue;
     nearest.orcFoodJob={kind:target.kind,id:target.id,progress:0};
+    // Autonomous scouting is resumable: the director will issue another
+    // frontier waypoint after the nearby food has been consumed.
+    if(nearest.scouting&&orcDirector.enabled){
+      nearest.scouting=false;nearest.destination=null;
+    }
     nearest.route=null;nearest.approachCache=null;jobs++;
   }
 }
@@ -4883,8 +4898,8 @@ function tickUnit(actor,dt){
   if(actor.stun>0)return;
   if(!actor.raiding&&tickRavenDistraction(actor,dt))return;
   if(actor.attackOrder&&!enemyOf(actor,actor.attackOrder))actor.attackOrder=null;
-  updateVillageDefense(actor);
-  if(actor.raiding&&!actor.attackOrder){
+  if(!actor.orcFoodJob)updateVillageDefense(actor);
+  if(actor.raiding&&!actor.attackOrder&&!actor.orcFoodJob){
     actor.attackOrder=nextRaidBuilding(actor);
     if(actor.attackOrder){
       actor.destination=null;actor.route=null;actor.navWatch=null;
@@ -4986,8 +5001,10 @@ function stepOrcStrategy(dt){
   assignOrcLumberjack();
   const aliveOrcs=units.filter(a=>a.kind==='orc'&&!a.dead);
   const enemyBaseKnown=knownEnemyBuildings.orc.has(witchBuilding.id);
-  const scout=aliveOrcs.find(a=>roles.isFighter(a)&&a.scouting&&!a.raiding&&!a.attackOrder)||
-    aliveOrcs.find(a=>roles.isFighter(a)&&!a.raiding&&!a.attackOrder&&!a.destination);
+  const scout=aliveOrcs.find(a=>roles.isFighter(a)&&a.scouting&&!a.raiding&&
+    !a.attackOrder&&!a.orcFoodJob)||
+    aliveOrcs.find(a=>roles.isFighter(a)&&!a.raiding&&!a.attackOrder&&
+      !a.destination&&!a.orcFoodJob);
   const source=scout?.root.position;
   const scoutTarget=!enemyBaseKnown&&source&&!scout.destination?
     fogOfWar.frontier('orc',source,(x,z)=>{
@@ -5005,7 +5022,7 @@ function stepOrcStrategy(dt){
     orcs:aliveOrcs.map(u=>({id:u.id,x:u.root.position.x,z:u.root.position.z,
       health:u.health,maxHealth:u.maxHealth,dead:u.dead,
       role:u.role,attackOrder:!!u.attackOrder||!!u.raiding,mining:!!u.mineJob,
-      scouting:!!u.scouting,destination:!!u.destination})),
+      scouting:!!u.scouting,destination:!!u.destination,foraging:!!u.orcFoodJob})),
     // Hidden witches cannot trigger omniscient defense orders.
     witches:units.filter(u=>u.kind==='witch'&&!u.dead&&
       fogOfWar.exploredAt(u.root.position.x,u.root.position.z,'orc')).map(u=>({
@@ -5026,7 +5043,8 @@ function stepOrcStrategy(dt){
       if(b&&!b.destroyed)queueOrder(b,'upgrade');
     }else if(action.type==='scout'&&!enemyBaseKnown){
       const actor=aliveOrcs.find(u=>u.id===action.unitId);
-      if(actor&&roles.isFighter(actor)&&!actor.raiding&&!actor.attackOrder){
+      if(actor&&roles.isFighter(actor)&&!actor.raiding&&!actor.attackOrder&&
+        !actor.orcFoodJob){
         const newGoal=!actor.destination||Math.hypot(
           actor.destination.x-action.x,actor.destination.z-action.z)>1;
         actor.scouting=true;actor.destination={x:action.x,z:action.z};
@@ -5821,12 +5839,12 @@ window.__fightersQA={
     hare.x=p.x;hare.z=p.z;hare.active=true;hare.turnIn=3;hare.respawnIn=0;
     syncHareVisuals();return true;
   },
-  spawnWitchCorpseNearOrc:(orcIndex=0)=>{
+  spawnWitchCorpseNearOrc:(orcIndex=0,byOrc=false)=>{
     const orc=units.filter(u=>u.kind==='orc'&&!u.dead)[orcIndex];
     if(!orc)return null;
     const position=orc.root.position;
     const witch=spawnUnit('witch',position.x+.4,position.z+.4,0,'melee');
-    dealDamage(witch,witch.health,null);
+    dealDamage(witch,witch.health,byOrc?orc:null);
     return witch.id;
   },
   setWood:(clan,value)=>{if(clan==='witch'||clan==='orc'){

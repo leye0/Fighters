@@ -1916,13 +1916,28 @@ async function run(){
    'Hungry orcs must catch, eat and remove a roaming hare: '+
      JSON.stringify({food:s.orcFood,hares:s.hares,orcs:s.orcs.map(u=>({
        id:u.id,x:u.x,z:u.z,destination:u.destination,health:u.health}))}));
- await evaluate('window.__fightersQA.reset();window.__fightersQA.setOrcFood(15)');
+ await evaluate('window.__fightersQA.reset();window.__fightersQA.setOrcFood(100)');
  check(await evaluate('window.__fightersQA.spawnWitchCorpseNearOrc()')!=null,
    'Could not set up a witch corpse for the orc feast');
+ await evaluate('window.__fightersQA.advance(1)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.hares.foragers.some(job=>job.kind==='corpse')&&
+   s.orcFood.corpsesEaten===0,
+   'A nearby witch corpse must trigger a visible timed eating action, even with full food');
+ await evaluate('window.__fightersQA.advance(3)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.orcFood.corpsesEaten===1&&s.orcFood.food>100,
+   'An orc should feast once on a witch corpse for a substantial food reward');
+ await evaluate('window.__fightersQA.reset()');
+ check(await evaluate('window.__fightersQA.spawnWitchCorpseNearOrc(0,true)')!=null,
+   'Could not set up an orc killing a nearby witch');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.hares.foragers.some(job=>job.kind==='corpse'),
+   'The orc delivering the fatal blow must reserve the corpse for a visible feast');
  await evaluate('window.__fightersQA.advance(4)');
  s=await evaluate('window.__fightersQA.snapshot()');
- check(s.orcFood.corpsesEaten===1&&s.orcFood.food>15,
-   'An orc should feast once on a witch corpse for a substantial food reward');
+ check(s.orcFood.corpsesEaten===1,
+   'A victorious orc must finish consuming its fallen witch after combat');
  }
  check(!errors.length,'Browser JavaScript exceptions: '+errors.join(' | '));
  console.log('CHROME_QA_FULL_MATCH_RESETS',
