@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'docs/index.html'
+      - 'docs/styles/**'
       - 'docs/rts-map.js'
       - 'docs/rts-footprint.js'
       - 'docs/rts-walls.js'
