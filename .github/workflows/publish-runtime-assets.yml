@@ -30,11 +30,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          if gh release view fighters-runtime-assets-v1 >/dev/null 2>&1; then
+          if gh release view fighters-runtime-assets-v1 --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
             echo 'Release tag already exists; refusing to replace its assets.' >&2
             exit 1
           fi
           gh release create fighters-runtime-assets-v1 fighters-runtime-assets-v1.zip \
+            --repo "${GITHUB_REPOSITORY}" \
             --title 'Fighters runtime assets v1 (QA verified)' \
             --notes 'Frozen build from commit 5390b999149587eb737a246e6f62d0a231d239d6, Chrome QA run 42247759276 (all three groups passed). Archive SHA-256: cde9f566c2bd7c059e6cdb438707643ffbc38703b59281c26053072645dfd93c. Runtime files are under models/ and vendor/.' \
             --target 5390b999149587eb737a246e6f62d0a231d239d6 \
