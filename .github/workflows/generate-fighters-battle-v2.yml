@@ -1,0 +1,49 @@
+name: Replace interrupted battle theme with three uninterrupted candidates
+
+on:
+  push:
+    branches:
+      - music/fighters-battle-v2-20261106
+    paths:
+      - .github/workflows/generate-fighters-battle-v2.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fighters-battle-v2-once
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN || secrets.REPLICATE_API_KEY || secrets.REPLICATE_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare FFmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Generate nonstop melodic battle variations
+        run: python3 scripts/generate_fighters_battle_v2.py
+      - name: Upload candidates and audio continuity reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fighters-constant-action-battle-candidates
+          path: docs/music/battle-v2-candidates/
+          retention-days: 30
+          if-no-files-found: warn
+      - name: Commit independent loop-ready candidates in review branch
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/music/battle-v2-candidates/*-loop.mp3 docs/music/battle-v2-candidates/generation.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Generate continuous fantasy battle alternatives"
+            git push origin HEAD:"${GITHUB_REF_NAME}"
+          fi
