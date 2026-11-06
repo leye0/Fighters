@@ -154,7 +154,7 @@
     }
     const canOgg=audio.canPlayType('audio/ogg; codecs="vorbis"')||audio.canPlayType('audio/ogg');
     const path=rec.fallback&&!canOgg?rec.fallback:rec.path;
-    audio.src='./'+path+'?v=real-metal-20261106';
+    audio.src='./'+path+'?v=soft-wings-20261106';
     audio.load();
     try{await audio.play()}catch(err){
       if(current!==rec)return;

@@ -6,8 +6,7 @@ API, tracker, or CDN while playing. No Replicate or paid audio generation is use
 
 | Game cue | Recording source | License |
 | --- | --- | --- |
-| `hammer/1.ogg`, `hammer/3.ogg` | [Anvil Hit 1](https://freesound.org/people/michorvath/sounds/270589/) by michorvath: real hammer on an iron anvil; third variant pitched down 6% | CC0 1.0 |
-| `hammer/2.ogg`, `hammer/4.ogg` | [Blacksmith's Hammer](https://opengameart.org/content/blacksmiths-hammer) by VishwaJai: hammer on a 45 lb anvil, also bundled as `sounds/witches/work/Hammer.mp3`; fourth variant pitched up 6% | CC0 1.0 |
+| `hammer/1..4.ogg` | [Anvil Hit 1](https://freesound.org/people/michorvath/sounds/270589/) by michorvath: **real** hammer striking an iron anvil; four subtle timbral/pitch variations of this authentic recording (the former synthetic-sounding Blacksmith's Hammer takes were removed from variants 2 and 4) | CC0 1.0 |
 | `mine/1..4.ogg` | [Pickaxe #1](https://freesound.org/people/abstraktgeneriert/sounds/233633/) and [Pickaxe #3](https://freesound.org/people/abstraktgeneriert/sounds/233629/) by abstraktgeneriert, layered with real rock impacts [stonehit1](https://freesound.org/people/aerror/sounds/350750/) and [stonehit3](https://freesound.org/people/aerror/sounds/350748/) recorded by aerror | CC0 1.0 |
 | `sword/hit-1.ogg` | [Sword sound 1](https://freesound.org/people/Merrick079/sounds/568170/) by Merrick079: sword striking armour | CC0 1.0 |
 | `sword/hit-2.ogg` | [Sword Hit](https://freesound.org/people/qubodup/sounds/442769/) by qubodup: layered metal sword impact | CC0 1.0 |
@@ -25,7 +24,7 @@ https://kenney.nl/assets/impact-sounds and the CC0 Godot conversion at
 https://github.com/Boyquotes/kenney-impact-sounds-for-godot.
 The metal/rock originals come from the public source archive
 https://github.com/Wh1teDuke/WilhelmSFX; their individual Freesound pages above
-confirm CC0. `Blacksmith's Hammer` was already bundled in the game. Recordings
+confirm CC0. Recordings
 were level-adjusted and converted to Ogg Vorbis for gameplay. Matching MP3s
 in `sounds/previews/` serve as mobile playback fallbacks. The mine variants
 combine a quieter metallic tip with naturally recorded stone fragments;
@@ -38,6 +37,11 @@ The source describes the actual bird as a **corvid/crow**, not a species-verifie
 common raven. The three calls are different treatments of **one recording**,
 not falsely described as three separate field recordings. A handful of gentle
 playback-rate variations add a fourth audible inflection.
+
+The two wing-flap recordings were re-rendered with a gentle 3.8-3.9 kHz
+low-pass, softer fade-in and fade-out, and 38% lower recorded amplitude to
+remove the harsh attack. The in-game wing gain is reduced separately, while
+the crow calls remain unchanged.
 
 Magic launches are original, procedurally generated airy sounds in
 `rts-effects.js`; they contain no borrowed recording and are cached as four

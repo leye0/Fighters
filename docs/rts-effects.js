@@ -17,7 +17,7 @@
     swordHit:{files:4,gain:.43,cooldown:110,limit:5,priority:5},
     magic:{files:4,gain:.50,cooldown:130,limit:5,priority:5},
     garden:{files:4,gain:.23,cooldown:600,limit:2,priority:1},
-    wing:{files:2,gain:.36,cooldown:330,limit:2,priority:2},
+    wing:{files:2,gain:.25,cooldown:330,limit:2,priority:2},
     caw:{files:3,gain:.56,cooldown:1000,limit:2,priority:3},
     // The full-wet incantation is a single cinematic spell, heard even when
     // the player has moved the camera away from the selected house.
@@ -36,7 +36,7 @@
   });
   class Engine{
     constructor({fetcher,contextFactory,listener,now,random,
-      rootUrl='./sounds/effects/',assetVersion='real-metal-20261106',
+      rootUrl='./sounds/effects/',assetVersion='soft-wings-20261106',
       maxActive=12,maxCached=24,maxPending=4}={}){
       this.fetcher=fetcher||((url,opts)=>root.fetch(url,opts));
       this.contextFactory=contextFactory||(()=>new (root.AudioContext||root.webkitAudioContext)());
