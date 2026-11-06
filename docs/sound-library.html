@@ -93,7 +93,8 @@
   function addFiles(part,partTitle,group,folder,files){
     for(const name of files){
       const title=labelFile(name);
-      const fallback=(part==='combat'&&name.endsWith('.ogg'))?'sounds/previews/sword/'+name.replace(/\.ogg$/,'.mp3').split('/').pop():'';
+      const fallback=(name.endsWith('.ogg')&&['sword','hammer','mine'].includes(folder))?
+        'sounds/previews/'+folder+'/'+name.replace(/\.ogg$/,'.mp3'):'';
       add(part,partTitle,group,title,'sounds/effects/'+folder+'/'+name,'Fichier original · '+name,fallback);
     }
   }
@@ -153,7 +154,7 @@
     }
     const canOgg=audio.canPlayType('audio/ogg; codecs="vorbis"')||audio.canPlayType('audio/ogg');
     const path=rec.fallback&&!canOgg?rec.fallback:rec.path;
-    audio.src='./'+path;
+    audio.src='./'+path+'?v=real-metal-20261106';
     audio.load();
     try{await audio.play()}catch(err){
       if(current!==rec)return;

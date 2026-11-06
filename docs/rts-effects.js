@@ -36,7 +36,7 @@
   });
   class Engine{
     constructor({fetcher,contextFactory,listener,now,random,
-      rootUrl='./sounds/effects/',assetVersion='immersive-20261106',
+      rootUrl='./sounds/effects/',assetVersion='real-metal-20261106',
       maxActive=12,maxCached=24,maxPending=4}={}){
       this.fetcher=fetcher||((url,opts)=>root.fetch(url,opts));
       this.contextFactory=contextFactory||(()=>new (root.AudioContext||root.webkitAudioContext)());
