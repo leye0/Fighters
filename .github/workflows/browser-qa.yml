@@ -26,6 +26,7 @@ on:
       - 'docs/rts-ravens.js'
       - 'docs/rts-raven-distraction.js'
       - 'docs/rts-healing.js'
+      - 'docs/rts-healing-cycle.js'
       - 'docs/rts-repair.js'
       - 'docs/rts-souls.js'
       - 'docs/models/standing-stone.glb'
@@ -36,6 +37,7 @@ on:
       - 'scripts/test-rts-ravens.mjs'
       - 'scripts/test-rts-raven-distraction.mjs'
       - 'scripts/test-rts-healing.mjs'
+      - 'scripts/test-rts-healing-cycle.mjs'
       - 'scripts/test-rts-repair.mjs'
       - 'scripts/test-rts-souls.mjs'
       - 'scripts/test-rts-farming.mjs'
@@ -180,6 +182,7 @@ jobs:
           node scripts/test-rts-ravens.mjs
           node scripts/test-rts-raven-distraction.mjs
           node scripts/test-rts-healing.mjs
+          node scripts/test-rts-healing-cycle.mjs
           node scripts/test-rts-repair.mjs
           node scripts/test-rts-souls.mjs
       - uses: actions/cache@v4

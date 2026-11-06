@@ -41,8 +41,11 @@ assert.equal(bill.spent,0,'full health costs nothing');
 assert.throws(()=>healing.restoreGroup([wounded],-1,1),/Invalid healing time/);
 assert.throws(()=>healing.restoreGroup([wounded],1,-1),/Invalid magic budget/);
 const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
-assert(game.includes('matchResources.magic.witch=stoneHealing.restoreGroup(resting,dt,'),
-  'the actual circle must debit the shared in-game magic reserve');
+const cycle=readFileSync(new URL('../docs/rts-healing-cycle.js',import.meta.url),'utf8');
+assert(game.includes('getWitchMagic:()=>matchResources.magic.witch')&&
+  game.includes('setWitchMagic:value=>{matchResources.magic.witch=value;}')&&
+  cycle.includes('setWitchMagic(stoneHealing.restoreGroup(resting,dt,'),
+  'the actual circle must debit the live shared magic reserve through injected accessors');
 assert.equal(healing.recovered({health:80,maxHealth:85}),false);
 assert.equal(healing.recovered({health:82,maxHealth:85}),true);
 assert.equal(healing.needsRest({health:70,maxHealth:85}),false);

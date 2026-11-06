@@ -37,6 +37,10 @@ modules (`docs/rts-contracts.d.ts`).
   par les corbeaux ; seuls les oiseaux effectivement visibles sont poursuivis,
   aucune attaque ni dégât n'est dirigé vers un corbeau. Navigation et animations
   restent injectées par l'adaptateur de simulation.
+- `docs/rts-healing-cycle.js` : soins automatiques et retraite vers les cercles
+  de pierres, avec cadence de 850 ms et magie partagée, réellement débitée à
+  chaque restauration. Les ressources neuves après reset sont lues/écrites via
+  les fonctions injectées, sans référence périmée à une ancienne partie.
 - `docs/rts-unit-tick.js` : état et priorités des unités à chaque tick
   (attaque, cible, poursuite, tâches, déplacement), avec services de navigation,
   combat, animation et IA injectés une seule fois par `game.js`.

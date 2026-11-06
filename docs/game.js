@@ -40,7 +40,7 @@ let domeEffect=null;
 const fireRules=window.FightersFireRain;
 const spellDefense=window.FightersSpellDefense;
 let fireEffect=null,spellDecisionElapsed=0;
-let standingStoneModel=null,stoneCircleSerial=0,healingAssignmentElapsed=0;
+let standingStoneModel=null,stoneCircleSerial=0;
 const witchBuilding={
   id:'witch-house-01',kind:'witch-house',type:'witch-house',clanId:'witch',level:1,
   health:WITCH_HOUSE_HEALTH,maxHealth:WITCH_HOUSE_HEALTH,root:null,destroyed:false,
@@ -2905,7 +2905,7 @@ function startSession(){
   matchResources.resetEconomy();
   farming.reset();farmSerial=0;farmAssignmentElapsed=0;
   orcFood.reset();orcHuntPlanner.reset();foodCycle.reset();
-  stoneCircleSerial=0;wallSerial=0;healingAssignmentElapsed=0;
+  stoneCircleSerial=0;wallSerial=0;healingCycle.reset();
   wildBerries.reset();berryAssignmentElapsed=0;syncBerryVisuals();
   buildMode=null;orcSpawned=false;
   fogOfWar.reset();knownEnemyBuildings.witch.clear();
@@ -4013,70 +4013,17 @@ function stepOrcFood(dt){
 function stepFarming(dt){
   return foodCycle.stepWitches(dt);
 }
+const healingCycle=window.FightersHealingCycle.create({
+  units,buildingInstances,stoneHealing,
+  getWitchMagic:()=>matchResources.magic.witch,
+  setWitchMagic:value=>{matchResources.magic.witch=value;},
+  nearestHostile,navigatorRTS,cancelSoulJob,animation,navigateActor
+});
 function stepHealing(dt){
-  const circles=[...buildingInstances.values()].filter(b=>
-    b.type==='stone-circle'&&!b.destroyed);
-  const resting=[];
-  for(const witch of units){
-    if(witch.kind!=='witch'||witch.dead)continue;
-    witch.healRetry=Math.max(0,witch.healRetry-dt);
-    if(witch.health>=witch.maxHealth)continue;
-    const point={x:witch.root.position.x,z:witch.root.position.z};
-    if(circles.some(b=>stoneHealing.inside(point,b.root.position)))
-      resting.push(witch);
-  }
-  // One shared magic budget for every circle; scarce magic is split fairly
-  // rather than silently healing the first unit in the array for free.
-  if(resting.length)matchResources.magic.witch=stoneHealing.restoreGroup(resting,dt,
-    matchResources.magic.witch).magic;
-  healingAssignmentElapsed+=dt;
-  if(healingAssignmentElapsed<.85)return;
-  healingAssignmentElapsed=0;
-  for(const witch of units){
-    if(witch.kind!=='witch'||witch.dead)continue;
-    if(witch.healJob){
-      const circle=buildingInstances.get(witch.healJob.id);
-      if(!circle||circle.destroyed||stoneHealing.recovered(witch)||
-        nearestHostile(witch,stoneHealing.HOSTILE_SAFETY_DISTANCE)?.target)
-        witch.healJob=null;
-      continue;
-    }
-    // No autonomous retreat can override the player's commands or work.
-    if(!stoneHealing.needsRest(witch)||witch.healRetry>0||witch.destination||
-      witch.attack||witch.attackOrder||witch.constructJob||witch.farmJob||
-      witch.repairJob||witch.mineJob||witch.treeJob||witch.woodJob||
-      nearestHostile(witch,stoneHealing.HOSTILE_SAFETY_DISTANCE)?.target)continue;
-    const from=witch.root.position;
-    const choice=stoneHealing.nearestCircle(from,circles.map(b=>({
-      id:b.id,x:b.root.position.x,z:b.root.position.z
-    })),b=>{
-      const goal={x:b.x,z:b.z};
-      return navigatorRTS.segmentClear(from,goal)||!!navigatorRTS.plan(from,goal);
-    });
-    if(!choice)continue;
-    cancelSoulJob(witch);
-    witch.berryJob=null;witch.healJob={id:choice.id};
-    witch.route=null;witch.approachCache=null;
-  }
+  return healingCycle.step(dt);
 }
 function tickHealingRetreat(actor,dt){
-  if(!actor.healJob)return false;
-  if(actor.destination||actor.attackOrder||actor.constructJob||actor.farmJob||
-    actor.repairJob||actor.mineJob||actor.treeJob||actor.woodJob){actor.healJob=null;return false;}
-  const circle=buildingInstances.get(actor.healJob.id);
-  if(!circle||circle.destroyed||stoneHealing.recovered(actor)){
-    actor.healJob=null;return false;
-  }
-  const center=circle.root.position;
-  if(Math.hypot(actor.root.position.x-center.x,actor.root.position.z-center.z)<.85){
-    animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop');return true;
-  }
-  const result=navigateActor(actor,center,dt,'order');
-  if(result==='blocked'){
-    actor.healJob=null;actor.healRetry=6;return false;
-  }
-  if(result!=='moving')animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop');
-  return true;
+  return healingCycle.tickRetreat(actor,dt);
 }
 
 // One tiny shared geometry per projectile effect; bounded pool prevents

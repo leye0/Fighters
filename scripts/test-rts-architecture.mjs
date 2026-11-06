@@ -35,6 +35,7 @@ const boundaries=[
   ['rts-orc-hunt-planner','FightersOrcHuntPlanner'],
   ['rts-food-cycle','FightersFoodCycle'],
   ['rts-raven-distraction','FightersRavenDistraction'],
+  ['rts-healing-cycle','FightersHealingCycle'],
   ['rts-orders','FightersOrders'],
   ['rts-picking','FightersPicking'],
   ['rts-camera','FightersCamera'],
