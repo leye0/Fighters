@@ -25,6 +25,8 @@ modules (`docs/rts-contracts.d.ts`).
   pour les tests sans navigateur, `docs/game.js` adapte Three.js et l'état.
 - `docs/rts-camera.js` : cadrage orthographique et panoramique avec dépendances
   injectées ; les événements pointeur restent dans `docs/game.js`.
+- `docs/rts-minimap.js` : dessin Canvas 2D de la mini-carte, brouillard du sol,
+  bâtiments et points d'unités ; `docs/game.js` conserve les événements d'entrée.
 - `docs/rts-ai-commands.js` : exécution des intentions des deux IA (construction,
   entraînement, reconnaissance, attaques, défense) ; les directeurs `*-strategy.js`
   choisissent les intentions et ne manipulent pas directement les objets 3D.

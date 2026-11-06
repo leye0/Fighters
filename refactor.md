@@ -89,6 +89,9 @@ qu'après modification, vérification et intégration dans `main`.
 - [ ] Valider le contrôleur de caméra `rts-camera.js` en Chrome après ses tests
       de déplacement et cadrage mobile/desktop.
 - [ ] Extraire le HUD, les boutons de commandes et la mini-carte du moteur.
+- [ ] Valider sous Chrome l'extraction du dessin de mini-carte dans
+      `rts-minimap.js` : cache de brouillard 112×112, visibilité distincte des
+      corbeaux, bâtiments et unités, cadrage caméra inchangés.
 - [ ] Séparer le chargement/caching des GLB et sons de leur utilisation par les
       systèmes de rendu et d'animation.
 - [x] Réduire `docs/index.html` à l'import map, au DOM et au démarrage de

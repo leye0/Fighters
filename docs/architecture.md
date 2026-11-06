@@ -27,7 +27,7 @@ dans [`../refactor.md`](../refactor.md).
 | Commandes joueur | `rts-picking.js`, `rts-camera.js`, à terme gestes tactiles | `test-rts-picking.mjs`, `test-rts-camera.mjs`, QA Chrome tactile |
 | Modèles et ressources | `rts-assets.js`, `assets/runtime-assets.lock`, `scripts/use-pinned-runtime-assets.sh` | `test-rts-assets.mjs`, QA Chrome, Pages |
 | Monde et visibilité | `rts-map.js`, `rts-footprint.js`, `rts-fog.js`, `rts-forest.js` | `test-rts-map.mjs`, `test-rts-footprint.mjs`, `test-rts-fog.mjs`, `test-rts-forest.mjs` |
-| Présentation | `styles/game.css`, `game.js` (résidu HUD/rendu) | Chrome `visual`, `economy`, `combat` |
+| Présentation | `styles/game.css`, `rts-minimap.js`, `game.js` (résidu HUD/rendu) | `test-rts-minimap.mjs`, Chrome `visual`, `economy`, `combat` |
 | Validation navigateur | `scripts/browser-qa/` par scénario, `chrome-driver.mjs` commun | Workflow `browser-qa.yml` |
 
 Un agent peut modifier un module isolé et son test sans toucher au code de
@@ -63,6 +63,6 @@ chargé par le navigateur. La QA Browser est divisée en `visual`, `economy` et
 
 Les extractions encore souhaitées ne sont pas masquées : état de partie
 centralisé, commandes de production et actions automatiques, gestes pointeur,
-HUD et mini-carte, décomposition des ticks des unités, verrouillage des
+HUD et gestes tactiles, décomposition des ticks des unités, verrouillage des
 dépendances du build, migration des workflows historiques qui poussent sur
 `main`, et essai complet de la reconstruction des assets v2.

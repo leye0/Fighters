@@ -806,85 +806,19 @@ function acknowledgeOrcAiOrder(actors){
 
 // Warcraft II's always-visible minimap. One 112×112 CPU buffer is reused;
 // it consumes ~49 KiB, without textures, GLBs or a second WebGL renderer.
-const minimap=$('war2-minimap'),minimapContext=minimap.getContext('2d',{alpha:false});
-const minimapRaster=document.createElement('canvas');
-minimapRaster.width=112;minimapRaster.height=112;
-const minimapRasterContext=minimapRaster.getContext('2d',{alpha:false});
-const minimapImage=minimapRasterContext.createImageData(112,112);
-// World-to-fog sampling coordinates never change: cache them instead of
-// allocating 12,544 {x,z} objects on every minimap repaint.
-const minimapFogIndices=new Int32Array(112*112);
-for(let row=0;row<112;row++)for(let col=0;col<112;col++){
-  const world=arena.toWorld((col+.5)/112*ARENA_SIZE-ARENA_HALF,
-    (row+.5)/112*ARENA_SIZE-ARENA_HALF);
-  minimapFogIndices[row*112+col]=fogOfWar.index(world.x,world.z);
-}
-// Raven scouting permanently discovers terrain but never creates a moving
-// bright patch that would betray each bird's position on the minimap.
-const minimapGroundFog=new window.FightersFog.FogGrid({halfSize:arena.worldHalf});
+const minimap=$('war2-minimap');
+const minimapRenderer=window.FightersMinimap.create({
+  canvas:minimap,arena,fogOfWar,
+  makeGroundFog:()=>new window.FightersFog.FogGrid({halfSize:arena.worldHalf}),
+  groundSightSources,getBuildings:liveBuildings,getUnits:()=>units,
+  knownEnemyBuildings,getFaction:()=>activeFaction,viewport,worldPoint
+});
+const minimapGroundFog=minimapRenderer.groundFog;
 let minimapElapsed=0;
-function miniPoint(x,z){
-  const p=arena.toMap(x,z);
-  return {x:(p.x+ARENA_HALF)/ARENA_SIZE*minimap.width,
-    y:(p.z+ARENA_HALF)/ARENA_SIZE*minimap.height};
-}
-function drawMinimap(){
-  const fog=fogOfWar.maps[activeFaction],paint=minimapImage.data;
-  minimapGroundFog.update(activeFaction,groundSightSources(activeFaction));
-  const groundVisible=minimapGroundFog.maps[activeFaction].visible;
-  // Resample the world-space visibility grids into the square camera-aligned
-  // map. A simple X/Z drawImage would recreate the old diamond discrepancy.
-  for(let cell=0;cell<minimapFogIndices.length;cell++){
-    const index=minimapFogIndices[cell],j=cell*4;
-    const light=index<0?0:Math.max(groundVisible[index],fog.explored[index]*.28)/255;
-    paint[j]=Math.round(7+46*light);
-    paint[j+1]=Math.round(10+90*light);
-    paint[j+2]=Math.round(11+54*light);
-    paint[j+3]=255;
-  }
-  minimapRasterContext.putImageData(minimapImage,0,0);
-  minimapContext.imageSmoothingEnabled=false;
-  minimapContext.drawImage(minimapRaster,0,0,minimap.width,minimap.height);
-  for(const b of liveBuildings()){
-    if(!b.hitbox)continue;
-    const box=b.hitbox,x=(box.minX+box.maxX)/2,z=(box.minZ+box.maxZ)/2;
-    const visibility=fogOfWar.sample(x,z,activeFaction);
-    if(visibility.explored<.2||
-      (b.clanId!==(activeFaction==='witch'?'witch':'orcs')&&
-        b.clanId!=='neutral'&&!knownEnemyBuildings[activeFaction].has(b.id)))continue;
-    minimapContext.fillStyle=b.type==='mine'?'#d4c36e':
-      b.clanId===(activeFaction==='witch'?'witch':'orcs')?'#b2d3ce':'#c16c57';
-    const corners=[[box.minX,box.minZ],[box.maxX,box.minZ],
-      [box.maxX,box.maxZ],[box.minX,box.maxZ]].map(([bx,bz])=>miniPoint(bx,bz));
-    minimapContext.beginPath();
-    corners.forEach((p,i)=>i?minimapContext.lineTo(p.x,p.y):minimapContext.moveTo(p.x,p.y));
-    minimapContext.closePath();minimapContext.fill();
-  }
-  for(const actor of units){
-    if(actor.dead||actor.kind!==activeFaction&&!fogOfWar.exploredAt(
-      actor.root.position.x,actor.root.position.z,activeFaction))continue;
-    minimapContext.fillStyle=actor.kind===activeFaction?'#c6f4a3':'#ff7b76';
-    const p=miniPoint(actor.root.position.x,actor.root.position.z);
-    minimapContext.fillRect(p.x-1,p.y-1,3,3);
-  }
-  minimapContext.strokeStyle='#f6f1c3';
-  minimapContext.lineWidth=1;
-  const rect=viewport.getBoundingClientRect();
-  const footprint=[[rect.left,rect.top],[rect.right,rect.top],
-    [rect.right,rect.bottom],[rect.left,rect.bottom]]
-    .map(([x,y])=>worldPoint(x,y)).filter(Boolean).map(p=>miniPoint(p.x,p.z));
-  if(footprint.length===4){
-    minimapContext.beginPath();
-    footprint.forEach((p,i)=>i?minimapContext.lineTo(p.x,p.y):
-      minimapContext.moveTo(p.x,p.y));
-    minimapContext.closePath();minimapContext.stroke();
-  }
-}
+function drawMinimap(){minimapRenderer.draw();}
 function minimapCenterAt(clientX,clientY){
-  const rect=minimap.getBoundingClientRect();
-  if(!rect.width||!rect.height)return;
-  const world=arena.toWorld((clientX-rect.left)/rect.width*ARENA_SIZE-ARENA_HALF,
-    (clientY-rect.top)/rect.height*ARENA_SIZE-ARENA_HALF);
+  const world=minimapRenderer.worldAt(clientX,clientY);
+  if(!world)return;
   cameraFollow=arena.clamp(world.x,world.z,2);
   positionCamera();drawMinimap();
 }
