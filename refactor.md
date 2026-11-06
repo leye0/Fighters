@@ -70,6 +70,9 @@ qu'après modification, vérification et intégration dans `main`.
       run 42269109685, terminé en 11 secondes.
 - [ ] Regrouper l'état mutable d'une partie dans un contexte explicite ; limiter
       les variables libres partagées par des dizaines de fonctions.
+- [ ] Centraliser les conteneurs d'unités, sélection, bâtiments, chantiers et
+      mémoire ennemie dans `rts-world-state.js` sans changer les références ni
+      l'ordre du reset ; vérifier les tests Node et les trois suites Chrome.
 - [x] Valider dans Chrome l'extraction d'or/bois dans `rts-match-state.js` :
       économie neuve à chaque partie, paiement, remboursement, mines et récoltes.
       Run 42266733318, trois scénarios verts.

@@ -20,6 +20,9 @@ modules (`docs/rts-contracts.d.ts`).
 - `docs/rts-match-state.js` : propriétaire des ressources or/bois/magie d'une partie,
   avec réinitialisation en valeurs neuves ; les autres systèmes ne gardent
   jamais leurs références après une nouvelle partie.
+- `docs/rts-world-state.js` : propriétaire des conteneurs stables d'unités,
+  bâtiments, chantiers et souvenirs du brouillard ; la remise à zéro des
+  éléments 3D reste dans `game.js` pour préserver l'ordre de destruction.
 - `docs/rts-unit-tick.js` : état et priorités des unités à chaque tick
   (attaque, cible, poursuite, tâches, déplacement), avec services de navigation,
   combat, animation et IA injectés une seule fois par `game.js`.

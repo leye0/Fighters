@@ -23,7 +23,7 @@ dans [`../refactor.md`](../refactor.md).
 | Système | Fichiers principaux | Vérification ciblée |
 |---|---|---|
 | Simulation et déplacements | `rts-simulation.js`, `rts-unit-tick.js`, `rts-unit-physics.js`, `rts-navigation.js` | `test-rts-simulation.mjs`, `test-rts-unit-tick.mjs`, `test-rts-unit-physics.mjs`, `test-rts-navigation.mjs` |
-| État de partie | `rts-match-state.js` (or, bois et magie), `game.js` (état restant, transitoire) | `test-rts-match-state.mjs`, Chrome `economy`, `combat` |
+| État de partie | `rts-match-state.js` (or, bois et magie), `rts-world-state.js` (collections d'entités), `game.js` (scalaires restants, transitoire) | `test-rts-match-state.mjs`, `test-rts-world-state.mjs`, Chrome `economy`, `combat` |
 | Ordres et tâches | `rts-orders.js`, règles `rts-repair.js`, `rts-farming.js` | `test-rts-orders.mjs`, `test-rts-worker-orders.mjs`, `test-rts-construction-orders.mjs`, `test-rts-production-orders.mjs` |
 | IA | `orc-strategy.js`, `witch-strategy.js`, `rts-ai-observations.js`, `rts-ai-commands.js` | `test-orc-strategy.mjs`, `test-witch-strategy.mjs`, `test-rts-ai-observations.mjs`, `test-rts-ai-commands.mjs` |
 | Commandes joueur | `rts-picking.js`, `rts-camera.js`, `rts-gestures.js`, `rts-player-actions.js` | `test-rts-picking.mjs`, `test-rts-camera.mjs`, `test-rts-gestures.mjs`, `test-rts-player-actions.mjs`, QA Chrome tactile |
@@ -72,6 +72,12 @@ Le démarrage normal de Pages ou Chrome ne fait jamais `npm ci`.
   au moment de la commande afin de respecter le remplacement des ressources
   lors du démarrage d'une nouvelle partie. Les boutons n'appellent que le
   service de domaine et rafraîchissent ensuite le HUD.
+- `rts-world-state.js` possède les collections stables des unités, de la
+  sélection, des bâtiments, des chantiers et des souvenirs ennemis par clan.
+  `game.js` conserve temporairement des alias vers ces collections ; elles
+  doivent être vidées **après** la libération des objets 3D/DOM, au moment
+  historique exact de la réinitialisation. Les autres variables mutables sont
+  encore progressivement à migrer vers un contexte explicite.
 - Les états `witch`/`orc` des unités ne sont pas synonymes des `clanId`
   `witch`/`orcs`/`neutral` des bâtiments.
 - La simulation demeure à **60 ticks/seconde** avec au plus 12 ticks de

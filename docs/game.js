@@ -379,7 +379,10 @@ const ROLE_IDS=roles.ROLE_IDS,ROLE_DEFINITIONS=roles.DEFINITIONS;
 const ORC_COSTS={barrack:180,hut:120,cauldron:200,factory:250,wall:32};
 // Deposits are fixed map resources, not structures that players or the AI can build.
 const ORC_NAMES={barrack:'Caserne',hut:'Hutte',mine:'Mine',cauldron:'Chaudron',factory:'Atelier',wall:'Mur de pierre'};
-const units=[],selected=new Set();
+// Shared world registries have a single owner. Keep the legacy local aliases
+// until every simulation/render subsystem consumes the explicit context.
+const matchWorld=window.FightersWorldState.create();
+const {units,selected}=matchWorld;
 const soulEffects=[];
 let soulAssignmentElapsed=0;
 let female=null,male=null,swordModel=null,clothingFemale=null,clothingMale=null,hairBuns=null,hairBuzzed=null,hairParted=null,hairLong=null;
@@ -432,7 +435,7 @@ const effects=new window.FightersEffects.Engine({
   contextFactory:()=>orcSound.context,listener:()=>cameraFollow
 });
 // Each clan keeps its own permanent memory of enemy structures; never share it.
-const knownEnemyBuildings={witch:new Set(),orc:new Set()};
+const {knownEnemyBuildings}=matchWorld;
 const fogTexture=new THREE.DataTexture(fogOfWar.textureData('witch'),
   fogOfWar.size,fogOfWar.size,THREE.RGBAFormat);
 fogTexture.minFilter=THREE.LinearFilter;fogTexture.magFilter=THREE.LinearFilter;
@@ -934,7 +937,7 @@ const ORC_VILLAGE={
     cauldron:{x:16,z:13},factory:{x:23,z:13}
   }
 };
-const buildingInstances=new Map();
+const {buildingInstances}=matchWorld;
 const buildingBlueprints=new Map();
 const orcLevelEntries=new Map();
 function createBuildingInstance(entry,type,level,anchor,footprint,model,projection){
@@ -1818,7 +1821,7 @@ function beginRally(){
 const WITCH_BUILD_COST=230,GARDEN_BUILD_COST=175,STONE_BUILD_COST=260,BUILD_SECONDS=6;
 const BUILD_WOOD_COST=Object.freeze({'witch-house':75,garden:0,'stone-circle':85,
   hut:55,barrack:95,cauldron:80,factory:130,wall:10});
-const pendingBuilds=[];
+const {pendingBuilds}=matchWorld;
 function constructionCost(type){
   return type==='witch-house'?WITCH_BUILD_COST:type==='garden'?GARDEN_BUILD_COST:
     type==='stone-circle'?STONE_BUILD_COST:ORC_COSTS[type]||null;

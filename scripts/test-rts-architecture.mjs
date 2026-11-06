@@ -30,6 +30,7 @@ const boundaries=[
   ['rts-simulation','FightersSimulation'],
   ['rts-unit-tick','FightersUnitTick'],
   ['rts-match-state','FightersMatchState'],
+  ['rts-world-state','FightersWorldState'],
   ['rts-orders','FightersOrders'],
   ['rts-picking','FightersPicking'],
   ['rts-camera','FightersCamera'],
