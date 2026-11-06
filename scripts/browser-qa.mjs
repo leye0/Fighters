@@ -1303,6 +1303,10 @@ async function run(){
  check(gardenSite,'No buildable garden site on witch territory');
  check(await evaluate('window.__fightersQA.orderBuild("garden",'+gardenSite.x+','+gardenSite.z+')'),
    'Witch worker could not begin garden construction');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.construction.some(job=>job.type==='garden'&&job.previewVisible&&
+   job.previewPlantMeshes===0),
+   'An unfinished garden must show only soil beds, not fake spherical crops');
  const gardenBuild=await evaluate("(()=>{let planting=false,inside=false,built=false;"+
    "for(let i=0;i<160;i++){window.__fightersQA.advance(.25);const s=window.__fightersQA.snapshot();"+
    "const w=s.witches.find(u=>u.role==='worker');"+

@@ -2509,8 +2509,9 @@ function makeStoneCircleVisual(){
   sparkles.userData.stoneEffect=true;magic.add(sparkles);
   return {root,magic:{core,pulse,glyphs,sparkles,phase:0}};
 }
-// The raised soil beds have reusable geometry. Procedural silhouettes appear only
-// while the extracted CC BY crop catalog loads asynchronously.
+// Soil beds remain bare during construction and while the real crop catalog
+// loads. The simple plant geometry below is only for wild-berry fallback and
+// carried wheat, never for temporary garden crops.
 const farmGeometry={
   bed:new THREE.BoxGeometry(3.55,.20,3.55),row:new THREE.BoxGeometry(1.48,.11,.91),
   stem:new THREE.CylinderGeometry(.055,.095,.8,5),
@@ -2540,13 +2541,10 @@ function makeGardenVisual(){
     const row=new THREE.Mesh(farmGeometry.row,farmMaterial.soil);
     row.position.set(x,.24,z);root.add(row);
     const plant=new THREE.Group();plant.position.set(x,.28,z);
-    const stem=new THREE.Mesh(farmGeometry.stem,farmMaterial.stalk);
-    stem.position.y=.45;plant.add(stem);
-    const leaves=new THREE.Mesh(farmGeometry.leaves,farmMaterial.leaf);
-    leaves.position.y=.72;plant.add(leaves);
-    const fruit=new THREE.Mesh(farmGeometry.fruit,farmMaterial.produce);
-    fruit.position.y=.47;plant.add(fruit);root.add(plant);
-    plots.push({plant,fruit,stage:0});
+    // Leave the growing position empty until licensed Wheat_F1..F3 meshes
+    // arrive. Construction previews must never show invented giant plants.
+    root.add(plant);
+    plots.push({plant,stage:0});
   }
   return {root,plots};
 }
@@ -2588,11 +2586,10 @@ function installGardenCrops(building){
   for(let i=0;i<plots.length;i++){
     const visual=building.cropVisuals[i];
     if(visual.variants)continue;
-    // Do not dispose the fallback: its meshes and materials are globally shared.
     visual.plant.clear();visual.plant.scale.setScalar(1);
     visual.variants=cropCatalog.get(plots[i].species).map(model=>model.clone(true));
     visual.plant.add(...visual.variants);
-    visual.fruit=null;visual.stage=0;
+    visual.stage=0;
   }
   syncGardenVisual(building);
 }
@@ -2702,9 +2699,6 @@ function syncGardenVisual(building){
     if(visual.variants){
       for(let index=0;index<visual.variants.length;index++)
         visual.variants[index].visible=index===stage-1;
-    }else{
-      visual.plant.scale.setScalar(stage===1?.27:stage===2?.67:1.1);
-      visual.fruit.visible=stage===3;
     }
   }
 }
@@ -5746,6 +5740,9 @@ window.__fightersQA={
     construction:pendingBuilds.map(job=>({type:job.type,x:job.x,z:job.z,
       progress:job.progress,cost:job.cost,woodCost:job.woodCost,
       previewVisible:!!job.preview?.root.parent,
+      previewPlantMeshes:job.type==='garden'&&job.preview?
+        job.preview.root.children.filter(child=>child.isGroup).reduce((count,group)=>
+          count+group.children.filter(child=>child.isMesh).length,0):null,
       revealFraction:job.preview?(job.preview.plane.constant-job.preview.bottom)/job.preview.height:0,
       workerId:units.find(u=>u.constructJob===job)?.id||null})),
     constructionPreviewCount:scene.children.filter(node=>node.userData.constructionPreview).length,
