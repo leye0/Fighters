@@ -135,9 +135,10 @@ qu'après modification, vérification et intégration dans `main`.
       `rts-raven-distraction.js` (vue réelle, durée, poursuite sans attaque,
       cooldown et disparition) ; tests Node et run 42286833419 :
       Chrome `visual`, `economy`, `combat` verts.
-- [ ] Extraire les soins des sorcières et la retraite automatique vers les
+- [x] Extraire les soins des sorcières et la retraite automatique vers les
       cercles dans `rts-healing-cycle.js` (magie réellement consommée, budget
-      partagé, sécurité, interruption et cadence), avec Node et QA Chrome.
+      partagé, sécurité, interruption et cadence) ; tests Node et
+      run 42287409698 : Chrome `visual`, `economy`, `combat` verts.
 - [ ] Isoler l'attribution et l'exécution des récoltes d'âmes des mages dans
       `rts-soul-harvester.js` (cadavres visibles, réservations, chemins,
       interruption, animation `Death01` et reset), avec Node et Chrome.
