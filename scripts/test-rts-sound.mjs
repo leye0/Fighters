@@ -271,6 +271,11 @@ time+=1100;
 assert.equal(await roleEngine.play('interaction',()=>true,{voice:'worker',unitId:18}),true);
 assert.equal(roleEngine.phraseDecks.size,4,
   'each character and event uses its own separate phrase deck');
+roleEngine.forgetUnit(17);
+assert.equal(roleEngine.phraseDecks.size,1,
+  'the deceased unit releases its voice decks without clearing another voice');
+assert(roleEngine.phraseDecks.has('interaction:worker:18'),
+  'surviving characters keep their own phrase rotation');
 time+=500;
 assert.equal(await roleEngine.play('interaction',()=>true,{voice:'worker',variant:2}),true);
 assert.equal(roleEngine.lastSound.get('interaction:worker'),'interaction/worker_02.mp3',

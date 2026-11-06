@@ -19,21 +19,27 @@
  // Swept circle against expanded obstacle AABB, WarConquer's slab intersection.
  function segmentHitsBox(from,to,box,radius){
    let near=0,far=1;
-   for(const [start,delta,min,max] of [
-     [from.x,to.x-from.x,box.minX-radius,box.maxX+radius],
-     [from.z,to.z-from.z,box.minZ-radius,box.maxZ+radius]
-   ]){
-     if(Math.abs(delta)<1e-12){if(start<min||start>max)return false;}
-     else{
-       const a=(min-start)/delta,b=(max-start)/delta;
-       near=Math.max(near,Math.min(a,b));far=Math.min(far,Math.max(a,b));
-       if(near>far)return false;
-     }
+   // Same swept-slab test, without allocating nested arrays for each wall
+   // tested by each potential movement direction.
+   const dx=to.x-from.x,minX=box.minX-radius,maxX=box.maxX+radius;
+   if(Math.abs(dx)<1e-12){if(from.x<minX||from.x>maxX)return false;}
+   else{
+     const a=(minX-from.x)/dx,b=(maxX-from.x)/dx;
+     near=Math.max(near,Math.min(a,b));far=Math.min(far,Math.max(a,b));
+     if(near>far)return false;
+   }
+   const dz=to.z-from.z,minZ=box.minZ-radius,maxZ=box.maxZ+radius;
+   if(Math.abs(dz)<1e-12){if(from.z<minZ||from.z>maxZ)return false;}
+   else{
+     const a=(minZ-from.z)/dz,b=(maxZ-from.z)/dz;
+     near=Math.max(near,Math.min(a,b));far=Math.min(far,Math.max(a,b));
+     if(near>far)return false;
    }
    return true;
  }
  class Heap{
    constructor(){this.values=[];}
+   clear(){this.values.length=0;}
    get size(){return this.values.length;}
    push(item){
      const a=this.values;let i=a.length;a.push(item);
@@ -53,6 +59,13 @@
      this.version=0;this.obstacles=[];
      this.side=Math.ceil(2*halfSize/cellSize);
      this._blockedCache=new Int8Array(this.side*this.side).fill(-1);
+     // A* is synchronous. Reuse its largest temporary allocations across
+     // searches; a 112x112 grid otherwise creates ~147 KiB of typed arrays
+     // every time one unit requests a route.
+     const count=this.side*this.side;
+     this._pathCosts=new Float64Array(count);
+     this._pathParent=new Int32Array(count);
+     this._pathHeap=new Heap();
    }
    setObstacles(obstacles){
      if(!Array.isArray(obstacles)||obstacles.some(b=>
@@ -71,17 +84,21 @@
    }
    pointClear(p){
      const limit=this.halfSize-this.radius-.05;
-     return Math.abs(p.x)<=limit&&Math.abs(p.z)<=limit&&
-       (!this.region||this.region.contains(p.x,p.z,this.radius+.05))&&
-       !this.obstacles.some(b=>
-       b.shape==='polygon'?footprint.pointBlocked(p,b,this.radius):
-         pointInside(b,p.x,p.z,this.radius));
+     if(!(Math.abs(p.x)<=limit&&Math.abs(p.z)<=limit)||
+       (this.region&&!this.region.contains(p.x,p.z,this.radius+.05)))return false;
+     for(const b of this.obstacles){
+       if(b.shape==='polygon'?footprint.pointBlocked(p,b,this.radius):
+         pointInside(b,p.x,p.z,this.radius))return false;
+     }
+     return true;
    }
    segmentClear(from,to){
      if(!this.pointClear(from)||!this.pointClear(to))return false;
-     return !this.obstacles.some(b=>b.shape==='polygon'?
-       footprint.segmentBlocked(from,to,b,this.radius):
-       segmentHitsBox(from,to,b,this.radius));
+     for(const b of this.obstacles){
+       if(b.shape==='polygon'?footprint.segmentBlocked(from,to,b,this.radius):
+         segmentHitsBox(from,to,b,this.radius))return false;
+     }
+     return true;
    }
    index(x,z){return z*this.side+x;}
    coord(i){return {x:i%this.side,z:Math.floor(i/this.side)};}
@@ -99,11 +116,13 @@
      const x=-this.halfSize+c.x*this.cellSize,z=-this.halfSize+c.z*this.cellSize;
      const pad=this.radius+.04;
      const rect={minX:x,maxX:x+this.cellSize,minZ:z,maxZ:z+this.cellSize};
-     const blocked=(this.region&&!this.region.contains(x+this.cellSize/2,
-       z+this.cellSize/2,this.radius+.05))||this.obstacles.some(b=>b.shape==='polygon'?
-       footprint.cellBlocked(rect,b,pad):
-       x<=b.maxX+pad&&x+this.cellSize>=b.minX-pad&&
-         z<=b.maxZ+pad&&z+this.cellSize>=b.minZ-pad);
+     let blocked=!!(this.region&&!this.region.contains(x+this.cellSize/2,
+       z+this.cellSize/2,this.radius+.05));
+     if(!blocked)for(const b of this.obstacles){
+       if(b.shape==='polygon'?footprint.cellBlocked(rect,b,pad):
+         x<=b.maxX+pad&&x+this.cellSize>=b.minX-pad&&
+         z<=b.maxZ+pad&&z+this.cellSize>=b.minZ-pad){blocked=true;break;}
+     }
      this._blockedCache[id]=blocked?1:0;
      return blocked;
    }
@@ -128,13 +147,13 @@
      if(!this.inside(start)||!this.inside(end))return null;
      const startId=this.index(start.x,start.z),endId=this.index(end.x,end.z);
      const count=this.side*this.side;
-     const costs=new Float64Array(count).fill(Infinity);
-     const parent=new Int32Array(count).fill(-1);
+     const costs=this._pathCosts,parent=this._pathParent;
+     costs.fill(Infinity);parent.fill(-1);
      const heuristic=c=>{
        const dx=Math.abs(c.x-end.x),dz=Math.abs(c.z-end.z);
        return dx+dz+(Math.SQRT2-2)*Math.min(dx,dz);
      };
-     const heap=new Heap();costs[startId]=0;
+     const heap=this._pathHeap;heap.clear();costs[startId]=0;
      heap.push({id:startId,cost:0,priority:heuristic(start)});
      let explored=0;
      while(heap.size&&explored++<count*4){

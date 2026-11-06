@@ -198,6 +198,13 @@
         if(deck.remaining[0]===chosen)deck.last=deck.remaining.shift();
       }};
     }
+    forgetUnit(unitId){
+      // Units receive monotonically increasing IDs during a match. Once an
+      // actor dies, keeping its shuffled voice decks cannot affect playback.
+      const suffix=':'+unitId;
+      for(const key of this.phraseDecks.keys())
+        if(key.endsWith(suffix))this.phraseDecks.delete(key);
+    }
     // Original layered hammer impact: deep wooden strike, a ringing steel
     // overtone and a short noisy contact. Generated once per AudioContext,
     // without downloads or the old, thin repeating MP3 sample.

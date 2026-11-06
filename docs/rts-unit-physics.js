@@ -15,6 +15,16 @@
  const location=actor=>actor.root?.position||actor;
  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
  const MIN_SPACING=2*RADIUS+.14;
+ // Nine fixed steering directions, precomputed once instead of evaluating
+ // eighteen trigonometric functions for every moving unit at 60 Hz.
+ const steeringOptions=new Map([1,-1].map(side=>[side,
+  [0,.22*side,-.22*side,.43*side,-.43*side,
+   .68*side,-.68*side,1.02*side,-1.02*side].map(angle=>({
+    angle,c:Math.cos(angle),v:Math.sin(angle)
+   }))]));
+ const activeScratch=[];
+ const forceScratch=new Map();
+ const nearbyScratch=[];
  // Retained as a geometric *query* for QA; unlike buildings, agents
  // do not make a candidate impassable.
  function sweptCircleHit(start,end,obstacle,radius=RADIUS){
@@ -35,6 +45,10 @@
   for(const other of units){
    if(other===agent||other.dead)continue;
    const p=location(other);
+   // Exact broadphase rejection: a point outside this axis-aligned square
+   // cannot be inside the circular crowd influence radius.
+   if(Math.abs(end.x-p.x)>=preferred*1.7||
+      Math.abs(end.z-p.z)>=preferred*1.7)continue;
    const d=distance(end,p);
    if(d>=preferred*1.7)continue;
    // Smooth short-range repulsion, larger when predicted centers overlap.
@@ -80,25 +94,38 @@
   // Candidate velocities retain forward progress; local crowd pressure
   // chooses a lane when available. Forward remains a legal fallback.
   const side=(agent?.id||0)%2===0?1:-1;
-  const angles=[0,.22*side,-.22*side,.43*side,-.43*side,
-   .68*side,-.68*side,1.02*side,-1.02*side];
+  const angles=steeringOptions.get(side);
+  const previewDistance=Math.min(gap,Math.max(length,radius*2.9));
+  const landingWeight=clamp((gap-.45)/1.25,0,1);
+  // All nine candidate positions are within this conservative distance of
+  // 'from'. Filter the units ONCE, retaining their original order, instead
+  // of scanning the entire army for each of eighteen crowd evaluations.
+  let nearby=units;
+  if(units.length>10){
+   nearby=nearbyScratch;nearby.length=0;
+   const influence=Math.max(length,previewDistance)+
+     Math.max(radius*2+.14,MIN_SPACING)*1.7+1e-7;
+   for(const other of units){
+    if(other.dead||other===agent)continue;
+    const p=location(other);
+    if(Math.abs(p.x-from.x)<=influence&&Math.abs(p.z-from.z)<=influence)
+      nearby.push(other);
+   }
+  }
   let best=null,bestScore=-Infinity;
-  for(const angle of angles){
-   const c=Math.cos(angle),v=Math.sin(angle);
+  for(const {angle,c,v} of angles){
    const end={x:from.x+length*(ux*c-uz*v),z:from.z+length*(ux*v+uz*c)};
    if(!nav.segmentClear(from,end))continue;
    const progress=(gap-distance(end,destination))/length;
    // A look-ahead sample sees the nearby queue BEFORE the one-frame
    // displacement touches it. This is steering, not a swept hard collision.
-   const previewDistance=Math.min(gap,Math.max(length,radius*2.9));
    const preview={x:from.x+previewDistance*(ux*c-uz*v),
      z:from.z+previewDistance*(ux*v+uz*c)};
-   const crowdNow=crowdPenalty(end,from,agent,units,radius);
+   const crowdNow=crowdPenalty(end,from,agent,nearby,radius);
    const crowdAhead=nav.segmentClear(from,preview)?
-     crowdPenalty(preview,from,agent,units,radius):0;
+     crowdPenalty(preview,from,agent,nearby,radius):0;
    // Once inside the assigned formation slot's landing radius, continue
    // towards that slot instead of orbiting a nearby friend forever.
-   const landingWeight=clamp((gap-.45)/1.25,0,1);
    // A trapped actor gets a short forward-only recovery window. Other units
    // are soft obstacles, so a packed crowd must not permanently pin it down.
    const congestion=agent?.unstickSeconds>0?0:
@@ -113,13 +140,17 @@
  function separate(units,nav,radius=RADIUS,dt=1/60){
   // Gentle post-movement relaxation: use short capped nudges and do NOT
   // enforce a hard minimum distance when no free surrounding space exists.
-  const alive=units.filter(a=>!a.dead),minDistance=2*radius+.06;
+  const alive=activeScratch;alive.length=0;
+  for(const actor of units)if(!actor.dead)alive.push(actor);
+  const minDistance=2*radius+.06;
   const maxShift=clamp(dt*2.8,0,.09);
   let corrections=0;
-  const forces=new Map();
+  const forces=forceScratch;forces.clear();
   for(let i=0;i<alive.length;i++)for(let j=i+1;j<alive.length;j++){
    const a=alive[i],b=alive[j],ap=location(a),bp=location(b);
-   let dx=bp.x-ap.x,dz=bp.z-ap.z,d=Math.hypot(dx,dz);
+   let dx=bp.x-ap.x,dz=bp.z-ap.z;
+   if(Math.abs(dx)>=minDistance||Math.abs(dz)>=minDistance)continue;
+   let d=Math.hypot(dx,dz);
    if(d>=minDistance)continue;
    if(d<.00001){
     const angle=((a.id||i+1)*23+(b.id||j+1)*11)*2.399963229728653;

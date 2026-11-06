@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-const {RADIUS,sweptCircleHit,freeForUnit,watchMovement,step,separate,formationGoals}=require('../docs/rts-unit-physics.js');
+const {RADIUS,crowdPenalty,sweptCircleHit,freeForUnit,watchMovement,step,separate,formationGoals}=require('../docs/rts-unit-physics.js');
 const {Navigator}=require('../docs/rts-navigation.js');
 const unit=(id,x,z)=>({id,dead:false,root:{position:{x,z}}});
 const nav=new Navigator({halfSize:28,radius:RADIUS});
@@ -113,6 +113,57 @@ const noLateralRoom={
 for(let i=0;i<30;i++)separate(trapped,noLateralRoom,RADIUS,1/60);
 assert.equal(trapped[0].root.position.x,0,'Do not force apart through walls');
 assert.equal(trapped[1].root.position.x,0,'Do not force apart through walls');
+// The once-per-step conservative broadphase must yield bit-identical steering
+// to the historical scan of EVERY unit for EACH candidate direction.
+function referenceStep(from,destination,budget,agent,units,nav,radius=RADIUS){
+ const dx=destination.x-from.x,dz=destination.z-from.z;
+ const gap=Math.hypot(dx,dz);
+ if(gap<1e-8||budget<=0)return null;
+ const length=Math.min(budget,gap),ux=dx/gap,uz=dz/gap;
+ const side=(agent?.id||0)%2===0?1:-1;
+ const angles=[0,.22*side,-.22*side,.43*side,-.43*side,
+  .68*side,-.68*side,1.02*side,-1.02*side];
+ let best=null,bestScore=-Infinity;
+ for(const angle of angles){
+  const c=Math.cos(angle),v=Math.sin(angle);
+  const end={x:from.x+length*(ux*c-uz*v),z:from.z+length*(ux*v+uz*c)};
+  if(!nav.segmentClear(from,end))continue;
+  const progress=(gap-Math.hypot(end.x-destination.x,end.z-destination.z))/length;
+  const previewDistance=Math.min(gap,Math.max(length,radius*2.9));
+  const preview={x:from.x+previewDistance*(ux*c-uz*v),
+   z:from.z+previewDistance*(ux*v+uz*c)};
+  const crowdNow=crowdPenalty(end,from,agent,units,radius);
+  const crowdAhead=nav.segmentClear(from,preview)?
+   crowdPenalty(preview,from,agent,units,radius):0;
+  const landingWeight=Math.max(0,Math.min(1,(gap-.45)/1.25));
+  const congestion=agent?.unstickSeconds>0?0:
+   (crowdNow*.55+crowdAhead*1.25)*landingWeight;
+  const score=progress*1.5-congestion-Math.abs(angle)*.10;
+  if(score>bestScore){best=end;bestScore=score;}
+ }
+ return best;
+}
+const openNav={segmentClear:()=>true};
+const indexedUnits=Array.from({length:60},(_,i)=>
+ unit(200+i,(i%10)*.63-3,Math.floor(i/10)*.72-2));
+for(let frame=0;frame<18;frame++){
+ for(const actor of indexedUnits){
+  const from=actor.root.position;
+  const target={x:from.x+1.5+frame*.03,z:from.z+.6};
+  const ordinary=referenceStep(from,target,.055,actor,indexedUnits,openNav,RADIUS);
+  const accelerated=step(from,target,.055,actor,indexedUnits,openNav,RADIUS);
+  assert.deepEqual(accelerated,ordinary,
+   'Conservative crowd broadphase may not change movement direction');
+  if(accelerated){from.x=accelerated.x;from.z=accelerated.z;}
+ }
+}
+// Deaths and influence boundaries cannot accidentally suppress a nearby actor.
+indexedUnits[3].dead=true;
+for(const actor of indexedUnits.filter(a=>!a.dead)){
+ const p=actor.root.position,to={x:p.x-2,z:p.z+1};
+ assert.deepEqual(step(p,to,.05,actor,indexedUnits,openNav,RADIUS),
+  referenceStep(p,to,.05,actor,indexedUnits,openNav,RADIUS));
+}
 // Twenty soldiers placed beside a blocked building/corner each need a
 // DIFFERENT destination. Previously findSafeGoal snapped them to the same
 // cell and the crowd-stirring algorithm orbited those duplicate goals forever.

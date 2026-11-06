@@ -1031,11 +1031,17 @@ function buildingInDiscoveredZone(building,clan){
   // Large/irregular buildings are discovered by their perimeter as well as
   // their centre. Five axis samples alone could leave the model invisible
   // while a nearby soldier was already attacking the exposed corner.
-  return [[midX,midZ],[h.minX,midZ],[h.maxX,midZ],
-    [midX,h.minZ],[midX,h.maxZ],
-    [h.minX,h.minZ],[h.minX,h.maxZ],
-    [h.maxX,h.minZ],[h.maxX,h.maxZ]]
-    .some(([x,z])=>fogOfWar.exploredAt(x,z,clan));
+  // Keep the exact nine samples and short-circuit order without allocating
+  // nine coordinate arrays every time a health bar is updated.
+  return fogOfWar.exploredAt(midX,midZ,clan)||
+    fogOfWar.exploredAt(h.minX,midZ,clan)||
+    fogOfWar.exploredAt(h.maxX,midZ,clan)||
+    fogOfWar.exploredAt(midX,h.minZ,clan)||
+    fogOfWar.exploredAt(midX,h.maxZ,clan)||
+    fogOfWar.exploredAt(h.minX,h.minZ,clan)||
+    fogOfWar.exploredAt(h.minX,h.maxZ,clan)||
+    fogOfWar.exploredAt(h.maxX,h.minZ,clan)||
+    fogOfWar.exploredAt(h.maxX,h.maxZ,clan);
 }
 function groundSightSources(clan,structures=liveBuildings()){
   const ownership=clan==='witch'?'witch':'orcs';
@@ -1164,6 +1170,14 @@ const minimapRaster=document.createElement('canvas');
 minimapRaster.width=112;minimapRaster.height=112;
 const minimapRasterContext=minimapRaster.getContext('2d',{alpha:false});
 const minimapImage=minimapRasterContext.createImageData(112,112);
+// World-to-fog sampling coordinates never change: cache them instead of
+// allocating 12,544 {x,z} objects on every minimap repaint.
+const minimapFogIndices=new Int32Array(112*112);
+for(let row=0;row<112;row++)for(let col=0;col<112;col++){
+  const world=arena.toWorld((col+.5)/112*ARENA_SIZE-ARENA_HALF,
+    (row+.5)/112*ARENA_SIZE-ARENA_HALF);
+  minimapFogIndices[row*112+col]=fogOfWar.index(world.x,world.z);
+}
 // Raven scouting permanently discovers terrain but never creates a moving
 // bright patch that would betray each bird's position on the minimap.
 const minimapGroundFog=new window.FightersFog.FogGrid({halfSize:arena.worldHalf});
@@ -1179,10 +1193,8 @@ function drawMinimap(){
   const groundVisible=minimapGroundFog.maps[activeFaction].visible;
   // Resample the world-space visibility grids into the square camera-aligned
   // map. A simple X/Z drawImage would recreate the old diamond discrepancy.
-  for(let row=0;row<112;row++)for(let col=0;col<112;col++){
-    const world=arena.toWorld((col+.5)/112*ARENA_SIZE-ARENA_HALF,
-      (row+.5)/112*ARENA_SIZE-ARENA_HALF);
-    const index=fogOfWar.index(world.x,world.z),j=(row*112+col)*4;
+  for(let cell=0;cell<minimapFogIndices.length;cell++){
+    const index=minimapFogIndices[cell],j=cell*4;
     const light=index<0?0:Math.max(groundVisible[index],fog.explored[index]*.28)/255;
     paint[j]=Math.round(7+46*light);
     paint[j+1]=Math.round(10+90*light);
@@ -3602,6 +3614,9 @@ function releaseActor(actor){
   if(actor.dead)for(const mage of units)if(mage.soulJob===actor)cancelSoulJob(mage);
   cancelConstruction(actor);cancelWoodJob(actor);cancelFarmJob(actor);
   selected.delete(actor);
+  // Phrase history belongs to the departing witch, not to the match.
+  // Keep the remaining characters' voice identities and rotations intact.
+  if(actor.kind==='witch')witchSound.forgetUnit(actor.id);
   actor.mixer.stopAllAction();actor.mixer.uncacheRoot(actor.visual);
   // Every SkeletonUtils.clone owns one or more GPU bone textures. Removing
   // the actor from the scene does NOT release these WebGL allocations.
@@ -4023,7 +4038,8 @@ function navigateActor(actor,target,dt,mode){
   }
   const speed=actor.speed*dt;
   const budget=Math.max(0,Math.min(gap-(actor.route?0:arrival),speed));
-  const next=window.FightersUnitPhysics.step(from,waypoint,budget,actor,units,navigatorRTS,UNIT_RADIUS);
+  const next=window.FightersUnitPhysics.step(from,waypoint,budget,actor,units,
+    navigatorRTS,UNIT_RADIUS);
   if(!next){
     actor.route=null;actor.routeGoal=null;actor.routeAge=0;
     if(++actor.noStepFailures<3)return 'retrying';
