@@ -54,7 +54,8 @@ assert(!actor.raiding&&!actor.retaliationTarget,
 assert(!raid.attacked(actor,attacker,enemy),
  'A unit outside a raid must keep its normal defense rules');
 
-const html=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8')+'\n'+
+  readFileSync(new URL('../docs/rts-unit-tick.js',import.meta.url),'utf8');
 const entry=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
 assert(entry.includes('src="./rts-raiding.js"')&&
   entry.indexOf('src="./rts-raiding.js"')<entry.indexOf('src="./game.js"'),

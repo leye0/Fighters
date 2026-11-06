@@ -99,6 +99,10 @@ qu'après modification, vérification et intégration dans `main`.
 - [x] Extraire l'ordonnancement `stepGame(dt)` dans `rts-simulation.js` :
       phases nommées, ordre conservé, pas fixe de 1/60 s et rattrapage borné
       à douze ticks. Validé par tests Node et Chrome (run 42256932710).
+- [ ] Valider dans Chrome `rts-unit-tick.js` : logique d'attaque, poursuite,
+      défense de groupe et priorité des tâches d'ouvrier extraite de
+      `game.js`. Les 4 956 caractères de logique normalisés sont identiques
+      avant/après l'extraction ; tests Node et garde d'architecture verts.
 - [ ] Extraire progressivement les systèmes de simulation eux-mêmes du
       script HTML derrière les interfaces de l'ordonnanceur.
 - [ ] Sortir progressivement la logique des ouvriers, unités et bâtiments du

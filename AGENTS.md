@@ -20,6 +20,9 @@ modules (`docs/rts-contracts.d.ts`).
 - `docs/rts-match-state.js` : propriétaire des ressources or/bois/magie d'une partie,
   avec réinitialisation en valeurs neuves ; les autres systèmes ne gardent
   jamais leurs références après une nouvelle partie.
+- `docs/rts-unit-tick.js` : état et priorités des unités à chaque tick
+  (attaque, cible, poursuite, tâches, déplacement), avec services de navigation,
+  combat, animation et IA injectés une seule fois par `game.js`.
 - `docs/rts-orders.js` : transitions de commandes d'unités (déplacement,
   attaque, arrêt, réparations, mines, bois, coupes, récoltes, constructions, entraînement,
   améliorations, remboursements et progression des files de production) sans
@@ -51,6 +54,8 @@ modules (`docs/rts-contracts.d.ts`).
 - `scripts/test-*.mjs` : tests unitaires ; ajouter un test au système modifié.
 - `scripts/test-rts-architecture.mjs` : garde-fou des frontières de modules,
   includes HTML, ownership, déclencheurs QA et restauration d'assets épinglés.
+- `scripts/test-rts-unit-tick.mjs` : régressions des attaques en cours, des
+  nouveaux ordres, de l'ordre des tâches et des chemins bloqués.
 - `docs/rts-contracts.d.ts`, `scripts/contracts-smoke.ts` : contrats progressifs
   compilés en mode strict dans `contracts.yml`, déclenché uniquement si
   les déclarations ou ce workflow changent. Pas de TypeScript au runtime.

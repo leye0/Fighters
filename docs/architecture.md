@@ -21,7 +21,7 @@ dans [`../refactor.md`](../refactor.md).
 
 | Système | Fichiers principaux | Vérification ciblée |
 |---|---|---|
-| Simulation et déplacements | `rts-simulation.js`, `rts-unit-physics.js`, `rts-navigation.js` | `test-rts-simulation.mjs`, `test-rts-unit-physics.mjs`, `test-rts-navigation.mjs` |
+| Simulation et déplacements | `rts-simulation.js`, `rts-unit-tick.js`, `rts-unit-physics.js`, `rts-navigation.js` | `test-rts-simulation.mjs`, `test-rts-unit-tick.mjs`, `test-rts-unit-physics.mjs`, `test-rts-navigation.mjs` |
 | État de partie | `rts-match-state.js` (or, bois et magie), `game.js` (état restant, transitoire) | `test-rts-match-state.mjs`, Chrome `economy`, `combat` |
 | Ordres et tâches | `rts-orders.js`, règles `rts-repair.js`, `rts-farming.js` | `test-rts-orders.mjs`, `test-rts-worker-orders.mjs`, `test-rts-construction-orders.mjs`, `test-rts-production-orders.mjs` |
 | IA | `orc-strategy.js`, `witch-strategy.js`, `rts-ai-commands.js` | `test-orc-strategy.mjs`, `test-witch-strategy.mjs`, `test-rts-ai-commands.mjs` |
@@ -58,6 +58,9 @@ concurrence (voir `AGENTS.md`).
   `witch`/`orcs`/`neutral` des bâtiments.
 - La simulation demeure à **60 ticks/seconde** avec au plus 12 ticks de
   rattrapage par image. L'ordre des phases de `stepGame` est un contrat.
+- `rts-unit-tick.js` possède désormais l'arbitrage des priorités d'une unité
+  à chaque pas fixe. `game.js` lui injecte les systèmes concrets sans y
+  reconstruire la décision de combat, de poursuite ou de tâches d'ouvrier.
 - Ne pas créer de géométrie, matériau, son, tableau volumineux ou élément DOM
   inutile par tick. Un refactor ne doit changer ni sélection tactile, ni
   formes de collision, ni déplacements, ni musique.

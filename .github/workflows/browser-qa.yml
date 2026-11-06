@@ -42,6 +42,7 @@ on:
       - 'scripts/test-rts-walls.mjs'
       - 'docs/rts-unit-physics.js'
       - 'docs/rts-simulation.js'
+      - 'docs/rts-unit-tick.js'
       - 'docs/rts-match-state.js'
       - 'docs/rts-orders.js'
       - 'docs/rts-picking.js'
@@ -54,6 +55,7 @@ on:
       - 'docs/rts-assets.js'
       - 'scripts/test-rts-unit-physics.mjs'
       - 'scripts/test-rts-simulation.mjs'
+      - 'scripts/test-rts-unit-tick.mjs'
       - 'scripts/test-rts-architecture.mjs'
       - 'scripts/test-rts-chrome-retry.mjs'
       - 'scripts/test-rts-match-state.mjs'
@@ -131,6 +133,7 @@ jobs:
           node scripts/test-rts-effects.mjs
           node scripts/test-rts-unit-physics.mjs
           node scripts/test-rts-simulation.mjs
+          node scripts/test-rts-unit-tick.mjs
           node scripts/test-rts-architecture.mjs
           node scripts/test-rts-chrome-retry.mjs
           node scripts/test-rts-match-state.mjs
