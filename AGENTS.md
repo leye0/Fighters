@@ -13,11 +13,14 @@ et le rendu actuels sont des contraintes de non-régression.
 - `docs/rts-*.js`, `docs/orc-strategy.js`, `docs/witch-strategy.js` : règles de
   domaine ; privilégier des fonctions pures, déterministes et testables sous Node.
 - `docs/rts-simulation.js` : ordonnanceur déterministe à 60 Hz et budget de
-  rattrapage ; les phases nommées sont assemblées dans `docs/index.html`.
+  rattrapage ; les phases nommées sont assemblées dans `docs/game.js`.
   Préserver leur ordre exact et ne pas allouer d'objets à chaque tick.
 - `docs/rts-orders.js` : transitions de commandes d'unités (déplacement,
-  attaque) sans UI ni Three.js ; `docs/index.html` adapte les événements et
+  attaque) sans UI ni Three.js ; `docs/game.js` adapte les événements et
   les services, sans recopier les mutations de combat.
+- `docs/rts-picking.js` : sélection des silhouettes en coordonnées écran,
+  corbeaux, arbres, bois et emprises de bâtiments ; dépendances injectées
+  pour les tests sans navigateur, `docs/game.js` adapte Three.js et l'état.
 - `docs/rts-assets.js` : transfert binaire avec gzip, fallback et métriques ;
   aucune logique Three.js, scène ni DOM. `docs/game.js` reste responsable du
   parsing des GLB et de leur installation visuelle.

@@ -1617,87 +1617,18 @@ function screenPoint(actor){
   const rect=viewport.getBoundingClientRect();
   return {x:rect.left+(point.x+1)*rect.width/2,y:rect.top+(1-point.y)*rect.height/2};
 }
-function pickUnit(x,y,includeEnemies=false){
-  // Touch targets encompass the projected 3D silhouette, not a single point
-  // at the actor's feet. This makes tiny Quaternius witches usable on phones.
-  let found=null,best=Infinity;
-  const radius=viewport.clientWidth<760?41:30;
-  const rect=viewport.getBoundingClientRect();
-  const screen=(p)=>({
-    x:rect.left+(p.x+1)*rect.width/2,
-    y:rect.top+(1-p.y)*rect.height/2
-  });
-  for(const actor of units){
-    // Friendly units always remain tappable, even between fog grid updates.
-    if(actor.dead||(!includeEnemies&&actor.kind!==activeFaction)||
-      (actor.kind!==activeFaction&&
-       !visibleToPlayer(actor.root.position.x,actor.root.position.z)))continue;
-    const world=actor.root.position;
-    const base=screen(new THREE.Vector3(world.x,.05,world.z).project(camera));
-    const top=screen(new THREE.Vector3(world.x,2.45,world.z).project(camera));
-    const vx=top.x-base.x,vy=top.y-base.y,lengthSq=vx*vx+vy*vy;
-    const t=lengthSq?clamp(((x-base.x)*vx+(y-base.y)*vy)/lengthSq,0,1):0;
-    const d=Math.hypot(x-(base.x+vx*t),y-(base.y+vy*t));
-    if(d<radius&&d<best){found=actor;best=d;}
-  }
-  return found;
-}
-function pickRaven(x,y){
-  if(activeFaction!=='witch'||!ravenModelLoaded)return null;
-  const rect=viewport.getBoundingClientRect();
-  let chosen=null,best=viewport.clientWidth<760?37:25;
-  for(const raven of ravenFlock.ravens){
-    if(!visibleToPlayer(raven.x,raven.z))continue;
-    const p=new THREE.Vector3(raven.x,raven.y+.33,raven.z).project(camera);
-    if(p.z< -1||p.z>1)continue;
-    const px=rect.left+(p.x+1)*rect.width/2;
-    const py=rect.top+(1-p.y)*rect.height/2;
-    const distance=Math.hypot(x-px,y-py);
-    if(distance<best){chosen=raven;best=distance;}
-  }
-  return chosen;
-}
-function pickBuilding(groundPoint){
-  // A tap selects only the projected GLB X/Z footprint shown by the outline.
-  // Roofs and the 3D visual AABB must not enlarge the interactive area.
-  if(!groundPoint||!visibleToPlayer(groundPoint.x,groundPoint.z))return null;
-  return liveBuildings().find(building=>building.root?.visible&&building.hitbox&&
-    window.FightersFootprints.inside(groundPoint,building.hitbox))||null;
-}
-function pickTree(x,y){
-  const rect=viewport.getBoundingClientRect();
-  const radius=viewport.clientWidth<760?28:20;
-  let chosen=null,best=radius;
-  for(let i=0;i<forestLayout.length;i++){
-    const tree=forestLayout[i];
-    if(tree.felled||!visibleToPlayer(tree.x,tree.z))continue;
-    const project=height=>{
-      const p=new THREE.Vector3(tree.x,height,tree.z).project(camera);
-      return {x:rect.left+(p.x+1)*rect.width/2,
-        y:rect.top+(1-p.y)*rect.height/2};
-    };
-    const base=project(.12),top=project(tree.height*.75);
-    const dx=top.x-base.x,dy=top.y-base.y,span=dx*dx+dy*dy;
-    const t=span?clamp(((x-base.x)*dx+(y-base.y)*dy)/span,0,1):0;
-    const distance=Math.hypot(x-(base.x+t*dx),y-(base.y+t*dy));
-    if(distance<best){chosen=i;best=distance;}
-  }
-  return chosen;
-}
-function pickLogBundle(x,y){
-  const rect=viewport.getBoundingClientRect();
-  const radius=viewport.clientWidth<760?29:22;
-  let chosen=null,best=radius;
-  for(const index of woodDeposits.keys()){
-    const tree=forestLayout[index];
-    if(!visibleToPlayer(tree.x,tree.z))continue;
-    const p=new THREE.Vector3(tree.x,.24,tree.z).project(camera);
-    const sx=rect.left+(p.x+1)*rect.width/2,sy=rect.top+(1-p.y)*rect.height/2;
-    const distance=Math.hypot(x-sx,y-sy);
-    if(distance<best){chosen=index;best=distance;}
-  }
-  return chosen;
-}
+const screenPicking=window.FightersPicking.create({
+  viewport,project:(x,y,z)=>new THREE.Vector3(x,y,z).project(camera),
+  units:()=>units,ravens:()=>ravenFlock.ravens,ravensReady:()=>ravenModelLoaded,
+  trees:()=>forestLayout,woodDeposits:()=>woodDeposits,buildings:liveBuildings,
+  activeFaction:()=>activeFaction,visible:visibleToPlayer,
+  inside:window.FightersFootprints.inside,clamp
+});
+function pickUnit(x,y,includeEnemies=false){return screenPicking.unit(x,y,includeEnemies);}
+function pickRaven(x,y){return screenPicking.raven(x,y);}
+function pickBuilding(pos){return screenPicking.building(pos);}
+function pickTree(x,y){return screenPicking.tree(x,y);}
+function pickLogBundle(x,y){return screenPicking.logBundle(x,y);}
 const activeOrderPings=new Set();
 function removeOrderPing(el){
   if(!activeOrderPings.delete(el))return;

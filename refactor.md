@@ -73,6 +73,9 @@ qu'après modification, vérification et intégration dans `main`.
 
 - [ ] Extraire la sélection, les gestes tactiles, la caméra et les commandes
       utilisateur dans des modules d'entrée distincts.
+- [ ] Finir les gestes tactiles, la sélection d'unités et le contrôle caméra :
+      les cinq sélecteurs spatiaux (unités, corbeaux, bâtiments, arbres et bois)
+      sont désormais extraits dans `rts-picking.js` et testés sous Node.
 - [ ] Extraire le HUD, les boutons de commandes et la mini-carte du moteur.
 - [ ] Séparer le chargement/caching des GLB et sons de leur utilisation par les
       systèmes de rendu et d'animation.
@@ -82,6 +85,10 @@ qu'après modification, vérification et intégration dans `main`.
       (runs 42258497349 et 42258497356).
 - [ ] Décomposer progressivement `docs/game.js` en composants/systèmes
       indépendants, au-delà du premier déplacement mécanique.
+- [ ] Extraire du script d'intégration le transport des modèles binaires
+      (`rts-assets.js`) avec tests gzip, fallback et métriques.
+- [ ] Extraire le calcul des cibles cliquables de l'interface dans
+      `rts-picking.js`, sans modifier les tolérances mobile/desktop.
 
 ## 4. Tests et validation
 
