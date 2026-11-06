@@ -47,6 +47,10 @@ modules (`docs/rts-contracts.d.ts`).
 - `docs/rts-mining-cycle.js` : attribution automatique des mineurs, extraction
   au contact et retour physique de l'or à une base alliée. Le trésor (réinitialisé
   à chaque partie), le chargement 3D et les alertes sont injectés par `game.js`.
+- `docs/rts-wood-cycle.js` : attribution des bûcherons, choix des arbres visibles,
+  coupe, réservation des bûches, ramassage et livraison du bois. Le module
+  restitue les bûches à l'annulation d'un trajet chargé ; les modèles 3D,
+  messages et ressources courantes sont adaptés par `game.js`.
 - `docs/rts-unit-tick.js` : état et priorités des unités à chaque tick
   (attaque, cible, poursuite, tâches, déplacement), avec services de navigation,
   combat, animation et IA injectés une seule fois par `game.js`.
@@ -104,6 +108,8 @@ modules (`docs/rts-contracts.d.ts`).
   nouveaux ordres, de l'ordre des tâches et des chemins bloqués.
 - `scripts/test-rts-mining-cycle.mjs` : attribution IA, brouillard, navigation,
   durée d'extraction, transport, crédit uniquement à la livraison et annulation.
+- `scripts/test-rts-wood-cycle.mjs` : planification orc/sorcière, arbres hors
+  danger, coupe, ramassage, réservations, restitution, livraison et retry.
 - `docs/rts-contracts.d.ts`, `scripts/contracts-smoke.ts` : contrats progressifs
   compilés en mode strict dans `contracts.yml`, déclenché uniquement si
   les déclarations ou ce workflow changent. Pas de TypeScript au runtime.

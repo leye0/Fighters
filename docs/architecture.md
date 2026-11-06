@@ -24,7 +24,7 @@ dans [`../refactor.md`](../refactor.md).
 |---|---|---|
 | Simulation et déplacements | `rts-simulation.js`, `rts-food-cycle.js`, `rts-raven-distraction.js`, `rts-healing-cycle.js`, `rts-soul-harvester.js`, `rts-unit-tick.js`, `rts-unit-physics.js`, `rts-navigation.js` | `test-rts-simulation.mjs`, `test-rts-food-cycle.mjs`, `test-rts-raven-distraction.mjs`, `test-rts-healing-cycle.mjs`, `test-rts-soul-harvester.mjs`, `test-rts-unit-tick.mjs`, `test-rts-unit-physics.mjs`, `test-rts-navigation.mjs` |
 | État de partie | `rts-match-state.js` (or, bois et magie), `rts-world-state.js` (collections d'entités), `game.js` (scalaires restants, transitoire) | `test-rts-match-state.mjs`, `test-rts-world-state.mjs`, Chrome `economy`, `combat` |
-| Ordres et tâches | `rts-orders.js`, `rts-mining-cycle.js`, `rts-orc-forager.js`, `rts-orc-hunt-planner.js`, règles `rts-repair.js`, `rts-farming.js` | `test-rts-orders.mjs`, `test-rts-mining-cycle.mjs`, `test-rts-worker-orders.mjs`, `test-rts-orc-forager.mjs`, `test-rts-orc-hunt-planner.mjs`, `test-rts-construction-orders.mjs`, `test-rts-production-orders.mjs` |
+| Ordres et tâches | `rts-orders.js`, `rts-mining-cycle.js`, `rts-wood-cycle.js`, `rts-orc-forager.js`, `rts-orc-hunt-planner.js`, règles `rts-repair.js`, `rts-farming.js` | `test-rts-orders.mjs`, `test-rts-mining-cycle.mjs`, `test-rts-wood-cycle.mjs`, `test-rts-worker-orders.mjs`, `test-rts-orc-forager.mjs`, `test-rts-orc-hunt-planner.mjs`, `test-rts-construction-orders.mjs`, `test-rts-production-orders.mjs` |
 | IA | `orc-strategy.js`, `witch-strategy.js`, `rts-ai-observations.js`, `rts-ai-commands.js` | `test-orc-strategy.mjs`, `test-witch-strategy.mjs`, `test-rts-ai-observations.mjs`, `test-rts-ai-commands.mjs` |
 | Commandes joueur | `rts-picking.js`, `rts-camera.js`, `rts-gestures.js`, `rts-player-actions.js` | `test-rts-picking.mjs`, `test-rts-camera.mjs`, `test-rts-gestures.mjs`, `test-rts-player-actions.mjs`, QA Chrome tactile |
 | Modèles et ressources | `rts-assets.js`, `rts-model-assets.js`, `assets/runtime-assets.lock`, `package.json`, `package-lock.json`, `scripts/use-pinned-runtime-assets.sh` | `test-rts-assets.mjs`, `test-rts-model-assets.mjs`, `test-runtime-build-manifest.mjs`, QA Chrome, Pages |
@@ -82,6 +82,10 @@ Le démarrage normal de Pages ou Chrome ne fait jamais `npm ci`.
   `extract`/`carry` et l'annulation. Le transport d'or n'est payé qu'à la base ;
   le crédit de la nouvelle partie, les compteurs et les visuels 3D sont adaptés
   par `game.js` sans capturer un ancien objet de ressources.
+- `rts-wood-cycle.js` possède l'attribution des coupes, les phases de ramassage
+  et la livraison ; une cargaison interrompue redevient un dépôt réservable.
+  La direction d'IA, les seuils de bois et le brouillard sont lus au moment
+  de la décision, tandis que `game.js` conserve les scènes et les effets.
 - Les états `witch`/`orc` des unités ne sont pas synonymes des `clanId`
   `witch`/`orcs`/`neutral` des bâtiments.
 - La simulation demeure à **60 ticks/seconde** avec au plus 12 ticks de
