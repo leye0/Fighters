@@ -47,7 +47,7 @@ jobs:
           set -euo pipefail
           node --check scripts/browser-qa.mjs
           for f in scripts/browser-qa/*.mjs; do node --check "$f"; done
-          for f in scripts/test-rts-*.mjs scripts/test-orc-strategy.mjs scripts/test-witch-strategy.mjs; do
+          for f in scripts/test-rts-*.mjs scripts/test-orc-appearance.mjs scripts/test-orc-strategy.mjs scripts/test-witch-strategy.mjs; do
             node "$f"
           done
           python3 -m http.server 8000 --directory docs >/tmp/fighters-assets-preview.log 2>&1 &
