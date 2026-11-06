@@ -16,12 +16,13 @@ export async function connectWithStartupRetry(attach,restart){
  }
 }
 
-export function createChromeDriver(){
+export function createChromeDriver({launchExecutable}={}){
  mkdirSync('captures',{recursive:true});
- let profile,chrome;
+ let profile,chrome,launchCount=0;
  function launch(){
   profile=mkdtempSync(join(tmpdir(),'fighters-rts-'));
-  chrome=spawn(process.env.CHROME_BIN||'google-chrome',[
+  const executable=launchExecutable?.(launchCount++)||process.env.CHROME_BIN||'google-chrome';
+  chrome=spawn(executable,[
    '--headless=new','--no-sandbox','--disable-dev-shm-usage','--use-gl=angle',
    '--use-angle=swiftshader','--enable-unsafe-swiftshader','--enable-webgl',
    '--window-size=1365,900','--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'
@@ -33,7 +34,11 @@ export function createChromeDriver(){
  function check(value,message){if(!value)throw Error(message);}
  async function attach(){
   const path=join(profile,'DevToolsActivePort');
-  for(let i=0;i<120&&!existsSync(path);i++)await sleep(250);
+  for(let i=0;i<120&&!existsSync(path);i++){
+   if(chrome.exitCode!==null)
+    throw Error('Chrome exited before debugger started (code '+chrome.exitCode+')');
+   await sleep(250);
+  }
   check(existsSync(path),'Chrome debugger did not start');
   const port=readFileSync(path,'utf8').split('\n')[0];
   const tabs=await(await fetch('http://127.0.0.1:'+port+'/json/list')).json();

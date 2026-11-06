@@ -72,6 +72,10 @@ modules (`docs/rts-contracts.d.ts`).
   relance à profil neuf est permise si DevTools ne démarre pas sur le runner.
 - `scripts/test-rts-chrome-retry.mjs` : simule un échec DevTools puis vérifie
   la relance unique, la limite de tentatives et les chemins de nettoyage.
+  Avec `FIGHTERS_REAL_CHROME_RETRY=1`, échoue réellement au premier lancement
+  et vérifie un vrai navigateur Chromium/Chrome de remplacement. Ce test est
+  isolé dans `chrome-retry.yml` : pas de démarrage supplémentaire pour chaque
+  test WebGL régulier.
 - `assets/README.md`, `assets/runtime-assets.lock` : méthode d'ajout et version
   immuable des modèles préparés, avec SHA-256. Ne pas changer le verrou sans
   une nouvelle Release vérifiée.

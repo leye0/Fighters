@@ -29,7 +29,7 @@ dans [`../refactor.md`](../refactor.md).
 | Modèles et ressources | `rts-assets.js`, `rts-model-assets.js`, `assets/runtime-assets.lock`, `scripts/use-pinned-runtime-assets.sh` | `test-rts-assets.mjs`, `test-rts-model-assets.mjs`, QA Chrome, Pages |
 | Monde et visibilité | `rts-map.js`, `rts-footprint.js`, `rts-fog.js`, `rts-forest.js` | `test-rts-map.mjs`, `test-rts-footprint.mjs`, `test-rts-fog.mjs`, `test-rts-forest.mjs` |
 | Présentation | `styles/game.css`, `rts-minimap.js`, `rts-hud.js`, `game.js` (composition HUD/rendu) | `test-rts-minimap.mjs`, `test-rts-hud.mjs`, Chrome `visual`, `economy`, `combat` |
-| Validation navigateur | `scripts/browser-qa/` par scénario, `chrome-driver.mjs` commun | Workflow `browser-qa.yml` |
+| Validation navigateur | `scripts/browser-qa/` par scénario, `chrome-driver.mjs` commun | Workflows `browser-qa.yml` et `chrome-retry.yml` (relance réelle ciblée) |
 | Architecture et intégration | `index.html`, `AGENTS.md`, `architecture.md`, `browser-qa.yml` | `test-rts-architecture.mjs` (frontières, includes, ownership et CI) |
 | Contrats de domaine | `rts-contracts.d.ts`, `scripts/contracts-smoke.ts` | `contracts.yml` avec compilateur TypeScript strict (sur modification seulement) |
 

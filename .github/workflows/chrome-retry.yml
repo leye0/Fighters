@@ -1,0 +1,27 @@
+name: Fighters — verify real Chrome startup recovery
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/chrome-retry.yml'
+      - 'scripts/browser-qa/chrome-driver.mjs'
+      - 'scripts/test-rts-chrome-retry.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  chrome-restart:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Kill failed process then verify a replacement Chrome DevTools session
+        env:
+          FIGHTERS_REAL_CHROME_RETRY: '1'
+        run: node scripts/test-rts-chrome-retry.mjs

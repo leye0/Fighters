@@ -142,11 +142,14 @@ qu'après modification, vérification et intégration dans `main`.
       `rts-minimap.js` : cache de brouillard 112×112, visibilité distincte des
       corbeaux, bâtiments et unités, cadrage caméra inchangés :
       run 42264465440, trois scénarios verts.
-- [ ] Séparer le chargement/caching des GLB et sons de leur utilisation par les
-      systèmes de rendu et d'animation.
-- [ ] Valider dans Chrome l'extraction du chargeur GLTF/Meshopt, du parsing
+- [x] Séparer le chargement/caching des GLB et sons de leur utilisation par les
+      systèmes de rendu et d'animation. Les voix/effets utilisent déjà
+      `rts-sound.js`/`rts-effects.js` (AudioContext, téléchargements et caches
+      autonomes) ; les GLB utilisent maintenant `rts-model-assets.js`.
+- [x] Valider dans Chrome l'extraction du chargeur GLTF/Meshopt, du parsing
       binaire et du cache de modèles de niveaux dans `rts-model-assets.js` ;
       tests Node ajoutés, scènes non partagées toujours chargées séparément.
+      Run 42277316420 : visual, economy et combat verts.
 - [x] Réduire `docs/index.html` à l'import map, au DOM et au démarrage de
       l'application (111 lignes initiales, puis includes des nouveaux modules).
       Le module `docs/game.js` a été déplacé à
@@ -198,7 +201,9 @@ qu'après modification, vérification et intégration dans `main`.
       La politique de retry simulée est testée sous Node sur `main`
       (commit add7089) : échec initial, succès à la deuxième tentative,
       échec terminal et nettoyage. Un essai d'échec réel de Chrome reste à
-      effectuer avant de cocher.
+      effectuer avant de cocher. Workflow dédié `chrome-retry.yml` ajouté :
+      il simule un premier processus Chrome mort puis vérifie la seconde
+      connexion DevTools sur un vrai navigateur GitHub Actions.
 - [x] Faire une QA Chrome/WebGL complète après les extractions caméra, IA et
       le durcissement du démarrage de Chrome : run 42262289649,
       visual/economy/combat verts (la relance sur erreur reste à simuler).

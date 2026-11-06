@@ -11,6 +11,7 @@ const html=read('docs/index.html');
 const game=read('docs/game.js');
 const qaWorkflow=read('.github/workflows/browser-qa.yml');
 const pagesWorkflow=read('.github/workflows/pages.yml');
+const retryWorkflow=read('.github/workflows/chrome-retry.yml');
 const architecture=read('docs/architecture.md');
 const agentGuide=read('AGENTS.md');
 
@@ -72,5 +73,9 @@ assert(!/run:\s*bash scripts\/prepare-runtime-assets\.sh/.test(qaWorkflow),
 const self='scripts/test-rts-architecture.mjs';
 assert(qaWorkflow.includes(`'${self}'`),'architecture test changes must trigger QA');
 assert(qaWorkflow.includes(`node ${self}`),'architecture tests must run in CI');
+assert(retryWorkflow.includes("'scripts/browser-qa/chrome-driver.mjs'")&&
+  retryWorkflow.includes("'scripts/test-rts-chrome-retry.mjs'")&&
+  retryWorkflow.includes("FIGHTERS_REAL_CHROME_RETRY: '1'"),
+  'real Chrome recovery should have an isolated, path-triggered CI smoke test');
 console.log(`PASS ${boundaries.length} module boundaries, browser entrypoints, `+
   'ownership and pinned-asset CI invariants');
