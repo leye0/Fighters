@@ -1683,6 +1683,11 @@ const unitOrders=window.FightersOrders.create({
   cancelSoulJob,
   cancelFoodJob:cancelOrcFoodJob
 });
+const workerOrders=window.FightersOrders.createWorkerOrders({
+  canRepair:repairRules.canRepair,isWorker:roles.isWorker,canMine,
+  cancelConstruction,cancelWoodJob,cancelRepair,cancelFarmJob,
+  cancelSoulJob,cancelFoodJob:cancelOrcFoodJob,cancelMineJob
+});
 function issueMove(destination,{spacing=1.35,withinRadius=Infinity}={}){
   const actors=[...selected].filter(actor=>!actor.dead&&actor.kind===activeFaction);
   unitOrders.move(actors,destination,{spacing,withinRadius});
@@ -2598,17 +2603,7 @@ function tickConstructWorker(actor,dt){
 function cancelRepair(actor){actor.repairJob=null;}
 function orderRepair(actors,building,{byAI=false}={}){
   if(!running||paused)return false;
-  let assigned=0;
-  for(const actor of actors){
-    if(!repairRules.canRepair(actor,building)||(byAI&&actor.workerRetryTime>0))continue;
-    cancelConstruction(actor);cancelWoodJob(actor);cancelFarmJob(actor);
-    cancelSoulJob(actor);cancelOrcFoodJob(actor);
-    cancelMineJob(actor);actor.treeJob=null;actor.berryJob=null;actor.healJob=null;
-    actor.repairJob={buildingId:building.id};actor.workHitTimer=0;
-    actor.destination=null;actor.attackOrder=null;actor.route=null;
-    actor.routeVersion=-1;actor.routeAge=0;actor.approachCache=null;
-    assigned++;
-  }
+  const assigned=workerOrders.repair(actors,building,{byAI});
   if(assigned){
     if(!byAI){
       const box=building.hitbox;
@@ -3695,17 +3690,7 @@ function canMine(actor,mine){
     mine.clanId==='neutral'&&!mine.destroyed;
 }
 function orderMine(actors,mine){
-  if(!mine||mine.type!=='mine')return false;
-  let issued=0;
-  for(const actor of actors){
-    if(!canMine(actor,mine))continue;
-    cancelConstruction(actor);cancelWoodJob(actor);cancelRepair(actor);
-    cancelFarmJob(actor);actor.treeJob=null;actor.berryJob=null;
-    cancelMineJob(actor);
-    actor.mineJob={mineId:mine.id,phase:'extract',progress:0,cycles:0,amount:0};
-    actor.destination=null;actor.route=null;actor.approachCache=null;
-    issued++;
-  }
+  const issued=workerOrders.mine(actors,mine);
   if(issued){showBanner('EXTRACTION D’OR');acknowledgePlayerOrder(actors);refreshHUD();}
   return issued>0;
 }
@@ -3793,19 +3778,7 @@ function cancelWoodJob(actor){
 }
 function orderCollectWood(actors,index,{byAI=false}={}){
   const deposit=woodDeposits.get(index);
-  if(!deposit)return false;
-  let assigned=0;
-  for(const actor of actors){
-    if(actor.dead||!roles.isWorker(actor)||
-      (deposit.reservedBy&&deposit.reservedBy!==actor.id))continue;
-    cancelConstruction(actor);cancelWoodJob(actor);cancelRepair(actor);
-    cancelMineJob(actor);cancelFarmJob(actor);actor.treeJob=null;actor.berryJob=null;
-    actor.woodJob={index,phase:'pickup',progress:0,amount:0,goal:null};
-    deposit.reservedBy=actor.id;
-    actor.destination=null;actor.attackOrder=null;actor.route=null;
-    actor.approachCache=null;assigned++;
-    break; // One bundle is a single physical resource, never double-counted.
-  }
+  const assigned=workerOrders.collectWood(actors,index,deposit);
   if(assigned){if(!byAI)showBanner('RAMASSAGE DES BÛCHES');refreshHUD();}
   return assigned>0;
 }
@@ -3929,16 +3902,7 @@ function assignWitchLumberjack(){
 }
 function orderChop(actors,index,{byAI=false}={}){
   const tree=forestLayout[index];
-  if(!tree||tree.felled)return false;
-  let assigned=0;
-  for(const actor of actors){
-    if(actor.dead||!roles.isWorker(actor))continue;
-    cancelConstruction(actor);cancelWoodJob(actor);cancelRepair(actor);
-    cancelMineJob(actor);cancelFarmJob(actor);actor.berryJob=null;
-    actor.treeJob={index,progress:0,goal:null};
-    actor.destination=null;actor.attackOrder=null;actor.route=null;
-    actor.approachCache=null;assigned++;
-  }
+  const assigned=workerOrders.chop(actors,index,tree);
   if(assigned){if(!byAI){showBanner('COUPE DU BOIS');acknowledgePlayerOrder(actors);}refreshHUD();}
   return assigned>0;
 }
@@ -4011,17 +3975,7 @@ function cancelFarmJob(actor){
   if(actor.carryWheat)actor.carryWheat.visible=false;
 }
 function orderHarvest(actors,garden){
-  if(!garden||garden.type!=='garden'||garden.destroyed)return false;
-  let assigned=0;
-  for(const actor of actors){
-    if(actor.kind!=='witch'||actor.dead||!roles.isWorker(actor))continue;
-    cancelConstruction(actor);cancelWoodJob(actor);cancelRepair(actor);
-    cancelMineJob(actor);actor.treeJob=null;actor.berryJob=null;
-    cancelFarmJob(actor);
-    actor.farmJob={gardenId:garden.id,plotIndex:-1,progress:0,phase:'harvest',amount:0};
-    actor.destination=null;actor.attackOrder=null;actor.route=null;actor.approachCache=null;
-    assigned++;
-  }
+  const assigned=workerOrders.harvest(actors,garden);
   if(assigned){showBanner('RÉCOLTE DU POTAGER');acknowledgePlayerOrder(actors);refreshHUD();}
   return assigned>0;
 }

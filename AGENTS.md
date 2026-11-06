@@ -16,8 +16,8 @@ et le rendu actuels sont des contraintes de non-régression.
   rattrapage ; les phases nommées sont assemblées dans `docs/game.js`.
   Préserver leur ordre exact et ne pas allouer d'objets à chaque tick.
 - `docs/rts-orders.js` : transitions de commandes d'unités (déplacement,
-  attaque) sans UI ni Three.js ; `docs/game.js` adapte les événements et
-  les services, sans recopier les mutations de combat.
+  attaque, réparations, mines, bois, coupes, récoltes) sans UI ni Three.js ;
+  `docs/game.js` adapte les événements et services sans recopier les mutations.
 - `docs/rts-picking.js` : sélection des silhouettes en coordonnées écran,
   corbeaux, arbres, bois et emprises de bâtiments ; dépendances injectées
   pour les tests sans navigateur, `docs/game.js` adapte Three.js et l'état.

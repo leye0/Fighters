@@ -60,6 +60,9 @@ qu'après modification, vérification et intégration dans `main`.
       Tests Node et Chrome verts (run 42257656954).
 - [ ] Faire passer `repair`, `build`, `harvest` et les autres ordres dans ce
       service, puis cocher l'isolation complète des commandes ci-dessus.
+- [ ] Extraire et valider les ordres d'ouvriers `repair`, `mine`, `collectWood`,
+      `chop`, `harvest` dans `rts-orders.js` avec des tests Node ; l'ordonnanceur
+      de construction et les activités automatiques restent à isoler.
 - [x] Extraire l'ordonnancement `stepGame(dt)` dans `rts-simulation.js` :
       phases nommées, ordre conservé, pas fixe de 1/60 s et rattrapage borné
       à douze ticks. Validé par tests Node et Chrome (run 42256932710).

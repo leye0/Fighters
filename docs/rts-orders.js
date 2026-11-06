@@ -57,5 +57,91 @@
     return Object.freeze({move,attack});
   }
 
-  return Object.freeze({create});
+  // The same worker-order transitions are used by taps and the faction AIs.
+  // Keep world effects (sounds, banners, HUD, payment) in the game adapter.
+  function createWorkerOrders({canRepair,isWorker,canMine,cancelConstruction,
+    cancelWoodJob,cancelRepair,cancelFarmJob,cancelSoulJob,cancelFoodJob,cancelMineJob}){
+    if([canRepair,isWorker,canMine,cancelConstruction,cancelWoodJob,cancelRepair,
+      cancelFarmJob,cancelSoulJob,cancelFoodJob,cancelMineJob].some(fn=>typeof fn!=='function'))
+      throw Error('Missing worker order service');
+
+    function repair(actors,building,{byAI=false}={}){
+      let assigned=0;
+      for(const actor of actors){
+        if(!canRepair(actor,building)||(byAI&&actor.workerRetryTime>0))continue;
+        cancelConstruction(actor);cancelWoodJob(actor);cancelFarmJob(actor);
+        cancelSoulJob(actor);cancelFoodJob(actor);
+        cancelMineJob(actor);actor.treeJob=null;actor.berryJob=null;actor.healJob=null;
+        actor.repairJob={buildingId:building.id};actor.workHitTimer=0;
+        actor.destination=null;actor.attackOrder=null;actor.route=null;
+        actor.routeVersion=-1;actor.routeAge=0;actor.approachCache=null;
+        assigned++;
+      }
+      return assigned;
+    }
+
+    function mine(actors,building){
+      if(!building||building.type!=='mine')return 0;
+      let assigned=0;
+      for(const actor of actors){
+        if(!canMine(actor,building))continue;
+        cancelConstruction(actor);cancelWoodJob(actor);cancelRepair(actor);
+        cancelFarmJob(actor);actor.treeJob=null;actor.berryJob=null;
+        cancelMineJob(actor);
+        actor.mineJob={mineId:building.id,phase:'extract',progress:0,cycles:0,amount:0};
+        actor.destination=null;actor.route=null;actor.approachCache=null;
+        assigned++;
+      }
+      return assigned;
+    }
+
+    function collectWood(actors,index,deposit){
+      if(!deposit)return 0;
+      for(const actor of actors){
+        if(actor.dead||!isWorker(actor)||
+          (deposit.reservedBy&&deposit.reservedBy!==actor.id))continue;
+        cancelConstruction(actor);cancelWoodJob(actor);cancelRepair(actor);
+        cancelMineJob(actor);cancelFarmJob(actor);actor.treeJob=null;actor.berryJob=null;
+        actor.woodJob={index,phase:'pickup',progress:0,amount:0,goal:null};
+        deposit.reservedBy=actor.id;
+        actor.destination=null;actor.attackOrder=null;actor.route=null;
+        actor.approachCache=null;
+        return 1; // A physical bundle can be reserved by only one worker.
+      }
+      return 0;
+    }
+
+    function chop(actors,index,tree){
+      if(!tree||tree.felled)return 0;
+      let assigned=0;
+      for(const actor of actors){
+        if(actor.dead||!isWorker(actor))continue;
+        cancelConstruction(actor);cancelWoodJob(actor);cancelRepair(actor);
+        cancelMineJob(actor);cancelFarmJob(actor);actor.berryJob=null;
+        actor.treeJob={index,progress:0,goal:null};
+        actor.destination=null;actor.attackOrder=null;actor.route=null;
+        actor.approachCache=null;assigned++;
+      }
+      return assigned;
+    }
+
+    function harvest(actors,garden){
+      if(!garden||garden.type!=='garden'||garden.destroyed)return 0;
+      let assigned=0;
+      for(const actor of actors){
+        if(actor.kind!=='witch'||actor.dead||!isWorker(actor))continue;
+        cancelConstruction(actor);cancelWoodJob(actor);cancelRepair(actor);
+        cancelMineJob(actor);actor.treeJob=null;actor.berryJob=null;
+        cancelFarmJob(actor);
+        actor.farmJob={gardenId:garden.id,plotIndex:-1,progress:0,phase:'harvest',amount:0};
+        actor.destination=null;actor.attackOrder=null;actor.route=null;actor.approachCache=null;
+        assigned++;
+      }
+      return assigned;
+    }
+
+    return Object.freeze({repair,mine,collectWood,chop,harvest});
+  }
+
+  return Object.freeze({create,createWorkerOrders});
 });
