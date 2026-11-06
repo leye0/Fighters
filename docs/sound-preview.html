@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Fighters — Écoute des sons de lames</title>
+  <style>
+    :root{color-scheme:dark;font-family:system-ui,-apple-system,sans-serif;
+      background:#11171a;color:#e9ece5}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;padding:max(22px,env(safe-area-inset-top)) 16px 40px}
+    main{max-width:720px;margin:auto}
+    header{margin-bottom:24px}
+    h1{font-size:clamp(1.55rem,5vw,2.3rem);margin:.4em 0}
+    h2{font-size:1.18rem;color:#e9c991;margin:24px 0 12px}
+    p{color:#b9c5c4;line-height:1.55}
+    .pill{display:inline-block;color:#c6dfbd;background:#243b33;padding:6px 10px;
+      border-radius:999px;font-size:.8rem}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:12px}
+    article{background:#1a2428;border:1px solid #405157;border-radius:14px;padding:16px}
+    article strong{display:block;margin-bottom:4px;font-size:1.05rem}
+    small{color:#a6b7ba}
+    audio{display:block;width:100%;margin:13px 0 8px}
+    a{color:#a7d7f6}
+    details{margin-top:10px;border-top:1px solid #33444a;padding-top:10px}
+    summary{cursor:pointer;color:#c8d7dc;font-size:.9rem}
+    .note{background:#243033;border-left:3px solid #e9c991;padding:14px;border-radius:8px}
+    footer{margin-top:30px;font-size:.85rem;color:#9aaeb0}
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <span class="pill">Fighters · Audit audio</span>
+    <h1>Écoute des sons de lames</h1>
+    <p>Les six enregistrements exacts utilisés dans le jeu, convertis en
+      <strong>MP3</strong> pour les écouter facilement sur téléphone.
+      Les fichiers MP3 ne remplacent pas ceux du jeu.</p>
+  </header>
+  <h2>Épée qui fend l’air · 2 sons</h2>
+  <section class="grid">
+    <article><strong>Mouvement 1</strong><small>Kenney RPG Audio · knife_slice</small>
+      <audio controls preload="none" src="./sounds/previews/sword/swing-1.mp3"></audio>
+      <a href="./sounds/previews/sword/swing-1.mp3">Ouvrir le MP3</a>
+      <details><summary>Comparer à l’OGG original</summary>
+        <audio controls preload="none" src="./sounds/effects/sword/swing-1.ogg"></audio></details>
+    </article>
+    <article><strong>Mouvement 2</strong><small>Kenney RPG Audio · knife_slice_2</small>
+      <audio controls preload="none" src="./sounds/previews/sword/swing-2.mp3"></audio>
+      <a href="./sounds/previews/sword/swing-2.mp3">Ouvrir le MP3</a>
+      <details><summary>Comparer à l’OGG original</summary>
+        <audio controls preload="none" src="./sounds/effects/sword/swing-2.ogg"></audio></details>
+    </article>
+  </section>
+  <h2>Chocs métalliques · 4 sons</h2>
+  <section class="grid">
+    <article><strong>Impact 1</strong><small>Kenney Impact Sounds · metal_medium_000</small>
+      <audio controls preload="none" src="./sounds/previews/sword/hit-1.mp3"></audio>
+      <a href="./sounds/previews/sword/hit-1.mp3">Ouvrir le MP3</a>
+      <details><summary>Comparer à l’OGG original</summary>
+        <audio controls preload="none" src="./sounds/effects/sword/hit-1.ogg"></audio></details>
+    </article>
+    <article><strong>Impact 2</strong><small>Kenney Impact Sounds · metal_medium_001</small>
+      <audio controls preload="none" src="./sounds/previews/sword/hit-2.mp3"></audio>
+      <a href="./sounds/previews/sword/hit-2.mp3">Ouvrir le MP3</a>
+      <details><summary>Comparer à l’OGG original</summary>
+        <audio controls preload="none" src="./sounds/effects/sword/hit-2.ogg"></audio></details>
+    </article>
+    <article><strong>Impact 3</strong><small>Kenney Impact Sounds · metal_medium_002</small>
+      <audio controls preload="none" src="./sounds/previews/sword/hit-3.mp3"></audio>
+      <a href="./sounds/previews/sword/hit-3.mp3">Ouvrir le MP3</a>
+      <details><summary>Comparer à l’OGG original</summary>
+        <audio controls preload="none" src="./sounds/effects/sword/hit-3.ogg"></audio></details>
+    </article>
+    <article><strong>Impact 4</strong><small>Kenney Impact Sounds · metal_medium_003</small>
+      <audio controls preload="none" src="./sounds/previews/sword/hit-4.mp3"></audio>
+      <a href="./sounds/previews/sword/hit-4.mp3">Ouvrir le MP3</a>
+      <details><summary>Comparer à l’OGG original</summary>
+        <audio controls preload="none" src="./sounds/effects/sword/hit-4.ogg"></audio></details>
+    </article>
+  </section>
+  <h2>Comment interpréter le résultat</h2>
+  <p class="note">Si ces MP3 te paraissent eux aussi ridicules, le problème vient
+    des enregistrements choisis. Si les MP3 sont bons, mais pas le son dans le
+    jeu, il faudra corriger le mixage, la spatialisation ou le décodage.
+    Tu peux aussi comparer directement MP3 et OGG avec les volets de chaque carte.</p>
+  <footer>Sons CC0 de Kenney · prévisualisation seulement · aucun changement
+    au moteur audio de Fighters.</footer>
+</main>
+</body>
+</html>
