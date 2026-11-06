@@ -41,8 +41,10 @@ on:
       - 'scripts/test-rts-walls.mjs'
       - 'docs/rts-unit-physics.js'
       - 'docs/rts-simulation.js'
+      - 'docs/rts-orders.js'
       - 'scripts/test-rts-unit-physics.mjs'
       - 'scripts/test-rts-simulation.mjs'
+      - 'scripts/test-rts-orders.mjs'
       - 'docs/orc-strategy.js'
       - 'docs/witch-strategy.js'
       - 'docs/rts-roles.js'
@@ -105,6 +107,7 @@ jobs:
           node scripts/test-rts-effects.mjs
           node scripts/test-rts-unit-physics.mjs
           node scripts/test-rts-simulation.mjs
+          node scripts/test-rts-orders.mjs
           node scripts/test-orc-strategy.mjs
           node scripts/test-witch-strategy.mjs
           node scripts/test-rts-roles.mjs

@@ -55,8 +55,11 @@ qu'après modification, vérification et intégration dans `main`.
       les variables libres partagées par des dizaines de fonctions.
 - [ ] Isoler les commandes (`move`, `attack`, `repair`, `build`, `harvest`, etc.)
       derrière des fonctions de domaine réutilisables et testables.
-- [ ] Extraire l'ordonnancement `stepGame(dt)` et les systèmes de simulation
-      derrière des interfaces explicites, en conservant le pas fixe de 1/60 s.
+- [x] Extraire l'ordonnancement `stepGame(dt)` dans `rts-simulation.js` :
+      phases nommées, ordre conservé, pas fixe de 1/60 s et rattrapage borné
+      à douze ticks. Validé par tests Node et Chrome (run 42256932710).
+- [ ] Extraire progressivement les systèmes de simulation eux-mêmes du
+      script HTML derrière les interfaces de l'ordonnanceur.
 - [ ] Sortir progressivement la logique des ouvriers, unités et bâtiments du
       script intégré à `docs/index.html`.
 - [ ] Séparer la décision stratégique des deux IA de l'exécution des commandes.
@@ -77,10 +80,12 @@ qu'après modification, vérification et intégration dans `main`.
       `combat`, `dome` et interaction tactile, avec un pilote Chrome partagé.
       Les tests tactiles restent exécutés par le groupe `visual`.
 - [ ] Ajouter des tests ciblés pour chaque commande extraite du fichier HTML.
-- [ ] Isoler les contrôles `window.__fightersQA` derrière le mode QA et une
-      interface de test explicite.
+- [x] Isoler l'interface `window.__fightersQA` derrière le mode `?qa=1`,
+      sans l'exposer aux parties normales ; QA Chrome vérifiée.
 - [ ] Mesurer les temps de tests et les coûts GitHub Actions avant/après.
-- [ ] Faire une QA Chrome/WebGL complète après chaque lot d'extractions.
+- [x] Faire une QA Chrome/WebGL complète après le premier lot : simulation
+      et garde QA (run 42256932710 : visual, economy, combat verts).
+- [ ] Répéter la QA Chrome/WebGL complète après les prochaines extractions.
 
 ## Définition de « terminé »
 

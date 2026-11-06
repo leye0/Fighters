@@ -33,6 +33,7 @@ document.addEventListener('touchend',event=>{
 <script src="./rts-navigation.js"></script>
 <script src="./rts-unit-physics.js"></script>
 <script src="./rts-simulation.js"></script>
+<script src="./rts-orders.js"></script>
 <script src="./rts-raiding.js"></script>
 <script src="./orc-strategy.js"></script>
 <script src="./witch-strategy.js"></script>
@@ -1845,31 +1846,24 @@ function pingAttackTarget(target){
     x:target.root.position.x,z:target.root.position.z,y:1.2
   },'attack');
 }
+const unitOrders=window.FightersOrders.create({
+  navigation:navigatorRTS,
+  formationGoals:window.FightersUnitPhysics.formationGoals,
+  cancelMoveWork:actor=>{
+    cancelConstruction(actor);cancelWoodJob(actor);cancelRepair(actor);
+    cancelSoulJob(actor);cancelMineJob(actor);cancelFarmJob(actor);
+    actor.treeJob=null;actor.berryJob=null;actor.healJob=null;
+  },
+  endRaid:window.FightersRaiding.end,
+  beginRaid:window.FightersRaiding.begin,
+  canAttack:(actor,target)=>!actor.dead&&roles.isFighter(actor)&&enemyOf(actor,target),
+  isBuilding,
+  cancelSoulJob,
+  cancelFoodJob:cancelOrcFoodJob
+});
 function issueMove(destination,{spacing=1.35,withinRadius=Infinity}={}){
   const actors=[...selected].filter(actor=>!actor.dead&&actor.kind===activeFaction);
-  for(const actor of actors){cancelConstruction(actor);cancelWoodJob(actor);cancelRepair(actor);
-    cancelSoulJob(actor);
-    cancelMineJob(actor);cancelFarmJob(actor);actor.treeJob=null;actor.berryJob=null;
-    actor.healJob=null;}
-  // Make one reservation per soldier, BEFORE movement begins. The old grid
-  // independently snapped blocked offsets to the same nearest safe cell.
-  const goals=window.FightersUnitPhysics.formationGoals(actors,destination,navigatorRTS,{spacing});
-  actors.forEach((actor,i)=>{
-    let goal=goals[i];
-    // Keep a requested sanctuary order even if the coarse formation planner
-    // cannot reserve a slot from the unit's current position. Movement can
-    // retry routing when the environment changes; the open centre is valid.
-    if(!goal&&withinRadius<Infinity&&navigatorRTS.pointClear(destination))
-      goal={...destination};
-    if(goal&&Math.hypot(goal.x-destination.x,goal.z-destination.z)>withinRadius&&
-      (navigatorRTS.segmentClear(actor.root.position,destination)||
-        navigatorRTS.plan(actor.root.position,destination)))goal={...destination};
-    actor.destination=goal;
-    actor.attackOrder=null;actor.approachCache=null;
-    window.FightersRaiding.end(actor);
-    actor.route=null;actor.routeVersion=-1;actor.routeAge=0;
-    actor.defenseAnchor=null;actor.navWatch=null;actor.unreachableTarget=null;
-  });
+  unitOrders.move(actors,destination,{spacing,withinRadius});
   if(actors.length){
     showOrderPing({x:destination.x,z:destination.z,y:.1},'move');
     acknowledgePlayerOrder(actors);
@@ -3350,20 +3344,7 @@ function approachBuilding(actor,building){
 }
 function orderAttack(actors,target){
   if(!target||target.destroyed||target.dead)return false;
-  let issued=0;
-  for(const actor of actors){
-    if(actor.dead||!roles.isFighter(actor)||!enemyOf(actor,target))continue;
-    cancelSoulJob(actor);
-    cancelOrcFoodJob(actor);
-    actor.attackOrder=target;actor.destination=null;actor.route=null;actor.routeAge=0;
-    if(isBuilding(target))window.FightersRaiding.begin(actor);
-    else window.FightersRaiding.end(actor);
-    actor.berryJob=null;actor.healJob=null;actor.ravenDistraction=null;
-    actor.defenseAnchor=null;actor.navWatch=null;
-    actor.unreachableTarget=null;actor.unreachableTime=0;
-    actor.approachCache=null;
-    issued++;
-  }
+  const issued=unitOrders.attack(actors,target);
   if(issued){attackMode=false;pingAttackTarget(target);
     acknowledgePlayerOrder(actors.filter(actor=>actor.attackOrder===target),'attack');
     refreshHUD();}

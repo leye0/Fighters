@@ -12,6 +12,9 @@ et le rendu actuels sont des contraintes de non-régression.
 - `docs/rts-simulation.js` : ordonnanceur déterministe à 60 Hz et budget de
   rattrapage ; les phases nommées sont assemblées dans `docs/index.html`.
   Préserver leur ordre exact et ne pas allouer d'objets à chaque tick.
+- `docs/rts-orders.js` : transitions de commandes d'unités (déplacement,
+  attaque) sans UI ni Three.js ; `docs/index.html` adapte les événements et
+  les services, sans recopier les mutations de combat.
 - `docs/styles/` : présentation CSS ; ne doit pas modifier les règles du jeu.
 - `scripts/test-*.mjs` : tests unitaires ; ajouter un test au système modifié.
 - `scripts/browser-qa.mjs` : orchestration des scénarios Chrome/WebGL.
