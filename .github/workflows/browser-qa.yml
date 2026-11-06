@@ -54,6 +54,7 @@ on:
       - 'scripts/test-rts-orders.mjs'
       - 'scripts/test-rts-worker-orders.mjs'
       - 'scripts/test-rts-construction-orders.mjs'
+      - 'scripts/test-rts-production-orders.mjs'
       - 'scripts/test-rts-picking.mjs'
       - 'scripts/test-rts-camera.mjs'
       - 'scripts/test-rts-minimap.mjs'
@@ -125,6 +126,7 @@ jobs:
           node scripts/test-rts-orders.mjs
           node scripts/test-rts-worker-orders.mjs
           node scripts/test-rts-construction-orders.mjs
+          node scripts/test-rts-production-orders.mjs
           node scripts/test-rts-picking.mjs
           node scripts/test-rts-camera.mjs
           node scripts/test-rts-minimap.mjs

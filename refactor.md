@@ -63,8 +63,11 @@ qu'après modification, vérification et intégration dans `main`.
       Tests Node et Chrome verts (run 42257656954).
 - [ ] Faire passer `repair`, `build`, `harvest` et les autres ordres dans ce
       service, puis cocher l'isolation complète des commandes ci-dessus.
-- [ ] Valider dans Chrome l'assignation de construction déplacée dans
-      `rts-orders.js` (ouvrier préféré, paiement, remise à zéro des ressources).
+- [x] Valider dans Chrome l'assignation de construction déplacée dans
+      `rts-orders.js` (ouvrier préféré, paiement, remise à zéro des ressources) :
+      run 42262989882, trois scénarios verts.
+- [ ] Valider sous Chrome les files de formation et d'amélioration, sorties
+      dans `rts-orders.js` avec coûts, annulations et remboursements testés.
 - [x] Extraire et valider les ordres d'ouvriers `repair`, `mine`, `collectWood`,
       `chop`, `harvest` dans `rts-orders.js` avec des tests Node et Chrome
       (run 42261206611). La construction et les activités automatiques restent.
@@ -75,9 +78,10 @@ qu'après modification, vérification et intégration dans `main`.
       script HTML derrière les interfaces de l'ordonnanceur.
 - [ ] Sortir progressivement la logique des ouvriers, unités et bâtiments du
       script intégré à `docs/index.html`.
-- [ ] Séparer la décision stratégique des deux IA de l'exécution des commandes.
-- [ ] Valider en Chrome l'exécution des actions Orc/Sorcière extraite dans
-      `rts-ai-commands.js` ; les directeurs restent responsables des décisions.
+- [x] Séparer la décision stratégique des deux IA de l'exécution des commandes :
+      directeurs `*-strategy.js`, exécution `rts-ai-commands.js`.
+- [x] Valider en Chrome l'exécution des actions Orc/Sorcière extraite dans
+      `rts-ai-commands.js` ; run 42262289649, trois scénarios verts.
 
 ## 3. Rendu et interface
 
@@ -86,14 +90,17 @@ qu'après modification, vérification et intégration dans `main`.
 - [ ] Finir les gestes tactiles, la sélection d'unités et le contrôle caméra :
       les cinq sélecteurs spatiaux (unités, corbeaux, bâtiments, arbres et bois)
       sont désormais extraits dans `rts-picking.js` et testés sous Node.
-- [ ] Valider le contrôleur de caméra `rts-camera.js` en Chrome après ses tests
-      de déplacement et cadrage mobile/desktop.
-- [ ] Extraire le HUD, les boutons de commandes et la mini-carte du moteur.
-- [ ] Valider sous Chrome le moteur DOM `rts-hud.js` (ressources, boutons,
-      barres de santé) ; la politique de commandes reste dans `game.js`.
-- [ ] Valider sous Chrome l'extraction du dessin de mini-carte dans
+- [x] Valider le contrôleur de caméra `rts-camera.js` en Chrome après ses tests
+      de déplacement et cadrage mobile/desktop : run 42262289649.
+- [x] Extraire le HUD (ressources, boutons, barres de santé) et la mini-carte
+      dans `rts-hud.js` et `rts-minimap.js`. Les décisions sur les boutons et
+      les entrées restent dans `game.js` en attente d'autres extractions.
+- [x] Valider sous Chrome le moteur DOM `rts-hud.js` (ressources, boutons,
+      barres de santé) : run 42264828100, trois scénarios verts.
+- [x] Valider sous Chrome l'extraction du dessin de mini-carte dans
       `rts-minimap.js` : cache de brouillard 112×112, visibilité distincte des
-      corbeaux, bâtiments et unités, cadrage caméra inchangés.
+      corbeaux, bâtiments et unités, cadrage caméra inchangés :
+      run 42264465440, trois scénarios verts.
 - [ ] Séparer le chargement/caching des GLB et sons de leur utilisation par les
       systèmes de rendu et d'animation.
 - [x] Réduire `docs/index.html` à l'import map, au DOM et au démarrage de
@@ -133,8 +140,9 @@ qu'après modification, vérification et intégration dans `main`.
 - [ ] Valider une relance Chrome automatique si DevTools ne démarre pas :
       le scénario `economy` du run 42259828733 a échoué au démarrage du
       navigateur, pas sur le jeu ; relance unique intégrée dans le driver.
-- [ ] Faire une QA Chrome/WebGL complète après les extractions caméra, IA et
-      le durcissement du démarrage de Chrome.
+- [x] Faire une QA Chrome/WebGL complète après les extractions caméra, IA et
+      le durcissement du démarrage de Chrome : run 42262289649,
+      visual/economy/combat verts (la relance sur erreur reste à simuler).
 
 ## Définition de « terminé »
 

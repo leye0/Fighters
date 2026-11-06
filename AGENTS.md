@@ -18,7 +18,8 @@ modules (`docs/rts-contracts.d.ts`).
   rattrapage ; les phases nommées sont assemblées dans `docs/game.js`.
   Préserver leur ordre exact et ne pas allouer d'objets à chaque tick.
 - `docs/rts-orders.js` : transitions de commandes d'unités (déplacement,
-  attaque, réparations, mines, bois, coupes, récoltes, constructions) sans UI ni Three.js ;
+  attaque, réparations, mines, bois, coupes, récoltes, constructions, entraînement,
+  améliorations et remboursements) sans UI ni Three.js ;
   `docs/game.js` adapte les événements et services sans recopier les mutations.
 - `docs/rts-picking.js` : sélection des silhouettes en coordonnées écran,
   corbeaux, arbres, bois et emprises de bâtiments ; dépendances injectées

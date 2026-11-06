@@ -22,7 +22,7 @@ dans [`../refactor.md`](../refactor.md).
 | Système | Fichiers principaux | Vérification ciblée |
 |---|---|---|
 | Simulation et déplacements | `rts-simulation.js`, `rts-unit-physics.js`, `rts-navigation.js` | `test-rts-simulation.mjs`, `test-rts-unit-physics.mjs`, `test-rts-navigation.mjs` |
-| Ordres et tâches | `rts-orders.js`, règles `rts-repair.js`, `rts-farming.js` | `test-rts-orders.mjs`, `test-rts-worker-orders.mjs`, `test-rts-construction-orders.mjs` |
+| Ordres et tâches | `rts-orders.js`, règles `rts-repair.js`, `rts-farming.js` | `test-rts-orders.mjs`, `test-rts-worker-orders.mjs`, `test-rts-construction-orders.mjs`, `test-rts-production-orders.mjs` |
 | IA | `orc-strategy.js`, `witch-strategy.js`, `rts-ai-commands.js` | `test-orc-strategy.mjs`, `test-witch-strategy.mjs`, `test-rts-ai-commands.mjs` |
 | Commandes joueur | `rts-picking.js`, `rts-camera.js`, à terme gestes tactiles | `test-rts-picking.mjs`, `test-rts-camera.mjs`, QA Chrome tactile |
 | Modèles et ressources | `rts-assets.js`, `assets/runtime-assets.lock`, `scripts/use-pinned-runtime-assets.sh` | `test-rts-assets.mjs`, QA Chrome, Pages |
@@ -43,6 +43,10 @@ concurrence (voir `AGENTS.md`).
   déjà implémenté. Les fonctions extraites reçoivent leurs dépendances en
   arguments, et les ressources remplacées lors du reset doivent être lues via
   des fonctions (`getGold`, `getWood`) plutôt que capturées une fois au boot.
+- Les files de production et les chantiers utilisent `getGold()` et `getWood()`
+  au moment de la commande afin de respecter le remplacement des ressources
+  lors du démarrage d'une nouvelle partie. Les boutons n'appellent que le
+  service de domaine et rafraîchissent ensuite le HUD.
 - Les états `witch`/`orc` des unités ne sont pas synonymes des `clanId`
   `witch`/`orcs`/`neutral` des bâtiments.
 - La simulation demeure à **60 ticks/seconde** avec au plus 12 ticks de

@@ -172,5 +172,45 @@
     return Object.freeze({assign});
   }
 
-  return Object.freeze({create,createWorkerOrders,createConstructionOrders});
+  function createProductionOrders({roles,trainingDuration,upgradeCost,
+    arcanistUnlocked,canTrainOrcRole,maxQueue,getGold,getWood}){
+    function queue(building,kind,role='melee',{running,paused}){
+      if(!running||paused||!building||building.destroyed||building.clanId==='neutral'||
+        building.type==='mine'||building.queue.length>=maxQueue)return false;
+      const faction=building.clanId==='witch'?'witch':'orc';
+      if(kind==='witch'&&(faction!=='witch'||building.type!=='witch-house')||
+         kind==='orc'&&(faction!=='orc'||building.type!=='barrack'))return false;
+      if(kind==='witch'&&role==='ranged'&&!arcanistUnlocked())return false;
+      if(kind==='orc'&&!canTrainOrcRole(role))return false;
+      let cost,duration,woodCost=0;
+      if(kind==='upgrade'){
+        if(building.level+building.queue.filter(job=>job.kind==='upgrade').length>=3)
+          return false;
+        cost=upgradeCost(building);woodCost=40;duration=6+building.level*2;
+      }else{
+        cost=roles.profile(faction,role).cost;
+        duration=trainingDuration(building,kind,role);
+      }
+      const gold=getGold(),wood=getWood();
+      if(cost===null||gold[faction]<cost||wood[faction]<woodCost)return false;
+      gold[faction]-=cost;wood[faction]-=woodCost;
+      building.queue.push({kind,role:kind==='upgrade'?null:role,cost,woodCost,duration});
+      return true;
+    }
+
+    function cancel(building,index){
+      if(!building?.queue[index])return false;
+      const [order]=building.queue.splice(index,1);
+      const clan=building.clanId==='witch'?'witch':'orc';
+      const gold=getGold(),wood=getWood();
+      gold[clan]+=order.cost;wood[clan]+=order.woodCost||0;
+      if(index===0)building.progress=0;
+      return true;
+    }
+
+    return Object.freeze({queue,cancel});
+  }
+
+  return Object.freeze({create,createWorkerOrders,createConstructionOrders,
+    createProductionOrders});
 });

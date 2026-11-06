@@ -1661,37 +1661,22 @@ function upgradeCost(building){
   if(!building||['mine','garden','stone-circle','wall'].includes(building.type)||building.clanId==='neutral')return null;
   return building.level>=3?null:(building.clanId==='witch'?230:160)+building.level*100;
 }
+const productionOrders=window.FightersOrders.createProductionOrders({
+  roles,trainingDuration,upgradeCost,arcanistUnlocked,canTrainOrcRole,
+  maxQueue:MAX_QUEUE,getGold:()=>gold,getWood:()=>wood
+});
 function queueOrder(building,kind,role='melee'){
-  if(!running||paused||!building||building.destroyed||building.clanId==='neutral'||
-    building.type==='mine'||building.queue.length>=MAX_QUEUE)return false;
-  const faction=building.clanId==='witch'?'witch':'orc';
-  if(kind==='witch'&&(faction!=='witch'||building.type!=='witch-house')||
-     kind==='orc'&&(faction!=='orc'||building.type!=='barrack'))return false;
-  if(kind==='witch'&&role==='ranged'&&!arcanistUnlocked())return false;
-  if(kind==='orc'&&!canTrainOrcRole(role))return false;
-  let cost,duration,woodCost=0;
-  if(kind==='upgrade'){
-    if(building.level+building.queue.filter(j=>j.kind==='upgrade').length>=3)return false;
-    cost=upgradeCost(building);woodCost=40;duration=6+building.level*2;
-  }else{
-    cost=roles.profile(faction,role).cost;
-    duration=trainingDuration(building,kind,role);
-  }
-  if(cost===null||gold[faction]<cost||wood[faction]<woodCost)return false;
-  gold[faction]-=cost;wood[faction]-=woodCost;
-  building.queue.push({kind,role:kind==='upgrade'?null:role,cost,woodCost,duration});
-  refreshHUD();return true;
+  const queued=productionOrders.queue(building,kind,role,{running,paused});
+  if(queued)refreshHUD();
+  return queued;
 }
 function issueTrain(role='melee'){return queueOrder(witchBuilding,'witch',role);}
 function issueOrcTrain(building=selectedBuilding,role='melee'){return queueOrder(building,'orc',role);}
 function issueUpgrade(building=selectedBuilding){return queueOrder(building,'upgrade');}
 function cancelOrder(building,index){
-  if(!building?.queue[index])return false;
-  const [order]=building.queue.splice(index,1);
-  const clan=building.clanId==='witch'?'witch':'orc';
-  gold[clan]+=order.cost;wood[clan]+=order.woodCost||0;
-  if(index===0)building.progress=0;
-  refreshHUD();return true;
+  const canceled=productionOrders.cancel(building,index);
+  if(canceled)refreshHUD();
+  return canceled;
 }
 function buildingPerimeterSites(building,clearance=UNIT_RADIUS+.08){
   // A source mesh can have thousands of microscopic contour edges. Sample
