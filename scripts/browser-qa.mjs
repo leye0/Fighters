@@ -707,8 +707,9 @@ async function run(){
   'External real low-poly hare GLB',30000);
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.hares.models===16&&s.hares.animals.length===16&&
-   s.hares.animals.every(h=>h.active),
-   'Sixteen independent hares should share a genuine loaded 3D model');
+   s.hares.animals.some(h=>h.active)&&
+   s.hares.animals.every(h=>h.active||h.respawnIn>0),
+   'Sixteen independent hares must share a genuine 3D model, including hares awaiting respawn');
  const hareAnimation=await evaluate("(()=>{let highest=0,landings=0;"+
    "for(let i=0;i<8;i++){window.__fightersQA.advance(.21);"+
    "for(const h of window.__fightersQA.snapshot().hares.animals){"+
