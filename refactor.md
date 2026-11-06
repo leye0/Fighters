@@ -70,9 +70,10 @@ qu'après modification, vérification et intégration dans `main`.
       run 42269109685, terminé en 11 secondes.
 - [ ] Regrouper l'état mutable d'une partie dans un contexte explicite ; limiter
       les variables libres partagées par des dizaines de fonctions.
-- [ ] Centraliser les conteneurs d'unités, sélection, bâtiments, chantiers et
+- [x] Centraliser les conteneurs d'unités, sélection, bâtiments, chantiers et
       mémoire ennemie dans `rts-world-state.js` sans changer les références ni
-      l'ordre du reset ; vérifier les tests Node et les trois suites Chrome.
+      l'ordre du reset ; tests Node et run 42283713354 : trois suites Chrome
+      `visual`, `economy` et `combat` vertes.
 - [x] Valider dans Chrome l'extraction d'or/bois dans `rts-match-state.js` :
       économie neuve à chaque partie, paiement, remboursement, mines et récoltes.
       Run 42266733318, trois scénarios verts.
@@ -119,6 +120,8 @@ qu'après modification, vérification et intégration dans `main`.
       script HTML derrière les interfaces de l'ordonnanceur.
 - [ ] Sortir progressivement la logique des ouvriers, unités et bâtiments du
       script intégré à `docs/index.html`.
+- [ ] Extraire la poursuite, la capture, l'interruption et la consommation des
+      proies orcs dans `rts-orc-forager.js`, avec preuves Node et QA Chrome.
 - [x] Séparer la décision stratégique des deux IA de l'exécution des commandes :
       directeurs `*-strategy.js`, exécution `rts-ai-commands.js`.
 - [x] Valider en Chrome l'exécution des actions Orc/Sorcière extraite dans

@@ -31,6 +31,7 @@ const boundaries=[
   ['rts-unit-tick','FightersUnitTick'],
   ['rts-match-state','FightersMatchState'],
   ['rts-world-state','FightersWorldState'],
+  ['rts-orc-forager','FightersOrcForager'],
   ['rts-orders','FightersOrders'],
   ['rts-picking','FightersPicking'],
   ['rts-camera','FightersCamera'],
