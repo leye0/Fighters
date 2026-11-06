@@ -331,7 +331,7 @@ async function run(){
  await evaluate('window.__fightersQA.reset()');
  console.log('PASS SIX CHARACTER ROLES: shared bodies and costume geometry, separate worker/melee/ranged stats.');
  // Repair is a direct building tap with a selected worker, including the
- // starting witch house. It must not select the building or spend resources.
+ // starting witch house. It spends resources and deselects the worker.
  await evaluate("window.__fightersQA.enableOrcAI(false);window.__fightersQA.setBuildingHealth('witch-house-01',300);"+
    "window.__fightersQA.selectUnit('witch',1)");
  check(await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>"+
@@ -341,7 +341,7 @@ async function run(){
  const houseTap=await evaluate("window.__fightersQA.buildingScreenPoint('witch-house-01')");
  await evaluate('window.__fightersQA.tap('+houseTap.x+','+houseTap.y+')');
  s=await evaluate('window.__fightersQA.snapshot()');
- check(s.witches[1].repairTargetId==='witch-house-01'&&s.selectedIds.includes(s.witches[1].id)&&
+ check(s.witches[1].repairTargetId==='witch-house-01'&&!s.selectedIds.includes(s.witches[1].id)&&
    !s.selectedBuildingId,'Tapping an allied damaged house must order a selected worker to repair it');
  const repairWorking=await evaluate("(()=>{for(let i=0;i<36;i++){"+
    "window.__fightersQA.advance(.25);const s=window.__fightersQA.snapshot();"+
@@ -353,15 +353,15 @@ async function run(){
  await evaluate('window.__fightersQA.advance(7)');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.house.health===s.house.maxHealth&&!s.repairs.length&&
-   s.gold.witch===beforeRepair.gold.witch&&s.wood.witch===beforeRepair.wood.witch,
-   'Repair must quickly reach exactly max health, finish, and not spend resources');
+   s.gold.witch<beforeRepair.gold.witch&&s.wood.witch<beforeRepair.wood.witch,
+   'Repair must quickly reach exactly max health, finish, and spend gold and wood');
  await evaluate("window.__fightersQA.setBuildingHealth('witch-house-01',200);"+
    "window.__fightersQA.selectUnit('witch',1);"+
    "Array.from(document.querySelectorAll('#command-buttons button')).find(b=>"+
    "b.textContent.includes('Réparer')).click()");
  check((await evaluate('window.__fightersQA.snapshot()')).witches[1].repairTargetId==='witch-house-01',
    'Repair panel action must find the nearest damaged allied building');
- await evaluate('window.__fightersQA.move(-8,-8)');
+ await evaluate("window.__fightersQA.selectUnit('witch',1);window.__fightersQA.move(-8,-8)");
  check(!(await evaluate('window.__fightersQA.snapshot()')).repairs.length,
    'Explicit movement must cancel the repair job');
  // The witch repair cancellation has not touched Orc structures or troops.
