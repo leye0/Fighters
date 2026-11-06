@@ -173,7 +173,8 @@ qu'après modification, vérification et intégration dans `main`.
       réintroductions de code métier dans le HTML, les scripts manquants,
       les dépendances inversées, les zones sans propriétaire et les rebuilds
       géants à chaque changement de code : test Node et étape de préparation
-      du run 42268791614 verts.
+      du run 42268791614 verts ; les trois scénarios Chrome (visual, economy,
+      combat) ont également terminé avec succès.
 - [x] Faire une QA Chrome/WebGL complète après le premier lot : simulation
       et garde QA (run 42256932710 : visual, economy, combat verts).
 - [x] Faire une QA Chrome/WebGL complète après le deuxième lot : ordres
@@ -186,8 +187,10 @@ qu'après modification, vérification et intégration dans `main`.
 - [ ] Valider une relance Chrome automatique si DevTools ne démarre pas :
       le scénario `economy` du run 42259828733 a échoué au démarrage du
       navigateur, pas sur le jeu ; relance unique intégrée dans le driver.
-      La politique de retry simulée est maintenant testée sous Node ; un
-      essai d'échec réel de Chrome reste à effectuer avant de cocher.
+      La politique de retry simulée est testée sous Node sur `main`
+      (commit add7089) : échec initial, succès à la deuxième tentative,
+      échec terminal et nettoyage. Un essai d'échec réel de Chrome reste à
+      effectuer avant de cocher.
 - [x] Faire une QA Chrome/WebGL complète après les extractions caméra, IA et
       le durcissement du démarrage de Chrome : run 42262289649,
       visual/economy/combat verts (la relance sur erreur reste à simuler).
