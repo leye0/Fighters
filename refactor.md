@@ -131,9 +131,10 @@ qu'après modification, vérification et intégration dans `main`.
       `rts-food-cycle.js` (ordre d'exécution, cueillette, famine, dégâts,
       alertes et reset) ; tests Node et run 42286451348 : Chrome
       `visual`, `economy`, `combat` verts.
-- [ ] Isoler la diversion des combattants orcs par les corbeaux dans
+- [x] Isoler la diversion des combattants orcs par les corbeaux dans
       `rts-raven-distraction.js` (vue réelle, durée, poursuite sans attaque,
-      cooldown et disparition), avec tests Node et QA Chrome.
+      cooldown et disparition) ; tests Node et run 42286833419 :
+      Chrome `visual`, `economy`, `combat` verts.
 - [ ] Extraire les soins des sorcières et la retraite automatique vers les
       cercles dans `rts-healing-cycle.js` (magie réellement consommée, budget
       partagé, sécurité, interruption et cadence), avec Node et QA Chrome.
