@@ -231,7 +231,7 @@
           gain.connect(pan);pan.connect(this.master);nodes.push(pan);
         }else gain.connect(this.master);
         if(type==='caw'&&this.echoDelay){
-          send=this.context.createGain();send.gain.value=latest.echo*baseGain;
+          send=this.context.createGain();send.gain.value=latest.echo*.45;
           gain.connect(send);send.connect(this.echoDelay);nodes.push(send);
         }
         const voice={type,priority:config.priority,source,gain,pan,send,nodes,
@@ -258,7 +258,7 @@
         };
         smooth(voice.gain.gain,spatial.gain*voice.baseGain);
         if(voice.pan)smooth(voice.pan.pan,spatial.pan);
-        if(voice.send)smooth(voice.send.gain,spatial.echo*voice.baseGain);
+        if(voice.send)smooth(voice.send.gain,spatial.echo*.45);
       }
     }
     snapshot(){return {active:this.active.size,cached:this.cache.size,
