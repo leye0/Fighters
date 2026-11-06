@@ -139,9 +139,15 @@ qu'après modification, vérification et intégration dans `main`.
       cercles dans `rts-healing-cycle.js` (magie réellement consommée, budget
       partagé, sécurité, interruption et cadence) ; tests Node et
       run 42287409698 : Chrome `visual`, `economy`, `combat` verts.
-- [ ] Isoler l'attribution et l'exécution des récoltes d'âmes des mages dans
+- [x] Isoler l'attribution et l'exécution des récoltes d'âmes des mages dans
       `rts-soul-harvester.js` (cadavres visibles, réservations, chemins,
-      interruption, animation `Death01` et reset), avec Node et Chrome.
+      interruption, animation `Death01` et reset). Tests Node et QA Chrome
+      `visual`, `economy`, `combat` verts : run 42303519140.
+- [x] Extraire l'attribution automatique des mineurs et le cycle extraction/transport
+      dans `rts-mining-cycle.js` : brouillard de guerre, annulation, navigation,
+      pioche, cargaison et paiement seulement à la livraison ; ressources
+      courantes après reset. Tests Node et QA Chrome `visual`, `economy`,
+      `combat` verts : run 42303519140.
 - [x] Séparer la décision stratégique des deux IA de l'exécution des commandes :
       directeurs `*-strategy.js`, exécution `rts-ai-commands.js`.
 - [x] Valider en Chrome l'exécution des actions Orc/Sorcière extraite dans
