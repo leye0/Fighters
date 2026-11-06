@@ -22,6 +22,7 @@ dans [`../refactor.md`](../refactor.md).
 | Système | Fichiers principaux | Vérification ciblée |
 |---|---|---|
 | Simulation et déplacements | `rts-simulation.js`, `rts-unit-physics.js`, `rts-navigation.js` | `test-rts-simulation.mjs`, `test-rts-unit-physics.mjs`, `test-rts-navigation.mjs` |
+| État de partie | `rts-match-state.js` (or et bois), `game.js` (état restant, transitoire) | `test-rts-match-state.mjs`, Chrome `economy` |
 | Ordres et tâches | `rts-orders.js`, règles `rts-repair.js`, `rts-farming.js` | `test-rts-orders.mjs`, `test-rts-worker-orders.mjs`, `test-rts-construction-orders.mjs`, `test-rts-production-orders.mjs` |
 | IA | `orc-strategy.js`, `witch-strategy.js`, `rts-ai-commands.js` | `test-orc-strategy.mjs`, `test-witch-strategy.mjs`, `test-rts-ai-commands.mjs` |
 | Commandes joueur | `rts-picking.js`, `rts-camera.js`, `rts-gestures.js` | `test-rts-picking.mjs`, `test-rts-camera.mjs`, `test-rts-gestures.mjs`, QA Chrome tactile |
@@ -43,7 +44,9 @@ concurrence (voir `AGENTS.md`).
   déjà implémenté. Les fonctions extraites reçoivent leurs dépendances en
   arguments, et les ressources remplacées lors du reset doivent être lues via
   des fonctions (`getGold`, `getWood`) plutôt que capturées une fois au boot.
-- Les files de production et les chantiers utilisent `getGold()` et `getWood()`
+- Le propriétaire `rts-match-state.js` réinitialise les deux économies par
+  nouveau match ; la migration des autres variables d'état reste progressive.
+  Les files de production et les chantiers utilisent `getGold()` et `getWood()`
   au moment de la commande afin de respecter le remplacement des ressources
   lors du démarrage d'une nouvelle partie. Les boutons n'appellent que le
   service de domaine et rafraîchissent ensuite le HUD.
@@ -66,7 +69,7 @@ chargé par le navigateur. La QA Browser est divisée en `visual`, `economy` et
 `combat` pour que leurs tests soient attribuables à un système.
 
 Les extractions encore souhaitées ne sont pas masquées : état de partie
-centralisé, commandes de production et actions automatiques, gestes pointeur,
-HUD et gestes tactiles, décomposition des ticks des unités, verrouillage des
+entièrement centralisé, actions automatiques, politique de commandes du HUD,
+décomposition des ticks des unités, verrouillage des
 dépendances du build, migration des workflows historiques qui poussent sur
 `main`, et essai complet de la reconstruction des assets v2.

@@ -173,7 +173,8 @@
   }
 
   function createProductionOrders({roles,trainingDuration,upgradeCost,
-    arcanistUnlocked,canTrainOrcRole,maxQueue,getGold,getWood}){
+    arcanistUnlocked,canTrainOrcRole,maxQueue,getGold,getWood,
+    liveBuildings=()=>[],finishUpgrade=()=>{},finishTraining=()=>{}}){
     function queue(building,kind,role='melee',{running,paused}){
       if(!running||paused||!building||building.destroyed||building.clanId==='neutral'||
         building.type==='mine'||building.queue.length>=maxQueue)return false;
@@ -208,7 +209,20 @@
       return true;
     }
 
-    return Object.freeze({queue,cancel});
+    function step(dt){
+      for(const building of liveBuildings()){
+        if(!building.queue.length){building.progress=0;continue;}
+        building.progress+=dt;
+        const order=building.queue[0];
+        if(building.progress+1e-9<order.duration)continue;
+        building.progress=Math.max(0,building.progress-order.duration);
+        building.queue.shift();
+        if(order.kind==='upgrade')finishUpgrade(building);
+        else finishTraining(building,order.kind,order.role||'melee');
+      }
+    }
+
+    return Object.freeze({queue,cancel,step});
   }
 
   return Object.freeze({create,createWorkerOrders,createConstructionOrders,

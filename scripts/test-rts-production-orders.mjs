@@ -8,6 +8,7 @@ const {createProductionOrders}=require('../docs/rts-orders.js');
 let gold={witch:500,orc:500},wood={witch:120,orc:120};
 let arcanist=false,orcMage=false;
 const calls=[];
+const live=[],completed=[];
 const orders=createProductionOrders({
   roles:{profile:(faction,role)=>{
     calls.push([faction,role]);
@@ -18,7 +19,10 @@ const orders=createProductionOrders({
   arcanistUnlocked:()=>arcanist,
   canTrainOrcRole:role=>role!=='ranged'||orcMage,
   maxQueue:3,
-  getGold:()=>gold,getWood:()=>wood
+  getGold:()=>gold,getWood:()=>wood,
+  liveBuildings:()=>live,
+  finishUpgrade:building=>completed.push(['upgrade',building]),
+  finishTraining:(building,kind,role)=>completed.push(['train',building,kind,role])
 });
 const building=(clanId,type,level=1)=>({clanId,type,level,
   destroyed:false,queue:[],progress:2.3});
@@ -74,8 +78,31 @@ assert.equal(orders.cancel(orc,0),true);
 assert.equal(gold.orc,280);
 assert.equal(wood.orc,30);
 
+// The fixed-step production runner completes at most one queued job per
+// building per tick and retains the unused fractional progress.
+const empty=building('neutral','mine');empty.progress=4;
+witch.queue.push({kind:'witch',role:'worker',duration:5});
+witch.progress=2;
+orc.queue.push({kind:'upgrade',role:null,duration:8});
+orc.progress=7.8;
+live.push(witch,orc,empty);
+orders.step(.1);
+assert.equal(completed.length,0);
+assert.equal(empty.progress,0,'idle production progress resets');
+orders.step(.2);
+assert.deepEqual(completed,[['upgrade',orc]]);
+assert(Math.abs(orc.progress-.1)<1e-8);
+assert.equal(orc.queue.length,0);
+orders.step(2.7);
+assert.deepEqual(completed.at(-1),['train',witch,'witch','worker']);
+assert.equal(witch.queue.length,0);
+assert(Math.abs(witch.progress)<1e-8);
+orders.step(.5);
+assert.equal(witch.progress,0,'no production order accumulates progress');
+
 const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
 assert(game.includes('window.FightersOrders.createProductionOrders('));
 assert(game.includes('productionOrders.queue(building,kind,role,{running,paused})'));
 assert(game.includes('productionOrders.cancel(building,index)'));
+assert(game.includes('productionOrders.step(dt)'));
 console.log('PASS production queues, training gates, refunds, upgrades and reset');

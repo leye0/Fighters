@@ -56,6 +56,8 @@ qu'après modification, vérification et intégration dans `main`.
       encore une structure effectivement centralisée dans le moteur.
 - [ ] Regrouper l'état mutable d'une partie dans un contexte explicite ; limiter
       les variables libres partagées par des dizaines de fonctions.
+- [ ] Valider dans Chrome l'extraction d'or/bois dans `rts-match-state.js` :
+      économie neuve à chaque partie, paiement, remboursement, mines et récoltes.
 - [ ] Isoler les commandes (`move`, `attack`, `repair`, `build`, `harvest`, etc.)
       derrière des fonctions de domaine réutilisables et testables.
 - [x] Extraire les commandes `move` et `attack` dans `rts-orders.js`, avec
@@ -66,8 +68,11 @@ qu'après modification, vérification et intégration dans `main`.
 - [x] Valider dans Chrome l'assignation de construction déplacée dans
       `rts-orders.js` (ouvrier préféré, paiement, remise à zéro des ressources) :
       run 42262989882, trois scénarios verts.
-- [ ] Valider sous Chrome les files de formation et d'amélioration, sorties
-      dans `rts-orders.js` avec coûts, annulations et remboursements testés.
+- [x] Valider sous Chrome les files de formation et d'amélioration, sorties
+      dans `rts-orders.js` avec coûts, annulations et remboursements testés :
+      run 42265500682, trois scénarios verts.
+- [ ] Valider la progression de production extraite dans `rts-orders.js`
+      (durées, avancement résiduel, un ordre terminé au maximum par tick).
 - [x] Extraire et valider les ordres d'ouvriers `repair`, `mine`, `collectWood`,
       `chop`, `harvest` dans `rts-orders.js` avec des tests Node et Chrome
       (run 42261206611). La construction et les activités automatiques restent.
@@ -87,12 +92,13 @@ qu'après modification, vérification et intégration dans `main`.
 
 - [ ] Extraire la sélection, les gestes tactiles, la caméra et les commandes
       utilisateur dans des modules d'entrée distincts.
-- [ ] Finir les gestes tactiles, la sélection d'unités et le contrôle caméra :
-      les cinq sélecteurs spatiaux (unités, corbeaux, bâtiments, arbres et bois)
-      sont désormais extraits dans `rts-picking.js` et testés sous Node.
-- [ ] Valider sous Chrome la machine à gestes `rts-gestures.js` (tap, pan,
+- [x] Extraire les mécanismes de gestes, de sélection spatiale et de caméra :
+      `rts-gestures.js`, `rts-picking.js` (cinq types de cibles) et
+      `rts-camera.js` ; le choix des ordres après un clic reste dans `game.js`.
+- [x] Valider sous Chrome la machine à gestes `rts-gestures.js` (tap, pan,
       sélection à deux doigts, relâchement décalé, souris et anti-double tap),
-      extraite sans changer les seuils originaux ni la politique des ordres.
+      extraite sans changer les seuils originaux ni la politique des ordres :
+      run 42265998752, trois scénarios verts.
 - [x] Valider le contrôleur de caméra `rts-camera.js` en Chrome après ses tests
       de déplacement et cadrage mobile/desktop : run 42262289649.
 - [x] Extraire le HUD (ressources, boutons, barres de santé) et la mini-carte
@@ -107,7 +113,8 @@ qu'après modification, vérification et intégration dans `main`.
 - [ ] Séparer le chargement/caching des GLB et sons de leur utilisation par les
       systèmes de rendu et d'animation.
 - [x] Réduire `docs/index.html` à l'import map, au DOM et au démarrage de
-      l'application (111 lignes). Le module `docs/game.js` a été déplacé à
+      l'application (111 lignes initiales, puis includes des nouveaux modules).
+      Le module `docs/game.js` a été déplacé à
       l'octet près, sans modification de gameplay ; QA Chrome et Pages verts
       (runs 42258497349 et 42258497356).
 - [ ] Décomposer progressivement `docs/game.js` en composants/systèmes

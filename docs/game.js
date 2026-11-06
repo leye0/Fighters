@@ -397,8 +397,10 @@ const sharedSelectionMaterials={witch:new THREE.MeshBasicMaterial({
     color:0xffd279,transparent:true,opacity:.38,side:THREE.DoubleSide,
     depthTest:false,depthWrite:false,toneMapped:false})};
 const INITIAL_WOOD=Object.freeze({witch:250,orc:350});
-let ready=false,running=false,paused=false,activeFaction='witch',gold={witch:2000,orc:900},
-  wood={...INITIAL_WOOD},buildMode=null;
+const matchResources=window.FightersMatchState.create({
+  gold:{witch:2000,orc:900},wood:INITIAL_WOOD
+});
+let ready=false,running=false,paused=false,activeFaction='witch',buildMode=null;
 let selectedBuilding=null,selectedRaven=null,nextUnitId=1,qaPassive=false,orcSpawned=false;
 let rallyMode=false,constructionTab=false,lastHudSignature='';
 const ORC_TRAIN_COST=100,ORC_TRAIN_DURATION=4.5,MAX_QUEUE=8;
@@ -1661,7 +1663,8 @@ function upgradeCost(building){
 }
 const productionOrders=window.FightersOrders.createProductionOrders({
   roles,trainingDuration,upgradeCost,arcanistUnlocked,canTrainOrcRole,
-  maxQueue:MAX_QUEUE,getGold:()=>gold,getWood:()=>wood
+  maxQueue:MAX_QUEUE,getGold:()=>matchResources.gold,getWood:()=>matchResources.wood,
+  liveBuildings,finishUpgrade,finishTraining
 });
 function queueOrder(building,kind,role='melee'){
   const queued=productionOrders.queue(building,kind,role,{running,paused});
@@ -1786,15 +1789,7 @@ function finishUpgrade(building){
   showBanner('AMÉLIORATION NIVEAU '+building.level);refreshHUD();
 }
 function stepProduction(dt){
-  for(const building of liveBuildings()){
-    if(!building.queue.length){building.progress=0;continue;}
-    building.progress+=dt;
-    const order=building.queue[0];
-    if(building.progress+1e-9<order.duration)continue;
-    building.progress=Math.max(0,building.progress-order.duration);building.queue.shift();
-    if(order.kind==='upgrade')finishUpgrade(building);
-    else finishTraining(building,order.kind,order.role||'melee');
-  }
+  productionOrders.step(dt);
 }
 function setRally(building,location){
   if(!building||building.clanId==='neutral')return false;
@@ -1825,7 +1820,8 @@ function constructionCost(type){
 }
 function constructionWood(type){return BUILD_WOOD_COST[type]??0;}
 function canAffordConstruction(clan,type){
-  return gold[clan]>=constructionCost(type)&&wood[clan]>=constructionWood(type);
+  return matchResources.gold[clan]>=constructionCost(type)&&
+    matchResources.wood[clan]>=constructionWood(type);
 }
 function buildFaction(type){return ['witch-house','garden','stone-circle'].includes(type)?'witch':'orc';}
 function builderAvailable(clan){
@@ -2183,7 +2179,8 @@ function buildGarden(x,z,{prepaid=false}={}){
   buildingInstances.set(id,building);
   if(cropCatalog)installGardenCrops(building);
   else void beginCropLoad();
-  if(!prepaid){gold.witch-=GARDEN_BUILD_COST;wood.witch-=constructionWood('garden');}
+  if(!prepaid){matchResources.gold.witch-=GARDEN_BUILD_COST;
+    matchResources.wood.witch-=constructionWood('garden');}
   updateHealthBar(building);updateNavObstacles();refreshHUD();return building;
 }
 function buildStoneCircle(x,z,{prepaid=false}={}){
@@ -2204,7 +2201,8 @@ function buildStoneCircle(x,z,{prepaid=false}={}){
     queue:[],progress:0,rally:null,rallyMarker:null,healthBar:{root:bar,fill},
     destroyed:false,initial:false};
   buildingInstances.set(id,building);
-  if(!prepaid){gold.witch-=STONE_BUILD_COST;wood.witch-=constructionWood('stone-circle');}
+  if(!prepaid){matchResources.gold.witch-=STONE_BUILD_COST;
+    matchResources.wood.witch-=constructionWood('stone-circle');}
   updateHealthBar(building);updateNavObstacles();refreshHUD();return building;
 }
 
@@ -2299,7 +2297,8 @@ function buildWall(x,z,{prepaid=false,byAI=false,axis=null}={}){
     rally:null,rallyMarker:null,healthBar:{root:bar,fill},destroyed:false,initial:false};
   buildingInstances.set(id,building);
   syncWallJoints();
-  if(!prepaid){gold.orc-=constructionCost('wall');wood.orc-=constructionWood('wall');}
+  if(!prepaid){matchResources.gold.orc-=constructionCost('wall');
+    matchResources.wood.orc-=constructionWood('wall');}
   if(!byAI){buildMode=null;showBanner('MUR DE PIERRE CONSTRUIT');}
   updateHealthBar(building);updateNavObstacles();refreshHUD();return building;
 }
@@ -2322,7 +2321,8 @@ function buildOrc(type,x,z,{byAI=false,prepaid=false}={}){
   const instance=createBuildingInstance(template.entry,type,1,anchor,3.9,model,template.projection);
   if(!orcVillage){orcVillage=new THREE.Group();scene.add(orcVillage);}
   orcVillage.add(anchor);
-  if(!prepaid){gold.orc-=ORC_COSTS[type];wood.orc-=constructionWood(type);}
+  if(!prepaid){matchResources.gold.orc-=ORC_COSTS[type];
+    matchResources.wood.orc-=constructionWood(type);}
   if(!byAI){buildMode=null;showBanner(ORC_NAMES[type]+' CONSTRUITE');}
   updateNavObstacles();refreshHUD();return instance;
 }
@@ -2350,7 +2350,8 @@ function buildWitchHouse(x,z,{prepaid=false}={}){
   fill.position.z=.01;bar.add(backdrop,fill);
   instance.healthBar={root:bar,fill};scene.add(bar);
   buildingInstances.set(id,instance);scene.add(root);updateHealthBar(instance);
-  if(!prepaid){gold.witch-=WITCH_BUILD_COST;wood.witch-=constructionWood('witch-house');}
+  if(!prepaid){matchResources.gold.witch-=WITCH_BUILD_COST;
+    matchResources.wood.witch-=constructionWood('witch-house');}
   updateNavObstacles();refreshHUD();return instance;
 }
 // Construction previews use the real building meshes. A horizontal WebGL
@@ -2429,12 +2430,13 @@ function cancelConstruction(actor,refund=true){
   actor.constructJob=null;actor.route=null;actor.approachCache=null;
   const index=pendingBuilds.indexOf(job);
   if(index>=0)pendingBuilds.splice(index,1);
-  if(refund){gold[actor.kind]+=job.cost;wood[actor.kind]+=job.woodCost;}
+  if(refund){matchResources.gold[actor.kind]+=job.cost;
+    matchResources.wood[actor.kind]+=job.woodCost;}
   return true;
 }
 const constructionOrders=window.FightersOrders.createConstructionOrders({
   units,selected,isWorker:roles.isWorker,pendingBuilds,
-  getGold:()=>gold,getWood:()=>wood,
+  getGold:()=>matchResources.gold,getWood:()=>matchResources.wood,
   cancelWoodJob,cancelRepair,cancelMineJob,cancelFarmJob,
   acknowledgeOrcAiOrder,acknowledgePlayerOrder
 });
@@ -2500,7 +2502,8 @@ function tickConstructWorker(actor,dt){
       job.type==='stone-circle'?buildStoneCircle(job.x,job.z,{prepaid:true}):
       job.type==='wall'?buildWall(job.x,job.z,{prepaid:true,byAI:job.byAI,axis:job.axis}):
       buildOrc(job.type,job.x,job.z,{prepaid:true,byAI:job.byAI});
-    if(!built){gold[actor.kind]+=job.cost;wood[actor.kind]+=job.woodCost;}
+    if(!built){matchResources.gold[actor.kind]+=job.cost;
+      matchResources.wood[actor.kind]+=job.woodCost;}
     else if(job.byAI)showBanner('CONSTRUCTION TERMINÉE');
     refreshHUD();
   }
@@ -2571,7 +2574,8 @@ function stopSelectedUnits(){
 }
 function refreshHUD(){
   const director=activeFaction==='witch'?orcDirector:witchDirector;
-  hudRenderer.overview({faction:activeFaction,gold:gold[activeFaction],wood:wood[activeFaction],
+  hudRenderer.overview({faction:activeFaction,gold:matchResources.gold[activeFaction],
+    wood:matchResources.wood[activeFaction],
     food:activeFaction==='witch'?farming.food:orcFood.food,
     magic:activeFaction==='witch'?magic:orcMagic,maxMagic:soulRules.MAX_MAGIC,
     witchCount:units.filter(u=>u.kind==='witch'&&!u.dead).length,
@@ -2640,7 +2644,7 @@ function refreshHUD(){
         for(const role of ROLE_IDS){
           const spec=roles.profile(clan,role);
           add(spec.icon,spec.name,spec.cost,()=>queueOrder(b,clan,role),
-            gold[clan]<spec.cost||b.queue.length>=MAX_QUEUE||paused||
+            matchResources.gold[clan]<spec.cost||b.queue.length>=MAX_QUEUE||paused||
               (clan==='witch'&&role==='ranged'&&!arcanistUnlocked())||
               (clan==='orc'&&!canTrainOrcRole(role)),
             'Former '+spec.name+' · '+(role==='worker'?'minage et construction':
@@ -2651,7 +2655,8 @@ function refreshHUD(){
       const cost=upgradeCost(b),pending=b.queue.some(item=>item.kind==='upgrade');
       if(friendly&&b.type!=='mine'&&b.type!=='garden'&&b.type!=='stone-circle'&&b.type!=='wall')add('⬆️','Améliorer',
         {gold:cost,wood:40},()=>issueUpgrade(b),
-        cost===null||pending||gold[faction]<cost||wood[faction]<40||
+        cost===null||pending||matchResources.gold[faction]<cost||
+          matchResources.wood[faction]<40||
           b.queue.length>=MAX_QUEUE||paused,
         cost===null?'Niveau maximal':pending?'Amélioration déjà dans la file':
         'Améliorer au niveau '+(b.level+1));
@@ -2763,12 +2768,12 @@ function refreshHUD(){
     let disabled=paused;
     const role=b&&['witch','orcs'].includes(b.clanId)?
       ROLE_IDS.find(id=>roles.profile(faction,id).name===action):null;
-    if(role)disabled||=gold[faction]<roles.profile(faction,role).cost||b?.queue.length>=MAX_QUEUE||
+    if(role)disabled||=matchResources.gold[faction]<roles.profile(faction,role).cost||b?.queue.length>=MAX_QUEUE||
       (faction==='witch'&&role==='ranged'&&!arcanistUnlocked())||
       (faction==='orc'&&!canTrainOrcRole(role));
     else if(action==='Améliorer')disabled||=upgradeCost(b)===null||
       b?.queue.some(item=>item.kind==='upgrade')||
-      gold[faction]<upgradeCost(b)||wood[faction]<40||b?.queue.length>=MAX_QUEUE;
+      matchResources.gold[faction]<upgradeCost(b)||matchResources.wood[faction]<40||b?.queue.length>=MAX_QUEUE;
     else if(action==='Dôme arcanique')disabled||=!domeRules.canCast(b,magic,
       {faction:activeFaction,running,paused,active:!!domeEffect});
     else if(action==='Pluie de feu')disabled||=!fireRules.canCast(b,orcMagic,
@@ -2895,7 +2900,7 @@ function startSession(){
     }
   }
   resize();
-  gold={witch:2000,orc:900};wood={...INITIAL_WOOD};
+  matchResources.reset();
   farming.reset();farmSerial=0;farmAssignmentElapsed=0;famineAlerted=false;
   orcFood.reset();orcForageElapsed=0;orcFamineAlerted=false;
   stoneCircleSerial=0;wallSerial=0;healingAssignmentElapsed=0;
@@ -3580,7 +3585,8 @@ function tickMineWorker(actor,dt){
       return true;
     }
     // No income exists in transit: resources enter the treasury at delivery.
-    gold[actor.kind]+=job.amount;totalMinedGold+=job.amount;completedMiningCycles++;
+    matchResources.gold[actor.kind]+=job.amount;
+    totalMinedGold+=job.amount;completedMiningCycles++;
     job.amount=0;job.phase='extract';job.progress=0;job.cycles++;
     if(actor.carryGold)actor.carryGold.visible=false;
     actor.route=null;actor.approachCache=null;
@@ -3667,7 +3673,7 @@ function continueWitchWoodRun(actor){
   if(actor.kind!=='witch'||actor.dead||actor.destination||actor.constructJob||
     actor.repairJob||actor.farmJob||actor.mineJob||actor.treeJob||actor.woodJob||
     actor.workerRetryTime)return false;
-  if(witchDirector.enabled&&wood.witch>=220)return false;
+  if(witchDirector.enabled&&matchResources.wood.witch>=220)return false;
   const candidates=forestLayout.map((tree,index)=>({tree,index,d:
     Math.hypot(actor.root.position.x-tree.x,actor.root.position.z-tree.z)}))
     .filter(({tree})=>safeWitchWoodLocation(tree))
@@ -3719,7 +3725,7 @@ function tickWoodWorker(actor,dt){
     else{job.retryWait=5;animation(actor,'Idle_Loop');}
     return true;
   }
-  wood[actor.kind]+=job.amount;
+  matchResources.wood[actor.kind]+=job.amount;
   if(actor.carryBundle)actor.carryBundle.visible=false;
   actor.woodJob=null;animation(actor,'Idle_Loop');
   showBanner('BOIS LIVRÉ : +'+job.amount+' 🪵');refreshHUD();
@@ -3727,7 +3733,7 @@ function tickWoodWorker(actor,dt){
   return true;
 }
 function assignOrcLumberjack(){
-  if(!orcDirector.enabled||wood.orc>=140||
+  if(!orcDirector.enabled||matchResources.wood.orc>=140||
     units.some(u=>u.kind==='orc'&&!u.dead&&(u.treeJob||u.woodJob)))return;
   const workers=units.filter(u=>u.kind==='orc'&&roles.isWorker(u)&&!u.dead&&
     !u.constructJob&&!u.repairJob&&!u.farmJob&&!u.destination&&!u.workerRetryTime);
@@ -3748,7 +3754,7 @@ function assignOrcLumberjack(){
   }
 }
 function assignWitchLumberjack(){
-  if(!witchDirector.enabled||wood.witch>=180||
+  if(!witchDirector.enabled||matchResources.wood.witch>=180||
     units.some(u=>u.kind==='witch'&&!u.dead&&(u.treeJob||u.woodJob)))return;
   const workers=units.filter(u=>u.kind==='witch'&&roles.isWorker(u)&&!u.dead&&
     !u.constructJob&&!u.repairJob&&!u.farmJob&&!u.mineJob&&!u.destination&&
@@ -4417,7 +4423,7 @@ function stepOrcStrategy(dt){
         (navigatorRTS.segmentClear(source,goal)||!!navigatorRTS.plan(source,goal));
     }):null;
   const context={
-    ready:true,running,paused,gold:gold.orc,wood:wood.orc,
+    ready:true,running,paused,gold:matchResources.gold.orc,wood:matchResources.wood.orc,
     buildings:[...buildingInstances.values()].filter(b=>!b.destroyed&&b.clanId==='orcs').map(b=>({
       id:b.id,type:b.type,level:b.level,queue:b.queue.map(j=>({kind:j.kind})),
       health:b.health,maxHealth:b.maxHealth,hitbox:b.hitbox,destroyed:b.destroyed,
@@ -4462,7 +4468,8 @@ function stepWitchStrategy(dt){
       return navigatorRTS.pointClear(goal)&&
         (navigatorRTS.segmentClear(source,goal)||!!navigatorRTS.plan(source,goal));
     }):null;
-  const state={ready:true,running,paused,gold:gold.witch,wood:wood.witch,
+  const state={ready:true,running,paused,gold:matchResources.gold.witch,
+    wood:matchResources.wood.witch,
     food:farming.food,homeId:witchBuilding.id,circleUnlocked:circleUnlocked(),
     arcanistUnlocked:arcanistUnlocked(),
     pendingBuilds:pendingBuilds.filter(job=>buildFaction(job.type)==='witch')
@@ -4888,7 +4895,8 @@ if(qaMode)window.__fightersQA={
       persistentButtons:[],
       queueButtons:$('training-progress').querySelectorAll('button').length,
       orderPrompt:$('order-prompt').hidden?'':$('order-prompt').textContent},
-    gold:{...gold},wood:{...wood},projection:camera.isOrthographicCamera?'orthographic':'perspective',
+    gold:{...matchResources.gold},wood:{...matchResources.wood},
+    projection:camera.isOrthographicCamera?'orthographic':'perspective',
     cameraQuaternion:camera.quaternion.toArray(),
     witches:units.filter(a=>a.kind==='witch'&&!a.dead).map(a=>({
       id:a.id,role:a.role,hairStyle:a.outfitInfo.hairStyle,hairColor:a.outfitInfo.hairColor,
@@ -5007,7 +5015,7 @@ if(qaMode)window.__fightersQA={
     return witch.id;
   },
   setWood:(clan,value)=>{if(clan==='witch'||clan==='orc'){
-    wood[clan]=Math.max(0,Math.floor(Number(value)||0));refreshHUD();}},
+    matchResources.wood[clan]=Math.max(0,Math.floor(Number(value)||0));refreshHUD();}},
   setBerryStage:(index,stage)=>{
     const bush=wildBerries.bushes[index];
     if(!bush||![1,2,3].includes(stage))return false;
