@@ -60,9 +60,9 @@ qu'après modification, vérification et intégration dans `main`.
       Tests Node et Chrome verts (run 42257656954).
 - [ ] Faire passer `repair`, `build`, `harvest` et les autres ordres dans ce
       service, puis cocher l'isolation complète des commandes ci-dessus.
-- [ ] Extraire et valider les ordres d'ouvriers `repair`, `mine`, `collectWood`,
-      `chop`, `harvest` dans `rts-orders.js` avec des tests Node ; l'ordonnanceur
-      de construction et les activités automatiques restent à isoler.
+- [x] Extraire et valider les ordres d'ouvriers `repair`, `mine`, `collectWood`,
+      `chop`, `harvest` dans `rts-orders.js` avec des tests Node et Chrome
+      (run 42261206611). La construction et les activités automatiques restent.
 - [x] Extraire l'ordonnancement `stepGame(dt)` dans `rts-simulation.js` :
       phases nommées, ordre conservé, pas fixe de 1/60 s et rattrapage borné
       à douze ticks. Validé par tests Node et Chrome (run 42256932710).
@@ -71,6 +71,8 @@ qu'après modification, vérification et intégration dans `main`.
 - [ ] Sortir progressivement la logique des ouvriers, unités et bâtiments du
       script intégré à `docs/index.html`.
 - [ ] Séparer la décision stratégique des deux IA de l'exécution des commandes.
+- [ ] Valider en Chrome l'exécution des actions Orc/Sorcière extraite dans
+      `rts-ai-commands.js` ; les directeurs restent responsables des décisions.
 
 ## 3. Rendu et interface
 
@@ -79,6 +81,8 @@ qu'après modification, vérification et intégration dans `main`.
 - [ ] Finir les gestes tactiles, la sélection d'unités et le contrôle caméra :
       les cinq sélecteurs spatiaux (unités, corbeaux, bâtiments, arbres et bois)
       sont désormais extraits dans `rts-picking.js` et testés sous Node.
+- [ ] Valider le contrôleur de caméra `rts-camera.js` en Chrome après ses tests
+      de déplacement et cadrage mobile/desktop.
 - [ ] Extraire le HUD, les boutons de commandes et la mini-carte du moteur.
 - [ ] Séparer le chargement/caching des GLB et sons de leur utilisation par les
       systèmes de rendu et d'animation.
@@ -88,10 +92,13 @@ qu'après modification, vérification et intégration dans `main`.
       (runs 42258497349 et 42258497356).
 - [ ] Décomposer progressivement `docs/game.js` en composants/systèmes
       indépendants, au-delà du premier déplacement mécanique.
-- [ ] Extraire du script d'intégration le transport des modèles binaires
-      (`rts-assets.js`) avec tests gzip, fallback et métriques.
-- [ ] Extraire le calcul des cibles cliquables de l'interface dans
-      `rts-picking.js`, sans modifier les tolérances mobile/desktop.
+- [x] Extraire du script d'intégration le transport des modèles binaires
+      (`rts-assets.js`) avec tests gzip, fallback et métriques ; couvert par
+      la QA Chrome verte du run 42260838733. Le run précédent 42259828733
+      avait échoué sur le démarrage de Chrome (aucune assertion de jeu).
+- [x] Extraire le calcul des cibles cliquables de l'interface dans
+      `rts-picking.js`, sans modifier les tolérances mobile/desktop,
+      validé sous Chrome (run 42260838733).
 
 ## 4. Tests et validation
 
@@ -108,7 +115,14 @@ qu'après modification, vérification et intégration dans `main`.
       d'unités (run 42257656954 : visual, economy, combat verts).
 - [x] Faire une QA Chrome/WebGL complète après le troisième lot : module
       `game.js` externe (run 42258497349 : visual, economy, combat verts).
-- [ ] Répéter la QA Chrome/WebGL complète après les prochaines extractions.
+- [x] Répéter la QA Chrome/WebGL complète après les extractions de ressources,
+      sélection et tâches d'ouvriers (runs 42260838733 et 42261206611 ;
+      visual, economy, combat verts).
+- [ ] Valider une relance Chrome automatique si DevTools ne démarre pas :
+      le scénario `economy` du run 42259828733 a échoué au démarrage du
+      navigateur, pas sur le jeu ; relance unique intégrée dans le driver.
+- [ ] Faire une QA Chrome/WebGL complète après les extractions caméra, IA et
+      le durcissement du démarrage de Chrome.
 
 ## Définition de « terminé »
 

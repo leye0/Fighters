@@ -21,6 +21,11 @@ et le rendu actuels sont des contraintes de non-régression.
 - `docs/rts-picking.js` : sélection des silhouettes en coordonnées écran,
   corbeaux, arbres, bois et emprises de bâtiments ; dépendances injectées
   pour les tests sans navigateur, `docs/game.js` adapte Three.js et l'état.
+- `docs/rts-camera.js` : cadrage orthographique et panoramique avec dépendances
+  injectées ; les événements pointeur restent dans `docs/game.js`.
+- `docs/rts-ai-commands.js` : exécution des intentions des deux IA (construction,
+  entraînement, reconnaissance, attaques, défense) ; les directeurs `*-strategy.js`
+  choisissent les intentions et ne manipulent pas directement les objets 3D.
 - `docs/rts-assets.js` : transfert binaire avec gzip, fallback et métriques ;
   aucune logique Three.js, scène ni DOM. `docs/game.js` reste responsable du
   parsing des GLB et de leur installation visuelle.
@@ -30,7 +35,8 @@ et le rendu actuels sont des contraintes de non-régression.
 - `scripts/browser-qa/{visual,economy,combat,dome,touch}.mjs` : scénarios QA
   indépendants ; modifier le fichier du scénario concerné.
 - `scripts/browser-qa/chrome-driver.mjs` : transport Chrome DevTools partagé ;
-  coordonner ses changements puisqu'ils affectent tous les scénarios.
+  coordonner ses changements puisqu'ils affectent tous les scénarios ; une
+  relance à profil neuf est permise si DevTools ne démarre pas sur le runner.
 - `assets/README.md`, `assets/runtime-assets.lock` : méthode d'ajout et version
   immuable des modèles préparés, avec SHA-256. Ne pas changer le verrou sans
   une nouvelle Release vérifiée.

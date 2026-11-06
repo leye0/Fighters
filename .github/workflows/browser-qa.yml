@@ -44,12 +44,16 @@ on:
       - 'docs/rts-simulation.js'
       - 'docs/rts-orders.js'
       - 'docs/rts-picking.js'
+      - 'docs/rts-camera.js'
+      - 'docs/rts-ai-commands.js'
       - 'docs/rts-assets.js'
       - 'scripts/test-rts-unit-physics.mjs'
       - 'scripts/test-rts-simulation.mjs'
       - 'scripts/test-rts-orders.mjs'
       - 'scripts/test-rts-worker-orders.mjs'
       - 'scripts/test-rts-picking.mjs'
+      - 'scripts/test-rts-camera.mjs'
+      - 'scripts/test-rts-ai-commands.mjs'
       - 'scripts/test-rts-assets.mjs'
       - 'docs/orc-strategy.js'
       - 'docs/witch-strategy.js'
@@ -116,6 +120,8 @@ jobs:
           node scripts/test-rts-orders.mjs
           node scripts/test-rts-worker-orders.mjs
           node scripts/test-rts-picking.mjs
+          node scripts/test-rts-camera.mjs
+          node scripts/test-rts-ai-commands.mjs
           node scripts/test-rts-assets.mjs
           node scripts/test-orc-strategy.mjs
           node scripts/test-witch-strategy.mjs

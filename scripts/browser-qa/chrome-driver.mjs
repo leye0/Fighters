@@ -5,17 +5,21 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 
 export function createChromeDriver(){
- const profile=mkdtempSync(join(tmpdir(),'fighters-rts-'));
  mkdirSync('captures',{recursive:true});
- const chrome=spawn(process.env.CHROME_BIN||'google-chrome',[
-  '--headless=new','--no-sandbox','--disable-dev-shm-usage','--use-gl=angle',
-  '--use-angle=swiftshader','--enable-unsafe-swiftshader','--enable-webgl',
-  '--window-size=1365,900','--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'
- ],{stdio:'ignore'});
+ let profile,chrome;
+ function launch(){
+  profile=mkdtempSync(join(tmpdir(),'fighters-rts-'));
+  chrome=spawn(process.env.CHROME_BIN||'google-chrome',[
+   '--headless=new','--no-sandbox','--disable-dev-shm-usage','--use-gl=angle',
+   '--use-angle=swiftshader','--enable-unsafe-swiftshader','--enable-webgl',
+   '--window-size=1365,900','--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'
+  ],{stdio:'ignore'});
+ }
+ launch();
  let socket,nextId=0;const pending=new Map();
  const sleep=ms=>new Promise(ok=>setTimeout(ok,ms));
  function check(value,message){if(!value)throw Error(message);}
- async function connect(){
+ async function attach(){
   const path=join(profile,'DevToolsActivePort');
   for(let i=0;i<120&&!existsSync(path);i++)await sleep(250);
   check(existsSync(path),'Chrome debugger did not start');
@@ -29,6 +33,23 @@ export function createChromeDriver(){
    if(!job)return;pending.delete(msg.id);
    msg.error?job.reject(Error(JSON.stringify(msg.error))):job.resolve(msg.result);
   };
+ }
+ async function connect(){
+  for(let attempt=0;attempt<2;attempt++){
+   try{await attach();return;}
+   catch(error){
+    if(attempt===1)throw error;
+    // A busy shared runner can fail to start Chrome's DevTools port. One
+    // fresh profile/relaunch makes acceptance tests robust to that transient
+    // failure without skipping or weakening any real-WebGL assertions.
+    console.warn('Chrome debugging startup failed; retrying once:',error.message);
+    try{socket?.close();}catch{}
+    chrome.kill();
+    try{rmSync(profile,{recursive:true,force:true,maxRetries:8,retryDelay:350});}
+    catch(cleanupError){console.warn('Failed Chrome profile cleanup:',cleanupError.message);}
+    launch();
+   }
+  }
  }
  function call(method,params={}){
   const id=++nextId;

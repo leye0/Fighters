@@ -910,14 +910,12 @@ const CAMERA_ZOOM=35/(3*1.35);
 const cameraZoom=CAMERA_ZOOM;
 let cameraDrag=null;
 const activeTouches=new Map();
+const cameraControls=window.FightersCamera.create({
+  camera,look:cameraLook,offset:CAMERA_OFFSET,arena,viewport,renderer,
+  zoom:cameraZoom,worldPoint,panel:()=>$('command-panel'),matchMedia,clamp
+});
 function panCamera(dx,dy){
-  const box=viewport.getBoundingClientRect(),cx=box.left+box.width/2,cy=box.top+box.height/2;
-  const before=worldPoint(cx,cy),after=worldPoint(cx+dx,cy+dy);
-  if(before&&after){
-    cameraFollow=arena.clamp(cameraFollow.x+before.x-after.x,
-      cameraFollow.z+before.z-after.z,2);
-    positionCamera();
-  }
+  cameraFollow=cameraControls.pan(cameraFollow,dx,dy);
 }
 
 function createSign(label,color,width=4){
@@ -1196,20 +1194,7 @@ function beginOrcVillageLoad(){
 }
 
 function resize(){
-  const w=viewport.clientWidth,h=viewport.clientHeight;
-  const aspect=w/Math.max(1,h),halfHeight=cameraZoom;
-  // The original Warcraft II reserves a narrow LEFT strip on desktop.
-  // A mobile screen reserves only a short BOTTOM strip. Neither changes zoom.
-  const panel=$('command-panel'),frame=panel?.getBoundingClientRect();
-  const sidebar=matchMedia('(min-width:821px) and (min-height:541px)').matches;
-  const cutX=sidebar?clamp((frame?.width||0)/Math.max(w,1),0,.4):0;
-  const cutY=sidebar?0:clamp((frame?.height||0)/Math.max(h,1),0,.42);
-  camera.left=-halfHeight*aspect*(1+cutX);
-  camera.right=halfHeight*aspect*(1-cutX);
-  camera.top=halfHeight*(1-cutY);
-  camera.bottom=-halfHeight*(1+cutY);
-  camera.updateProjectionMatrix();
-  renderer.setSize(w,h,false);
+  cameraControls.resize();
 }
 new ResizeObserver(resize).observe(viewport);
 new ResizeObserver(resize).observe($('command-panel'));
@@ -1687,6 +1672,15 @@ const workerOrders=window.FightersOrders.createWorkerOrders({
   canRepair:repairRules.canRepair,isWorker:roles.isWorker,canMine,
   cancelConstruction,cancelWoodJob,cancelRepair,cancelFarmJob,
   cancelSoulJob,cancelFoodJob:cancelOrcFoodJob,cancelMineJob
+});
+const aiCommands=window.FightersAiCommands.create({
+  scheduleBuild,queueOrder,buildingById:id=>buildingInstances.get(id),
+  witchBuilding,units:()=>units,isFighter:roles.isFighter,isWorker:roles.isWorker,
+  visibleAt:(x,z,clan)=>fogOfWar.visibleAt(x,z,clan),
+  exploredAt:(x,z,clan)=>fogOfWar.exploredAt(x,z,clan),
+  targetDistance,localDefensePost,acknowledgeOrcAiOrder,
+  beginRaid:window.FightersRaiding.begin,
+  cancelFoodJob:cancelOrcFoodJob,cancelSoulJob,orderRepair
 });
 function issueMove(destination,{spacing=1.35,withinRadius=Infinity}={}){
   const actors=[...selected].filter(actor=>!actor.dead&&actor.kind===activeFaction);
@@ -4570,53 +4564,7 @@ function stepOrcStrategy(dt){
     populationCommitted:orcPopulationCommitted(),cauldronAvailable:orcMageUnlocked()
   };
   const actions=orcDirector.update(dt,context,validBuildPosition);
-  for(const action of actions){
-    if(action.type==='build'){
-      scheduleBuild(action.building,action.x,action.z,{byAI:true,axis:action.axis});
-    }else if(action.type==='train'){
-      const b=buildingInstances.get(action.buildingId);
-      if(b&&!b.destroyed)queueOrder(b,'orc',action.role||'melee');
-    }else if(action.type==='upgrade'){
-      const b=buildingInstances.get(action.buildingId);
-      if(b&&!b.destroyed)queueOrder(b,'upgrade');
-    }else if(action.type==='scout'&&!enemyBaseKnown){
-      const actor=aliveOrcs.find(u=>u.id===action.unitId);
-      if(actor&&roles.isFighter(actor)&&!actor.raiding&&!actor.attackOrder&&
-        !actor.orcFoodJob){
-        const newGoal=!actor.destination||Math.hypot(
-          actor.destination.x-action.x,actor.destination.z-action.z)>1;
-        actor.scouting=true;actor.destination={x:action.x,z:action.z};
-        actor.defenseAnchor=null;actor.route=null;actor.routeAge=0;actor.navWatch=null;
-        if(newGoal)acknowledgeOrcAiOrder([actor]);
-      }
-    }else if(action.type==='raid'&&enemyBaseKnown&&!witchBuilding.destroyed){
-      const squad=aliveOrcs.filter(u=>roles.isFighter(u)&&!u.defenseTime&&action.unitIds.includes(u.id));
-      const newlyOrdered=squad.filter(actor=>actor.attackOrder!==witchBuilding);
-      for(const actor of squad){
-        window.FightersRaiding.begin(actor);
-        cancelOrcFoodJob(actor);actor.ravenDistraction=null;actor.healJob=null;
-        actor.scouting=false;actor.attackOrder=witchBuilding;
-        actor.defenseAnchor=null;actor.destination=null;actor.route=null;actor.navWatch=null;
-      }
-      if(newlyOrdered.length)acknowledgeOrcAiOrder(newlyOrdered);
-    }else if(action.type==='defend'){
-      const attackers=units.filter(u=>u.kind==='witch'&&!u.dead);
-      for(const orc of aliveOrcs){
-        if(!roles.isFighter(orc)||orc.raiding||orc.attackOrder||Math.hypot(orc.root.position.x-action.x,
-          orc.root.position.z-action.z)>16)continue;
-        const enemy=attackers.filter(u=>fogOfWar.exploredAt(
-          u.root.position.x,u.root.position.z,'orc')).sort((a,b)=>
-          targetDistance(orc,a)-targetDistance(orc,b))[0];
-        if(enemy){
-          orc.defenseAnchor=localDefensePost(orc,{x:action.x,z:action.z});
-          orc.defenseTime=Math.max(orc.defenseTime,24);
-          cancelOrcFoodJob(orc);orc.ravenDistraction=null;orc.healJob=null;
-          orc.attackOrder=enemy;orc.destination=null;orc.route=null;orc.navWatch=null;
-          acknowledgeOrcAiOrder([orc]);
-        }
-      }
-    }
-  }
+  aiCommands.orc(actions,{aliveOrcs,enemyBaseKnown});
 }
 function stepWitchStrategy(dt){
   if(!witchDirector.enabled||!running||paused||!witchHouse||witchBuilding.destroyed)return;
@@ -4660,50 +4608,7 @@ function stepWitchStrategy(dt){
       .map(u=>({id:u.id,x:u.root.position.x,z:u.root.position.z,role:u.role})),
     enemyTarget:enemyTarget?{id:enemyTarget.id}:null,scoutTarget,unitCap:17};
   const actions=witchDirector.update(dt,state,validBuildPosition);
-  for(const action of actions){
-    if(action.type==='build')scheduleBuild(action.building,action.x,action.z,{byAI:true});
-    else if(action.type==='train'){
-      const building=buildings.find(b=>b.id===action.buildingId);
-      if(building)queueOrder(building,'witch',action.role);
-    }else if(action.type==='upgrade'){
-      const building=buildings.find(b=>b.id===action.buildingId);
-      if(building)queueOrder(building,'upgrade');
-    }else if(action.type==='repair'){
-      const building=buildings.find(b=>b.id===action.buildingId);
-      const worker=aliveWitches.find(u=>roles.isWorker(u)&&!u.repairJob&&
-        !u.constructJob&&!u.farmJob&&!u.mineJob&&!u.treeJob&&!u.woodJob&&
-        !u.workerRetryTime);
-      if(building&&worker)orderRepair([worker],building,{byAI:true});
-    }else if(action.type==='scout'&&!enemyTarget){
-      const unit=aliveWitches.find(u=>u.id===action.unitId);
-      if(unit&&roles.isFighter(unit)&&!unit.raiding&&!unit.attackOrder){
-        unit.scouting=true;unit.destination={x:action.x,z:action.z};
-        unit.defenseAnchor=null;unit.route=null;unit.routeAge=0;unit.navWatch=null;
-      }
-    }else if(action.type==='raid'&&enemyTarget&&!enemyTarget.destroyed&&
-      action.targetId===enemyTarget.id){
-      for(const unit of aliveWitches.filter(u=>action.unitIds.includes(u.id)&&roles.isFighter(u)&&!u.defenseTime)){
-        window.FightersRaiding.begin(unit);
-        cancelSoulJob(unit);unit.berryJob=null;unit.healJob=null;
-        unit.scouting=false;unit.attackOrder=enemyTarget;
-        unit.defenseAnchor=null;unit.destination=null;unit.route=null;unit.navWatch=null;
-      }
-    }else if(action.type==='defend'){
-      const nearby=units.filter(u=>u.kind==='orc'&&!u.dead&&
-        fogOfWar.visibleAt(u.root.position.x,u.root.position.z,'witch'));
-      for(const unit of aliveWitches){
-        if(!roles.isFighter(unit)||unit.raiding||unit.attackOrder||
-          Math.hypot(unit.root.position.x-action.x,unit.root.position.z-action.z)>18)continue;
-        const enemy=nearby.sort((a,b)=>targetDistance(unit,a)-targetDistance(unit,b))[0];
-        if(enemy){
-          unit.scouting=false;unit.defenseAnchor=localDefensePost(unit,{x:action.x,z:action.z});
-          unit.defenseTime=Math.max(unit.defenseTime,24);
-          cancelSoulJob(unit);unit.berryJob=null;unit.healJob=null;
-          unit.attackOrder=enemy;unit.destination=null;unit.route=null;unit.navWatch=null;
-        }
-      }
-    }
-  }
+  aiCommands.witch(actions,{aliveWitches,buildings,enemyTarget});
 }
 const FIXED_DT=window.FightersSimulation.FIXED_DT;
 let accumulator=0,uiElapsed=0;
@@ -4773,9 +4678,7 @@ function animateStoneCircles(dt){
   }
 }
 function positionCamera(){
-  cameraFollow=arena.clamp(cameraFollow.x,cameraFollow.z,2);
-  cameraLook.set(cameraFollow.x,1.15,cameraFollow.z);
-  camera.position.copy(cameraLook).add(CAMERA_OFFSET);camera.lookAt(cameraLook);
+  cameraFollow=cameraControls.position(cameraFollow);
 }
 function frame(){
   requestAnimationFrame(frame);
