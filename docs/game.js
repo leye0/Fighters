@@ -3492,6 +3492,10 @@ const miningCycle=window.FightersMiningCycle.create({
 });
 function cancelMineJob(actor){return miningCycle.cancel(actor);}
 function assignMiners(clan='orc'){return miningCycle.assign(clan);}
+// Worker-order validation also runs before the mining cycle is assembled.
+function canMine(actor,mine){
+  return window.FightersMiningCycle.canMine(actor,mine,roles.isWorker);
+}
 function orderMine(actors,mine){
   const issued=workerOrders.mine(actors,mine);
   if(issued){showBanner('EXTRACTION D’OR');acknowledgePlayerOrder(actors);refreshHUD();}

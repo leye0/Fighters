@@ -11,6 +11,11 @@
 
   const MINING_SECONDS=4.5,MINING_PAY=60;
 
+  function canMine(actor,mine,isWorker){
+    return isWorker(actor)&&mine?.type==='mine'&&
+      mine.clanId==='neutral'&&!mine.destroyed;
+  }
+
   function create({units,buildingInstances,roles,fogOfWar,isRunning,
     directorEnabled,targetDistance,acknowledgeOrcAiOrder,unitFaction,
     liveBuildings,woodStoreFor,buildingContact,approachBuilding,navigateActor,
@@ -55,17 +60,13 @@
         if(clan==='orc')acknowledgeOrcAiOrder([miner]);
       }
     }
-    function canMine(actor,mine){
-      return roles.isWorker(actor)&&mine?.type==='mine'&&
-        mine.clanId==='neutral'&&!mine.destroyed;
-    }
     function tick(actor,dt){
       const job=actor.mineJob;
       if(!job)return false;
       if(job.retryWait>0){job.retryWait=Math.max(0,job.retryWait-dt);
         animation(actor,'Idle_Loop');return true;}
       const mine=buildingInstances.get(job.mineId);
-      if(!canMine(actor,mine)){cancel(actor);return false;}
+      if(!canMine(actor,mine,roles.isWorker)){cancel(actor);return false;}
       // Workers are economic units: they never acquire combat targets.
       if(job.phase==='carry'){
         const store=goldStoreFor(actor);
@@ -113,5 +114,5 @@
     }
     return Object.freeze({assign,tick,cancel});
   }
-  return Object.freeze({create});
+  return Object.freeze({create,canMine});
 });

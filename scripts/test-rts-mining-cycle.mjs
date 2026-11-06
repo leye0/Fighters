@@ -3,7 +3,7 @@ import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-mining-cycle.js');
+const {create,canMine}=require('../docs/rts-mining-cycle.js');
 const worker=(id,kind,x)=>({id,kind,role:'worker',dead:false,
   root:{position:{x,y:0,z:0}},route:{old:true},approachCache:{old:true}});
 const building=(id,type,x,clanId='neutral',level=1)=>({id,type,clanId,level,
@@ -51,6 +51,14 @@ function fixture(){
     setRunning:value=>{running=value;},setExplored:value=>{explored=value;},
     setNavigation:value=>{navResult=value;},setApproach:value=>{approach=value;},
     treasury:()=>treasury,newTreasury:()=>{treasury={orc:0,witch:0};}};
+}
+
+{
+  const f=fixture();
+  assert.equal(canMine(f.orc1,f.mine1,u=>u.role==='worker'),true);
+  assert.equal(canMine({...f.orc1,role:'melee'},f.mine1,u=>u.role==='worker'),false);
+  assert.equal(canMine(f.orc1,f.barrack,u=>u.role==='worker'),false);
+  assert.equal(canMine(f.orc1,null,u=>u.role==='worker'),false);
 }
 
 {
@@ -155,6 +163,9 @@ assert(game.includes('window.FightersMiningCycle.create('));
 assert(game.includes('return miningCycle.assign(clan)'));
 assert(game.includes('return miningCycle.tick(actor,dt)'));
 assert(game.includes('return miningCycle.cancel(actor)'));
+assert(game.includes('return window.FightersMiningCycle.canMine(actor,mine,roles.isWorker)'));
+assert(game.includes('canRepair:repairRules.canRepair,isWorker:roles.isWorker,canMine,'),
+  'The pre-existing worker-order service must retain its mining validator');
 assert(!game.includes('const MINING_SECONDS='),
   'The extracted mining timer must be owned by rts-mining-cycle.js');
 console.log('PASS mining cycle: AI, fog, extraction, delivery, reset resources, cancellation and retries.');
