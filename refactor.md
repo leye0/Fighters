@@ -56,8 +56,9 @@ qu'après modification, vérification et intégration dans `main`.
 
 ## 4. Tests et validation
 
-- [ ] Répartir `scripts/browser-qa.mjs` en scénarios `visual`, `economy`,
-      `combat` et interaction tactile, avec un pilote Chrome partagé.
+- [x] Répartir `scripts/browser-qa.mjs` en scénarios `visual`, `economy`,
+      `combat`, `dome` et interaction tactile, avec un pilote Chrome partagé.
+      Les tests tactiles restent exécutés par le groupe `visual`.
 - [ ] Ajouter des tests ciblés pour chaque commande extraite du fichier HTML.
 - [ ] Isoler les contrôles `window.__fightersQA` derrière le mode QA et une
       interface de test explicite.

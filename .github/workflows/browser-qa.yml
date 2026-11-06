@@ -55,6 +55,7 @@ on:
       - 'scripts/test-rts-raiding.mjs'
       - 'scripts/test-rts-map.mjs'
       - 'scripts/browser-qa.mjs'
+      - 'scripts/browser-qa/**'
       - 'scripts/verify-costumes.mjs'
       - 'crops_low_poly.glb'
       - 'scripts/build-runtime-crops.mjs'
@@ -94,6 +95,8 @@ jobs:
           python-version: '3.12'
       - name: Test deterministic navigation and orc strategic planning
         run: |
+          node --check scripts/browser-qa.mjs
+          for qa_file in scripts/browser-qa/*.mjs; do node --check "$qa_file"; done
           node scripts/test-rts-footprint.mjs
           node scripts/test-rts-walls.mjs
           node scripts/test-rts-navigation.mjs

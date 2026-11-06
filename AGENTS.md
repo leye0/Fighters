@@ -11,8 +11,11 @@ et le rendu actuels sont des contraintes de non-régression.
   domaine ; privilégier des fonctions pures, déterministes et testables sous Node.
 - `docs/styles/` : présentation CSS ; ne doit pas modifier les règles du jeu.
 - `scripts/test-*.mjs` : tests unitaires ; ajouter un test au système modifié.
-- `scripts/browser-qa.mjs` : QA WebGL de bout en bout ; éviter d'y concentrer
-  de nouveaux scénarios sans préparer leur extraction.
+- `scripts/browser-qa.mjs` : orchestration des scénarios Chrome/WebGL.
+- `scripts/browser-qa/{visual,economy,combat,dome,touch}.mjs` : scénarios QA
+  indépendants ; modifier le fichier du scénario concerné.
+- `scripts/browser-qa/chrome-driver.mjs` : transport Chrome DevTools partagé ;
+  coordonner ses changements puisqu'ils affectent tous les scénarios.
 - `.github/workflows/` : génération, validation et publication ; éviter les
   modifications concurrentes de `main` par plusieurs jobs.
 
@@ -37,6 +40,8 @@ et le rendu actuels sont des contraintes de non-régression.
 - `node scripts/test-rts-*.mjs` (via boucle ou commande équivalente)
 - `node scripts/test-orc-strategy.mjs`
 - `node scripts/test-witch-strategy.mjs`
+- `node --check scripts/browser-qa.mjs` et tous les fichiers
+  `scripts/browser-qa/*.mjs`
 - `git diff --check`
 - Pour HTML, CSS, entrées, simulation et rendu : QA réelle dans
   `.github/workflows/browser-qa.yml` (`visual`, `economy`, `combat`).
