@@ -9,7 +9,8 @@
   'use strict';
   const HARE_COUNT=16,HARE_FOOD=9,CORPSE_FOOD=42;
   const FOOD_PER_ORC_SECOND=.027,STARTING_FOOD=45,STARVATION_DAMAGE=2.3;
-  const HUNT_SIGHT=10,EAT_SECONDS=1.6,RESPAWN_SECONDS=48;
+  const HUNT_SIGHT=16,MAX_HUNTERS=4,HUNT_RESERVE=140;
+  const EAT_SECONDS=1.6,RESPAWN_SECONDS=48;
   // Hares still flee visibly, but an orc must gain ground reliably during a hunt.
   const HARE_FLEE_SPEED=1.35,HARE_WANDER_SPEED=.7,HARE_CAPTURE_DISTANCE=1.2;
   // Probe around a solid obstacle instead of repeatedly bouncing against it.
@@ -20,6 +21,9 @@
   const MAX_POPULATION=32;
   const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
   const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
+  function shouldHuntHares(food,population){
+    return food<Math.max(HUNT_RESERVE,population*20);
+  }
 
   // Low-poly hares have no supplied rig animation. This shared pose gives
   // them a readable two-beat hop and a subtle breathing/ear-bob while idle.
@@ -194,7 +198,8 @@
   }
   return Object.freeze({Economy,Hares,housingCap,hasCauldron,hareAnimationPose,HARE_COUNT,
     HARE_FOOD,CORPSE_FOOD,FOOD_PER_ORC_SECOND,STARTING_FOOD,STARVATION_DAMAGE,
-    HUNT_SIGHT,EAT_SECONDS,RESPAWN_SECONDS,HARE_FLEE_SPEED,
+    HUNT_SIGHT,MAX_HUNTERS,HUNT_RESERVE,shouldHuntHares,
+    EAT_SECONDS,RESPAWN_SECONDS,HARE_FLEE_SPEED,
     HARE_WANDER_SPEED,HARE_CAPTURE_DISTANCE,BASE_HOUSING,HUT_CAPACITY,
     MAX_POPULATION});
 });

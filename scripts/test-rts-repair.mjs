@@ -22,4 +22,33 @@ const orc={kind:'orc',role:'worker',dead:false};
 const barrack={type:'barrack',clanId:'orcs',health:30,maxHealth:100,destroyed:false};
 assert(repair.canRepair(orc,barrack));
 assert.equal(repair.restore(barrack,1),18);
-console.log('PASS repair: allied worker only, proportional fast repair, cap and destroyed safeguards');
+const paid={...house,health:100,maxHealth:500,level:1};
+const materials={gold:230,wood:75};
+const fullCost=repair.fullRepairCost(paid,materials);
+assert.equal(fullCost.gold,230*repair.REPAIR_COST_RATIO);
+assert.equal(fullCost.wood,75*repair.REPAIR_COST_RATIO);
+const first=repair.restorePaid(paid,1,{gold:200,wood:200},materials);
+assert(Math.abs(first.restored-90)<1e-9);
+assert(Math.abs(first.goldSpent-fullCost.gold*.18)<1e-9);
+assert(Math.abs(first.woodSpent-fullCost.wood*.18)<1e-9);
+assert.equal(paid.health,190);
+const depleted={...paid,health:100};
+const empty=repair.restorePaid(depleted,1,{gold:0,wood:200},materials);
+assert.equal(empty.restored,0,'Without gold, a house cannot heal for free');
+assert.equal(depleted.health,100);
+const short=repair.restorePaid(depleted,3,{gold:fullCost.gold*.1,wood:200},materials);
+assert(Math.abs(short.restored-50)<1e-9,'Repairs stop when the gold runs out');
+assert(Math.abs(short.goldSpent-fullCost.gold*.1)<1e-9);
+assert.equal(depleted.health,150);
+const woodLimited=repair.restorePaid({...paid,health:100},3,
+  {gold:200,wood:fullCost.wood*.05},materials);
+assert(Math.abs(woodLimited.restored-25)<1e-9,'Wood can also limit repairs');
+const almostFull={...paid,health:499};
+const capped=repair.restorePaid(almostFull,5,{gold:200,wood:200},materials);
+assert.equal(capped.restored,1,'Do not charge beyond the missing health');
+assert(Math.abs(capped.goldSpent-fullCost.gold/500)<1e-9);
+assert(repair.fullRepairCost({...paid,level:3},materials).gold>fullCost.gold,
+  'High-level buildings must cost more to repair');
+assert.throws(()=>repair.restorePaid(paid,-1,{gold:200,wood:200},materials),
+  /Invalid repair time/);
+console.log('PASS repair: allied workers, paid gold/wood restoration, affordable partial work and safeguards');
