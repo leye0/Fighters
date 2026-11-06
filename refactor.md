@@ -29,10 +29,13 @@ qu'après modification, vérification et intégration dans `main`.
       musique poussent vers `${GITHUB_REF_NAME}` (qui peut désigner `main`).
       Les conserver fonctionnels tant que leur mode de livraison n'est pas
       remplacé et vérifié.
-- [ ] Migrer ces workflows de génération vers des branches de résultat et une
-      intégration contrôlée, sans interrompre les publications audio.
-      Migration et tests Git synthétiques ajoutés ; la validation du workflow
-      `generated-results.yml` sur `main` reste requise avant de cocher.
+- [x] Migrer les huit workflows de publication vers des branches de résultat
+      `automation-results/<workflow>/<run>-<tentative>` puis une intégration
+      contrôlée dans `main`, sans PR ni force-push. Les deux workflows musicaux
+      conservent leur branche de révision et évitent toute publication directe
+      depuis `main`. Trois tests Git (succès, progression concurrente, conflit
+      conservant les assets) et garde des dix workflows verts :
+      run 42282115438 (`generated-results.yml`, 1 job vert).
 - [x] Centraliser la préparation des modèles pour Pages et Chrome dans
       `scripts/prepare-runtime-assets.sh`, avec les mêmes vérifications.
 - [x] Préparer et tester les assets une seule fois par exécution QA, puis les
