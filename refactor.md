@@ -49,10 +49,11 @@ qu'après modification, vérification et intégration dans `main`.
       reconstruction occasionnelle, validation Chrome puis publication v2/v3
       et actualisation du verrou sans PR. Le code du workflow existe ; son
       premier parcours complet avec une nouvelle version reste à vérifier.
-- [ ] Ajouter un manifeste de dépendances avec versions et fichier de verrouillage
-      pour reproduire le build localement et en CI.
-      Le manifeste et la génération du verrou sur CI sont intégrés ; cocher
-      après installation `npm ci` vérifiée et intégration du verrou sur `main`.
+- [x] Ajouter un manifeste de dépendances avec versions exactes et
+      `package-lock.json` vérifié ; le build utilise désormais `npm ci` et
+      le workflow `build-lock.yml` reconstruit le verrou au besoin.
+      Run 42282712421 vert : résolution, test des intégrités et installation
+      des dépendances en CI. Commit du verrou : 696738d.
 
 ## 2. Séparer le cœur de la simulation
 
