@@ -4580,68 +4580,21 @@ function frame(){
   if(minimapElapsed>=.18){minimapElapsed=0;drawMinimap();}
 }
 frame();
-function touchAt(x,y,append=false){
-  if(!running||paused||!$('overlay').hidden)return;
-  const pos=worldPoint(x,y);
-  if(!pos)return;
-  if(ravenMoveMode){issueRavenMove(pos);return;}
-  if(rallyMode){if(!setRally(selectedBuilding,pos))showBanner('EMPLACEMENT INVALIDE');return;}
-  if(buildMode){if(!scheduleBuild(buildMode,pos.x,pos.z))
-    showBanner('EMPLACEMENT INVALIDE / OUVRIER INDISPONIBLE');return;}
-  // A sanctuary tap is a movement command while witches are selected.
-  // Give it priority over flying ravens and silhouettes crossing the ring;
-  // our own finished circles remain commandable even during fog refresh.
-  if(!attackMode&&activeFaction==='witch'&&selected.size){
-    const sanctuary=liveBuildings().find(b=>b.type==='stone-circle'&&
-      b.clanId==='witch'&&!b.destroyed&&
-      window.FightersFootprints.inside(pos,b.hitbox));
-    if(sanctuary&&issueStoneCircleMove(sanctuary))return;
-  }
-  const raven=pickRaven(x,y);
-  if(raven){selectRaven(raven);return;}
-  const friend=pickUnit(x,y,false),building=pickBuilding(pos);
-  const unit=pickUnit(x,y,true);
-  const treeIndex=selected.size?pickTree(x,y):null;
-  const logIndex=selected.size?pickLogBundle(x,y):null;
-  const faction=activeFaction==='witch'?'witch':'orcs';
-  // A selected unit needs only one more tap inside the hostile GLB footprint:
-  // no separate target mode, and the polygon wins over nearby unit circles.
-  if(selected.size){
-    if(building&&orderRepair([...selected],building))return;
-    if(building?.type==='mine'&&orderMine([...selected],building))return;
-    if(building?.type==='garden'&&orderHarvest([...selected],building))return;
-    if(building&&targetFaction(building)!==faction&&targetFaction(building)!=='neutral'&&
-      orderAttack([...selected],building))return;
-    if(unit&&targetFaction(unit)!==faction){
-      orderAttack([...selected],unit);return;
-    }
-    if(treeIndex!==null&&orderChop([...selected],treeIndex))return;
-    if(logIndex!==null&&orderCollectWood([...selected],logIndex))return;
-  }
-  if(attackMode){
-    showBanner('CIBLE ENNEMIE REQUISE');return;
-  }
-  // The character silhouette wins over an overlapping house, while empty
-  // space continues to use the building's exact flat X/Z footprint.
-  if(friend){selectUnits([friend],append);return;}
-  if(building){selectBuilding(building);return;}
-  if(selectedRaven){issueRavenMove(pos);return;}
-  if(selected.size){issueMove(pos);return;}
-  clearSelection();
-}
-function selectRectangle(a,b,append=false){
-  const left=Math.min(a.x,b.x),right=Math.max(a.x,b.x),
-    top=Math.min(a.y,b.y),bottom=Math.max(a.y,b.y);
-  // Rectangles intersect visible character silhouettes, not only the actor's
-  // root pixel. A one-finger box on a small phone screen must not inexplicably
-  // ignore a witch whose feet are just outside the rectangle.
-  const actors=units.filter(u=>!u.dead&&u.kind===activeFaction).filter(u=>{
-    const p=screenPoint(u),radius=viewport.clientWidth<760?11:7;
-    return p.x+radius>=left&&p.x-radius<=right&&
-      p.y+radius>=top&&p.y-radius<=bottom;
-  });
-  selectUnits(actors,append);
-}
+// Player target priority and screen-space box picking live outside the
+// rendering/simulation root. The adapter supplies current RTS state each tap.
+const playerActions=window.FightersPlayerActions.create({
+  getState:()=>({running,paused,overlayHidden:$('overlay').hidden,
+    ravenMoveMode,rallyMode,selectedBuilding,buildMode,attackMode,
+    activeFaction,selected,selectedRaven}),
+  worldPoint,issueRavenMove,setRally,scheduleBuild,showBanner,
+  liveBuildings,insideFootprint:(point,hitbox)=>window.FightersFootprints.inside(point,hitbox),
+  issueStoneCircleMove,pickRaven,selectRaven,pickUnit,pickBuilding,pickTree,pickLogBundle,
+  targetFaction,orderRepair,orderMine,orderHarvest,orderAttack,orderChop,orderCollectWood,
+  selectUnits,selectBuilding,issueMove,clearSelection,
+  getUnits:()=>units,screenPoint,getViewportWidth:()=>viewport.clientWidth
+});
+function touchAt(x,y,append=false){playerActions.tap(x,y,append);}
+function selectRectangle(a,b,append=false){playerActions.box(a,b,append);}
 // One Pointer Events chain handles mouse selection, one-finger pan/tap and
 // two-finger boxes. The controller owns transient gesture state, not RTS state.
 const gestures=window.FightersGestures.create({

@@ -33,6 +33,9 @@ modules (`docs/rts-contracts.d.ts`).
 - `docs/rts-gestures.js` : automate des gestes tactiles et souris (tap, pan,
   boîte à deux doigts, boîte desktop), sans état du moteur ; les callbacks
   de commandes et le viewport sont injectés par `docs/game.js`.
+- `docs/rts-player-actions.js` : priorité des cibles et modes d'interaction
+  après un tap, sélection de groupe par rectangle ; dépend seulement d'un
+  état courant et de services injectés, sans moteur graphique.
 - `docs/rts-minimap.js` : dessin Canvas 2D de la mini-carte, brouillard du sol,
   bâtiments et points d'unités ; `docs/game.js` conserve les événements d'entrée.
 - `docs/rts-hud.js` : fabrication des boutons, textes de ressources et barres
