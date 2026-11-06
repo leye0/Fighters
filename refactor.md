@@ -67,9 +67,10 @@ qu'après modification, vérification et intégration dans `main`.
 - [x] Extraire les commandes `move` et `attack` dans `rts-orders.js`, avec
       annulation des raids et des tâches, sans dépendance DOM/Three.js.
       Tests Node et Chrome verts (run 42257656954).
-- [ ] Valider dans Chrome l'ordre `stop` extrait dans `rts-orders.js`,
+- [x] Valider dans Chrome l'ordre `stop` extrait dans `rts-orders.js`,
       qui conserve la séquence des nettoyages de tâches sans modifier les
-      états de défense ou de raid non concernés par l'arrêt.
+      états de défense ou de raid non concernés par l'arrêt :
+      run 42267811356, trois scénarios verts.
 - [ ] Faire passer `repair`, `build`, `harvest` et les autres ordres dans ce
       service, puis cocher l'isolation complète des commandes ci-dessus.
 - [x] Valider dans Chrome l'assignation de construction déplacée dans
@@ -147,12 +148,18 @@ qu'après modification, vérification et intégration dans `main`.
 - [x] Répartir `scripts/browser-qa.mjs` en scénarios `visual`, `economy`,
       `combat`, `dome` et interaction tactile, avec un pilote Chrome partagé.
       Les tests tactiles restent exécutés par le groupe `visual`.
-- [ ] Ajouter des tests ciblés pour chaque commande extraite du fichier HTML.
+- [x] Ajouter des tests ciblés pour chaque commande extraite du fichier HTML :
+      déplacements/attaques/arrêt, tâches d'ouvriers, construction, production,
+      gestes tactiles et politique de ciblage ; exécutés dans la QA Chrome.
 - [x] Isoler l'interface `window.__fightersQA` derrière le mode `?qa=1`,
       sans l'exposer aux parties normales ; QA Chrome vérifiée.
 - [ ] Mesurer les temps de tests et les coûts GitHub Actions avant/après.
 - [x] Décrire les frontières de modules, propriétaires de fichiers, contrats,
       invariants de simulation et règles d'intégration dans `docs/architecture.md`.
+- [ ] Exécuter sous CI un garde-fou d'architecture pour empêcher les
+      réintroductions de code métier dans le HTML, les scripts manquants,
+      les dépendances inversées, les zones sans propriétaire et les rebuilds
+      géants à chaque changement de code.
 - [x] Faire une QA Chrome/WebGL complète après le premier lot : simulation
       et garde QA (run 42256932710 : visual, economy, combat verts).
 - [x] Faire une QA Chrome/WebGL complète après le deuxième lot : ordres
