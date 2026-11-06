@@ -32,6 +32,7 @@ document.addEventListener('touchend',event=>{
 <script src="./rts-walls.js"></script>
 <script src="./rts-navigation.js"></script>
 <script src="./rts-unit-physics.js"></script>
+<script src="./rts-simulation.js"></script>
 <script src="./rts-raiding.js"></script>
 <script src="./orc-strategy.js"></script>
 <script src="./witch-strategy.js"></script>
@@ -4947,46 +4948,58 @@ function stepWitchStrategy(dt){
     }
   }
 }
-const FIXED_DT=1/60;
+const FIXED_DT=window.FightersSimulation.FIXED_DT;
 let accumulator=0,uiElapsed=0;
-function stepGame(dt){
-  if(!ready||!running||paused)return;
-  stepProduction(dt);
-  magic=soulRules.magicAfterTime(magic,dt);
-  orcMagic=soulRules.magicAfterTime(orcMagic,dt);
-  stepWitchDome(dt);
-  stepFireRain(dt);
-  stepHealing(dt);
-  assignSoulHarvesters(dt);
-  stepFarming(dt);
-  stepOrcFood(dt);
-  stepOrcStrategy(dt);
-  stepWitchStrategy(dt);
-  stepSpellDefense(dt);
-  if(ravenModelLoaded){
-    ravenFlock.update(dt,units.filter(actor=>actor.kind==='orc'&&!actor.dead));
-    tickRavenSounds();
-  }
-  for(const actor of units)tickUnit(actor,dt);
-  stepSoulEffects(dt);
-  tickBolts(dt);
-  effects.update();
-  window.FightersUnitPhysics.separate(units,navigatorRTS,UNIT_RADIUS,dt);
-  for(let i=units.length-1;i>=0;i--)if(units[i].dead&&units[i].deadTime<=0){
-    releaseActor(units[i]);units.splice(i,1);
-  }
-  const corpses=units.filter(unit=>unit.dead);
-  if(corpses.length>soulRules.MAX_CORPSES){
-    corpses.sort((a,b)=>a.deadTime-b.deadTime);
-    for(const corpse of corpses.slice(0,corpses.length-soulRules.MAX_CORPSES)){
-      releaseActor(corpse);units.splice(units.indexOf(corpse),1);
-    }
-  }
-  fogElapsed+=dt;
-  if(fogElapsed>=.125){fogElapsed=0;updateVision();}
-  uiElapsed+=dt;
-  if(uiElapsed>.25){uiElapsed=0;refreshHUD();}
-}
+// Explicit, fixed-order simulation phases: adding a system no longer requires
+// editing a monolithic tick loop. This list is compiled once at startup.
+const stepGame=window.FightersSimulation.createStepper(
+  ()=>ready&&running&&!paused,[
+    ['production',stepProduction],
+    ['magic regeneration',dt=>{
+      magic=soulRules.magicAfterTime(magic,dt);
+      orcMagic=soulRules.magicAfterTime(orcMagic,dt);
+    }],
+    ['witch dome',stepWitchDome],
+    ['orc fire rain',stepFireRain],
+    ['healing',stepHealing],
+    ['soul assignments',assignSoulHarvesters],
+    ['farming',stepFarming],
+    ['orc food',stepOrcFood],
+    ['orc strategy',stepOrcStrategy],
+    ['witch strategy',stepWitchStrategy],
+    ['defensive spells',stepSpellDefense],
+    ['ravens',dt=>{
+      if(ravenModelLoaded){
+        ravenFlock.update(dt,units.filter(actor=>actor.kind==='orc'&&!actor.dead));
+        tickRavenSounds();
+      }
+    }],
+    ['units',dt=>{for(const actor of units)tickUnit(actor,dt);}],
+    ['souls',stepSoulEffects],
+    ['projectiles',tickBolts],
+    ['sound effects',()=>effects.update()],
+    ['crowd physics',dt=>window.FightersUnitPhysics.separate(units,navigatorRTS,UNIT_RADIUS,dt)],
+    ['corpse cleanup',()=>{
+      for(let i=units.length-1;i>=0;i--)if(units[i].dead&&units[i].deadTime<=0){
+        releaseActor(units[i]);units.splice(i,1);
+      }
+      const corpses=units.filter(unit=>unit.dead);
+      if(corpses.length>soulRules.MAX_CORPSES){
+        corpses.sort((a,b)=>a.deadTime-b.deadTime);
+        for(const corpse of corpses.slice(0,corpses.length-soulRules.MAX_CORPSES)){
+          releaseActor(corpse);units.splice(units.indexOf(corpse),1);
+        }
+      }
+    }],
+    ['fog',dt=>{
+      fogElapsed+=dt;
+      if(fogElapsed>=.125){fogElapsed=0;updateVision();}
+    }],
+    ['hud',dt=>{
+      uiElapsed+=dt;
+      if(uiElapsed>.25){uiElapsed=0;refreshHUD();}
+    }]
+  ]);
 function animateStoneCircles(dt){
   if(paused||!running)return;
   for(const circle of buildingInstances.values()){
@@ -5012,10 +5025,7 @@ function frame(){
   expireOrderPings();
   const dt=Math.min(clock.getDelta(),.25);
   for(const mixer of orcAnimationMixers)if(!paused&&isSceneDescendant(mixer.getRoot()))mixer.update(dt);
-  accumulator+=dt;
-  let ticks=0;
-  while(accumulator>=FIXED_DT&&ticks<12){stepGame(FIXED_DT);accumulator-=FIXED_DT;ticks++;}
-  if(ticks===12)accumulator=0;
+  accumulator=window.FightersSimulation.advanceFrame(accumulator,dt,stepGame);
   if(!paused)for(const actor of units){applyFacing(actor);actor.mixer.update(dt);}
   animateStoneCircles(dt);
   syncRavenVisuals(dt);
@@ -5408,7 +5418,10 @@ function forestVisibleInViewport(){
   }
   return visible;
 }
-window.__fightersQA={
+// The browser-test control surface must not be reachable in a real match.
+// Keeping its closures inside this guard also avoids building the harness
+// object (and retaining its references) for regular players.
+if(qaMode)window.__fightersQA={
   snapshot:()=>({
     loading:{...loadingProfile,characters:{...loadingProfile.characters}},
     forest:{instances:forestLayout.filter(tree=>!tree.felled).length,

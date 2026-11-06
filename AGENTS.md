@@ -9,6 +9,9 @@ et le rendu actuels sont des contraintes de non-régression.
   de nouveaux systèmes complets. Extraire progressivement, sans gros rewrite.
 - `docs/rts-*.js`, `docs/orc-strategy.js`, `docs/witch-strategy.js` : règles de
   domaine ; privilégier des fonctions pures, déterministes et testables sous Node.
+- `docs/rts-simulation.js` : ordonnanceur déterministe à 60 Hz et budget de
+  rattrapage ; les phases nommées sont assemblées dans `docs/index.html`.
+  Préserver leur ordre exact et ne pas allouer d'objets à chaque tick.
 - `docs/styles/` : présentation CSS ; ne doit pas modifier les règles du jeu.
 - `scripts/test-*.mjs` : tests unitaires ; ajouter un test au système modifié.
 - `scripts/browser-qa.mjs` : orchestration des scénarios Chrome/WebGL.
