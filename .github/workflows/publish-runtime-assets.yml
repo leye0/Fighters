@@ -1,0 +1,41 @@
+name: Freeze verified Fighters runtime assets
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/publish-runtime-assets.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    name: Pin verified runtime assets in a GitHub Release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Download exactly the QA-verified asset archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error --retry 3 \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/13517873358/zip" \
+            -o fighters-runtime-assets-v1.zip
+          echo "cde9f566c2bd7c059e6cdb438707643ffbc38703b59281c26053072645dfd93c  fighters-runtime-assets-v1.zip" | sha256sum --check
+          unzip -tq fighters-runtime-assets-v1.zip
+      - name: Create the immutable-by-policy release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view fighters-runtime-assets-v1 >/dev/null 2>&1; then
+            echo 'Release tag already exists; refusing to replace its assets.' >&2
+            exit 1
+          fi
+          gh release create fighters-runtime-assets-v1 fighters-runtime-assets-v1.zip \
+            --title 'Fighters runtime assets v1 (QA verified)' \
+            --notes 'Frozen build from commit 5390b999149587eb737a246e6f62d0a231d239d6, Chrome QA run 42247759276 (all three groups passed). Archive SHA-256: cde9f566c2bd7c059e6cdb438707643ffbc38703b59281c26053072645dfd93c. Runtime files are under models/ and vendor/.' \
+            --target 5390b999149587eb737a246e6f62d0a231d239d6 \
+            --latest=false
