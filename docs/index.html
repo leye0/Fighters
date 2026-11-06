@@ -2131,6 +2131,14 @@ function clearSelection(){
   for(const actor of selected)actor.selectionRing.visible=false;
   selected.clear();selectedBuilding=null;drawBuildingSelection();refreshHUD();
 }
+function deselectAssignedWorkers(actors){
+  // A completed work order leaves the player free to pick the next unit.
+  // Preserve fighters in a mixed selection and never touch AI assignments.
+  for(const actor of actors){
+    if(!roles.isWorker(actor)||!selected.delete(actor))continue;
+    actor.selectionRing.visible=false;
+  }
+}
 function selectRaven(raven){
   if(activeFaction!=='witch')return;
   clearSelection();selectedRaven=raven;
@@ -3169,6 +3177,7 @@ function scheduleBuild(type,x,z,{byAI=false,axis=null}={}){
   worker.attackOrder=null;worker.route=null;worker.approachCache=null;
   if(clan==='orc'&&byAI)acknowledgeOrcAiOrder([worker]);
   else if(!byAI)acknowledgePlayerOrder([worker]);
+  if(!byAI)deselectAssignedWorkers([worker]);
   buildMode=null;
   if(!byAI)showBanner('OUVRIER EN CONSTRUCTION');
   refreshHUD();return true;
@@ -3225,7 +3234,7 @@ function tickConstructWorker(actor,dt){
 function cancelRepair(actor){actor.repairJob=null;}
 function orderRepair(actors,building,{byAI=false}={}){
   if(!running||paused)return false;
-  let assigned=0;
+  const assigned=[];
   for(const actor of actors){
     if(!repairRules.canRepair(actor,building)||(byAI&&actor.workerRetryTime>0))continue;
     cancelConstruction(actor);cancelWoodJob(actor);cancelFarmJob(actor);
@@ -3234,18 +3243,19 @@ function orderRepair(actors,building,{byAI=false}={}){
     actor.repairJob={buildingId:building.id};actor.workHitTimer=0;
     actor.destination=null;actor.attackOrder=null;actor.route=null;
     actor.routeVersion=-1;actor.routeAge=0;actor.approachCache=null;
-    assigned++;
+    assigned.push(actor);
   }
-  if(assigned){
+  if(assigned.length){
     if(!byAI){
       const box=building.hitbox;
       showOrderPing({x:(box.minX+box.maxX)/2,z:(box.minZ+box.maxZ)/2,y:.15},'move');
-      acknowledgePlayerOrder(actors);
+      acknowledgePlayerOrder(assigned);
       showBanner('RÉPARATION EN COURS');
+      deselectAssignedWorkers(assigned);
     }
     refreshHUD();
   }
-  return assigned>0;
+  return assigned.length>0;
 }
 function tickRepairWorker(actor,dt){
   if(!actor.repairJob)return false;
@@ -3263,6 +3273,15 @@ function tickRepairWorker(actor,dt){
     }else{markWorkBlocked(actor);cancelRepair(actor);animation(actor,'Idle_Loop');return false;}
     return true;
   }
+  const clan=actor.kind;
+  const result=repairRules.restorePaid(building,dt,
+    {gold:gold[clan],wood:wood[clan]},
+    {gold:constructionCost(building.type),wood:constructionWood(building.type)});
+  if(!result.restored){
+    animation(actor,'Idle_Loop');return true;
+  }
+  gold[clan]=Math.max(0,gold[clan]-result.goldSpent);
+  wood[clan]=Math.max(0,wood[clan]-result.woodSpent);
   faceBuildingCenter(actor,building);
   animation(actor,WORK_SWING);
   actor.workHitTimer=(actor.workHitTimer||0)+dt;
@@ -3270,7 +3289,6 @@ function tickRepairWorker(actor,dt){
   if(actor.workHitTimer>=swingSeconds){
     actor.workHitTimer-=swingSeconds;playConstructionHit(actor);
   }
-  repairRules.restore(building,dt);
   if(building.healthBar)updateHealthBar(building);
   if(building.health>=building.maxHealth){
     cancelRepair(actor);animation(actor,'Idle_Loop');
@@ -3299,8 +3317,8 @@ function stopSelectedUnits(){
   refreshHUD();
 }
 function refreshHUD(){
-  setText('hud-gold',gold[activeFaction]);
-  setText('hud-wood',wood[activeFaction]);
+  setText('hud-gold',Math.floor(gold[activeFaction]+1e-8));
+  setText('hud-wood',Math.floor(wood[activeFaction]+1e-8));
   setText('hud-food',Math.ceil(activeFaction==='witch'?farming.food:orcFood.food));
   setText('hud-food-label',activeFaction==='witch'?'🌾 VIVRES':'🍖 VIANDE');
   $('hud-food-chip').title=activeFaction==='witch'? 'Blé et baies · consommation des sorcières':
@@ -3479,7 +3497,7 @@ function refreshHUD(){
             Math.min(...workers.map(w=>targetDistance(w,b))));
           if(!orderRepair(workers,damaged[0]))showBanner('AUCUN BÂTIMENT À RÉPARER');
         },!liveBuildings().some(b=>alive.some(w=>repairRules.canRepair(w,b))),
-        'Envoyer les ouvriers vers le bâtiment allié endommagé le plus proche');
+        'Envoyer les ouvriers vers le bâtiment allié endommagé le plus proche · réparations payantes en or et bois, selon les PV restaurés');
         add('🏗️',activeFaction==='witch'?'Construire':'Bât. base','',()=>{
           constructionTab='basic';refreshHUD();
         });
@@ -4308,7 +4326,7 @@ function assignMiners(clan='orc'){
     (clan==='orc'||fogOfWar.exploredAt(b.root.position.x,b.root.position.z,clan)));
   const workers=units.filter(u=>u.kind===clan&&roles.isWorker(u)&&!u.dead&&
     !u.constructJob&&!u.repairJob&&!u.treeJob&&!u.woodJob&&!u.farmJob&&
-    !u.workerRetryTime);
+    !u.orcFoodJob&&!u.workerRetryTime);
   const limit=Math.min(mines.length,Math.max(1,Math.floor(workers.length/3)));
   let assigned=workers.filter(u=>u.mineJob&&mines.some(b=>b.id===u.mineJob.mineId));
   for(const worker of workers){
@@ -4336,7 +4354,7 @@ function canMine(actor,mine){
 }
 function orderMine(actors,mine){
   if(!mine||mine.type!=='mine')return false;
-  let issued=0;
+  const assigned=[];
   for(const actor of actors){
     if(!canMine(actor,mine))continue;
     cancelConstruction(actor);cancelWoodJob(actor);cancelRepair(actor);
@@ -4344,10 +4362,13 @@ function orderMine(actors,mine){
     cancelMineJob(actor);
     actor.mineJob={mineId:mine.id,phase:'extract',progress:0,cycles:0,amount:0};
     actor.destination=null;actor.route=null;actor.approachCache=null;
-    issued++;
+    assigned.push(actor);
   }
-  if(issued){showBanner('EXTRACTION D’OR');acknowledgePlayerOrder(actors);refreshHUD();}
-  return issued>0;
+  if(assigned.length){
+    showBanner('EXTRACTION D’OR');acknowledgePlayerOrder(assigned);
+    deselectAssignedWorkers(assigned);refreshHUD();
+  }
+  return assigned.length>0;
 }
 function tickMineWorker(actor,dt){
   const job=actor.mineJob;
@@ -4434,7 +4455,7 @@ function cancelWoodJob(actor){
 function orderCollectWood(actors,index,{byAI=false}={}){
   const deposit=woodDeposits.get(index);
   if(!deposit)return false;
-  let assigned=0;
+  const assigned=[];
   for(const actor of actors){
     if(actor.dead||!roles.isWorker(actor)||
       (deposit.reservedBy&&deposit.reservedBy!==actor.id))continue;
@@ -4443,11 +4464,14 @@ function orderCollectWood(actors,index,{byAI=false}={}){
     actor.woodJob={index,phase:'pickup',progress:0,amount:0,goal:null};
     deposit.reservedBy=actor.id;
     actor.destination=null;actor.attackOrder=null;actor.route=null;
-    actor.approachCache=null;assigned++;
+    actor.approachCache=null;assigned.push(actor);
     break; // One bundle is a single physical resource, never double-counted.
   }
-  if(assigned){if(!byAI)showBanner('RAMASSAGE DES BÛCHES');refreshHUD();}
-  return assigned>0;
+  if(assigned.length){
+    if(!byAI){showBanner('RAMASSAGE DES BÛCHES');deselectAssignedWorkers(assigned);}
+    refreshHUD();
+  }
+  return assigned.length>0;
 }
 function woodStoreFor(actor){
   const clan=actor.kind==='witch'?'witch':'orcs';
@@ -4531,7 +4555,8 @@ function assignOrcLumberjack(){
   if(!orcDirector.enabled||wood.orc>=140||
     units.some(u=>u.kind==='orc'&&!u.dead&&(u.treeJob||u.woodJob)))return;
   const workers=units.filter(u=>u.kind==='orc'&&roles.isWorker(u)&&!u.dead&&
-    !u.constructJob&&!u.repairJob&&!u.farmJob&&!u.destination&&!u.workerRetryTime);
+    !u.constructJob&&!u.repairJob&&!u.farmJob&&!u.destination&&
+    !u.orcFoodJob&&!u.workerRetryTime);
   if(!workers.length)return;
   const candidates=[];
   for(let i=0;i<forestLayout.length;i++){
@@ -4570,17 +4595,23 @@ function assignWitchLumberjack(){
 function orderChop(actors,index,{byAI=false}={}){
   const tree=forestLayout[index];
   if(!tree||tree.felled)return false;
-  let assigned=0;
+  const assigned=[];
   for(const actor of actors){
     if(actor.dead||!roles.isWorker(actor))continue;
     cancelConstruction(actor);cancelWoodJob(actor);cancelRepair(actor);
     cancelMineJob(actor);cancelFarmJob(actor);actor.berryJob=null;
     actor.treeJob={index,progress:0,goal:null};
     actor.destination=null;actor.attackOrder=null;actor.route=null;
-    actor.approachCache=null;assigned++;
+    actor.approachCache=null;assigned.push(actor);
   }
-  if(assigned){if(!byAI){showBanner('COUPE DU BOIS');acknowledgePlayerOrder(actors);}refreshHUD();}
-  return assigned>0;
+  if(assigned.length){
+    if(!byAI){
+      showBanner('COUPE DU BOIS');acknowledgePlayerOrder(assigned);
+      deselectAssignedWorkers(assigned);
+    }
+    refreshHUD();
+  }
+  return assigned.length>0;
 }
 function treeChopGoal(actor,tree){
   const radius=tree.radius+UNIT_RADIUS+.25;
@@ -4652,7 +4683,7 @@ function cancelFarmJob(actor){
 }
 function orderHarvest(actors,garden){
   if(!garden||garden.type!=='garden'||garden.destroyed)return false;
-  let assigned=0;
+  const assigned=[];
   for(const actor of actors){
     if(actor.kind!=='witch'||actor.dead||!roles.isWorker(actor))continue;
     cancelConstruction(actor);cancelWoodJob(actor);cancelRepair(actor);
@@ -4660,10 +4691,13 @@ function orderHarvest(actors,garden){
     cancelFarmJob(actor);
     actor.farmJob={gardenId:garden.id,plotIndex:-1,progress:0,phase:'harvest',amount:0};
     actor.destination=null;actor.attackOrder=null;actor.route=null;actor.approachCache=null;
-    assigned++;
+    assigned.push(actor);
   }
-  if(assigned){showBanner('RÉCOLTE DU POTAGER');acknowledgePlayerOrder(actors);refreshHUD();}
-  return assigned>0;
+  if(assigned.length){
+    showBanner('RÉCOLTE DU POTAGER');acknowledgePlayerOrder(assigned);
+    deselectAssignedWorkers(assigned);refreshHUD();
+  }
+  return assigned.length>0;
 }
 function assignGardenWorkers(dt){
   farmAssignmentElapsed+=dt;
@@ -4805,11 +4839,13 @@ function assignOrcForagers(dt){
   const orcs=units.filter(u=>u.kind==='orc'&&!u.dead);
   // Corpse meals are opportunistic even with a full stockpile. Hares are
   // hunted before starvation, without pulling soldiers out of a real fight.
-  const huntHares=orcFood.food<Math.max(60,orcs.length*12);
+  const huntHares=orcFoodRules.shouldHuntHares(orcFood.food,orcs.length);
   let jobs=orcs.filter(u=>u.orcFoodJob).length;
-  if(jobs>=2)return;
+  if(jobs>=orcFoodRules.MAX_HUNTERS)return;
+  // Only available orcs hunt: a scout must finish discovering the map and
+  // strategic movement/combat orders always take precedence over wildlife.
   const candidates=orcs.filter(u=>!u.orcFoodJob&&!u.attack&&
-    !u.raiding&&!u.attackOrder&&(!u.destination||orcDirector.enabled&&u.scouting)&&
+    !u.raiding&&!u.scouting&&!u.attackOrder&&!u.destination&&
     !u.constructJob&&!u.repairJob&&!u.mineJob&&
     !u.treeJob&&!u.woodJob&&!u.farmJob&&!u.ravenDistraction&&
     !u.workerRetryTime&&!nearestHostile(u,8)?.target);
@@ -4828,7 +4864,7 @@ function assignOrcForagers(dt){
   prey.sort((a,b)=>(a.kind==='corpse'?0:1)-(b.kind==='corpse'?0:1)||
     closestHunter(a)-closestHunter(b));
   for(const target of prey){
-    if(jobs>=2)break;
+    if(jobs>=orcFoodRules.MAX_HUNTERS)break;
     if(orcs.some(u=>u.orcFoodJob?.kind===target.kind&&u.orcFoodJob?.id===target.id))continue;
     if(!fogOfWar.exploredAt(target.x,target.z,'orc'))continue;
     let nearest=null,minimum=orcFoodRules.HUNT_SIGHT;
@@ -4842,11 +4878,6 @@ function assignOrcForagers(dt){
     }
     if(!nearest)continue;
     nearest.orcFoodJob={kind:target.kind,id:target.id,progress:0};
-    // Autonomous scouting is resumable: the director will issue another
-    // frontier waypoint after the nearby food has been consumed.
-    if(nearest.scouting&&orcDirector.enabled){
-      nearest.scouting=false;nearest.destination=null;
-    }
     nearest.route=null;nearest.approachCache=null;jobs++;
   }
 }
@@ -5499,6 +5530,10 @@ function touchAt(x,y,append=false){
   const treeIndex=selected.size?pickTree(x,y):null;
   const logIndex=selected.size?pickLogBundle(x,y):null;
   const faction=activeFaction==='witch'?'witch':'orcs';
+  // A soldier fighting on top of an enemy house must remain selectable.
+  // Silhouette hits win over the house footprint, even if another soldier
+  // is currently selected and would otherwise issue a second attack order.
+  if(friend&&!attackMode){selectUnits([friend],append);return;}
   // A selected unit needs only one more tap inside the hostile GLB footprint:
   // no separate target mode, and the polygon wins over nearby unit circles.
   if(selected.size){
@@ -5518,7 +5553,6 @@ function touchAt(x,y,append=false){
   }
   // The character silhouette wins over an overlapping house, while empty
   // space continues to use the building's exact flat X/Z footprint.
-  if(friend){selectUnits([friend],append);return;}
   if(building){selectBuilding(building);return;}
   if(selectedRaven){issueRavenMove(pos);return;}
   if(selected.size){issueMove(pos);return;}
@@ -6242,6 +6276,16 @@ window.__fightersQA={
     actor.root.position.set(point.x,0,point.z);
     actor.route=null;actor.routeAge=0;actor.destination=null;
     updateVision();return true;
+  },
+  placeUnitInsideBuildingForSelectionTest:(kind,index,id)=>{
+    // Deliberately bypass collisions to reproduce a silhouette/footprint
+    // overlap in the tap dispatcher. Never used by normal gameplay.
+    const actor=units.filter(u=>u.kind===kind&&!u.dead)[index];
+    const building=liveBuildings().find(b=>b.id===id);
+    if(!actor||!building)return false;
+    const h=building.hitbox;
+    actor.root.position.set((h.minX+h.maxX)/2,0,(h.minZ+h.maxZ)/2);
+    actor.route=null;actor.destination=null;updateVision();return true;
   },
   strikeUnit:(attackerKind,attackerIndex,victimKind,victimIndex,amount=5)=>{
     const attacker=units.filter(u=>u.kind===attackerKind&&!u.dead)[attackerIndex];

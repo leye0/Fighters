@@ -331,7 +331,7 @@ async function run(){
  await evaluate('window.__fightersQA.reset()');
  console.log('PASS SIX CHARACTER ROLES: shared bodies and costume geometry, separate worker/melee/ranged stats.');
  // Repair is a direct building tap with a selected worker, including the
- // starting witch house. It must not select the building or spend resources.
+ // starting witch house. It spends resources and deselects the worker.
  await evaluate("window.__fightersQA.enableOrcAI(false);window.__fightersQA.setBuildingHealth('witch-house-01',300);"+
    "window.__fightersQA.selectUnit('witch',1)");
  check(await evaluate("Array.from(document.querySelectorAll('#command-buttons button')).some(b=>"+
@@ -341,7 +341,7 @@ async function run(){
  const houseTap=await evaluate("window.__fightersQA.buildingScreenPoint('witch-house-01')");
  await evaluate('window.__fightersQA.tap('+houseTap.x+','+houseTap.y+')');
  s=await evaluate('window.__fightersQA.snapshot()');
- check(s.witches[1].repairTargetId==='witch-house-01'&&s.selectedIds.includes(s.witches[1].id)&&
+ check(s.witches[1].repairTargetId==='witch-house-01'&&!s.selectedIds.includes(s.witches[1].id)&&
    !s.selectedBuildingId,'Tapping an allied damaged house must order a selected worker to repair it');
  const repairWorking=await evaluate("(()=>{for(let i=0;i<36;i++){"+
    "window.__fightersQA.advance(.25);const s=window.__fightersQA.snapshot();"+
@@ -353,15 +353,15 @@ async function run(){
  await evaluate('window.__fightersQA.advance(7)');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.house.health===s.house.maxHealth&&!s.repairs.length&&
-   s.gold.witch===beforeRepair.gold.witch&&s.wood.witch===beforeRepair.wood.witch,
-   'Repair must quickly reach exactly max health, finish, and not spend resources');
+   s.gold.witch<beforeRepair.gold.witch&&s.wood.witch<beforeRepair.wood.witch,
+   'Repair must quickly reach exactly max health, finish, and spend gold and wood');
  await evaluate("window.__fightersQA.setBuildingHealth('witch-house-01',200);"+
    "window.__fightersQA.selectUnit('witch',1);"+
    "Array.from(document.querySelectorAll('#command-buttons button')).find(b=>"+
    "b.textContent.includes('Réparer')).click()");
  check((await evaluate('window.__fightersQA.snapshot()')).witches[1].repairTargetId==='witch-house-01',
    'Repair panel action must find the nearest damaged allied building');
- await evaluate('window.__fightersQA.move(-8,-8)');
+ await evaluate("window.__fightersQA.selectUnit('witch',1);window.__fightersQA.move(-8,-8)");
  check(!(await evaluate('window.__fightersQA.snapshot()')).repairs.length,
    'Explicit movement must cancel the repair job');
  // The witch repair cancellation has not touched Orc structures or troops.
@@ -1151,6 +1151,26 @@ async function run(){
  check(s.gold.orc===noWorkerGold&&s.mining.totalMinedGold===0&&
    s.mining.workers.length===0,'Mine generated gold without any worker');
  check(s.house.level===1&&s.buildings.length===6,'Reset starting buildings');
+ // Manual repairs must consume actual resources, and assigned workers leave
+ // the selection while any selected fighters remain selected.
+ await evaluate("window.__fightersQA.setBuildingHealth('witch-house-01',500);"+
+   "window.__fightersQA.placeUnitBesideBuilding('witch',1,'witch-house-01');"+
+   "window.__fightersQA.selectWitches()");
+ const beforeRepair=await evaluate('window.__fightersQA.snapshot()');
+ check(await evaluate("window.__fightersQA.orderRepair('witch',1,'witch-house-01')"),
+   'Worker could not receive an allied building repair job');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.selectedIds.length===2&&s.selectedIds.every(id=>
+   s.witches.find(w=>w.id===id)?.role!=='worker'),
+   'Work order must deselect only the assigned worker, preserving selected fighters');
+ await evaluate('window.__fightersQA.advance(2)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.house.health>beforeRepair.house.health&&
+   s.gold.witch<beforeRepair.gold.witch&&s.wood.witch<beforeRepair.wood.witch,
+   'Repair healed a building without consuming gold and wood: '+
+     JSON.stringify({before:beforeRepair,after:s.house,gold:s.gold,wood:s.wood}));
+ await evaluate('window.__fightersQA.reset()');
+ s=await evaluate('window.__fightersQA.snapshot()');
  // A witch worker can mine a neutral deposit; soldiers cannot mine, and
  // workers cannot attack buildings. Collection requires physical contact.
  const hutForWorker=s.buildings.find(b=>b.type==='hut').id;
@@ -1163,9 +1183,12 @@ async function run(){
  check(!await evaluate("window.__fightersQA.attackBuilding('neutral-gold-mine')")&&
   !await evaluate("window.__fightersQA.attackBuilding('neutral-gold-mine-01')"),
   'Neither neutral deposit may become a hostile combat target');
+ await evaluate("window.__fightersQA.selectUnit('witch',1)");
  check(await evaluate("window.__fightersQA.orderMine('witch',1,'neutral-gold-mine-01')")&&
   await evaluate("window.__fightersQA.orderMine('orc',1,'neutral-gold-mine')"),
   'Both clans must be able to mine either neutral deposit');
+ check(!(await evaluate('window.__fightersQA.snapshot()')).selectedIds.length,
+   'A selected worker must be deselected after a mining assignment');
  await evaluate("window.__fightersQA.orderMine('orc',1,'neutral-gold-mine-01')");
  const witchGoldBefore=s.gold.witch;
  check(await evaluate("window.__fightersQA.orderMine('witch',1,'neutral-gold-mine')"),
@@ -1459,6 +1482,21 @@ async function run(){
        building:tapState.selectedBuildingId}));
  check(await evaluate("document.querySelector('.order-ping.attack')!==null"),
    'Attack order needs a red fading reticle');
+ // The attacking fighter can overlap the enemy footprint. A subsequent tap
+ // on the fighter must select it, rather than reissue an attack on the house.
+ check(await evaluate('window.__fightersQA.placeUnitInsideBuildingForSelectionTest("witch",0,'+
+   JSON.stringify(hutId)+')'),
+   'Could not reproduce a fighter standing inside an enemy house footprint');
+ await evaluate("window.__fightersQA.selectUnit('witch',1)");
+ const attackerPoint=await evaluate("window.__fightersQA.unitScreenPoint('witch',0)");
+ await evaluate('window.__fightersQA.tap('+attackerPoint.x+','+attackerPoint.y+')');
+ tapState=await evaluate('window.__fightersQA.snapshot()');
+ check(tapState.selectedIds.length===1&&
+   tapState.selectedIds[0]===tapState.witches[0].id&&
+   tapState.witches[0].attackTargetId===hutId,
+   'An attacker on top of a house must remain selectable by tapping its silhouette');
+ await evaluate('window.__fightersQA.placeUnitBesideBuilding("witch",0,'+
+   JSON.stringify(hutId)+')');
  await until("window.__fightersQA.snapshot().ui.activePings===0",'red order reticle cleanup',10000);
 
  // Reuse this match: test real stone geometry, navigation, and the worker's

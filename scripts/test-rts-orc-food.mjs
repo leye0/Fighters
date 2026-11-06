@@ -38,6 +38,14 @@ assert.equal(economy.food,rules.STARTING_FOOD);
 assert.equal(economy.eatCorpse('witch-1'),rules.CORPSE_FOOD,'Reset clears reservations');
 
 const field=new rules.Hares({count:16,walkable:(x,z)=>Math.abs(x)<27&&Math.abs(z)<27});
+assert(rules.HUNT_SIGHT>=15,'Idle orcs should notice hares farther away');
+assert(rules.MAX_HUNTERS>=4,'Several idle orcs should be able to hunt at once');
+assert(rules.shouldHuntHares(rules.STARTING_FOOD,4),
+  'Orcs should hunt proactively before food reserves run low');
+assert(rules.shouldHuntHares(130,4),
+  'Orcs should keep hunting to create a meaningful safety stockpile');
+assert(!rules.shouldHuntHares(500,4),
+  'Orcs must not abandon all their work when their food reserve is abundant');
 assert(rules.HARE_FLEE_SPEED<2.75*.6,
   'An orc must be decisively faster than a fleeing hare');
 assert(rules.HARE_CAPTURE_DISTANCE>=1,
