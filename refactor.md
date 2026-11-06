@@ -99,10 +99,11 @@ qu'après modification, vérification et intégration dans `main`.
 - [x] Extraire l'ordonnancement `stepGame(dt)` dans `rts-simulation.js` :
       phases nommées, ordre conservé, pas fixe de 1/60 s et rattrapage borné
       à douze ticks. Validé par tests Node et Chrome (run 42256932710).
-- [ ] Valider dans Chrome `rts-unit-tick.js` : logique d'attaque, poursuite,
+- [x] Valider dans Chrome `rts-unit-tick.js` : logique d'attaque, poursuite,
       défense de groupe et priorité des tâches d'ouvrier extraite de
       `game.js`. Les 4 956 caractères de logique normalisés sont identiques
       avant/après l'extraction ; tests Node et garde d'architecture verts.
+      Run 42276399265 : visual, economy et combat verts.
 - [ ] Extraire progressivement les systèmes de simulation eux-mêmes du
       script HTML derrière les interfaces de l'ordonnanceur.
 - [ ] Sortir progressivement la logique des ouvriers, unités et bâtiments du
@@ -143,6 +144,9 @@ qu'après modification, vérification et intégration dans `main`.
       run 42264465440, trois scénarios verts.
 - [ ] Séparer le chargement/caching des GLB et sons de leur utilisation par les
       systèmes de rendu et d'animation.
+- [ ] Valider dans Chrome l'extraction du chargeur GLTF/Meshopt, du parsing
+      binaire et du cache de modèles de niveaux dans `rts-model-assets.js` ;
+      tests Node ajoutés, scènes non partagées toujours chargées séparément.
 - [x] Réduire `docs/index.html` à l'import map, au DOM et au démarrage de
       l'application (111 lignes initiales, puis includes des nouveaux modules).
       Le module `docs/game.js` a été déplacé à

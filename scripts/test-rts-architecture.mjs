@@ -37,7 +37,8 @@ const boundaries=[
   ['rts-minimap','FightersMinimap'],
   ['rts-hud','FightersHud'],
   ['rts-ai-commands','FightersAiCommands'],
-  ['rts-assets','FightersAssets']
+  ['rts-assets','FightersAssets'],
+  ['rts-model-assets','FightersModelAssets']
 ];
 const loadedAt=new Map(scripts.map((src,index)=>[src,index]));
 for(const [name,global] of boundaries){

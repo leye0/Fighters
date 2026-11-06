@@ -48,8 +48,13 @@ modules (`docs/rts-contracts.d.ts`).
   entraînement, reconnaissance, attaques, défense) ; les directeurs `*-strategy.js`
   choisissent les intentions et ne manipulent pas directement les objets 3D.
 - `docs/rts-assets.js` : transfert binaire avec gzip, fallback et métriques ;
-  aucune logique Three.js, scène ni DOM. `docs/game.js` reste responsable du
-  parsing des GLB et de leur installation visuelle.
+  aucune logique Three.js, scène ni DOM. Le parsing des GLB appartient
+  maintenant à `rts-model-assets.js` et leur installation visuelle à `game.js`.
+- `docs/rts-model-assets.js` : création du décodeur GLTF/Meshopt, parsing des
+  GLB et cache explicite des niveaux orcs ; les scènes 3D restent construites
+  dans `game.js`. Les modèles non partagés ne sont jamais mis en cache.
+- `scripts/test-rts-model-assets.mjs` : assure l'initialisation Meshopt avant
+  chargement, la distinction modèles partagés/frais et le parsing binaire.
 - `docs/styles/` : présentation CSS ; ne doit pas modifier les règles du jeu.
 - `scripts/test-*.mjs` : tests unitaires ; ajouter un test au système modifié.
 - `scripts/test-rts-architecture.mjs` : garde-fou des frontières de modules,

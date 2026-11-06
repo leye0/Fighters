@@ -172,10 +172,7 @@ scene.add(new THREE.HemisphereLight(0xd6e7ff,0x203051,2.65));
 const key = new THREE.DirectionalLight(0xffe7cf,3.1);key.position.set(-9,16,10);scene.add(key);
 const blue = new THREE.DirectionalLight(0x558df8,1.6);blue.position.set(4,8,-6);scene.add(blue);
 const pink = new THREE.PointLight(0xfa498a,35,25);pink.position.set(-6,6,-4);scene.add(pink);
-const loader = new GLTFLoader();
-// The authored CC0 sword uses EXT_meshopt_compression, unlike the two character GLBs.
-// Register decoder before parsing ANY GLTF so equipping a sword cannot abort startup.
-loader.setMeshoptDecoder(MeshoptDecoder);
+const modelAssets=window.FightersModelAssets.create({GLTFLoader,MeshoptDecoder});
 // Two shared CC0 tree GLBs (red and dead) and one tiny CC0 bundle of logs.
 // Keep references to individual instance matrices so felling a tree is just
 // a zero-scale GPU instance update, never a forest-wide mesh rebuild.
@@ -225,7 +222,7 @@ function loadForest(){
   if(forestPromise)return forestPromise;
   const trees=window.FightersForest.TYPES.map(async kind=>{
     try{
-      const gltf=await loader.loadAsync('./models/forest/'+kind+'.glb');
+      const gltf=await modelAssets.load('./models/forest/'+kind+'.glb');
       const source=gltf.scene;
       source.updateMatrixWorld(true);
       const bounds=new THREE.Box3().setFromObject(source);
@@ -258,7 +255,7 @@ function loadForest(){
       forestLoadedSpecies++;
     }catch(error){console.warn('Forest model unavailable:',kind,error);}
   });
-  const wood=loader.loadAsync('./models/forest/logs.glb').then(gltf=>{
+  const wood=modelAssets.load('./models/forest/logs.glb').then(gltf=>{
     woodBundleTemplate=gltf.scene;
     woodBundleTemplate.updateMatrixWorld(true);
     const bounds=new THREE.Box3().setFromObject(woodBundleTemplate);
@@ -281,7 +278,7 @@ function loadRavens(){
   if(ravenLoadPromise)return ravenLoadPromise;
   ravenLoadPromise=(async()=>{
     const {data}=await fetchAsset('https://polyfork.dev/cdn/crow-base.glb');
-    const gltf=await loader.parseAsync(data,'');
+    const gltf=await modelAssets.parse(data);
     const flight=gltf.animations.find(clip=>clip.name==='Fly');
     const idle=gltf.animations.find(clip=>clip.name==='Idle');
     if(!flight||!idle)throw Error('Animations natives du corbeau manquantes');
@@ -335,7 +332,7 @@ function loadHares(){
   if(hareLoadPromise)return hareLoadPromise;
   hareLoadPromise=(async()=>{
     const {data}=await fetchAsset('https://polyfork.dev/cdn/forest-rabbit-ea2da0.glb');
-    const gltf=await loader.parseAsync(data,'');
+    const gltf=await modelAssets.parse(data);
     const bounds=new THREE.Box3().setFromObject(gltf.scene);
     if(bounds.isEmpty())throw Error('Modèle de lièvre vide');
     const size=bounds.getSize(new THREE.Vector3());
@@ -893,7 +890,7 @@ buildTerrain();
 // vector is configurable until visually calibrated against the Sketchfab mesh.
 async function loadWitchHouse(){
   const [gltf,projection]=await Promise.all([
-    loader.loadAsync('./models/witch_house.glb'),
+    modelAssets.load('./models/witch_house.glb'),
     loadFootprint('./models/witch_house.glb')
   ]);
   const house=gltf.scene;
@@ -917,7 +914,7 @@ async function loadWitchHouse(){
   updateNavObstacles();drawBuildingSelection();refreshHUD();
 }
 loadWitchHouse().catch(err=>console.warn('Witch house GLB unavailable:',err));
-loader.loadAsync('./models/standing-stone.glb').then(gltf=>{
+modelAssets.load('./models/standing-stone.glb').then(gltf=>{
   standingStoneModel=gltf.scene;
   refreshHUD();
 }).catch(err=>console.warn('Standing stone GLB unavailable:',err));
@@ -939,7 +936,7 @@ const ORC_VILLAGE={
 };
 const buildingInstances=new Map();
 const buildingBlueprints=new Map();
-const orcLevelEntries=new Map(),orcLevelCache=new Map();
+const orcLevelEntries=new Map();
 function createBuildingInstance(entry,type,level,anchor,footprint,model,projection){
   const spec=BUILDING_TYPES[type].levels[level];
   const id=type==='mine'?
@@ -1016,7 +1013,7 @@ async function loadOrcVillage(limit=3){
     let projection;
     try{
       const [gltf,collision]=await Promise.all([
-        loader.loadAsync(entries[i].file),
+        modelAssets.load(entries[i].file),
         loadFootprint(entries[i].file)
       ]);
       model=gltf.scene;
@@ -1758,8 +1755,7 @@ function finishTraining(building,kind,role='melee'){
 async function useOrcLevelModel(building,level){
   const key=building.type+':'+level,entry=orcLevelEntries.get(key);
   if(!entry)throw Error('GLB de niveau manquant : '+key);
-  if(!orcLevelCache.has(key))orcLevelCache.set(key,loader.loadAsync(entry.file));
-  const gltf=await orcLevelCache.get(key);
+  const gltf=await modelAssets.cached(key,entry.file);
   if(building.level!==level||building.destroyed)return;
   const model=gltf.scene.clone(true),bounds=orcModelBounds(model,building.type);
   const size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3());
@@ -2067,14 +2063,14 @@ function beginCropLoad(){
       try{
         const result=await fetchAsset('./models/crops.rts.glb.gz',
           {compressed:true,timeout:30000});
-        gltf=await loader.parseAsync(result.data,'');
+        gltf=await modelAssets.parse(result.data);
         cropTransport='gzip';cropWireBytes=result.wireBytes;
       }catch(err){
         console.warn('Compressed garden assets unavailable, trying GLB:',err);
       }
     }
     if(!gltf){
-      gltf=await loader.loadAsync('./models/crops.rts.glb');
+      gltf=await modelAssets.load('./models/crops.rts.glb');
       cropTransport='raw';cropWireBytes=0;
     }
     cropCatalog=buildCropCatalog(gltf);
@@ -4558,7 +4554,7 @@ async function load(){
     $('load-bar').style.width='42%';
     for(const [idx,gender] of ['female','male'].entries()){
       const file='human_'+gender+'.rts.glb',started=performance.now();
-      const gltf=await loader.parseAsync(characters[idx],'');
+      const gltf=await modelAssets.parse(characters[idx]);
       const required=['Idle_Loop','Walk_Loop','Jog_Fwd_Loop','Punch_Jab','Hit_Chest','Death01'];
       const gameClips=['Idle_Loop','Walk_Loop','Jog_Fwd_Loop','Punch_Jab',
         'Hit_Chest','Death01','Sword_Idle','Sword_Attack',
@@ -4579,10 +4575,10 @@ async function load(){
       'quaternius_ubc_Hair_Buzzed.glb','quaternius_ubc_Hair_SimpleParted.glb',
       'quaternius_ubc_Hair_Long.glb'];
     const garments=await Promise.all(files.map(async file=>
-      loader.parseAsync(await getBinary(file),'') ));
+      modelAssets.parse(await getBinary(file)) ));
     [clothingFemale,clothingMale,hairBuns,hairBuzzed,hairParted,hairLong]=garments;
     $('load-bar').style.width='90%';
-    swordModel=await loader.loadAsync('./models/equipment.sword.arming.default.gltf?v=uncompressed-20261101');
+    swordModel=await modelAssets.load('./models/equipment.sword.arming.default.gltf?v=uncompressed-20261101');
     const grip=swordModel.scene.getObjectByName('grip');
     if(!grip||grip.position.length()>1e-5)throw Error('Épée native non calibrée');
     loadingProfile.readyMs=Math.round(performance.now()-loadingProfile.startedAt);

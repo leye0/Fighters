@@ -26,7 +26,7 @@ dans [`../refactor.md`](../refactor.md).
 | Ordres et tâches | `rts-orders.js`, règles `rts-repair.js`, `rts-farming.js` | `test-rts-orders.mjs`, `test-rts-worker-orders.mjs`, `test-rts-construction-orders.mjs`, `test-rts-production-orders.mjs` |
 | IA | `orc-strategy.js`, `witch-strategy.js`, `rts-ai-commands.js` | `test-orc-strategy.mjs`, `test-witch-strategy.mjs`, `test-rts-ai-commands.mjs` |
 | Commandes joueur | `rts-picking.js`, `rts-camera.js`, `rts-gestures.js`, `rts-player-actions.js` | `test-rts-picking.mjs`, `test-rts-camera.mjs`, `test-rts-gestures.mjs`, `test-rts-player-actions.mjs`, QA Chrome tactile |
-| Modèles et ressources | `rts-assets.js`, `assets/runtime-assets.lock`, `scripts/use-pinned-runtime-assets.sh` | `test-rts-assets.mjs`, QA Chrome, Pages |
+| Modèles et ressources | `rts-assets.js`, `rts-model-assets.js`, `assets/runtime-assets.lock`, `scripts/use-pinned-runtime-assets.sh` | `test-rts-assets.mjs`, `test-rts-model-assets.mjs`, QA Chrome, Pages |
 | Monde et visibilité | `rts-map.js`, `rts-footprint.js`, `rts-fog.js`, `rts-forest.js` | `test-rts-map.mjs`, `test-rts-footprint.mjs`, `test-rts-fog.mjs`, `test-rts-forest.mjs` |
 | Présentation | `styles/game.css`, `rts-minimap.js`, `rts-hud.js`, `game.js` (composition HUD/rendu) | `test-rts-minimap.mjs`, `test-rts-hud.mjs`, Chrome `visual`, `economy`, `combat` |
 | Validation navigateur | `scripts/browser-qa/` par scénario, `chrome-driver.mjs` commun | Workflow `browser-qa.yml` |
@@ -67,6 +67,10 @@ concurrence (voir `AGENTS.md`).
 - Ne pas assimiler tous les « assets » à des fichiers téléchargés à chaque
   publication : `assets/runtime-assets.lock` pointe vers un paquet préfabriqué
   et vérifié, et sa reconstruction est une opération manuelle occasionnelle.
+- Le modèle GLB passe par `rts-model-assets.js` : un chargeur GLTF/Meshopt
+  unique et un cache seulement pour les niveaux de bâtiments explicitement
+  partagés. Les autres scènes doivent rester indépendantes pour permettre
+  leurs propres mutations et animations.
 
 ## Validation et intégration
 
