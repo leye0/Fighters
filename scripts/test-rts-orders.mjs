@@ -19,8 +19,10 @@ const orders=create({
   beginRaid:actor=>{actor.raiding=true;calls.push(['beginRaid',actor.id]);},
   canAttack:(actor,target)=>!actor.dead&&actor.role==='melee'&&target?.clanId!=='witch',
   isBuilding:target=>!!target.hitbox,
-  cancelSoulJob:actor=>{actor.soulJob=null;},
-  cancelFoodJob:actor=>{actor.orcFoodJob=null;}
+  cancelSoulJob:actor=>{actor.soulJob=null;calls.push(['soul',actor.id]);},
+  cancelFoodJob:actor=>{actor.orcFoodJob=null;},
+  cancelStopWork:actor=>{actor.repairJob=null;actor.farmJob=null;
+    actor.orcFoodJob=null;calls.push(['stopWork',actor.id]);}
 });
 const actor=id=>({id,role:'melee',kind:'witch',dead:false,
   root:{position:{x:0,z:0}},repairJob:{},farmJob:{},
@@ -60,8 +62,23 @@ assert.equal(orders.attack([a],foe),1);
 assert.equal(a.raiding,false,'targeting a unit is not a building raid');
 a.dead=true;
 assert.equal(orders.attack([a],enemyBuilding),0,'dead units never receive attacks');
+a.destination={x:9,z:9};a.attackOrder=enemyBuilding;a.route={};
+b.destination={x:8,z:8};b.attackOrder=foe;b.route={};
+assert.equal(orders.stop([a,b]),2,'stop clears commands even for selected dead units');
+for(const unit of [a,b]){
+  assert.equal(unit.destination,null);
+  assert.equal(unit.attackOrder,null);
+  assert.equal(unit.route,null);
+  assert.equal(unit.repairJob,null);
+  assert.equal(unit.farmJob,null);
+  assert.equal(unit.orcFoodJob,null);
+}
+assert.deepEqual(calls.slice(-4),[['soul','a'],['stopWork','a'],
+  ['soul','b'],['stopWork','b']],
+  'stop invokes soul cleanup before the remaining worker cleanup');
 const html=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
 assert(html.includes('window.FightersOrders.create('));
 assert(html.includes('unitOrders.move(actors,destination,{spacing,withinRadius})'));
 assert(html.includes('unitOrders.attack(actors,target)'));
-console.log('PASS isolated unit move/attack orders, sanctuary slots and raid interruption');
+assert(html.includes('unitOrders.stop(selected)'));
+console.log('PASS isolated unit move/attack/stop orders, sanctuary slots and raid interruption');

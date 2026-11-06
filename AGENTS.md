@@ -21,7 +21,7 @@ modules (`docs/rts-contracts.d.ts`).
   avec réinitialisation en valeurs neuves ; les autres systèmes ne gardent
   jamais leurs références après une nouvelle partie.
 - `docs/rts-orders.js` : transitions de commandes d'unités (déplacement,
-  attaque, réparations, mines, bois, coupes, récoltes, constructions, entraînement,
+  attaque, arrêt, réparations, mines, bois, coupes, récoltes, constructions, entraînement,
   améliorations, remboursements et progression des files de production) sans
   UI ni Three.js ;
   `docs/game.js` adapte les événements et services sans recopier les mutations.

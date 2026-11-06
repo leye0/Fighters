@@ -64,6 +64,9 @@ qu'après modification, vérification et intégration dans `main`.
 - [x] Extraire les commandes `move` et `attack` dans `rts-orders.js`, avec
       annulation des raids et des tâches, sans dépendance DOM/Three.js.
       Tests Node et Chrome verts (run 42257656954).
+- [ ] Valider dans Chrome l'ordre `stop` extrait dans `rts-orders.js`,
+      qui conserve la séquence des nettoyages de tâches sans modifier les
+      états de défense ou de raid non concernés par l'arrêt.
 - [ ] Faire passer `repair`, `build`, `harvest` et les autres ordres dans ce
       service, puis cocher l'isolation complète des commandes ci-dessus.
 - [x] Valider dans Chrome l'assignation de construction déplacée dans

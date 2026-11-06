@@ -9,12 +9,13 @@
   // Bind external services once, during boot. UI input and AI can issue the
   // same orders without duplicating the state transitions of an actor.
   function create({navigation,formationGoals,cancelMoveWork,endRaid,
-    canAttack,isBuilding,beginRaid,cancelSoulJob,cancelFoodJob}){
+    canAttack,isBuilding,beginRaid,cancelSoulJob,cancelFoodJob,cancelStopWork}){
     if(!navigation||typeof formationGoals!=='function'||
       typeof cancelMoveWork!=='function'||typeof endRaid!=='function'||
       typeof canAttack!=='function'||typeof isBuilding!=='function'||
       typeof beginRaid!=='function'||typeof cancelSoulJob!=='function'||
-      typeof cancelFoodJob!=='function')throw Error('Missing order service');
+      typeof cancelFoodJob!=='function'||typeof cancelStopWork!=='function')
+      throw Error('Missing order service');
 
     function move(actors,destination,{spacing=1.35,withinRadius=Infinity}={}){
       for(const actor of actors)cancelMoveWork(actor);
@@ -54,7 +55,16 @@
       return issued;
     }
 
-    return Object.freeze({move,attack});
+    function stop(actors){
+      for(const actor of actors){
+        cancelSoulJob(actor);
+        cancelStopWork(actor);
+        actor.destination=null;actor.attackOrder=null;actor.route=null;
+      }
+      return actors.length;
+    }
+
+    return Object.freeze({move,attack,stop});
   }
 
   // The same worker-order transitions are used by taps and the faction AIs.

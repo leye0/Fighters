@@ -1600,7 +1600,14 @@ const unitOrders=window.FightersOrders.create({
   canAttack:(actor,target)=>!actor.dead&&roles.isFighter(actor)&&enemyOf(actor,target),
   isBuilding,
   cancelSoulJob,
-  cancelFoodJob:cancelOrcFoodJob
+  cancelFoodJob:cancelOrcFoodJob,
+  // Stopping is distinct from movement: it clears current work in the
+  // original order without inadvertently changing raid/defense state.
+  cancelStopWork:unit=>{
+    cancelConstruction(unit);cancelWoodJob(unit);cancelRepair(unit);unit.treeJob=null;
+    cancelMineJob(unit);cancelFarmJob(unit);unit.berryJob=null;unit.healJob=null;
+    unit.orcFoodJob=null;
+  }
 });
 const workerOrders=window.FightersOrders.createWorkerOrders({
   canRepair:repairRules.canRepair,isWorker:roles.isWorker,canMine,
@@ -2562,13 +2569,7 @@ function cancelTransientMode(){
 }
 function stopSelectedUnits(){
   attackMode=false;
-  for(const unit of selected){
-    cancelSoulJob(unit);
-    cancelConstruction(unit);cancelWoodJob(unit);cancelRepair(unit);unit.treeJob=null;
-    cancelMineJob(unit);cancelFarmJob(unit);unit.berryJob=null;unit.healJob=null;
-    unit.orcFoodJob=null;
-    unit.destination=null;unit.attackOrder=null;unit.route=null;
-  }
+  unitOrders.stop(selected);
   acknowledgePlayerOrder(selected);
   refreshHUD();
 }
