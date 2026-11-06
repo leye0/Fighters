@@ -1,0 +1,34 @@
+name: Fighters — verify recoverable generator publication
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/generated-results.yml'
+      - '.github/workflows/import-orc-voices.yml'
+      - '.github/workflows/import-witch-voices.yml'
+      - '.github/workflows/install-voice-catalog.yml'
+      - '.github/workflows/install-consistent-voices.yml'
+      - '.github/workflows/fix-voice-consistency.yml'
+      - '.github/workflows/adjust-orc-pitch-selection.yml'
+      - '.github/workflows/install-magic-recharge.yml'
+      - '.github/workflows/rebuild-runtime-assets.yml'
+      - '.github/workflows/generate-fighters-battle-v2.yml'
+      - '.github/workflows/generate-fighters-three-themes.yml'
+      - 'scripts/publish-generated-result.sh'
+      - 'scripts/test-generated-result-publish.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify recoverable integration without real audio generation
+        run: |
+          bash -n scripts/publish-generated-result.sh
+          node scripts/test-generated-result-publish.mjs

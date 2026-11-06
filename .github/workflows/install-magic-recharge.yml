@@ -2,10 +2,6 @@ name: Magic-paid healing and passive regeneration
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/install-magic-recharge.yml'
 
 permissions:
   contents: write
@@ -46,7 +42,7 @@ jobs:
           git add docs/index.html docs/rts-healing.js docs/rts-souls.js scripts/test-rts-healing.mjs scripts/test-rts-souls.mjs scripts/browser-qa.mjs
           git diff --cached --check
           git commit -m 'Charge sanctuary healing to magic and regenerate five per thirty seconds'
-          git push origin HEAD:main
+          bash scripts/publish-generated-result.sh install-magic-recharge
       - name: Publish updated playable game
         env:
           GH_TOKEN: ${{ github.token }}

@@ -45,5 +45,10 @@ jobs:
           git add docs/music/battle-v2-candidates/*-loop.mp3 docs/music/battle-v2-candidates/generation.json
           if ! git diff --cached --quiet; then
             git commit -m "Generate continuous fantasy battle alternatives"
-            git push origin HEAD:"${GITHUB_REF_NAME}"
+            if [ "${GITHUB_REF_NAME}" = main ]; then
+              # Manual runs from main must not publish unreviewed generated music.
+              git push origin "HEAD:refs/heads/automation-results/music-battle/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}"
+            else
+              git push origin HEAD:"${GITHUB_REF_NAME}"
+            fi
           fi

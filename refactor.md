@@ -31,6 +31,8 @@ qu'après modification, vérification et intégration dans `main`.
       remplacé et vérifié.
 - [ ] Migrer ces workflows de génération vers des branches de résultat et une
       intégration contrôlée, sans interrompre les publications audio.
+      Migration et tests Git synthétiques ajoutés ; la validation du workflow
+      `generated-results.yml` sur `main` reste requise avant de cocher.
 - [x] Centraliser la préparation des modèles pour Pages et Chrome dans
       `scripts/prepare-runtime-assets.sh`, avec les mêmes vérifications.
 - [x] Préparer et tester les assets une seule fois par exécution QA, puis les
@@ -112,9 +114,10 @@ qu'après modification, vérification et intégration dans `main`.
       directeurs `*-strategy.js`, exécution `rts-ai-commands.js`.
 - [x] Valider en Chrome l'exécution des actions Orc/Sorcière extraite dans
       `rts-ai-commands.js` ; run 42262289649, trois scénarios verts.
-- [ ] Extraire les observations des deux IA dans `rts-ai-observations.js`,
+- [x] Extraire les observations des deux IA dans `rts-ai-observations.js`,
       conserver les filtres de visibilité (zones explorées côté orcs,
-      visibilité actuelle côté sorcières), puis valider sous Node et Chrome.
+      visibilité actuelle côté sorcières) ; tests Node et run 42280385272
+      Chrome/WebGL `visual`, `economy`, `combat` verts.
 
 ## 3. Rendu et interface
 

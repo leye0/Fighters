@@ -5,7 +5,6 @@ on:
     branches: [main]
     paths:
       - 'scripts/import-witch-voices.py'
-      - '.github/workflows/import-witch-voices.yml'
   workflow_dispatch:
 
 permissions:
@@ -58,8 +57,7 @@ jobs:
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             git commit -m "Import licensed Witch voice MP3s and source attribution"
-            git pull --rebase origin main
-            git push origin HEAD:main
+            bash scripts/publish-generated-result.sh import-witch-voices
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 

@@ -2,10 +2,6 @@ name: Restore phrase variety and deepen Orc voices
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/install-consistent-voices.yml'
 
 permissions:
   contents: write
@@ -81,7 +77,7 @@ jobs:
             docs/sounds/orcs docs/sounds/witches
           git diff --cached --check
           git commit -m 'Rotate consistent Witch phrases and deepen Orc speech without slowing'
-          git push origin HEAD:main
+          bash scripts/publish-generated-result.sh install-consistent-voices
       - name: Publish the playable game
         env:
           GH_TOKEN: ${{ github.token }}

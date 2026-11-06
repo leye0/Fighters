@@ -31,7 +31,7 @@ dans [`../refactor.md`](../refactor.md).
 | Monde et visibilité | `rts-map.js`, `rts-footprint.js`, `rts-fog.js`, `rts-forest.js` | `test-rts-map.mjs`, `test-rts-footprint.mjs`, `test-rts-fog.mjs`, `test-rts-forest.mjs` |
 | Présentation | `styles/game.css`, `rts-minimap.js`, `rts-hud.js`, `game.js` (composition HUD/rendu) | `test-rts-minimap.mjs`, `test-rts-hud.mjs`, Chrome `visual`, `economy`, `combat` |
 | Validation navigateur | `scripts/browser-qa/` par scénario, `chrome-driver.mjs` commun | Workflows `browser-qa.yml` et `chrome-retry.yml` (relance réelle ciblée) |
-| Architecture et intégration | `index.html`, `AGENTS.md`, `architecture.md`, `browser-qa.yml` | `test-rts-architecture.mjs` (frontières, includes, ownership et CI) |
+| Architecture et intégration | `index.html`, `AGENTS.md`, `architecture.md`, `browser-qa.yml`, `publish-generated-result.sh` | `test-rts-architecture.mjs` (frontières, includes, ownership et CI), `test-generated-result-publish.mjs`, workflow `generated-results.yml` |
 | Contrats de domaine | `rts-contracts.d.ts`, `scripts/contracts-smoke.ts` | `contracts.yml` avec compilateur TypeScript strict (sur modification seulement) |
 
 Un agent peut modifier un module isolé et son test sans toucher au code de
@@ -39,6 +39,19 @@ présentation. Si une intégration dans `game.js` est nécessaire, un seul agent
 en est propriétaire pour la durée de la modification. Toute mise à jour de
 `main` doit revérifier le dernier commit distant et éviter les écritures en
 concurrence (voir `AGENTS.md`).
+
+Les anciens workflows de génération conservent maintenant un commit source dans
+`automation-results/<workflow>/<run>-<tentative>` **avant** toute tentative
+de publication. L'intégration reconstruit un commit sur la tête courante de
+`main` ; en cas de conflit ou de concurrence irréconciliable, elle échoue sans
+écraser les changements existants, et le résultat reste récupérable. Aucun
+workflow audio n'est déclenché par le test de cette politique. Les générations
+musicales destinées à révision restent sur leurs branches propres ; une
+invocation manuelle sur `main` n'y publie aucun MP3 directement.
+Les anciens jobs de génération ponctuelle conservent `workflow_dispatch`, mais
+leur YAML modifié ne déclenche plus de régénération automatique potentiellement
+payante. Les imports de médias libres gardent leurs déclencheurs sur les
+scripts d'import effectifs.
 
 ## Contrats et règles de cohérence
 

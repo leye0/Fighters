@@ -58,6 +58,17 @@ modules (`docs/rts-contracts.d.ts`).
   dans `game.js`. Les modèles non partagés ne sont jamais mis en cache.
 - `scripts/test-rts-model-assets.mjs` : assure l'initialisation Meshopt avant
   chargement, la distinction modèles partagés/frais et le parsing binaire.
+- `scripts/publish-generated-result.sh` : préserve les fichiers produits par les
+  workflows sous `automation-results/<workflow>/<run>-<tentative>`, puis applique
+  leur commit sur la tête actuelle de `main` sans force-push ni PR ; un conflit
+  échoue en conservant la branche de résultat. Les deux anciens générateurs
+  musicaux gardent leurs branches de révision et n'intègrent jamais un résultat
+  lancé manuellement depuis `main` sans révision.
+- `scripts/test-generated-result-publish.mjs` : vérifie ces garanties dans des
+  dépôts Git temporaires (cas normal, avancée concurrente, conflit).
+  Les workflows à génération ou réparation ponctuelle sont lancés manuellement
+  via `workflow_dispatch`, pas à chaque modification de leur propre YAML :
+  éviter des générations audio coûteuses non demandées.
 - `docs/styles/` : présentation CSS ; ne doit pas modifier les règles du jeu.
 - `scripts/test-*.mjs` : tests unitaires ; ajouter un test au système modifié.
 - `scripts/test-rts-architecture.mjs` : garde-fou des frontières de modules,

@@ -2,10 +2,6 @@ name: Generate and install all Witch and Orc role voices
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/install-voice-catalog.yml'
 
 permissions:
   contents: write
@@ -72,7 +68,7 @@ jobs:
           git diff --cached --check
           git diff --cached --quiet && { echo 'Expected voice assets to change'; exit 1; }
           git commit -m 'Install 104 role-based Witch and Orc voices'
-          git push origin HEAD:main
+          bash scripts/publish-generated-result.sh install-voice-catalog
       - name: Deploy the new voices to the playable GitHub Pages game
         env:
           GH_TOKEN: ${{ github.token }}

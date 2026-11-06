@@ -5,7 +5,6 @@ on:
     branches: [main]
     paths:
       - 'scripts/import-orc-voices.py'
-      - '.github/workflows/import-orc-voices.yml'
   workflow_dispatch:
 
 permissions:
@@ -65,8 +64,7 @@ jobs:
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             git commit -m "Import and classify 51 Orc audio previews (CC BY 4.0)"
-            git pull --rebase origin main
-            git push origin HEAD:main
+            bash scripts/publish-generated-result.sh import-orc-voices
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 

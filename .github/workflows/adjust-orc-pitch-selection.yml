@@ -2,10 +2,6 @@ name: Lift Orc pitch slightly and soften selection rings
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/adjust-orc-pitch-selection.yml'
 
 permissions:
   contents: write
@@ -46,7 +42,7 @@ jobs:
           git add docs/sounds/orcs
           git diff --cached --check
           git commit -m 'Lighten Orc pitch to 75 percent while preserving tempo'
-          git push origin HEAD:main
+          bash scripts/publish-generated-result.sh adjust-orc-pitch-selection
       - name: Publish the updated game
         env:
           GH_TOKEN: ${{ github.token }}
