@@ -1,4 +1,5 @@
 /.cache/
+/node_modules/
 /docs/vendor/
 /docs/models/crops.rts.glb*
 /docs/models/equipment.sword.arming.default.*

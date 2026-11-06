@@ -1,0 +1,18 @@
+{
+  "name": "fighters-runtime-asset-build",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Reproducible, manually invoked build toolchain for verified game assets",
+  "scripts": {
+    "test:build-manifest": "node scripts/test-runtime-build-manifest.mjs",
+    "build:assets": "bash scripts/prepare-runtime-assets.sh"
+  },
+  "devDependencies": {
+    "@gltf-transform/core": "4.2.1",
+    "@gltf-transform/extensions": "4.2.1",
+    "@gltf-transform/functions": "4.2.1",
+    "meshoptimizer": "0.25.0",
+    "sharp": "0.34.4",
+    "three": "0.180.0"
+  }
+}

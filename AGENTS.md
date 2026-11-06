@@ -96,7 +96,12 @@ modules (`docs/rts-contracts.d.ts`).
 - `scripts/use-pinned-runtime-assets.sh` : restauration commune pour Pages et
   QA ; aucun modèle source externe n'est téléchargé à chaque commit.
 - `scripts/prepare-runtime-assets.sh` : reconstruction exceptionnelle du paquet
-  pour une nouvelle version (workflow `rebuild-runtime-assets.yml`).
+  pour une nouvelle version (workflow `rebuild-runtime-assets.yml`) ; utiliser
+  exclusivement `npm ci` et les versions de `package-lock.json`.
+- `package.json`, `package-lock.json`, `scripts/test-runtime-build-manifest.mjs` :
+  manifeste et verrou de l'outillage GLB/Three.js/Sharp/Meshopt, résolus et
+  revérifiés par `build-lock.yml` sur changement du manifeste. Ne pas employer
+  de téléchargement npm flottant dans le build exceptionnel.
 - `.github/workflows/` : génération, validation et publication ; éviter les
   modifications concurrentes de `main` par plusieurs jobs.
 

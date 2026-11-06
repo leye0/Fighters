@@ -51,6 +51,8 @@ qu'après modification, vérification et intégration dans `main`.
       premier parcours complet avec une nouvelle version reste à vérifier.
 - [ ] Ajouter un manifeste de dépendances avec versions et fichier de verrouillage
       pour reproduire le build localement et en CI.
+      Le manifeste et la génération du verrou sur CI sont intégrés ; cocher
+      après installation `npm ci` vérifiée et intégration du verrou sur `main`.
 
 ## 2. Séparer le cœur de la simulation
 
