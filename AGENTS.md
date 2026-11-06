@@ -2,6 +2,8 @@
 
 Lire `refactor.md` avant une modification d'architecture. Les fonctionnalités
 et le rendu actuels sont des contraintes de non-régression.
+Lire également `docs/architecture.md` pour les frontières et contrats de
+modules (`docs/rts-contracts.d.ts`).
 
 ## Périmètres
 
@@ -16,7 +18,7 @@ et le rendu actuels sont des contraintes de non-régression.
   rattrapage ; les phases nommées sont assemblées dans `docs/game.js`.
   Préserver leur ordre exact et ne pas allouer d'objets à chaque tick.
 - `docs/rts-orders.js` : transitions de commandes d'unités (déplacement,
-  attaque, réparations, mines, bois, coupes, récoltes) sans UI ni Three.js ;
+  attaque, réparations, mines, bois, coupes, récoltes, constructions) sans UI ni Three.js ;
   `docs/game.js` adapte les événements et services sans recopier les mutations.
 - `docs/rts-picking.js` : sélection des silhouettes en coordonnées écran,
   corbeaux, arbres, bois et emprises de bâtiments ; dépendances injectées

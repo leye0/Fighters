@@ -2515,32 +2515,27 @@ function cancelConstruction(actor,refund=true){
   if(refund){gold[actor.kind]+=job.cost;wood[actor.kind]+=job.woodCost;}
   return true;
 }
+const constructionOrders=window.FightersOrders.createConstructionOrders({
+  units,selected,isWorker:roles.isWorker,pendingBuilds,
+  getGold:()=>gold,getWood:()=>wood,
+  cancelWoodJob,cancelRepair,cancelMineJob,cancelFarmJob,
+  acknowledgeOrcAiOrder,acknowledgePlayerOrder
+});
 function scheduleBuild(type,x,z,{byAI=false,axis=null}={}){
   const clan=buildFaction(type),cost=constructionCost(type),woodCost=constructionWood(type);
   if(type==='wall'){const point=wallPlacement(x,z,axis);x=point.x;z=point.z;axis=point.axis;}
   if(!running||paused||!cost||(type==='stone-circle'&&!circleUnlocked())||
     !canAffordConstruction(clan,type)||
     !validBuildPosition(x,z,type,axis))return false;
-  const candidates=units.filter(u=>u.kind===clan&&roles.isWorker(u)&&!u.dead&&
-    !u.constructJob&&(!byAI||(!u.repairJob&&!u.workerRetryTime)));
-  const preferred=candidates.filter(u=>selected.has(u));
-  const available=preferred.length?preferred:candidates;
-  available.sort((a,b)=>Math.hypot(a.root.position.x-x,a.root.position.z-z)-
-    Math.hypot(b.root.position.x-x,b.root.position.z-z));
-  const worker=available[0];
-  if(!worker)return false;
-  const site={id:'construction-'+worker.id+'-'+nextUnitId,
-    hitbox:buildShape(type,x,z,axis)};
-  const job={type,x,z,axis,cost,woodCost,site,byAI,progress:0,
-    preview:createConstructionPreview(type,x,z,axis)};
-  pendingBuilds.push(job);gold[clan]-=cost;wood[clan]-=woodCost;
-  cancelWoodJob(worker);cancelRepair(worker);
-  cancelMineJob(worker);cancelFarmJob(worker);worker.treeJob=null;worker.berryJob=null;
-  worker.constructJob=job;worker.destination=null;
-  worker.workHitTimer=0;
-  worker.attackOrder=null;worker.route=null;worker.approachCache=null;
-  if(clan==='orc'&&byAI)acknowledgeOrcAiOrder([worker]);
-  else if(!byAI)acknowledgePlayerOrder([worker]);
+  const assigned=constructionOrders.assign({clan,x,z,cost,woodCost,byAI,
+    createJob:worker=>{
+      const site={id:'construction-'+worker.id+'-'+nextUnitId,
+        hitbox:buildShape(type,x,z,axis)};
+      return {type,x,z,axis,cost,woodCost,site,byAI,progress:0,
+        preview:createConstructionPreview(type,x,z,axis)};
+    }
+  });
+  if(!assigned)return false;
   buildMode=null;
   if(!byAI)showBanner('OUVRIER EN CONSTRUCTION');
   refreshHUD();return true;

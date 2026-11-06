@@ -51,6 +51,9 @@ qu'après modification, vérification et intégration dans `main`.
 
 - [ ] Définir les contrats `Unit`, `Building`, `GameState`, `Order`, `Resources`
       (JSDoc + `checkJs` ou TypeScript progressif, sans migration globale forcée).
+- [ ] Valider avec un compilateur TypeScript les contrats progressifs ajoutés
+      dans `docs/rts-contracts.d.ts` ; `GameState` y décrit l'état cible et non
+      encore une structure effectivement centralisée dans le moteur.
 - [ ] Regrouper l'état mutable d'une partie dans un contexte explicite ; limiter
       les variables libres partagées par des dizaines de fonctions.
 - [ ] Isoler les commandes (`move`, `attack`, `repair`, `build`, `harvest`, etc.)
@@ -60,6 +63,8 @@ qu'après modification, vérification et intégration dans `main`.
       Tests Node et Chrome verts (run 42257656954).
 - [ ] Faire passer `repair`, `build`, `harvest` et les autres ordres dans ce
       service, puis cocher l'isolation complète des commandes ci-dessus.
+- [ ] Valider dans Chrome l'assignation de construction déplacée dans
+      `rts-orders.js` (ouvrier préféré, paiement, remise à zéro des ressources).
 - [x] Extraire et valider les ordres d'ouvriers `repair`, `mine`, `collectWood`,
       `chop`, `harvest` dans `rts-orders.js` avec des tests Node et Chrome
       (run 42261206611). La construction et les activités automatiques restent.
@@ -109,6 +114,8 @@ qu'après modification, vérification et intégration dans `main`.
 - [x] Isoler l'interface `window.__fightersQA` derrière le mode `?qa=1`,
       sans l'exposer aux parties normales ; QA Chrome vérifiée.
 - [ ] Mesurer les temps de tests et les coûts GitHub Actions avant/après.
+- [x] Décrire les frontières de modules, propriétaires de fichiers, contrats,
+      invariants de simulation et règles d'intégration dans `docs/architecture.md`.
 - [x] Faire une QA Chrome/WebGL complète après le premier lot : simulation
       et garde QA (run 42256932710 : visual, economy, combat verts).
 - [x] Faire une QA Chrome/WebGL complète après le deuxième lot : ordres

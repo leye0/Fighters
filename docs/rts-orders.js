@@ -143,5 +143,34 @@
     return Object.freeze({repair,mine,collectWood,chop,harvest});
   }
 
-  return Object.freeze({create,createWorkerOrders});
+  // Site validation and preview creation remain in the world adapter. This
+  // transaction selects one eligible builder, pays once and owns its work job.
+  function createConstructionOrders({units,selected,isWorker,pendingBuilds,
+    getGold,getWood,cancelWoodJob,cancelRepair,cancelMineJob,cancelFarmJob,
+    acknowledgeOrcAiOrder,acknowledgePlayerOrder}){
+    function assign({clan,x,z,cost,woodCost,byAI=false,createJob}){
+      const candidates=units.filter(actor=>actor.kind===clan&&isWorker(actor)&&!actor.dead&&
+        !actor.constructJob&&(!byAI||(!actor.repairJob&&!actor.workerRetryTime)));
+      const preferred=candidates.filter(actor=>selected.has(actor));
+      const available=preferred.length?preferred:candidates;
+      available.sort((a,b)=>Math.hypot(a.root.position.x-x,a.root.position.z-z)-
+        Math.hypot(b.root.position.x-x,b.root.position.z-z));
+      const worker=available[0];
+      if(!worker)return false;
+      const job=createJob(worker);
+      const gold=getGold(),wood=getWood();
+      pendingBuilds.push(job);gold[clan]-=cost;wood[clan]-=woodCost;
+      cancelWoodJob(worker);cancelRepair(worker);
+      cancelMineJob(worker);cancelFarmJob(worker);worker.treeJob=null;worker.berryJob=null;
+      worker.constructJob=job;worker.destination=null;
+      worker.workHitTimer=0;
+      worker.attackOrder=null;worker.route=null;worker.approachCache=null;
+      if(clan==='orc'&&byAI)acknowledgeOrcAiOrder([worker]);
+      else if(!byAI)acknowledgePlayerOrder([worker]);
+      return true;
+    }
+    return Object.freeze({assign});
+  }
+
+  return Object.freeze({create,createWorkerOrders,createConstructionOrders});
 });

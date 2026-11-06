@@ -51,6 +51,7 @@ on:
       - 'scripts/test-rts-simulation.mjs'
       - 'scripts/test-rts-orders.mjs'
       - 'scripts/test-rts-worker-orders.mjs'
+      - 'scripts/test-rts-construction-orders.mjs'
       - 'scripts/test-rts-picking.mjs'
       - 'scripts/test-rts-camera.mjs'
       - 'scripts/test-rts-ai-commands.mjs'
@@ -119,6 +120,7 @@ jobs:
           node scripts/test-rts-simulation.mjs
           node scripts/test-rts-orders.mjs
           node scripts/test-rts-worker-orders.mjs
+          node scripts/test-rts-construction-orders.mjs
           node scripts/test-rts-picking.mjs
           node scripts/test-rts-camera.mjs
           node scripts/test-rts-ai-commands.mjs
