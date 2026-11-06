@@ -4,6 +4,18 @@ import {mkdtempSync,readFileSync,existsSync,rmSync,mkdirSync,writeFileSync} from
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 
+// The retry policy is separately testable without starting a real browser.
+// Restart must dispose the failed Chrome profile and create a new one.
+export async function connectWithStartupRetry(attach,restart){
+ for(let attempt=0;attempt<2;attempt++){
+  try{return await attach();}
+  catch(error){
+   if(attempt===1)throw error;
+   await restart(error);
+  }
+ }
+}
+
 export function createChromeDriver(){
  mkdirSync('captures',{recursive:true});
  let profile,chrome;
@@ -35,21 +47,16 @@ export function createChromeDriver(){
   };
  }
  async function connect(){
-  for(let attempt=0;attempt<2;attempt++){
-   try{await attach();return;}
-   catch(error){
-    if(attempt===1)throw error;
-    // A busy shared runner can fail to start Chrome's DevTools port. One
-    // fresh profile/relaunch makes acceptance tests robust to that transient
-    // failure without skipping or weakening any real-WebGL assertions.
-    console.warn('Chrome debugging startup failed; retrying once:',error.message);
-    try{socket?.close();}catch{}
-    chrome.kill();
-    try{rmSync(profile,{recursive:true,force:true,maxRetries:8,retryDelay:350});}
-    catch(cleanupError){console.warn('Failed Chrome profile cleanup:',cleanupError.message);}
-    launch();
-   }
-  }
+  return connectWithStartupRetry(attach,error=>{
+   // A busy shared runner can fail to start Chrome's DevTools port. One
+   // fresh profile/relaunch recovers without skipping any WebGL assertion.
+   console.warn('Chrome debugging startup failed; retrying once:',error.message);
+   try{socket?.close();}catch{}
+   chrome.kill();
+   try{rmSync(profile,{recursive:true,force:true,maxRetries:8,retryDelay:350});}
+   catch(cleanupError){console.warn('Failed Chrome profile cleanup:',cleanupError.message);}
+   launch();
+  });
  }
  function call(method,params={}){
   const id=++nextId;

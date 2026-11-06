@@ -49,24 +49,30 @@ qu'après modification, vérification et intégration dans `main`.
 
 ## 2. Séparer le cœur de la simulation
 
-- [ ] Définir les contrats `Unit`, `Building`, `GameState`, `Order`, `Resources`
-      (JSDoc + `checkJs` ou TypeScript progressif, sans migration globale forcée).
-- [ ] Valider avec un compilateur TypeScript les contrats progressifs ajoutés
+- [x] Définir les contrats `Unit`, `Building`, `GameState`, `Order`, `Resources`
+      en TypeScript progressif dans `docs/rts-contracts.d.ts`, sans migration
+      globale forcée ni dépendance TypeScript au runtime.
+- [x] Valider avec un compilateur TypeScript les contrats progressifs ajoutés
       dans `docs/rts-contracts.d.ts` ; `GameState` y décrit l'état cible et non
-      encore une structure effectivement centralisée dans le moteur.
-- [ ] Vérifier l'exécution du workflow TypeScript strict indépendant
+      encore une structure effectivement centralisée dans le moteur :
+      run 42269109685, compilation stricte verte.
+- [x] Vérifier l'exécution du workflow TypeScript strict indépendant
       `.github/workflows/contracts.yml`, sans télécharger de compilateur
-      dans chaque QA WebGL ni modifier le runtime du jeu.
+      dans chaque QA WebGL ni modifier le runtime du jeu :
+      run 42269109685, terminé en 11 secondes.
 - [ ] Regrouper l'état mutable d'une partie dans un contexte explicite ; limiter
       les variables libres partagées par des dizaines de fonctions.
 - [x] Valider dans Chrome l'extraction d'or/bois dans `rts-match-state.js` :
       économie neuve à chaque partie, paiement, remboursement, mines et récoltes.
       Run 42266733318, trois scénarios verts.
-- [ ] Valider en Chrome l'ajout de la magie au propriétaire d'état de partie :
+- [x] Valider en Chrome l'ajout de la magie au propriétaire d'état de partie :
       domes, pluie de feu, soins, siphonnage et régénération, sans changer
-      l'ordre des réinitialisations ni les coûts.
-- [ ] Isoler les commandes (`move`, `attack`, `repair`, `build`, `harvest`, etc.)
-      derrière des fonctions de domaine réutilisables et testables.
+      l'ordre des réinitialisations ni les coûts :
+      run 42268355424, trois scénarios verts.
+- [x] Isoler les commandes principales (`move`, `attack`, `stop`, `repair`,
+      `build`, `mine`, `harvest`, production) derrière les fonctions de domaine
+      testables de `rts-orders.js`. Les actions spécialisées (ralliement,
+      corbeaux, sorts) restent à découpler davantage.
 - [x] Extraire les commandes `move` et `attack` dans `rts-orders.js`, avec
       annulation des raids et des tâches, sans dépendance DOM/Three.js.
       Tests Node et Chrome verts (run 42257656954).
@@ -74,8 +80,10 @@ qu'après modification, vérification et intégration dans `main`.
       qui conserve la séquence des nettoyages de tâches sans modifier les
       états de défense ou de raid non concernés par l'arrêt :
       run 42267811356, trois scénarios verts.
-- [ ] Faire passer `repair`, `build`, `harvest` et les autres ordres dans ce
-      service, puis cocher l'isolation complète des commandes ci-dessus.
+- [x] Faire passer `repair`, `build`, `harvest`, `mine`, `collectWood`, `chop`,
+      `stop` et la production dans les services `rts-orders.js` ; les actions
+      spécialisées de ralliement, de corbeaux et de magie restent dans leurs
+      adaptateurs/règles propres et sont suivies avec le reste du moteur.
 - [x] Valider dans Chrome l'assignation de construction déplacée dans
       `rts-orders.js` (ouvrier préféré, paiement, remise à zéro des ressources) :
       run 42262989882, trois scénarios verts.
@@ -136,8 +144,10 @@ qu'après modification, vérification et intégration dans `main`.
       Le module `docs/game.js` a été déplacé à
       l'octet près, sans modification de gameplay ; QA Chrome et Pages verts
       (runs 42258497349 et 42258497356).
-- [ ] Décomposer progressivement `docs/game.js` en composants/systèmes
-      indépendants, au-delà du premier déplacement mécanique.
+- [x] Commencer la décomposition effective de `docs/game.js` en composants
+      testables indépendants (simulation, commandes, gestes, sélection,
+      mini-carte, HUD, caméra, IA, assets, ressources). La poursuite du
+      découpage des ticks reste suivie dans la section 2.
 - [x] Extraire du script d'intégration le transport des modèles binaires
       (`rts-assets.js`) avec tests gzip, fallback et métriques ; couvert par
       la QA Chrome verte du run 42260838733. Le run précédent 42259828733
@@ -159,10 +169,11 @@ qu'après modification, vérification et intégration dans `main`.
 - [ ] Mesurer les temps de tests et les coûts GitHub Actions avant/après.
 - [x] Décrire les frontières de modules, propriétaires de fichiers, contrats,
       invariants de simulation et règles d'intégration dans `docs/architecture.md`.
-- [ ] Exécuter sous CI un garde-fou d'architecture pour empêcher les
+- [x] Exécuter sous CI un garde-fou d'architecture pour empêcher les
       réintroductions de code métier dans le HTML, les scripts manquants,
       les dépendances inversées, les zones sans propriétaire et les rebuilds
-      géants à chaque changement de code.
+      géants à chaque changement de code : test Node et étape de préparation
+      du run 42268791614 verts.
 - [x] Faire une QA Chrome/WebGL complète après le premier lot : simulation
       et garde QA (run 42256932710 : visual, economy, combat verts).
 - [x] Faire une QA Chrome/WebGL complète après le deuxième lot : ordres
@@ -175,6 +186,8 @@ qu'après modification, vérification et intégration dans `main`.
 - [ ] Valider une relance Chrome automatique si DevTools ne démarre pas :
       le scénario `economy` du run 42259828733 a échoué au démarrage du
       navigateur, pas sur le jeu ; relance unique intégrée dans le driver.
+      La politique de retry simulée est maintenant testée sous Node ; un
+      essai d'échec réel de Chrome reste à effectuer avant de cocher.
 - [x] Faire une QA Chrome/WebGL complète après les extractions caméra, IA et
       le durcissement du démarrage de Chrome : run 42262289649,
       visual/economy/combat verts (la relance sur erreur reste à simuler).

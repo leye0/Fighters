@@ -60,6 +60,8 @@ modules (`docs/rts-contracts.d.ts`).
 - `scripts/browser-qa/chrome-driver.mjs` : transport Chrome DevTools partagé ;
   coordonner ses changements puisqu'ils affectent tous les scénarios ; une
   relance à profil neuf est permise si DevTools ne démarre pas sur le runner.
+- `scripts/test-rts-chrome-retry.mjs` : simule un échec DevTools puis vérifie
+  la relance unique, la limite de tentatives et les chemins de nettoyage.
 - `assets/README.md`, `assets/runtime-assets.lock` : méthode d'ajout et version
   immuable des modèles préparés, avec SHA-256. Ne pas changer le verrou sans
   une nouvelle Release vérifiée.

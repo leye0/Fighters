@@ -55,6 +55,7 @@ on:
       - 'scripts/test-rts-unit-physics.mjs'
       - 'scripts/test-rts-simulation.mjs'
       - 'scripts/test-rts-architecture.mjs'
+      - 'scripts/test-rts-chrome-retry.mjs'
       - 'scripts/test-rts-match-state.mjs'
       - 'scripts/test-rts-orders.mjs'
       - 'scripts/test-rts-worker-orders.mjs'
@@ -131,6 +132,7 @@ jobs:
           node scripts/test-rts-unit-physics.mjs
           node scripts/test-rts-simulation.mjs
           node scripts/test-rts-architecture.mjs
+          node scripts/test-rts-chrome-retry.mjs
           node scripts/test-rts-match-state.mjs
           node scripts/test-rts-orders.mjs
           node scripts/test-rts-worker-orders.mjs
