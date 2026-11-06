@@ -2570,10 +2570,7 @@ function tickRepairWorker(actor,dt){
   return true;
 }
 const uiStats={commandRebuilds:0,feedbackCreated:0,feedbackRemoved:0,peakPings:0};
-function setText(id,value){
-  const el=$(id),display=String(value);
-  if(el.textContent!==display)el.textContent=display;
-}
+const hudRenderer=window.FightersHud.create({document,getElement:$});
 function cancelTransientMode(){
   attackMode=false;ravenMoveMode=false;buildMode=null;rallyMode=false;constructionTab=false;refreshHUD();
 }
@@ -2590,29 +2587,13 @@ function stopSelectedUnits(){
   refreshHUD();
 }
 function refreshHUD(){
-  setText('hud-gold',gold[activeFaction]);
-  setText('hud-wood',wood[activeFaction]);
-  setText('hud-food',Math.ceil(activeFaction==='witch'?farming.food:orcFood.food));
-  setText('hud-food-label',activeFaction==='witch'?'🌾 VIVRES':'🍖 VIANDE');
-  $('hud-food-chip').title=activeFaction==='witch'? 'Blé et baies · consommation des sorcières':
-    'Lièvres et dépouilles de sorcières · les orcs mangent moins souvent';
-  const factionMagic=activeFaction==='witch'?magic:orcMagic;
-  setText('hud-magic',(Math.round(factionMagic*10)/10)+'/'+soulRules.MAX_MAGIC);
-  $('hud-magic-fill').style.width=100*factionMagic/soulRules.MAX_MAGIC+'%';
-  $('hud-magic-chip').title=activeFaction==='witch'?
-    'Magie des sorcières · esprits siphonnés et 5 points toutes les 30 secondes':
-    'Magie des orcs · récupère 5 points toutes les 30 secondes';
-  $('hud-gold-chip').title='Or des '+(activeFaction==='witch'?'sorcières':'orcs');
-  $('hud-wood-chip').title='Bois des '+(activeFaction==='witch'?'sorcières':'orcs');
-  setText('unit-count',units.filter(u=>u.kind==='witch'&&!u.dead).length+' : '+
-    units.filter(u=>u.kind==='orc'&&!u.dead).length);
-  $('hud-units-chip').title='Sorcières : orcs · capacité orc : '+orcHousingCap()+
-    ' (augmenter avec des huttes)';
-  setText('faction-title',activeFaction==='witch'?'SORCIÈRES':'ORCS');
   const director=activeFaction==='witch'?orcDirector:witchDirector;
-  setText('ai-status',director.enabled?(activeFaction==='witch'?'ORCS':'SORCIÈRES')+' · '+({
-    develop:'Expansion',defend:'Défense',attack:'Assaut',recover:'Regroupement'
-  }[director.mode]||'Stratégie'):'IA · En attente');
+  hudRenderer.overview({faction:activeFaction,gold:gold[activeFaction],wood:wood[activeFaction],
+    food:activeFaction==='witch'?farming.food:orcFood.food,
+    magic:activeFaction==='witch'?magic:orcMagic,maxMagic:soulRules.MAX_MAGIC,
+    witchCount:units.filter(u=>u.kind==='witch'&&!u.dead).length,
+    orcCount:units.filter(u=>u.kind==='orc'&&!u.dead).length,
+    orcHousingCap:orcHousingCap(),aiEnabled:director.enabled,aiMode:director.mode});
 
   const b=selectedBuilding,alive=[...selected].filter(u=>!u.dead),
     faction=b?.clanId==='witch'?'witch':'orc',
@@ -2625,23 +2606,7 @@ function refreshHUD(){
   if(context!==lastHudSignature){
     lastHudSignature=context;buttons.replaceChildren();health.replaceChildren();
     uiStats.commandRebuilds++;
-    const add=(symbol,name,cost,action,disabled=false,tooltip='')=>{
-      const element=document.createElement('button');
-      element.type='button';element.disabled=!!disabled;
-      const price=typeof cost==='object'?
-        [cost.gold?cost.gold+'💰':'',cost.wood?cost.wood+'🪵':''].filter(Boolean).join(' '):
-        cost?cost+'💰':'';
-      const priceLabel=typeof cost==='object'&&cost.magic?cost.magic+'🔮':price;
-      element.title=tooltip||name+(priceLabel?' · '+priceLabel:'');
-      element.setAttribute('aria-label',element.title);
-      for(const [className,text] of [['action-symbol',symbol],['action-name',name],
-        ['action-cost',priceLabel]]){
-        const span=document.createElement('span');span.className=className;span.textContent=text;
-        element.appendChild(span);
-      }
-      element.onclick=event=>{event.stopPropagation();action();};
-      buttons.appendChild(element);
-    };
+    const add=(...args)=>hudRenderer.commandButton(buttons,...args);
     if(constructionTab){
       portrait.textContent=constructionTab==='advanced'?'🏭':'🏗️';
       title.textContent=constructionTab==='advanced'?'Bâtiments avancés':'Bâtiments de base';
@@ -2684,10 +2649,8 @@ function refreshHUD(){
         b.type==='wall'?'Mur de pierre infranchissable · les sections s’assemblent en angle.':
         'Bâtiment orc · améliorer la structure et définir un point de rassemblement.';
       if(b.type!=='mine'){
-        const track=document.createElement('div');track.className='hp-track';
-        const fill=document.createElement('div');fill.className='hp-fill';
-        fill.style.width=100*b.health/b.maxHealth+'%';track.appendChild(fill);
-        health.append(document.createTextNode('Niv. '+b.level+' · PV '+Math.ceil(b.health)+' / '+b.maxHealth),track);
+        hudRenderer.healthTrack(health,'Niv. '+b.level+' · PV '+Math.ceil(b.health)+' / '+b.maxHealth,
+          100*b.health/b.maxHealth);
       }
       if(friendly&&(b.type==='witch-house'||b.type==='barrack')){
         const clan=b.clanId==='witch'?'witch':'orc';
@@ -2741,10 +2704,7 @@ function refreshHUD(){
         single?.role==='ranged'?'Combattant à distance : attaque de loin, plus fragile.':
         'Déplacement : touchez le terrain. Les combattants engagent les ennemis proches.';
       const average=Math.round(alive.reduce((sum,u)=>sum+u.health/u.maxHealth,0)/alive.length*100);
-      const track=document.createElement('div');track.className='hp-track';
-      const fill=document.createElement('div');fill.className='hp-fill';
-      fill.style.width=average+'%';track.appendChild(fill);
-      health.append(document.createTextNode('Santé moyenne : '+average+' %'),track);
+      hudRenderer.healthTrack(health,'Santé moyenne : '+average+' %',average);
       if(alive.some(roles.isFighter))
         add('⚔️','Attaquer','',()=>{attackMode=true;refreshHUD();});
       if(alive.some(roles.isWorker)){

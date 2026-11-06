@@ -27,6 +27,9 @@ modules (`docs/rts-contracts.d.ts`).
   injectées ; les événements pointeur restent dans `docs/game.js`.
 - `docs/rts-minimap.js` : dessin Canvas 2D de la mini-carte, brouillard du sol,
   bâtiments et points d'unités ; `docs/game.js` conserve les événements d'entrée.
+- `docs/rts-hud.js` : fabrication des boutons, textes de ressources et barres
+  de vie du HUD ; les décisions sur les commandes disponibles restent dans
+  `docs/game.js`, sans duplication du DOM dans les systèmes de gameplay.
 - `docs/rts-ai-commands.js` : exécution des intentions des deux IA (construction,
   entraînement, reconnaissance, attaques, défense) ; les directeurs `*-strategy.js`
   choisissent les intentions et ne manipulent pas directement les objets 3D.

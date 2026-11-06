@@ -27,7 +27,7 @@ dans [`../refactor.md`](../refactor.md).
 | Commandes joueur | `rts-picking.js`, `rts-camera.js`, à terme gestes tactiles | `test-rts-picking.mjs`, `test-rts-camera.mjs`, QA Chrome tactile |
 | Modèles et ressources | `rts-assets.js`, `assets/runtime-assets.lock`, `scripts/use-pinned-runtime-assets.sh` | `test-rts-assets.mjs`, QA Chrome, Pages |
 | Monde et visibilité | `rts-map.js`, `rts-footprint.js`, `rts-fog.js`, `rts-forest.js` | `test-rts-map.mjs`, `test-rts-footprint.mjs`, `test-rts-fog.mjs`, `test-rts-forest.mjs` |
-| Présentation | `styles/game.css`, `rts-minimap.js`, `game.js` (résidu HUD/rendu) | `test-rts-minimap.mjs`, Chrome `visual`, `economy`, `combat` |
+| Présentation | `styles/game.css`, `rts-minimap.js`, `rts-hud.js`, `game.js` (composition HUD/rendu) | `test-rts-minimap.mjs`, `test-rts-hud.mjs`, Chrome `visual`, `economy`, `combat` |
 | Validation navigateur | `scripts/browser-qa/` par scénario, `chrome-driver.mjs` commun | Workflow `browser-qa.yml` |
 
 Un agent peut modifier un module isolé et son test sans toucher au code de
