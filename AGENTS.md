@@ -25,7 +25,10 @@ modules (`docs/rts-contracts.d.ts`).
   éléments 3D reste dans `game.js` pour préserver l'ordre de destruction.
 - `docs/rts-orc-forager.js` : exécution d'une chasse ou récupération de cadavre
   par un orc, avec poursuite réelle, réservation de proie, animation et
-  restitution à l'économie injectées ; `game.js` décide encore qui doit chasser.
+  restitution à l'économie injectées ; `rts-orc-hunt-planner.js` choisit la proie.
+- `docs/rts-orc-hunt-planner.js` : attribution des chasses (cadavres prioritaires,
+  lièvres, brouillard, limites de tâches, menaces, exploration) et cadencement
+  de 800 ms ; `rts-orc-forager.js` exécute ensuite la chasse physique.
 - `docs/rts-unit-tick.js` : état et priorités des unités à chaque tick
   (attaque, cible, poursuite, tâches, déplacement), avec services de navigation,
   combat, animation et IA injectés une seule fois par `game.js`.

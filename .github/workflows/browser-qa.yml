@@ -18,6 +18,7 @@ on:
       - 'docs/rts-farming.js'
       - 'docs/rts-orc-food.js'
       - 'docs/rts-orc-forager.js'
+      - 'docs/rts-orc-hunt-planner.js'
       - 'docs/HARE_ASSET_LICENSE.md'
       - 'docs/rts-forest.js'
       - 'docs/rts-berries.js'
@@ -37,6 +38,7 @@ on:
       - 'scripts/test-rts-farming.mjs'
       - 'scripts/test-rts-orc-food.mjs'
       - 'scripts/test-rts-orc-forager.mjs'
+      - 'scripts/test-rts-orc-hunt-planner.mjs'
       - 'scripts/test-rts-sound.mjs'
       - 'scripts/test-rts-effects.mjs'
       - 'scripts/test-rts-fog.mjs'
@@ -167,6 +169,7 @@ jobs:
           node scripts/test-rts-farming.mjs
           node scripts/test-rts-orc-food.mjs
           node scripts/test-rts-orc-forager.mjs
+          node scripts/test-rts-orc-hunt-planner.mjs
           node scripts/test-rts-forest.mjs
           node scripts/test-rts-berries.mjs
           node scripts/test-rts-ravens.mjs

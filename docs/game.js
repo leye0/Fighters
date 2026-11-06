@@ -371,7 +371,7 @@ const orcFoodRules=window.FightersOrcFood;
 const orcFood=new orcFoodRules.Economy();
 const hareField=new orcFoodRules.Hares({halfSize:arena.worldHalf,
   walkable:(x,z)=>navigatorRTS.pointClear({x,z})});
-let orcForageElapsed=0,orcFamineAlerted=false;
+let orcFamineAlerted=false;
 let farmAssignmentElapsed=0,farmSerial=0,famineAlerted=false;
 const wildBerries=new window.FightersBerries.WildBerries(forestLayout,{map:arena});
 let berryAssignmentElapsed=0;
@@ -2905,7 +2905,7 @@ function startSession(){
   resize();
   matchResources.resetEconomy();
   farming.reset();farmSerial=0;farmAssignmentElapsed=0;famineAlerted=false;
-  orcFood.reset();orcForageElapsed=0;orcFamineAlerted=false;
+  orcFood.reset();orcHuntPlanner.reset();orcFamineAlerted=false;
   stoneCircleSerial=0;wallSerial=0;healingAssignmentElapsed=0;
   wildBerries.reset();berryAssignmentElapsed=0;syncBerryVisuals();
   buildMode=null;orcSpawned=false;
@@ -3990,58 +3990,13 @@ const orcForager=window.FightersOrcForager.create({
   markWorkBlocked,animation,faceDirection,cancelSoulJob,refreshHUD,
   harvestAnimation:FARM_HARVEST
 });
+const orcHuntPlanner=window.FightersOrcHuntPlanner.create({
+  units,orcFood,orcFoodRules,hareField,fogOfWar,navigatorRTS,nearestHostile,
+  isOrcPassive:()=>qaPassiveKind==='orc',
+  isOrcDirectorEnabled:()=>orcDirector.enabled
+});
 function assignOrcForagers(dt){
-  if(qaPassiveKind==='orc')return;
-  orcForageElapsed+=dt;
-  if(orcForageElapsed<.8)return;
-  orcForageElapsed=0;
-  const orcs=units.filter(u=>u.kind==='orc'&&!u.dead);
-  // Corpse meals are opportunistic even with a full stockpile. Hares are
-  // hunted before starvation, without pulling soldiers out of a real fight.
-  const huntHares=orcFood.food<Math.max(60,orcs.length*12);
-  let jobs=orcs.filter(u=>u.orcFoodJob).length;
-  if(jobs>=2)return;
-  const candidates=orcs.filter(u=>!u.orcFoodJob&&!u.attack&&
-    !u.raiding&&!u.attackOrder&&(!u.destination||orcDirector.enabled&&u.scouting)&&
-    !u.constructJob&&!u.repairJob&&!u.mineJob&&
-    !u.treeJob&&!u.woodJob&&!u.farmJob&&!u.ravenDistraction&&
-    !u.workerRetryTime&&!nearestHostile(u,8)?.target);
-  // Fallen witches are a substantial, finite meal, preferred over live hares.
-  const prey=[...units.filter(u=>u.kind==='witch'&&u.dead&&u.deadTime>2&&
-    !orcFood.consumedCorpses.has(u.id)).map(u=>({
-    kind:'corpse',id:u.id,x:u.root.position.x,z:u.root.position.z
-  }))];
-  if(huntHares)prey.push(...hareField.hares.filter(h=>h.active&&h.caughtBy==null).map(h=>({
-    kind:'hare',id:h.id,x:h.x,z:h.z
-  })));
-  // Try the closest reachable meals first, while keeping fallen witches
-  // preferable to hares when both are in hunting range.
-  const closestHunter=target=>candidates.reduce((distance,orc)=>Math.min(distance,
-    Math.hypot(orc.root.position.x-target.x,orc.root.position.z-target.z)),Infinity);
-  prey.sort((a,b)=>(a.kind==='corpse'?0:1)-(b.kind==='corpse'?0:1)||
-    closestHunter(a)-closestHunter(b));
-  for(const target of prey){
-    if(jobs>=2)break;
-    if(orcs.some(u=>u.orcFoodJob?.kind===target.kind&&u.orcFoodJob?.id===target.id))continue;
-    if(!fogOfWar.exploredAt(target.x,target.z,'orc'))continue;
-    let nearest=null,minimum=orcFoodRules.HUNT_SIGHT;
-    for(const orc of candidates){
-      if(orc.orcFoodJob)continue;
-      const distance=Math.hypot(orc.root.position.x-target.x,orc.root.position.z-target.z);
-      if(distance>=minimum)continue;
-      if(!navigatorRTS.segmentClear(orc.root.position,target)&&
-        !navigatorRTS.plan(orc.root.position,target))continue;
-      minimum=distance;nearest=orc;
-    }
-    if(!nearest)continue;
-    nearest.orcFoodJob={kind:target.kind,id:target.id,progress:0};
-    // Autonomous scouting is resumable: the director will issue another
-    // frontier waypoint after the nearby food has been consumed.
-    if(nearest.scouting&&orcDirector.enabled){
-      nearest.scouting=false;nearest.destination=null;
-    }
-    nearest.route=null;nearest.approachCache=null;jobs++;
-  }
+  return orcHuntPlanner.assign(dt);
 }
 function tickOrcForager(actor,dt){
   return orcForager.tick(actor,dt);

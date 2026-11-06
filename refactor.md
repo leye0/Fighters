@@ -120,8 +120,13 @@ qu'après modification, vérification et intégration dans `main`.
       script HTML derrière les interfaces de l'ordonnanceur.
 - [ ] Sortir progressivement la logique des ouvriers, unités et bâtiments du
       script intégré à `docs/index.html`.
-- [ ] Extraire la poursuite, la capture, l'interruption et la consommation des
-      proies orcs dans `rts-orc-forager.js`, avec preuves Node et QA Chrome.
+- [x] Extraire la poursuite, la capture, l'interruption et la consommation des
+      proies orcs dans `rts-orc-forager.js` ; tests Node et run 42284582091 :
+      Chrome `visual`, `economy` et `combat` verts.
+- [ ] Extraire la décision d'attribution des chasses orcs (cadavre/lièvre,
+      brouillard, chemins et priorité des combats) dans
+      `rts-orc-hunt-planner.js`, avec cadence et reset testés sous Node puis
+      validation Chrome complète.
 - [x] Séparer la décision stratégique des deux IA de l'exécution des commandes :
       directeurs `*-strategy.js`, exécution `rts-ai-commands.js`.
 - [x] Valider en Chrome l'exécution des actions Orc/Sorcière extraite dans
