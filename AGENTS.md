@@ -33,6 +33,10 @@ modules (`docs/rts-contracts.d.ts`).
   lièvres, consommation, répartition des ouvriers, maturation des cultures et
   famine (un seul avertissement par épisode). Les effets visuels, les dégâts
   fatals et les règles économiques restent injectés par `game.js`.
+- `docs/rts-raven-distraction.js` : automate de diversion des combattants orcs
+  par les corbeaux ; seuls les oiseaux effectivement visibles sont poursuivis,
+  aucune attaque ni dégât n'est dirigé vers un corbeau. Navigation et animations
+  restent injectées par l'adaptateur de simulation.
 - `docs/rts-unit-tick.js` : état et priorités des unités à chaque tick
   (attaque, cible, poursuite, tâches, déplacement), avec services de navigation,
   combat, animation et IA injectés une seule fois par `game.js`.

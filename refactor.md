@@ -123,13 +123,16 @@ qu'après modification, vérification et intégration dans `main`.
 - [x] Extraire la poursuite, la capture, l'interruption et la consommation des
       proies orcs dans `rts-orc-forager.js` ; tests Node et run 42284582091 :
       Chrome `visual`, `economy` et `combat` verts.
-- [ ] Extraire la décision d'attribution des chasses orcs (cadavre/lièvre,
+- [x] Extraire la décision d'attribution des chasses orcs (cadavre/lièvre,
       brouillard, chemins et priorité des combats) dans
-      `rts-orc-hunt-planner.js`, avec cadence et reset testés sous Node puis
-      validation Chrome complète.
+      `rts-orc-hunt-planner.js` ; cadence et reset testés sous Node,
+      run 42286031105 : Chrome `visual`, `economy`, `combat` verts.
 - [ ] Sortir les pas alimentaires orcs/sorcières de `game.js` dans
       `rts-food-cycle.js` (ordre d'exécution, cueillette, famine, dégâts,
       alertes et reset), avec tests ciblés et QA WebGL des deux factions.
+- [ ] Isoler la diversion des combattants orcs par les corbeaux dans
+      `rts-raven-distraction.js` (vue réelle, durée, poursuite sans attaque,
+      cooldown et disparition), avec tests Node et QA Chrome.
 - [x] Séparer la décision stratégique des deux IA de l'exécution des commandes :
       directeurs `*-strategy.js`, exécution `rts-ai-commands.js`.
 - [x] Valider en Chrome l'exécution des actions Orc/Sorcière extraite dans

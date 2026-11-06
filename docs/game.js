@@ -4135,43 +4135,13 @@ function clearBolts(){
   for(const bolt of activeBolts)scene.remove(bolt.mesh);
   activeBolts.length=0;boltPool.length=0;
 }
+const ravenDistraction=window.FightersRavenDistraction.create({
+  roles,ravenFlock,fogOfWar,isModelLoaded:()=>ravenModelLoaded,
+  isOrcDirectorEnabled:()=>orcDirector.enabled,
+  navigateActor,animation,faceDirection,random:Math.random
+});
 function tickRavenDistraction(actor,dt){
-  if(!ravenModelLoaded||actor.kind!=='orc'||!roles.isFighter(actor)||!orcDirector.enabled)return false;
-  actor.ravenCooldown=Math.max(0,(actor.ravenCooldown||0)-dt);
-  if(!actor.ravenDistraction&&actor.ravenCooldown<=0){
-    const bird=ravenFlock.nearestDecoy(actor.root.position,
-      Math.min(actor.profile.sight,6.7));
-    // An orc must actually have sight of the bird: no omniscient chasing.
-    if(bird&&fogOfWar.visibleAt(bird.x,bird.z,'orc')){
-      actor.ravenDistraction={id:bird.id,remaining:4.3+Math.random()*1.7};
-      actor.ravenCooldown=11;
-      actor.route=null;
-    }
-  }
-  const distraction=actor.ravenDistraction;
-  if(!distraction)return false;
-  distraction.remaining-=dt;
-  const bird=ravenFlock.ravens.find(raven=>raven.id===distraction.id);
-  if(!bird||distraction.remaining<=0||
-    Math.hypot(bird.x-actor.root.position.x,bird.z-actor.root.position.z)>11){
-    actor.ravenDistraction=null;actor.route=null;return false;
-  }
-  const position={x:bird.x,z:bird.z};
-  if(Math.hypot(position.x-actor.root.position.x,
-    position.z-actor.root.position.z)>1.35){
-    const result=navigateActor(actor,position,dt,'pursuit');
-    if(result==='blocked'){
-      actor.ravenDistraction=null;actor.ravenCooldown=11;actor.route=null;
-      return false;
-    }
-    if(result!=='moving')animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop');
-  }else{
-    faceDirection(actor,bird.x-actor.root.position.x,bird.z-actor.root.position.z);
-    animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop');
-  }
-  // Ravens have no combat entity, hit points or damage receiver. Following
-  // them consumes an orc's tactical time, but can never kill the familiar.
-  return true;
+  return ravenDistraction.tick(actor,dt);
 }
 // The fixed-order simulation invokes this standalone unit state machine.
 // All services are bound once at startup, never allocated per unit/tick.

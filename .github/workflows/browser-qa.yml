@@ -24,6 +24,7 @@ on:
       - 'docs/rts-forest.js'
       - 'docs/rts-berries.js'
       - 'docs/rts-ravens.js'
+      - 'docs/rts-raven-distraction.js'
       - 'docs/rts-healing.js'
       - 'docs/rts-repair.js'
       - 'docs/rts-souls.js'
@@ -33,6 +34,7 @@ on:
       - 'scripts/test-rts-forest.mjs'
       - 'scripts/test-rts-berries.mjs'
       - 'scripts/test-rts-ravens.mjs'
+      - 'scripts/test-rts-raven-distraction.mjs'
       - 'scripts/test-rts-healing.mjs'
       - 'scripts/test-rts-repair.mjs'
       - 'scripts/test-rts-souls.mjs'
@@ -176,6 +178,7 @@ jobs:
           node scripts/test-rts-forest.mjs
           node scripts/test-rts-berries.mjs
           node scripts/test-rts-ravens.mjs
+          node scripts/test-rts-raven-distraction.mjs
           node scripts/test-rts-healing.mjs
           node scripts/test-rts-repair.mjs
           node scripts/test-rts-souls.mjs
