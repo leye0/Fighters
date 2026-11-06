@@ -11,6 +11,8 @@ on:
       - 'docs/rts-raiding.js'
       - 'docs/rts-fog.js'
       - 'docs/rts-sound.js'
+      - 'docs/rts-effects.js'
+      - 'docs/sounds/effects/**'
       - 'docs/rts-farming.js'
       - 'docs/rts-orc-food.js'
       - 'docs/HARE_ASSET_LICENSE.md'
@@ -32,6 +34,7 @@ on:
       - 'scripts/test-rts-farming.mjs'
       - 'scripts/test-rts-orc-food.mjs'
       - 'scripts/test-rts-sound.mjs'
+      - 'scripts/test-rts-effects.mjs'
       - 'scripts/test-rts-fog.mjs'
       - 'scripts/test-rts-footprint.mjs'
       - 'scripts/test-rts-walls.mjs'
@@ -97,6 +100,7 @@ jobs:
           node scripts/test-rts-map.mjs
           node scripts/test-rts-fog.mjs
           node scripts/test-rts-sound.mjs
+          node scripts/test-rts-effects.mjs
           node scripts/test-rts-unit-physics.mjs
           node scripts/test-orc-strategy.mjs
           node scripts/test-witch-strategy.mjs

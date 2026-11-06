@@ -482,6 +482,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 <script src="./orc-appearance.js"></script>
 <script src="./rts-fog.js"></script>
 <script src="./rts-sound.js?v=voice-lines-20261105"></script>
+<script src="./rts-effects.js?v=immersive-20261106"></script>
 <script src="./rts-farming.js"></script>
 <script src="./rts-orc-food.js"></script>
 <script src="./rts-forest.js"></script>
@@ -967,7 +968,11 @@ const witchSound=new window.FightersSound.Engine({
   allowEmptyCategories:['destruction'],
   manifestUrl:'./sounds/witches/manifest.json',
   rootUrl:'./sounds/witches/',
-  assetVersion:'role-witch-shouts-20261105'
+  assetVersion:'role-witch-shouts-20261105',
+  contextFactory:()=>orcSound.context
+});
+const effects=new window.FightersEffects.Engine({
+  contextFactory:()=>orcSound.context,listener:()=>cameraFollow
 });
 // Each clan keeps its own permanent memory of enemy structures; never share it.
 const knownEnemyBuildings={witch:new Set(),orc:new Set()};
@@ -1118,20 +1123,35 @@ function playWitchVoice(category,actorOrPosition){
   void witchSound.play(category,()=>running&&!paused&&visibleToPlayer(x,z),options);
   return true;
 }
-// A single hammer sound is shared by both clans and capped globally, so an
-// Orc building boom cannot drown the battlefield in overlapping impacts.
-let lastConstructionHitAt=-Infinity;
-function playConstructionHit(actor){
-  const {x,z}=actor.root.position;
-  if(!running||paused||!visibleToPlayer(x,z)||
-    Math.hypot(x-cameraFollow.x,z-cameraFollow.z)>22)return;
+// Every physical interaction has its own short material-specific recording.
+// The dedicated SFX bus preserves dialogue and limits noise in large battles.
+function playEffect(type,position){
+  if(!running||paused||!position||!visibleToPlayer(position.x,position.z))return;
+  void effects.play(type,position,
+    ()=>running&&!paused&&visibleToPlayer(position.x,position.z));
+}
+function playConstructionHit(actor){playEffect('hammer',actor.root.position);}
+const ravenSoundState=new Map();
+function tickRavenSounds(){
   const now=performance.now();
-  if(now-lastConstructionHitAt<450)return;
-  lastConstructionHitAt=now;
-  const engine=actor.kind==='orc'?orcSound:witchSound;
-  // The procedural layered impact starts immediately; no stale first MP3.
-  void engine.playHammer(()=>running&&!paused&&visibleToPlayer(x,z)&&
-    Math.hypot(x-cameraFollow.x,z-cameraFollow.z)<=22);
+  for(const raven of ravenFlock.ravens){
+    let state=ravenSoundState.get(raven.id);
+    if(!state){
+      state={mode:raven.mode,nextWing:0,
+        nextCaw:now+1400+Math.random()*2300};
+      ravenSoundState.set(raven.id,state);
+    }
+    if(raven.mode==='flying'&&
+      (state.mode!=='flying'||now>=state.nextWing)){
+      playEffect('wing',raven);
+      state.nextWing=now+720+Math.random()*250;
+    }
+    if(now>=state.nextCaw){
+      playEffect('caw',raven);
+      state.nextCaw=now+4600+Math.random()*5000;
+    }
+    state.mode=raven.mode;
+  }
 }
 function acknowledgeOrcOrder(actors){
   // A single voice for a whole squad, never one voice per unit.
@@ -3007,10 +3027,13 @@ function tickConstructWorker(actor,dt){
   if(isGarden){
     faceDirection(actor,.6,.8);
     animation(actor,FARM_PLANT);
+    job.soundTimer=(job.soundTimer||0)+dt;
+    if(job.soundTimer>=1.0){
+      job.soundTimer-=1.0;playEffect('garden',actor.root.position);
+    }
   }else{
     faceBuildingCenter(actor,job.site);
     animation(actor,WORK_SWING);
-    // Hammer blows have sound; sowing a garden is silent.
     const swingSeconds=Math.max(.35,actor.clipCatalog.get('Sword_Attack')?.duration||1);
     actor.workHitTimer=(actor.workHitTimer||0)+dt;
     if(actor.workHitTimer>=swingSeconds*.4){
@@ -4171,6 +4194,10 @@ function tickMineWorker(actor,dt){
   // Extract at the mine, then transport the ore to an allied headquarters.
   faceBuildingCenter(actor,mine);
   animation(actor,WORK_SWING);
+  job.soundTimer=(job.soundTimer||0)+dt;
+  if(job.soundTimer>=.78){
+    job.soundTimer-=.78;playEffect('mine',actor.root.position);
+  }
   job.progress+=dt;
   if(job.progress>=MINING_SECONDS){
     job.progress=0;job.phase='carry';job.amount=MINING_PAY*mine.level;
@@ -4491,7 +4518,7 @@ function tickGardenWorker(actor,dt){
       u.farmJob?.gardenId===garden.id&&u.farmJob.plotIndex>=0)
       .map(u=>u.farmJob.plotIndex);
     job.plotIndex=farming.firstReady(garden.id,reserved);
-    job.progress=0;
+    job.progress=0;job.harvestSounded=false;
   }
   if(job.plotIndex<0){animation(actor,'Idle_Loop');return true;}
   const goal=gardenHarvestGoal(garden,job.plotIndex);
@@ -4506,6 +4533,9 @@ function tickGardenWorker(actor,dt){
   faceDirection(actor,plantX-actor.root.position.x,plantZ-actor.root.position.z);
   animation(actor,FARM_HARVEST);
   job.progress+=dt;
+  if(!job.harvestSounded&&job.progress>=.4){
+    job.harvestSounded=true;playEffect('garden',actor.root.position);
+  }
   if(job.progress>=window.FightersFarming.HARVEST_SECONDS){
     const yieldAmount=farming.harvest(garden.id,job.plotIndex);
     job.plotIndex=-1;job.progress=0;
@@ -4791,6 +4821,7 @@ function fireBolt(actor,target,duration){
       Math.min(target.hitbox.maxY,1.5),(target.hitbox.minZ+target.hitbox.maxZ)/2):
     target.root.position.clone().add(new THREE.Vector3(0,1.15,0));
   mesh.position.copy(start);scene.add(mesh);
+  playEffect('magic',actor.root.position);
   activeBolts.push({mesh,start,destination,time:0,duration:Math.max(.1,duration)});
 }
 function tickBolts(dt){
@@ -4872,8 +4903,11 @@ function tickUnit(actor,dt){
       const target=action.target;
       const range=actor.role==='ranged'?actor.profile.range+.3:
         isBuilding(target)?BUILDING_CONTACT+.22:actor.weapon?2.35:1.85;
-      if(enemyOf(actor,target)&&targetDistance(actor,target)<range)
+      if(enemyOf(actor,target)&&targetDistance(actor,target)<range){
         dealDamage(interceptMagicWithWall(actor,target),actor.profile.damage,actor);
+        if(actor.weapon&&actor.role!=='ranged')
+          playEffect('swordHit',actor.root.position);
+      }
     }
     if(actor.attack===action&&action.elapsed>=action.duration){
       actor.attack=null;animation(actor,actor.weapon?'Sword_Idle':'Idle_Loop',true);
@@ -4941,6 +4975,8 @@ function tickUnit(actor,dt){
         const duration=clip.duration;
         actor.attack={target,elapsed:0,impact:duration*.4,duration:duration+.13,landed:false};
         actor.cooldown=duration+rand(.45,.85);animation(actor,clipName,true);
+        if(actor.weapon&&actor.role!=='ranged')
+          playEffect('swordSwing',actor.root.position);
         if(actor.role==='ranged')fireBolt(actor,target,duration*.4);
       }
       return;
@@ -5161,11 +5197,14 @@ function stepGame(dt){
   stepOrcFood(dt);
   stepOrcStrategy(dt);
   stepWitchStrategy(dt);
-  if(ravenModelLoaded)
+  if(ravenModelLoaded){
     ravenFlock.update(dt,units.filter(actor=>actor.kind==='orc'&&!actor.dead));
+    tickRavenSounds();
+  }
   for(const actor of units)tickUnit(actor,dt);
   stepSoulEffects(dt);
   tickBolts(dt);
+  effects.update();
   window.FightersUnitPhysics.separate(units,navigatorRTS,UNIT_RADIUS,dt);
   for(let i=units.length-1;i>=0;i--)if(units[i].dead&&units[i].deadTime<=0){
     releaseActor(units[i]);units.splice(i,1);
@@ -5469,6 +5508,7 @@ function pauseGame(){
   paused=!paused;$('pause').textContent=paused?'▶':'Ⅱ';
   orcSound.setPaused(paused);
   witchSound.setPaused(paused);
+  effects.setPaused(paused);
   showBanner(paused?'PAUSE':'REPRISE');refreshHUD();
 }
 $('pause').onclick=pauseGame;
@@ -5478,9 +5518,9 @@ $('start').onclick=()=>{
   if(!ready){location.reload();return;}
   if(chosenFaction==='orc'&&!orcVillage)return;
   // Unlock inside the user's click before the simulation begins.
-  lastConstructionHitAt=-Infinity;
-  orcSound.reset();witchSound.reset();
-  orcSound.unlock();witchSound.unlock();startSession();
+  ravenSoundState.clear();
+  orcSound.reset();witchSound.reset();effects.reset();
+  orcSound.unlock();witchSound.unlock();effects.unlock();startSession();
 };
 document.addEventListener('contextmenu',event=>event.preventDefault(),{passive:false});
 const loadingProfile={
@@ -6093,6 +6133,7 @@ window.__fightersQA={
   setRally:(x,z)=>setRally(selectedBuilding,{x,z}),
   sound:()=>orcSound.snapshot(),
   witchSound:()=>witchSound.snapshot(),
+  effects:()=>effects.snapshot(),
   pan:(x,y)=>panCamera(x,y),
   groundScreenPoint:screenGroundPoint,
   buildingScreenPoint:(id)=>{
