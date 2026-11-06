@@ -1,0 +1,5 @@
+# Assets prebuilt by scripts/prepare-runtime-assets.sh and verified in Chrome.
+# Change only after publishing and validating a new immutable GitHub Release.
+tag=fighters-runtime-assets-v1
+archive=fighters-runtime-assets-v1.zip
+sha256=cde9f566c2bd7c059e6cdb438707643ffbc38703b59281c26053072645dfd93c

@@ -16,9 +16,13 @@ et le rendu actuels sont des contraintes de non-régression.
   indépendants ; modifier le fichier du scénario concerné.
 - `scripts/browser-qa/chrome-driver.mjs` : transport Chrome DevTools partagé ;
   coordonner ses changements puisqu'ils affectent tous les scénarios.
-- `scripts/prepare-runtime-assets.sh` : préparation et validation des modèles
-  utilisée à l'identique par Pages et QA ; ne pas dupliquer son contenu dans
-  les workflows.
+- `assets/README.md`, `assets/runtime-assets.lock` : méthode d'ajout et version
+  immuable des modèles préparés, avec SHA-256. Ne pas changer le verrou sans
+  une nouvelle Release vérifiée.
+- `scripts/use-pinned-runtime-assets.sh` : restauration commune pour Pages et
+  QA ; aucun modèle source externe n'est téléchargé à chaque commit.
+- `scripts/prepare-runtime-assets.sh` : reconstruction exceptionnelle du paquet
+  pour une nouvelle version (workflow `rebuild-runtime-assets.yml`).
 - `.github/workflows/` : génération, validation et publication ; éviter les
   modifications concurrentes de `main` par plusieurs jobs.
 
@@ -47,6 +51,7 @@ et le rendu actuels sont des contraintes de non-régression.
   `scripts/browser-qa/*.mjs`
 - `git diff --check`
 - `bash -n scripts/prepare-runtime-assets.sh`
+- `bash -n scripts/use-pinned-runtime-assets.sh`
 - Pour HTML, CSS, entrées, simulation et rendu : QA réelle dans
   `.github/workflows/browser-qa.yml` (`visual`, `economy`, `combat`).
 

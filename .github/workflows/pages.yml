@@ -21,6 +21,8 @@ on:
       - 'scripts/download-sword.sh'
       - 'scripts/decompress-sword.mjs'
       - 'scripts/prepare-runtime-assets.sh'
+      - 'scripts/use-pinned-runtime-assets.sh'
+      - 'assets/runtime-assets.lock'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 permissions:
@@ -39,14 +41,12 @@ jobs:
       url: ${{ steps.publish.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/cache@v4
         with:
-          node-version: '22'
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Prepare pinned models and runtime assets
-        run: bash scripts/prepare-runtime-assets.sh
+          path: .cache/fighters
+          key: fighters-runtime-${{ hashFiles('assets/runtime-assets.lock') }}
+      - name: Restore verified, prebuilt runtime assets
+        run: bash scripts/use-pinned-runtime-assets.sh
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

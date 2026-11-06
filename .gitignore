@@ -1,0 +1,11 @@
+/.cache/
+/docs/vendor/
+/docs/models/crops.rts.glb*
+/docs/models/equipment.sword.arming.default.*
+/docs/models/footprints/
+/docs/models/human_male.*
+/docs/models/human_female.*
+/docs/models/orc-buildings/
+/docs/models/orc_rts_building_set_-_proto_series.glb
+/docs/models/quaternius_*.glb
+/docs/models/witch_house.glb

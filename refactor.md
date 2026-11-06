@@ -35,6 +35,11 @@ qu'après modification, vérification et intégration dans `main`.
       `scripts/prepare-runtime-assets.sh`, avec les mêmes vérifications.
 - [x] Préparer et tester les assets une seule fois par exécution QA, puis les
       partager aux trois jobs Chrome via un artifact éphémère.
+- [ ] Stocker une version des modèles déjà préparés dans une GitHub Release
+      immuable, avec SHA-256, et faire utiliser la même version à Pages et à QA.
+- [ ] Mettre en place un chemin d'ajout/mise à jour : sources épinglées,
+      reconstruction occasionnelle, validation Chrome puis publication v2/v3
+      et actualisation du verrou sans PR.
 - [ ] Ajouter un manifeste de dépendances avec versions et fichier de verrouillage
       pour reproduire le build localement et en CI.
 

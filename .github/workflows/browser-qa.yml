@@ -57,6 +57,8 @@ on:
       - 'scripts/browser-qa.mjs'
       - 'scripts/browser-qa/**'
       - 'scripts/prepare-runtime-assets.sh'
+      - 'scripts/use-pinned-runtime-assets.sh'
+      - 'assets/runtime-assets.lock'
       - 'scripts/verify-costumes.mjs'
       - 'crops_low_poly.glb'
       - 'scripts/build-runtime-crops.mjs'
@@ -87,9 +89,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
       - name: Test deterministic navigation and orc strategic planning
         run: |
           node --check scripts/browser-qa.mjs
@@ -115,8 +114,12 @@ jobs:
           node scripts/test-rts-healing.mjs
           node scripts/test-rts-repair.mjs
           node scripts/test-rts-souls.mjs
-      - name: Prepare complete RTS building assets and native character models
-        run: bash scripts/prepare-runtime-assets.sh
+      - uses: actions/cache@v4
+        with:
+          path: .cache/fighters
+          key: fighters-runtime-${{ hashFiles('assets/runtime-assets.lock') }}
+      - name: Restore verified, prebuilt runtime assets
+        run: bash scripts/use-pinned-runtime-assets.sh
       - uses: actions/upload-artifact@v4
         with:
           name: fighters-runtime-assets

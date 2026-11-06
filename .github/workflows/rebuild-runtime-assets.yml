@@ -1,0 +1,100 @@
+name: Rebuild and publish a new runtime asset version
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Next unique version, for example v2 (never overwrite v1)'
+        required: true
+        type: string
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: fighters-runtime-assets-publisher
+  cancel-in-progress: false
+jobs:
+  rebuild:
+    name: Build, test, and pin new runtime assets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      FIGHTERS_ASSET_VERSION: ${{ inputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate requested version
+        run: |
+          set -euo pipefail
+          if [[ ! "${FIGHTERS_ASSET_VERSION}" =~ ^v[0-9]+$ ]]; then
+            echo 'Version must be v2, v3, and so on.' >&2
+            exit 1
+          fi
+          tag="fighters-runtime-assets-${FIGHTERS_ASSET_VERSION}"
+          if gh release view "$tag" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            echo "${tag} already exists; never overwrite a pinned asset version." >&2
+            exit 1
+          fi
+      - name: Rebuild the runtime bundle from pinned sources
+        run: bash scripts/prepare-runtime-assets.sh
+      - name: Run Node tests and all three real-Chrome suites
+        run: |
+          set -euo pipefail
+          node --check scripts/browser-qa.mjs
+          for f in scripts/browser-qa/*.mjs; do node --check "$f"; done
+          for f in scripts/test-rts-*.mjs scripts/test-orc-strategy.mjs scripts/test-witch-strategy.mjs; do
+            node "$f"
+          done
+          python3 -m http.server 8000 --directory docs >/tmp/fighters-assets-preview.log 2>&1 &
+          for i in {1..40}; do
+            if curl -fsS http://127.0.0.1:8000/ >/dev/null; then break; fi
+            sleep 0.25
+          done
+          curl -fsS http://127.0.0.1:8000/ >/dev/null
+          for group in visual economy combat; do
+            echo "Running Chrome suite: ${group}"
+            FIGHTERS_URL=http://127.0.0.1:8000/ FIGHTERS_QA_GROUP="$group" node scripts/browser-qa.mjs
+          done
+      - name: Publish verified assets and move the version pin forward
+        run: |
+          set -euo pipefail
+          tag="fighters-runtime-assets-${FIGHTERS_ASSET_VERSION}"
+          archive="${tag}.zip"
+          (cd docs && zip -q -r "../${archive}" models vendor)
+          unzip -tq "$archive"
+          sha="$(sha256sum "$archive" | cut -d' ' -f1)"
+
+          # Avoid deploying assets built against a stale commit.
+          git fetch origin main
+          if [[ "$(git rev-parse origin/main)" != "$GITHUB_SHA" ]]; then
+            echo 'Main moved while building. Re-run from the current main.' >&2
+            exit 1
+          fi
+
+          gh release create "$tag" "$archive" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --target "$GITHUB_SHA" \
+            --title "Fighters runtime assets ${FIGHTERS_ASSET_VERSION}" \
+            --notes "Generated from ${GITHUB_SHA}; passed Node and all three Chrome QA suites. SHA-256: ${sha}." \
+            --latest=false
+
+          FIGHTERS_ASSET_TAG="$tag" FIGHTERS_ASSET_ARCHIVE="$archive" FIGHTERS_ASSET_SHA="$sha" node -e '
+            const fs = require("node:fs");
+            const {FIGHTERS_ASSET_TAG:tag,FIGHTERS_ASSET_ARCHIVE:archive,FIGHTERS_ASSET_SHA:sha} = process.env;
+            fs.writeFileSync("assets/runtime-assets.lock", `# Assets prebuilt by scripts/prepare-runtime-assets.sh and verified in Chrome.\n# Change only after publishing and validating a new immutable GitHub Release.\ntag=${tag}\narchive=${archive}\nsha256=${sha}\n`);
+          '
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/runtime-assets.lock
+          git commit -m "Pin verified Fighters runtime assets ${FIGHTERS_ASSET_VERSION}"
+          git push origin HEAD:main
+
+          # GITHUB_TOKEN pushes do not trigger on: push workflows automatically.
+          gh workflow run browser-qa.yml --repo "${GITHUB_REPOSITORY}" --ref main
+          gh workflow run pages.yml --repo "${GITHUB_REPOSITORY}" --ref main
+          echo "Published ${tag} (${sha}) and dispatched QA and Pages."
