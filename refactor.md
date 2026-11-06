@@ -189,7 +189,9 @@ qu'après modification, vérification et intégration dans `main`.
       gestes tactiles et politique de ciblage ; exécutés dans la QA Chrome.
 - [x] Isoler l'interface `window.__fightersQA` derrière le mode `?qa=1`,
       sans l'exposer aux parties normales ; QA Chrome vérifiée.
-- [ ] Mesurer les temps de tests et les coûts GitHub Actions avant/après.
+- [x] Relever les durées historiques et récentes de la QA Chrome/WebGL,
+      calculer moyenne et médiane, vérifier le coût des runners Ubuntu standard
+      sur dépôt public et consigner limites et sources dans `docs/ci-metrics.md`.
 - [x] Décrire les frontières de modules, propriétaires de fichiers, contrats,
       invariants de simulation et règles d'intégration dans `docs/architecture.md`.
 - [x] Exécuter sous CI un garde-fou d'architecture pour empêcher les
