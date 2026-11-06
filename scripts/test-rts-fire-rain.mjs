@@ -47,7 +47,7 @@ assert.equal(reverse.threatened,true,'witch AI must use exactly the same intelli
 assert(defense.power(actor('witch','ranged',0,0))>
   defense.power(actor('witch','worker',0,0)));
 
-const game=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
 for(const item of ['castFireRain(','stepFireRain(dt)','stepSpellDefense(dt)',
   "effects.play('fireRain'",'Pluie de feu','orcMagic=soulRules.magicAfterTime',
   'castWitchDome(home,{byAI:true})'])assert(game.includes(item),item);

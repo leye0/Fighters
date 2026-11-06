@@ -40,7 +40,7 @@ bill=healing.restoreGroup([almostFull],2,bill.magic);
 assert.equal(bill.spent,0,'full health costs nothing');
 assert.throws(()=>healing.restoreGroup([wounded],-1,1),/Invalid healing time/);
 assert.throws(()=>healing.restoreGroup([wounded],1,-1),/Invalid magic budget/);
-const game=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
 assert(game.includes('magic=stoneHealing.restoreGroup(resting,dt,magic).magic'),
   'the actual circle must debit the shared in-game magic reserve');
 assert.equal(healing.recovered({health:80,maxHealth:85}),false);

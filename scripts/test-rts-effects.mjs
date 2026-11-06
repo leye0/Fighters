@@ -96,7 +96,7 @@ clock+=200;engine.update();
 assert(engine.active.has(domeVoice),'the global chorus must not be distance-culled');
 engine.reset();
 assert(engine.snapshot().cached<=3,'decoded buffers obey the LRU limit');
-const htmlPath=new URL('../docs/index.html',import.meta.url);
+const htmlPath=new URL('../docs/game.js',import.meta.url);
 if(existsSync(htmlPath)){
   const html=readFileSync(htmlPath,'utf8');
   for(const event of ['hammer','mine','swordHit','swordSwing','magic','garden','wing','caw'])

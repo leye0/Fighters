@@ -22,7 +22,7 @@ assert.equal(dome.radiusAt(dome.DURATION),dome.RADIUS);
 assert.equal(dome.inRange({x:10,z:10},{x:30,z:10},dome.RADIUS),true);
 assert.equal(dome.inRange({x:10,z:10},{x:31,z:10},dome.RADIUS),false);
 assert.equal(dome.inRange({x:10,z:10},{x:10,z:10},-1),false);
-const game=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
 assert(game.includes('domeRules.canCast('));
 assert(game.includes('dealDamage(actor,actor.health,null)'));
 assert(game.includes("effects.play('dome'"));

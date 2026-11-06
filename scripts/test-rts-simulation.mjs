@@ -32,9 +32,13 @@ leftover=sim.advanceFrame(0,100,()=>capped++);
 assert.equal(capped,12,'a stalled tab never schedules unbounded catch-up work');
 assert.equal(leftover,0,'overrun is discarded just as before');
 assert.throws(()=>sim.createStepper(()=>true,[['bad']]),/Invalid/);
-const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const html=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
 assert(html.includes('window.FightersSimulation.createStepper('));
 assert(html.includes('window.FightersSimulation.advanceFrame('));
 assert(html.includes('if(qaMode)window.__fightersQA={'),
   'the QA-only control interface must not be installed for players');
+const entry=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+assert(entry.includes('<script type="module" src="./game.js"></script>'));
+assert(!entry.includes('<script type="module">'),
+  'the playable HTML must remain a small bootstrap without the game monolith');
 console.log('PASS ordered RTS simulation stages and bounded 60Hz frame scheduling');

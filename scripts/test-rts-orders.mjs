@@ -60,7 +60,7 @@ assert.equal(orders.attack([a],foe),1);
 assert.equal(a.raiding,false,'targeting a unit is not a building raid');
 a.dead=true;
 assert.equal(orders.attack([a],enemyBuilding),0,'dead units never receive attacks');
-const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const html=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
 assert(html.includes('window.FightersOrders.create('));
 assert(html.includes('unitOrders.move(actors,destination,{spacing,withinRadius})'));
 assert(html.includes('unitOrders.attack(actors,target)'));

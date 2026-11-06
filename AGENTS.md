@@ -5,8 +5,11 @@ et le rendu actuels sont des contraintes de non-régression.
 
 ## Périmètres
 
-- `docs/index.html` : intégration et bootstrap historique ; éviter d'y ajouter
-  de nouveaux systèmes complets. Extraire progressivement, sans gros rewrite.
+- `docs/index.html` : HTML, DOM, import map et démarrage. Ne pas y réintroduire
+  du JavaScript de jeu inline.
+- `docs/game.js` : script d'intégration historique (déplacé à l'identique depuis
+  l'ancien HTML), à décomposer progressivement par périmètre. Les tests de
+  câblage métier inspectent ce fichier, les tests de menu inspectent le HTML.
 - `docs/rts-*.js`, `docs/orc-strategy.js`, `docs/witch-strategy.js` : règles de
   domaine ; privilégier des fonctions pures, déterministes et testables sous Node.
 - `docs/rts-simulation.js` : ordonnanceur déterministe à 60 Hz et budget de

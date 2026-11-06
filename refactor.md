@@ -55,6 +55,11 @@ qu'après modification, vérification et intégration dans `main`.
       les variables libres partagées par des dizaines de fonctions.
 - [ ] Isoler les commandes (`move`, `attack`, `repair`, `build`, `harvest`, etc.)
       derrière des fonctions de domaine réutilisables et testables.
+- [x] Extraire les commandes `move` et `attack` dans `rts-orders.js`, avec
+      annulation des raids et des tâches, sans dépendance DOM/Three.js.
+      Tests Node et Chrome verts (run 42257656954).
+- [ ] Faire passer `repair`, `build`, `harvest` et les autres ordres dans ce
+      service, puis cocher l'isolation complète des commandes ci-dessus.
 - [x] Extraire l'ordonnancement `stepGame(dt)` dans `rts-simulation.js` :
       phases nommées, ordre conservé, pas fixe de 1/60 s et rattrapage borné
       à douze ticks. Validé par tests Node et Chrome (run 42256932710).
@@ -85,6 +90,8 @@ qu'après modification, vérification et intégration dans `main`.
 - [ ] Mesurer les temps de tests et les coûts GitHub Actions avant/après.
 - [x] Faire une QA Chrome/WebGL complète après le premier lot : simulation
       et garde QA (run 42256932710 : visual, economy, combat verts).
+- [x] Faire une QA Chrome/WebGL complète après le deuxième lot : ordres
+      d'unités (run 42257656954 : visual, economy, combat verts).
 - [ ] Répéter la QA Chrome/WebGL complète après les prochaines extractions.
 
 ## Définition de « terminé »

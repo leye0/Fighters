@@ -54,8 +54,11 @@ assert(!actor.raiding&&!actor.retaliationTarget,
 assert(!raid.attacked(actor,attacker,enemy),
  'A unit outside a raid must keep its normal defense rules');
 
-const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
-assert(html.includes('src="./rts-raiding.js"'),'Load raid AI before the game engine');
+const html=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const entry=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+assert(entry.includes('src="./rts-raiding.js"')&&
+  entry.indexOf('src="./rts-raiding.js"')<entry.indexOf('src="./game.js"'),
+  'Load raid AI before the game engine');
 assert(html.includes('actor.attackOrder=nextRaidBuilding(actor)'),
  'The combat tick must reassign destroyed building orders');
 assert(html.includes('const explicit=retaliation||actor.attackOrder'),
