@@ -49,7 +49,8 @@ assert(defense.power(actor('witch','ranged',0,0))>
 
 const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
 for(const item of ['castFireRain(','stepFireRain(dt)','stepSpellDefense(dt)',
-  "effects.play('fireRain'",'Pluie de feu','orcMagic=soulRules.magicAfterTime',
+  "effects.play('fireRain'",'Pluie de feu',
+  'matchResources.magic.orc=soulRules.magicAfterTime',
   'castWitchDome(home,{byAI:true})'])assert(game.includes(item),item);
 const sound=new URL('../docs/sounds/effects/fire-rain/meteor-storm.mp3',import.meta.url);
 assert(existsSync(sound)&&statSync(sound).size>40000,'real-recording mix is bundled');

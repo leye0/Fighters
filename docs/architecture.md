@@ -22,7 +22,7 @@ dans [`../refactor.md`](../refactor.md).
 | Système | Fichiers principaux | Vérification ciblée |
 |---|---|---|
 | Simulation et déplacements | `rts-simulation.js`, `rts-unit-physics.js`, `rts-navigation.js` | `test-rts-simulation.mjs`, `test-rts-unit-physics.mjs`, `test-rts-navigation.mjs` |
-| État de partie | `rts-match-state.js` (or et bois), `game.js` (état restant, transitoire) | `test-rts-match-state.mjs`, Chrome `economy` |
+| État de partie | `rts-match-state.js` (or, bois et magie), `game.js` (état restant, transitoire) | `test-rts-match-state.mjs`, Chrome `economy`, `combat` |
 | Ordres et tâches | `rts-orders.js`, règles `rts-repair.js`, `rts-farming.js` | `test-rts-orders.mjs`, `test-rts-worker-orders.mjs`, `test-rts-construction-orders.mjs`, `test-rts-production-orders.mjs` |
 | IA | `orc-strategy.js`, `witch-strategy.js`, `rts-ai-commands.js` | `test-orc-strategy.mjs`, `test-witch-strategy.mjs`, `test-rts-ai-commands.mjs` |
 | Commandes joueur | `rts-picking.js`, `rts-camera.js`, `rts-gestures.js`, `rts-player-actions.js` | `test-rts-picking.mjs`, `test-rts-camera.mjs`, `test-rts-gestures.mjs`, `test-rts-player-actions.mjs`, QA Chrome tactile |
@@ -44,8 +44,10 @@ concurrence (voir `AGENTS.md`).
   déjà implémenté. Les fonctions extraites reçoivent leurs dépendances en
   arguments, et les ressources remplacées lors du reset doivent être lues via
   des fonctions (`getGold`, `getWood`) plutôt que capturées une fois au boot.
-- Le propriétaire `rts-match-state.js` réinitialise les deux économies par
-  nouveau match ; la migration des autres variables d'état reste progressive.
+- Le propriétaire `rts-match-state.js` réinitialise l'or, le bois et la magie
+  par nouveau match. `resetMagic` reste appelé au moment historique du reset
+  des esprits et `resetEconomy` au moment historique des chantiers ; la
+  migration des autres variables d'état reste progressive.
   Les files de production et les chantiers utilisent `getGold()` et `getWood()`
   au moment de la commande afin de respecter le remplacement des ressources
   lors du démarrage d'une nouvelle partie. Les boutons n'appellent que le

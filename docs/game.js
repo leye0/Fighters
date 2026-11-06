@@ -384,7 +384,7 @@ const ORC_COSTS={barrack:180,hut:120,cauldron:200,factory:250,wall:32};
 const ORC_NAMES={barrack:'Caserne',hut:'Hutte',mine:'Mine',cauldron:'Chaudron',factory:'Atelier',wall:'Mur de pierre'};
 const units=[],selected=new Set();
 const soulEffects=[];
-let magic=0,orcMagic=0,soulAssignmentElapsed=0;
+let soulAssignmentElapsed=0;
 let female=null,male=null,swordModel=null,clothingFemale=null,clothingMale=null,hairBuns=null,hairBuzzed=null,hairParted=null,hairLong=null;
 const sharedClipCatalog=new Map(),sharedCostumeMaterials=new Map();
 // One shared, translucent ground-level ring per selected unit. Disable depth
@@ -398,7 +398,7 @@ const sharedSelectionMaterials={witch:new THREE.MeshBasicMaterial({
     depthTest:false,depthWrite:false,toneMapped:false})};
 const INITIAL_WOOD=Object.freeze({witch:250,orc:350});
 const matchResources=window.FightersMatchState.create({
-  gold:{witch:2000,orc:900},wood:INITIAL_WOOD
+  gold:{witch:2000,orc:900},wood:INITIAL_WOOD,magic:{witch:0,orc:0}
 });
 let ready=false,running=false,paused=false,activeFaction='witch',buildMode=null;
 let selectedBuilding=null,selectedRaven=null,nextUnitId=1,qaPassive=false,orcSpawned=false;
@@ -599,7 +599,8 @@ function clearWitchDome(){
   domeEffect=null;
 }
 function castWitchDome(building=selectedBuilding,{byAI=false}={}){
-  if(!domeRules.canCast(building,magic,{faction:byAI?'witch':activeFaction,running,paused,
+  if(!domeRules.canCast(building,matchResources.magic.witch,
+    {faction:byAI?'witch':activeFaction,running,paused,
     active:!!domeEffect})||byAI&&!witchDirector.enabled)return false;
   const {hitbox}=building;
   const x=(hitbox.minX+hitbox.maxX)/2,z=(hitbox.minZ+hitbox.maxZ)/2;
@@ -616,7 +617,7 @@ function castWitchDome(building=selectedBuilding,{byAI=false}={}){
   ring.scale.setScalar(.001);ring.renderOrder=13;
   scene.add(shell,ring);
   domeEffect={buildingId:building.id,x,z,elapsed:0,shell,ring,radius:0};
-  magic=Math.max(0,magic-domeRules.COST);
+  matchResources.magic.witch=Math.max(0,matchResources.magic.witch-domeRules.COST);
   // The recorded four-voice cry is already mixed with 100% wet echoes and
   // reverberation; it is heard regardless of camera position.
   void effects.play('dome',{x,z},()=>running&&!paused);
@@ -652,7 +653,8 @@ function clearFireRain(){
   fireEffect=null;
 }
 function castFireRain(building=selectedBuilding,{byAI=false}={}){
-  if(!fireRules.canCast(building,orcMagic,{faction:byAI?'orc':activeFaction,
+  if(!fireRules.canCast(building,matchResources.magic.orc,
+    {faction:byAI?'orc':activeFaction,
     running,paused,active:!!fireEffect})||byAI&&!orcDirector.enabled)return false;
   const x=(building.hitbox.minX+building.hitbox.maxX)/2;
   const z=(building.hitbox.minZ+building.hitbox.maxZ)/2;
@@ -686,7 +688,7 @@ function castFireRain(building=selectedBuilding,{byAI=false}={}){
   light.position.set(x,9,z);scene.add(light);
   fireEffect={buildingId:building.id,x,z,elapsed:0,radius:0,
     bolts,trails,impacts,light,stars,dummy};
-  orcMagic=Math.max(0,orcMagic-fireRules.COST);
+  matchResources.magic.orc=Math.max(0,matchResources.magic.orc-fireRules.COST);
   void effects.play('fireRain',{x,z},()=>running&&!paused);
   showBanner('PLUIE DE FEU · 100 MAGIE');refreshHUD();return true;
 }
@@ -740,14 +742,14 @@ function stepSpellDefense(dt){
   for(const home of homes){
     const faction=home.clanId==='witch'?'witch':'orc';
     if(!(faction==='witch'?witchDirector.enabled:orcDirector.enabled)||
-      (faction==='witch'?magic:orcMagic)<100)continue;
+      (faction==='witch'?matchResources.magic.witch:matchResources.magic.orc)<100)continue;
     const center={x:(home.hitbox.minX+home.hitbox.maxX)/2,
       z:(home.hitbox.minZ+home.hitbox.maxZ)/2};
     const threat=spellDefense.assess({faction,center,units,radius:domeRules.RADIUS,
       visible:(x,z,clan)=>fogOfWar.visibleAt(x,z,clan)});
     if(!threat.threatened)continue;
     if(faction==='witch'){
-      if(!domeRules.canCast(home,magic,{faction:'witch',running,paused,
+      if(!domeRules.canCast(home,matchResources.magic.witch,{faction:'witch',running,paused,
         active:!!domeEffect}))continue;
       castWitchDome(home,{byAI:true});
     }else if(castFireRain(home,{byAI:true}))break;
@@ -2578,7 +2580,7 @@ function refreshHUD(){
   hudRenderer.overview({faction:activeFaction,gold:matchResources.gold[activeFaction],
     wood:matchResources.wood[activeFaction],
     food:activeFaction==='witch'?farming.food:orcFood.food,
-    magic:activeFaction==='witch'?magic:orcMagic,maxMagic:soulRules.MAX_MAGIC,
+    magic:matchResources.magic[activeFaction],maxMagic:soulRules.MAX_MAGIC,
     witchCount:units.filter(u=>u.kind==='witch'&&!u.dead).length,
     orcCount:units.filter(u=>u.kind==='orc'&&!u.dead).length,
     orcHousingCap:orcHousingCap(),aiEnabled:director.enabled,aiMode:director.mode});
@@ -2663,13 +2665,13 @@ function refreshHUD(){
         'Améliorer au niveau '+(b.level+1));
       if(friendly&&b.type==='witch-house'&&b.level>=3)
         add('🔵','Dôme arcanique',{magic:domeRules.COST},()=>castWitchDome(b),
-          !domeRules.canCast(b,magic,{faction:activeFaction,running,paused,
+          !domeRules.canCast(b,matchResources.magic.witch,{faction:activeFaction,running,paused,
             active:!!domeEffect}),
           'Pulvériser les orcs dans un rayon de '+domeRules.RADIUS+
             ' autour de cette maison · coûte 100 magie');
       if(friendly&&b.type==='hut'&&b.level>=3)
         add('🔥','Pluie de feu',{magic:fireRules.COST},()=>castFireRain(b),
-          !fireRules.canCast(b,orcMagic,{faction:activeFaction,running,paused,
+          !fireRules.canCast(b,matchResources.magic.orc,{faction:activeFaction,running,paused,
             active:!!fireEffect}),
           'Déchaîner le feu du ciel sur les sorcières dans un rayon de '+
             fireRules.RADIUS+' autour de cette hutte · coûte 100 magie');
@@ -2775,9 +2777,9 @@ function refreshHUD(){
     else if(action==='Améliorer')disabled||=upgradeCost(b)===null||
       b?.queue.some(item=>item.kind==='upgrade')||
       matchResources.gold[faction]<upgradeCost(b)||matchResources.wood[faction]<40||b?.queue.length>=MAX_QUEUE;
-    else if(action==='Dôme arcanique')disabled||=!domeRules.canCast(b,magic,
+    else if(action==='Dôme arcanique')disabled||=!domeRules.canCast(b,matchResources.magic.witch,
       {faction:activeFaction,running,paused,active:!!domeEffect});
-    else if(action==='Pluie de feu')disabled||=!fireRules.canCast(b,orcMagic,
+    else if(action==='Pluie de feu')disabled||=!fireRules.canCast(b,matchResources.magic.orc,
       {faction:activeFaction,running,paused,active:!!fireEffect});
     else if(action==='Annuler prochain')disabled=b?.queue.length===0;
     else if(constructionTab&&(['Maison','Potager','Cercle de roches'].includes(action)||Object.values(ORC_NAMES).includes(action))){
@@ -2877,7 +2879,8 @@ function startSession(){
   hairStyleDeck.length=0;hairColorDeck.length=0;
   clearOrderPings();clearBolts();clearWitchDome();clearFireRain();lastOrcAiVoice=-Infinity;
   for(const effect of soulEffects)disposeSoulEffect(effect);
-  soulEffects.length=0;magic=0;orcMagic=0;spellDecisionElapsed=0;soulAssignmentElapsed=0;
+  soulEffects.length=0;matchResources.resetMagic();
+  spellDecisionElapsed=0;soulAssignmentElapsed=0;
   for(const actor of units)releaseActor(actor);
   units.length=0;selected.clear();selectedBuilding=null;selectedRaven=null;nextUnitId=1;
   for(const job of pendingBuilds)disposeConstructionPreview(job);
@@ -2901,7 +2904,7 @@ function startSession(){
     }
   }
   resize();
-  matchResources.reset();
+  matchResources.resetEconomy();
   farming.reset();farmSerial=0;farmAssignmentElapsed=0;famineAlerted=false;
   orcFood.reset();orcForageElapsed=0;orcFamineAlerted=false;
   stoneCircleSerial=0;wallSerial=0;healingAssignmentElapsed=0;
@@ -3381,12 +3384,13 @@ function stepSoulEffects(dt){
     effect.root.scale.setScalar(1-.92*flight);
     effect.material.opacity=.66*(1-t*.82);
     if(t<1)continue;
-    if(!effect.mage.dead)magic=soulRules.magicAfterSoul(magic);
+    if(!effect.mage.dead)
+      matchResources.magic.witch=soulRules.magicAfterSoul(matchResources.magic.witch);
     disposeSoulEffect(effect);soulEffects.splice(i,1);refreshHUD();
   }
 }
 function assignSoulHarvesters(dt){
-  if(magic>=soulRules.MAX_MAGIC)return;
+  if(matchResources.magic.witch>=soulRules.MAX_MAGIC)return;
   soulAssignmentElapsed+=dt;
   if(soulAssignmentElapsed<.65)return;
   soulAssignmentElapsed=0;
@@ -4122,7 +4126,8 @@ function stepHealing(dt){
   }
   // One shared magic budget for every circle; scarce magic is split fairly
   // rather than silently healing the first unit in the array for free.
-  if(resting.length)magic=stoneHealing.restoreGroup(resting,dt,magic).magic;
+  if(resting.length)matchResources.magic.witch=stoneHealing.restoreGroup(resting,dt,
+    matchResources.magic.witch).magic;
   healingAssignmentElapsed+=dt;
   if(healingAssignmentElapsed<.85)return;
   healingAssignmentElapsed=0;
@@ -4498,8 +4503,8 @@ const stepGame=window.FightersSimulation.createStepper(
   ()=>ready&&running&&!paused,[
     ['production',stepProduction],
     ['magic regeneration',dt=>{
-      magic=soulRules.magicAfterTime(magic,dt);
-      orcMagic=soulRules.magicAfterTime(orcMagic,dt);
+      matchResources.magic.witch=soulRules.magicAfterTime(matchResources.magic.witch,dt);
+      matchResources.magic.orc=soulRules.magicAfterTime(matchResources.magic.orc,dt);
     }],
     ['witch dome',stepWitchDome],
     ['orc fire rain',stepFireRain],
@@ -4785,7 +4790,8 @@ if(qaMode)window.__fightersQA={
           stones:b.root.children.filter(n=>n.name.startsWith('standing-stone-')).length,
           navigableCenter:navigatorRTS.pointClear(b.root.position)})),
       retreating:units.filter(u=>!!u.healJob&&!u.dead).map(u=>({id:u.id,circleId:u.healJob.id}))},
-    souls:{magic,orcMagic,maxMagic:soulRules.MAX_MAGIC,perCorpse:soulRules.SOUL_VALUE,
+    souls:{magic:matchResources.magic.witch,orcMagic:matchResources.magic.orc,
+      maxMagic:soulRules.MAX_MAGIC,perCorpse:soulRules.SOUL_VALUE,
       passiveMagicPer30Seconds:soulRules.PASSIVE_MAGIC_PER_30_SECONDS,
       corpseLifetime:soulRules.CORPSE_SECONDS,buildUnlocked:circleUnlocked(),
       arcanistUnlocked:arcanistUnlocked(),activeSpirits:soulEffects.length,
@@ -5170,9 +5176,11 @@ if(qaMode)window.__fightersQA={
   castFireRain:id=>castFireRain(id?[...buildingInstances.values()]
     .find(b=>b.id===id):selectedBuilding),
   setMagic:value=>{if(!Number.isFinite(value))return false;
-    magic=Math.max(0,Math.min(soulRules.MAX_MAGIC,value));refreshHUD();return true;},
+    matchResources.magic.witch=Math.max(0,Math.min(soulRules.MAX_MAGIC,value));
+    refreshHUD();return true;},
   setOrcMagic:value=>{if(!Number.isFinite(value))return false;
-    orcMagic=Math.max(0,Math.min(soulRules.MAX_MAGIC,value));refreshHUD();return true;},
+    matchResources.magic.orc=Math.max(0,Math.min(soulRules.MAX_MAGIC,value));
+    refreshHUD();return true;},
   upgradeSelected:()=>issueUpgrade(selectedBuilding),
   upgradeBuilding:id=>issueUpgrade([witchBuilding,...buildingInstances.values()]
     .find(b=>b.id===id)),

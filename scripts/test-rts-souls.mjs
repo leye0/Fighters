@@ -24,7 +24,7 @@ assert.equal(souls.magicAfterTime(0,0),0);
 assert.throws(()=>souls.magicAfterTime(0,-1),/Invalid magic regeneration time/);
 assert.throws(()=>souls.magicAfterTime(0,Number.NaN),/Invalid magic regeneration time/);
 const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
-assert(game.includes('magic=soulRules.magicAfterTime(magic,dt)'),
+assert(game.includes('matchResources.magic.witch=soulRules.magicAfterTime(matchResources.magic.witch,dt)'),
   'each active game tick must regenerate magic independent of spirit siphoning');
 const corpse=(x,z,extra={})=>({x,z,dead:true,deadTime:100,...extra});
 const visible=[corpse(2,2),corpse(1,1,{soulClaimed:true}),

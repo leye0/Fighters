@@ -17,7 +17,7 @@ modules (`docs/rts-contracts.d.ts`).
 - `docs/rts-simulation.js` : ordonnanceur déterministe à 60 Hz et budget de
   rattrapage ; les phases nommées sont assemblées dans `docs/game.js`.
   Préserver leur ordre exact et ne pas allouer d'objets à chaque tick.
-- `docs/rts-match-state.js` : propriétaire des ressources or/bois d'une partie,
+- `docs/rts-match-state.js` : propriétaire des ressources or/bois/magie d'une partie,
   avec réinitialisation en valeurs neuves ; les autres systèmes ne gardent
   jamais leurs références après une nouvelle partie.
 - `docs/rts-orders.js` : transitions de commandes d'unités (déplacement,

@@ -59,6 +59,9 @@ qu'après modification, vérification et intégration dans `main`.
 - [x] Valider dans Chrome l'extraction d'or/bois dans `rts-match-state.js` :
       économie neuve à chaque partie, paiement, remboursement, mines et récoltes.
       Run 42266733318, trois scénarios verts.
+- [ ] Valider en Chrome l'ajout de la magie au propriétaire d'état de partie :
+      domes, pluie de feu, soins, siphonnage et régénération, sans changer
+      l'ordre des réinitialisations ni les coûts.
 - [ ] Isoler les commandes (`move`, `attack`, `repair`, `build`, `harvest`, etc.)
       derrière des fonctions de domaine réutilisables et testables.
 - [x] Extraire les commandes `move` et `attack` dans `rts-orders.js`, avec
@@ -95,12 +98,15 @@ qu'après modification, vérification et intégration dans `main`.
 
 ## 3. Rendu et interface
 
-- [ ] Extraire la sélection, les gestes tactiles, la caméra et les commandes
-      utilisateur dans des modules d'entrée distincts.
-- [ ] Valider en Chrome la politique des clics extraite dans
+- [x] Extraire la sélection, les gestes tactiles, la caméra et la politique
+      des clics utilisateur dans `rts-picking.js`, `rts-gestures.js`,
+      `rts-camera.js` et `rts-player-actions.js` ; les boutons HUD restent
+      assemblés par `game.js`.
+- [x] Valider en Chrome la politique des clics extraite dans
       `rts-player-actions.js` : priorité d'attaque des maisons sur les
       silhouettes, réparation, exploitation, modes construction, corbeaux,
-      sélection de groupe et clic vide sans changement de gameplay.
+      sélection de groupe et clic vide sans changement de gameplay :
+      run 42267437749, trois scénarios verts.
 - [x] Extraire les mécanismes de gestes, de sélection spatiale et de caméra :
       `rts-gestures.js`, `rts-picking.js` (cinq types de cibles) et
       `rts-camera.js` ; le choix des ordres après un clic reste dans `game.js`.
