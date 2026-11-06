@@ -29,6 +29,7 @@ on:
       - 'docs/rts-healing-cycle.js'
       - 'docs/rts-repair.js'
       - 'docs/rts-souls.js'
+      - 'docs/rts-soul-harvester.js'
       - 'docs/models/standing-stone.glb'
       - 'docs/models/STANDING_STONE_LICENSE.md'
       - 'docs/models/forest/**'
@@ -40,6 +41,7 @@ on:
       - 'scripts/test-rts-healing-cycle.mjs'
       - 'scripts/test-rts-repair.mjs'
       - 'scripts/test-rts-souls.mjs'
+      - 'scripts/test-rts-soul-harvester.mjs'
       - 'scripts/test-rts-farming.mjs'
       - 'scripts/test-rts-orc-food.mjs'
       - 'scripts/test-rts-orc-forager.mjs'
@@ -185,6 +187,7 @@ jobs:
           node scripts/test-rts-healing-cycle.mjs
           node scripts/test-rts-repair.mjs
           node scripts/test-rts-souls.mjs
+          node scripts/test-rts-soul-harvester.mjs
       - uses: actions/cache@v4
         with:
           path: .cache/fighters

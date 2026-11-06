@@ -138,6 +138,9 @@ qu'après modification, vérification et intégration dans `main`.
 - [ ] Extraire les soins des sorcières et la retraite automatique vers les
       cercles dans `rts-healing-cycle.js` (magie réellement consommée, budget
       partagé, sécurité, interruption et cadence), avec Node et QA Chrome.
+- [ ] Isoler l'attribution et l'exécution des récoltes d'âmes des mages dans
+      `rts-soul-harvester.js` (cadavres visibles, réservations, chemins,
+      interruption, animation `Death01` et reset), avec Node et Chrome.
 - [x] Séparer la décision stratégique des deux IA de l'exécution des commandes :
       directeurs `*-strategy.js`, exécution `rts-ai-commands.js`.
 - [x] Valider en Chrome l'exécution des actions Orc/Sorcière extraite dans

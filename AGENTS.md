@@ -41,6 +41,9 @@ modules (`docs/rts-contracts.d.ts`).
   de pierres, avec cadence de 850 ms et magie partagée, réellement débitée à
   chaque restauration. Les ressources neuves après reset sont lues/écrites via
   les fonctions injectées, sans référence périmée à une ancienne partie.
+- `docs/rts-soul-harvester.js` : sélection et réservation de cadavres visibles
+  par les mages, cadence de 650 ms, poursuite, annulation et attente de la pose
+  réelle `Death01`. L'effet 3D d'âme est créé séparément dans `game.js`.
 - `docs/rts-unit-tick.js` : état et priorités des unités à chaque tick
   (attaque, cible, poursuite, tâches, déplacement), avec services de navigation,
   combat, animation et IA injectés une seule fois par `game.js`.

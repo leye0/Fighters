@@ -36,6 +36,7 @@ const boundaries=[
   ['rts-food-cycle','FightersFoodCycle'],
   ['rts-raven-distraction','FightersRavenDistraction'],
   ['rts-healing-cycle','FightersHealingCycle'],
+  ['rts-soul-harvester','FightersSoulHarvester'],
   ['rts-orders','FightersOrders'],
   ['rts-picking','FightersPicking'],
   ['rts-camera','FightersCamera'],
