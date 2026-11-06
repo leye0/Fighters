@@ -1,0 +1,9 @@
+{
+  "model": "fishaudio/ace-step-1.5",
+  "version": "4469141c115f136a809884f6ccde7c9cd54f76e32f7621d137667cefa80f1fbe",
+  "prediction_id": "whn74npa1hrmy0d1nt3an9sjvr",
+  "requested_seconds": 480,
+  "actual_seconds": null,
+  "bytes": 7680621,
+  "prompt": "Instrumental dark fantasy RTS soundtrack for witches vs orcs in an enchanted forest. D minor, 86 BPM, medieval orchestral. Eerie witch motif: celesta, woodwinds, tremolo strings; earthy orc motif: low brass, frame drums, toms. Alternate mystery, strategic tension, restrained battle energy and quiet respite; weave both motifs throughout 8 minutes. Clear melody, evolving harmony, organic acoustics, spacious mix, understated for gameplay, loop-friendly ending. No vocals, pop, synths or abrupt climax."
+}
