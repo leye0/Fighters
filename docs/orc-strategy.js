@@ -152,14 +152,15 @@
    // Reserve one real fighter to explore unknown terrain. The waypoint comes
    // exclusively from the orcs' own fog grid, not from any enemy location.
    if(!threatened&&!enemyBaseKnown&&this.clock>=8&&state.scoutTarget){
-    const scout=fighters.find(u=>u.scouting&&!u.attackOrder)||
-      fighters.find(u=>!u.mining&&!u.attackOrder&&!u.destination);
+    const scout=fighters.find(u=>u.scouting&&!u.attackOrder&&!u.foraging)||
+      fighters.find(u=>!u.mining&&!u.attackOrder&&!u.destination&&!u.foraging);
     if(scout&&!scout.destination)
      orders.push({type:'scout',unitId:scout.id,
        x:state.scoutTarget.x,z:state.scoutTarget.z,reason:'unknown_territory'});
    }
    // Fire a raid only with a real group AND a discovered enemy headquarters.
-   const unassigned=fighters.filter(u=>!u.mining&&!u.attackOrder&&!(u.attack?.target));
+   const unassigned=fighters.filter(u=>!u.mining&&!u.attackOrder&&
+     !u.foraging&&!(u.attack?.target));
    const threshold=this.raidNumber===0?4:5;
    if(enemyBaseKnown&&!threatened&&this.clock>20&&
      unassigned.length>=threshold&&this.clock-this.lastRaid>22){

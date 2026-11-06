@@ -707,8 +707,9 @@ async function run(){
   'External real low-poly hare GLB',30000);
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.hares.models===16&&s.hares.animals.length===16&&
-   s.hares.animals.every(h=>h.active),
-   'Sixteen independent hares should share a genuine loaded 3D model');
+   s.hares.animals.some(h=>h.active)&&
+   s.hares.animals.every(h=>h.active||h.respawnIn>0),
+   'Sixteen independent hares must share a genuine 3D model, including hares awaiting respawn');
  const hareAnimation=await evaluate("(()=>{let highest=0,landings=0;"+
    "for(let i=0;i<8;i++){window.__fightersQA.advance(.21);"+
    "for(const h of window.__fightersQA.snapshot().hares.animals){"+
@@ -1916,13 +1917,28 @@ async function run(){
    'Hungry orcs must catch, eat and remove a roaming hare: '+
      JSON.stringify({food:s.orcFood,hares:s.hares,orcs:s.orcs.map(u=>({
        id:u.id,x:u.x,z:u.z,destination:u.destination,health:u.health}))}));
- await evaluate('window.__fightersQA.reset();window.__fightersQA.setOrcFood(15)');
+ await evaluate('window.__fightersQA.reset();window.__fightersQA.setOrcFood(100)');
  check(await evaluate('window.__fightersQA.spawnWitchCorpseNearOrc()')!=null,
    'Could not set up a witch corpse for the orc feast');
+ await evaluate('window.__fightersQA.advance(1)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.hares.foragers.some(job=>job.kind==='corpse')&&
+   s.orcFood.corpsesEaten===0,
+   'A nearby witch corpse must trigger a visible timed eating action, even with full food');
+ await evaluate('window.__fightersQA.advance(3)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.orcFood.corpsesEaten===1&&s.orcFood.food>100,
+   'An orc should feast once on a witch corpse for a substantial food reward');
+ await evaluate('window.__fightersQA.reset()');
+ check(await evaluate('window.__fightersQA.spawnWitchCorpseNearOrc(0,true)')!=null,
+   'Could not set up an orc killing a nearby witch');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.hares.foragers.some(job=>job.kind==='corpse'),
+   'The orc delivering the fatal blow must reserve the corpse for a visible feast');
  await evaluate('window.__fightersQA.advance(4)');
  s=await evaluate('window.__fightersQA.snapshot()');
- check(s.orcFood.corpsesEaten===1&&s.orcFood.food>15,
-   'An orc should feast once on a witch corpse for a substantial food reward');
+ check(s.orcFood.corpsesEaten===1,
+   'A victorious orc must finish consuming its fallen witch after combat');
  }
  check(!errors.length,'Browser JavaScript exceptions: '+errors.join(' | '));
  console.log('CHROME_QA_FULL_MATCH_RESETS',

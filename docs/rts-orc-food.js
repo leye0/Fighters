@@ -12,6 +12,10 @@
   const HUNT_SIGHT=10,EAT_SECONDS=1.6,RESPAWN_SECONDS=48;
   // Hares still flee visibly, but an orc must gain ground reliably during a hunt.
   const HARE_FLEE_SPEED=1.35,HARE_WANDER_SPEED=.7,HARE_CAPTURE_DISTANCE=1.2;
+  // Probe around a solid obstacle instead of repeatedly bouncing against it.
+  const HARE_STEER_OFFSETS=Object.freeze([0,Math.PI/8,-Math.PI/8,
+    Math.PI/4,-Math.PI/4,Math.PI/2,-Math.PI/2,
+    3*Math.PI/4,-3*Math.PI/4,Math.PI]);
   const BASE_HOUSING=4,HUT_CAPACITY=Object.freeze([0,6,10,14]);
   const MAX_POPULATION=32;
   const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
@@ -80,6 +84,10 @@
         if(distance(p,{x:-22,z:-18})<6||distance(p,{x:19,z:18})<6)continue;
         if(this.walkable(p.x,p.z))return p;
       }
+      // A crowded map can reject every random sample. Never spawn in a wall.
+      for(let z=-this.halfSize+2;z<this.halfSize-1;z+=1)
+        for(let x=-this.halfSize+2;x<this.halfSize-1;x+=1)
+          if(this.walkable(x,z))return {x,z};
       return {x:0,z:0};
     }
     reset(){
@@ -87,7 +95,7 @@
       this.hares=Array.from({length:this.count},(_,id)=>({
         id,...this.spawn(),active:true,heading:this.random()*Math.PI*2,
         turnIn:.5+this.random()*3,hopPhase:this.random()*Math.PI*2,
-        moving:false,respawnIn:0,caughtBy:null
+        moving:false,respawnIn:0,caughtBy:null,escapeIn:0,blockedFor:0
       }));
     }
     catch(id,orcId){
@@ -107,6 +115,12 @@
       hare.respawnIn=RESPAWN_SECONDS+this.random()*15;
       return true;
     }
+    clearStep(hare,heading,look){
+      const x=hare.x+Math.sin(heading)*look;
+      const z=hare.z+Math.cos(heading)*look;
+      const edge=this.halfSize-1.3;
+      return Math.abs(x)<=edge&&Math.abs(z)<=edge&&this.walkable(x,z);
+    }
     step(dt,orcs=[]){
       if(!Number.isFinite(dt)||dt<0)throw Error('Invalid hare time');
       this.elapsed+=dt;
@@ -116,35 +130,65 @@
           if(hare.respawnIn<=0){
             const p=this.spawn();hare.x=p.x;hare.z=p.z;
             hare.active=true;hare.turnIn=0;hare.respawnIn=0;
+            hare.escapeIn=0;hare.blockedFor=0;
           }
           continue;
         }
         // A caught hare stays put while the orc completes the eating action.
         if(hare.caughtBy!=null){hare.moving=false;continue;}
+        if(!this.walkable(hare.x,hare.z)){
+          // A freshly constructed obstacle can engulf an existing hare.
+          const safe=this.spawn();hare.x=safe.x;hare.z=safe.z;
+          hare.moving=false;hare.escapeIn=0;hare.blockedFor=0;continue;
+        }
         hare.turnIn-=dt;
+        hare.escapeIn=Math.max(0,hare.escapeIn-dt);
         let danger=null,closest=3.2;
         for(const orc of orcs){
           const d=distance(hare,orc);
           if(d<closest){danger=orc;closest=d;}
         }
-        if(danger){
+        if(danger&&hare.escapeIn===0){
           hare.heading=Math.atan2(hare.x-danger.x,hare.z-danger.z);
           hare.turnIn=.3;
-        }else if(hare.turnIn<=0){
+        }else if(!danger&&hare.turnIn<=0&&hare.escapeIn===0){
           hare.heading+=((this.random()*2)-1)*2.7;
           hare.turnIn=1.1+this.random()*3.8;
         }
         const speed=danger?HARE_FLEE_SPEED:HARE_WANDER_SPEED;
-        const x=hare.x+Math.sin(hare.heading)*speed*dt;
-        const z=hare.z+Math.cos(hare.heading)*speed*dt;
-        if(Math.abs(x)>this.halfSize-1.3||Math.abs(z)>this.halfSize-1.3||
-          !this.walkable(x,z)){
-          hare.heading+=Math.PI*(.6+this.random()*.8);
-          hare.turnIn=.4;hare.moving=false;
-        }else{
-          hare.x=x;hare.z=z;hare.moving=true;
-          hare.hopPhase+=dt*(danger?17:10);
+        const step=speed*dt;
+        // Look ahead to steer around trees and buildings before reaching the
+        // collision surface. Keep the detour briefly so fleeing does not
+        // alternate left/right on every simulation frame.
+        if(!this.clearStep(hare,hare.heading,step)||
+          !this.clearStep(hare,hare.heading,.65)){
+          let choice=null;
+          for(let pass=0;pass<2;pass++){
+            const probe=pass===0?.65:step;
+            for(const offset of HARE_STEER_OFFSETS){
+              const heading=hare.heading+offset;
+              if(this.clearStep(hare,heading,probe)&&
+                this.clearStep(hare,heading,step)){
+                choice=heading;break;
+              }
+            }
+            if(choice!==null)break;
+          }
+          if(choice===null){
+            hare.moving=false;hare.blockedFor+=dt;
+            if(hare.blockedFor>1.5){
+              // Truly enclosed wildlife must not remain frozen indefinitely.
+              const safe=this.spawn();hare.x=safe.x;hare.z=safe.z;
+              hare.blockedFor=0;hare.escapeIn=0;
+            }
+            continue;
+          }
+          hare.heading=choice;hare.escapeIn=.65;hare.turnIn=Math.max(hare.turnIn,.65);
         }
+        hare.x+=Math.sin(hare.heading)*step;
+        hare.z+=Math.cos(hare.heading)*step;
+        hare.moving=true;hare.blockedFor=0;
+        hare.hopPhase+=dt*(danger?17:10);
       }
     }
   }

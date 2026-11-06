@@ -85,4 +85,27 @@ while(chaseSeconds<4){
   chaseSeconds+=.05;
 }
 assert(chaseSeconds<3,'An ordinary orc must catch a nearby hare in open ground');
+// A hare fleeing towards a large building must steer around it, not run into
+// the same blocked surface forever or clip through solid terrain.
+const obstacle=(x,z)=>!(x>.8&&x<3.1&&z>-1.1&&z<1.1);
+const trapped=new rules.Hares({count:1,halfSize:15,walkable:obstacle});
+Object.assign(trapped.hares[0],{x:0,z:0,heading:Math.PI/2,turnIn:100,escapeIn:0});
+let longestStall=0,stall=0,previous={x:0,z:0};
+for(let i=0;i<300;i++){
+  trapped.step(.05,[{x:-2,z:0}]);
+  const h=trapped.hares[0];
+  assert(obstacle(h.x,h.z),'A hare may never run through a solid building');
+  const displacement=Math.hypot(h.x-previous.x,h.z-previous.z);
+  stall=displacement<.001?stall+.05:0;
+  longestStall=Math.max(longestStall,stall);
+  previous={x:h.x,z:h.z};
+}
+assert(longestStall<1.6,'Hares must escape instead of remaining stuck on obstacles');
+assert(Math.hypot(trapped.hares[0].x,trapped.hares[0].z)>5,
+  'A chased hare must keep escaping around the building');
+// If a new structure is placed over a hare, relocate it to clear terrain.
+const newlyBlocked=new rules.Hares({count:1,walkable:(x,z)=>x>2});
+newlyBlocked.hares[0].x=0;
+newlyBlocked.step(.05);
+assert(newlyBlocked.hares[0].x>2,'A hare engulfed by construction must be freed');
 console.log('PASS orc food: cauldron technology, hut housing, hunger, carcasses, roaming/respawning hares.');
