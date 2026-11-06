@@ -1,0 +1,47 @@
+name: Generate one Fighters soundtrack
+
+on:
+  push:
+    branches:
+      - music/witches-orcs-8min-20261106
+    paths:
+      - .github/workflows/generate-fighters-soundtrack.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fighters-one-shot-soundtrack
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN || secrets.REPLICATE_API_KEY || secrets.REPLICATE_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate original 8-minute witches-versus-orcs track
+        run: python3 scripts/generate_fighters_soundtrack.py
+      - name: Save audio as downloadable workflow artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fighters-witches-orcs-soundtrack
+          path: |
+            docs/music/fighters-witches-orcs-8min.mp3
+            docs/music/fighters-witches-orcs-8min.json
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Commit generated music to this branch
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/music/fighters-witches-orcs-8min.mp3 docs/music/fighters-witches-orcs-8min.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Add generated eight-minute Fighters soundtrack"
+            git push origin HEAD:"${GITHUB_REF_NAME}"
+          fi
