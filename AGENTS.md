@@ -26,6 +26,9 @@ modules (`docs/rts-contracts.d.ts`).
   pour les tests sans navigateur, `docs/game.js` adapte Three.js et l'état.
 - `docs/rts-camera.js` : cadrage orthographique et panoramique avec dépendances
   injectées ; les événements pointeur restent dans `docs/game.js`.
+- `docs/rts-gestures.js` : automate des gestes tactiles et souris (tap, pan,
+  boîte à deux doigts, boîte desktop), sans état du moteur ; les callbacks
+  de commandes et le viewport sont injectés par `docs/game.js`.
 - `docs/rts-minimap.js` : dessin Canvas 2D de la mini-carte, brouillard du sol,
   bâtiments et points d'unités ; `docs/game.js` conserve les événements d'entrée.
 - `docs/rts-hud.js` : fabrication des boutons, textes de ressources et barres

@@ -45,6 +45,7 @@ on:
       - 'docs/rts-orders.js'
       - 'docs/rts-picking.js'
       - 'docs/rts-camera.js'
+      - 'docs/rts-gestures.js'
       - 'docs/rts-minimap.js'
       - 'docs/rts-hud.js'
       - 'docs/rts-ai-commands.js'
@@ -57,6 +58,7 @@ on:
       - 'scripts/test-rts-production-orders.mjs'
       - 'scripts/test-rts-picking.mjs'
       - 'scripts/test-rts-camera.mjs'
+      - 'scripts/test-rts-gestures.mjs'
       - 'scripts/test-rts-minimap.mjs'
       - 'scripts/test-rts-hud.mjs'
       - 'scripts/test-rts-ai-commands.mjs'
@@ -129,6 +131,7 @@ jobs:
           node scripts/test-rts-production-orders.mjs
           node scripts/test-rts-picking.mjs
           node scripts/test-rts-camera.mjs
+          node scripts/test-rts-gestures.mjs
           node scripts/test-rts-minimap.mjs
           node scripts/test-rts-hud.mjs
           node scripts/test-rts-ai-commands.mjs

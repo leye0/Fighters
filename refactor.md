@@ -90,6 +90,9 @@ qu'après modification, vérification et intégration dans `main`.
 - [ ] Finir les gestes tactiles, la sélection d'unités et le contrôle caméra :
       les cinq sélecteurs spatiaux (unités, corbeaux, bâtiments, arbres et bois)
       sont désormais extraits dans `rts-picking.js` et testés sous Node.
+- [ ] Valider sous Chrome la machine à gestes `rts-gestures.js` (tap, pan,
+      sélection à deux doigts, relâchement décalé, souris et anti-double tap),
+      extraite sans changer les seuils originaux ni la politique des ordres.
 - [x] Valider le contrôleur de caméra `rts-camera.js` en Chrome après ses tests
       de déplacement et cadrage mobile/desktop : run 42262289649.
 - [x] Extraire le HUD (ressources, boutons, barres de santé) et la mini-carte
