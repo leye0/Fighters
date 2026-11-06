@@ -18,6 +18,9 @@ et le rendu actuels sont des contraintes de non-régression.
 - `docs/rts-orders.js` : transitions de commandes d'unités (déplacement,
   attaque) sans UI ni Three.js ; `docs/index.html` adapte les événements et
   les services, sans recopier les mutations de combat.
+- `docs/rts-assets.js` : transfert binaire avec gzip, fallback et métriques ;
+  aucune logique Three.js, scène ni DOM. `docs/game.js` reste responsable du
+  parsing des GLB et de leur installation visuelle.
 - `docs/styles/` : présentation CSS ; ne doit pas modifier les règles du jeu.
 - `scripts/test-*.mjs` : tests unitaires ; ajouter un test au système modifié.
 - `scripts/browser-qa.mjs` : orchestration des scénarios Chrome/WebGL.

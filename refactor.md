@@ -76,8 +76,12 @@ qu'après modification, vérification et intégration dans `main`.
 - [ ] Extraire le HUD, les boutons de commandes et la mini-carte du moteur.
 - [ ] Séparer le chargement/caching des GLB et sons de leur utilisation par les
       systèmes de rendu et d'animation.
-- [ ] Réduire `docs/index.html` à l'assemblage des systèmes, au DOM et au
-      démarrage de l'application.
+- [x] Réduire `docs/index.html` à l'import map, au DOM et au démarrage de
+      l'application (111 lignes). Le module `docs/game.js` a été déplacé à
+      l'octet près, sans modification de gameplay ; QA Chrome et Pages verts
+      (runs 42258497349 et 42258497356).
+- [ ] Décomposer progressivement `docs/game.js` en composants/systèmes
+      indépendants, au-delà du premier déplacement mécanique.
 
 ## 4. Tests et validation
 
@@ -92,6 +96,8 @@ qu'après modification, vérification et intégration dans `main`.
       et garde QA (run 42256932710 : visual, economy, combat verts).
 - [x] Faire une QA Chrome/WebGL complète après le deuxième lot : ordres
       d'unités (run 42257656954 : visual, economy, combat verts).
+- [x] Faire une QA Chrome/WebGL complète après le troisième lot : module
+      `game.js` externe (run 42258497349 : visual, economy, combat verts).
 - [ ] Répéter la QA Chrome/WebGL complète après les prochaines extractions.
 
 ## Définition de « terminé »
