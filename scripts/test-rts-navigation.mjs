@@ -17,8 +17,41 @@ assert(!nav.segmentClear({x:-10,z:0},{x:10,z:0}),'Cannot walk through building')
 assert(nav.segmentClear({x:-10,z:6},{x:10,z:6}),'Open route must stay direct');
 assert(segmentHitsBox({x:-5,z:0},{x:5,z:0},house,.36),'Swept circle collides');
 assert(!segmentHitsBox({x:-5,z:6},{x:5,z:6},house,.36),'Separate segment clear');
+function referenceSlab(from,to,box,radius){
+ let near=0,far=1;
+ for(const [start,delta,min,max] of [
+  [from.x,to.x-from.x,box.minX-radius,box.maxX+radius],
+  [from.z,to.z-from.z,box.minZ-radius,box.maxZ+radius]
+ ]){
+  if(Math.abs(delta)<1e-12){if(start<min||start>max)return false;}
+  else{
+   const a=(min-start)/delta,b=(max-start)/delta;
+   near=Math.max(near,Math.min(a,b));far=Math.min(far,Math.max(a,b));
+   if(near>far)return false;
+  }
+ }
+ return true;
+}
+let seed=3251;
+const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+for(let i=0;i<2500;i++){
+ const a={x:random()*20-10,z:random()*20-10};
+ const b={x:random()*20-10,z:random()*20-10};
+ const x=random()*12-6,z=random()*12-6;
+ const wall={minX:x,maxX:x+.1+random()*6,minZ:z,maxZ:z+.1+random()*6};
+ assert.equal(segmentHitsBox(a,b,wall,.36),referenceSlab(a,b,wall,.36),
+  'Allocation-free swept-slab collision must match the reference test');
+}
 const route=nav.plan({x:-10,z:0},{x:10,z:0});
 assert(route&&route.waypoints.length>=2,'A* must create a building detour');
+const cachedCosts=nav._pathCosts,cachedParents=nav._pathParent,cachedHeap=nav._pathHeap;
+for(let i=0;i<6;i++){
+ const repeated=nav.plan({x:-10,z:0},{x:10,z:0});
+ assert.deepEqual(repeated,route,'Reusable A* buffers must preserve deterministic routes');
+ assert.equal(nav._pathCosts,cachedCosts,'A* must reuse its cost buffer');
+ assert.equal(nav._pathParent,cachedParents,'A* must reuse its parent buffer');
+ assert.equal(nav._pathHeap,cachedHeap,'A* must reuse its priority queue');
+}
 let prev={x:-10,z:0};
 for(const waypoint of route.waypoints){
  assert(nav.segmentClear(prev,waypoint),'Smoothed route must not clip corners');
