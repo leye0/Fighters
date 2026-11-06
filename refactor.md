@@ -148,6 +148,11 @@ qu'après modification, vérification et intégration dans `main`.
       pioche, cargaison et paiement seulement à la livraison ; ressources
       courantes après reset. Tests Node et QA Chrome `visual`, `economy`,
       `combat` verts : run 42303519140.
+- [x] Extraire le cycle du bois dans `rts-wood-cycle.js` : choix des arbres
+      visibles et sûrs, affectation automatique orc/sorcière, coupe, réservation
+      des bûches, ramassage, restitution après interruption et livraison sans
+      crédit anticipé. Tests Node et QA Chrome `visual`, `economy`, `combat`
+      verts : run 42312604304 ; publication Pages également verte.
 - [x] Séparer la décision stratégique des deux IA de l'exécution des commandes :
       directeurs `*-strategy.js`, exécution `rts-ai-commands.js`.
 - [x] Valider en Chrome l'exécution des actions Orc/Sorcière extraite dans
