@@ -18,7 +18,10 @@
     magic:{files:4,gain:.50,cooldown:130,limit:5,priority:5},
     garden:{files:4,gain:.23,cooldown:600,limit:2,priority:1},
     wing:{files:2,gain:.36,cooldown:330,limit:2,priority:2},
-    caw:{files:3,gain:.56,cooldown:1000,limit:2,priority:3}
+    caw:{files:3,gain:.56,cooldown:1000,limit:2,priority:3},
+    // The full-wet incantation is a single cinematic spell, heard even when
+    // the player has moved the camera away from the selected house.
+    dome:{files:1,gain:1.25,cooldown:1000,limit:1,priority:10,global:true}
   });
   const PATHS=Object.freeze({
     hammer:Array.from({length:4},(_,i)=>`hammer/${i+1}.ogg`),
@@ -28,7 +31,8 @@
     magic:['magic/0','magic/1','magic/2','magic/3'],
     garden:Array.from({length:4},(_,i)=>`garden/${i+1}.ogg`),
     wing:['raven/wings.wav','raven/flutter.wav'],
-    caw:['raven/caw-original.wav','raven/caw-soft.wav','raven/caw-dark.wav']
+    caw:['raven/caw-original.wav','raven/caw-soft.wav','raven/caw-dark.wav'],
+    dome:['dome/wiccans-chorus.mp3']
   });
   class Engine{
     constructor({fetcher,contextFactory,listener,now,random,
@@ -144,7 +148,8 @@
         this.remember(path,buffer);return buffer;
       }
       if(this.pending.has(path))return this.pending.get(path);
-      if(this.pending.size>=this.maxPending)return null;
+      // A full combat SFX queue must not silence the expensive 100-magic spell.
+      if(this.pending.size>=this.maxPending&&path!==PATHS.dome[0])return null;
       const generation=this.generation,controller=new AbortController();
       this.controllers.add(controller);
       const task=(async()=>{
@@ -175,7 +180,10 @@
       }
       this.levels.set(path,peak>.001?clamp(.42/peak,.55,12):1);
       while(this.cache.size>this.maxCached){
-        const oldest=this.cache.keys().next().value;
+        // Keep the rare 7-second dome incantation decoded after warm-up: it
+        // must not be re-fetched or arrive late during a busy battle.
+        const oldest=[...this.cache.keys()].find(key=>key!==PATHS.dome[0]);
+        if(!oldest)break;
         this.cache.delete(oldest);this.levels.delete(oldest);
       }
     }
@@ -184,7 +192,8 @@
       // A few small, common clips first; bounded concurrency and cached across
       // games. Missing assets never prevent the battle from starting.
       const paths=['hammer/1.ogg','sword/hit-1.ogg','sword/swing-1.ogg',
-        'mine/1.ogg','magic/0','garden/1.ogg','raven/wings.wav','raven/caw-original.wav'];
+        'mine/1.ogg','magic/0','garden/1.ogg','raven/wings.wav',
+        'raven/caw-original.wav','dome/wiccans-chorus.mp3'];
       let next=0;
       await Promise.all(Array.from({length:2},async()=>{
         while(next<paths.length&&this.generation===generation)
@@ -193,7 +202,7 @@
     }
     async play(type,position,audible=()=>true,{rate=1}={}){
       const config=EFFECTS[type];if(!config||!this.canHear(audible))return false;
-      const spatial=this.spatial(position);
+      const spatial=config.global?{gain:1,pan:0,echo:0}:this.spatial(position);
       if(spatial.gain<.055){this.stats.distanceBlocked++;return false;}
       const time=this.now();
       if(time-(this.lastTime.get(type)??-Infinity)<config.cooldown){
@@ -204,12 +213,13 @@
       const choices=paths.length>1?paths.filter(p=>p!==previous):paths;
       const path=choices[Math.floor(clamp(this.random(),0,.999999)*choices.length)];
       const generation=this.generation,buffer=await this.bufferFor(path);
-      if(!buffer||generation!==this.generation||this.now()-time>850||
+      if(!buffer||generation!==this.generation||
+        this.now()-time>(config.global?6000:850)||
         !this.canHear(audible)){
         if(!this.canHear(audible))this.stats.visibilityBlocked++;
         return false;
       }
-      const latest=this.spatial(position);
+      const latest=config.global?{gain:1,pan:0,echo:0}:this.spatial(position);
       if(latest.gain<.055)return false;
       if(this.now()-(this.lastTime.get(type)??-Infinity)<config.cooldown)return false;
       if([...this.active].filter(v=>v.type===type).length>=config.limit)return false;
@@ -250,6 +260,7 @@
       const now=this.now();if(now-this.lastSpatialUpdate<100)return;
       this.lastSpatialUpdate=now;
       for(const voice of [...this.active]){
+        if(EFFECTS[voice.type].global)continue;
         const spatial=this.spatial(voice.position);
         if(spatial.gain<.02){this.release(voice,true);continue;}
         const smooth=(param,value)=>{

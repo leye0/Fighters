@@ -35,6 +35,8 @@ const engine=new Engine({contextFactory:()=>context,listener:()=>listener,
 assert.deepEqual(PATHS.swordHit.length,4);
 assert.deepEqual(PATHS.caw.length,3);
 assert.deepEqual(PATHS.swordSwing.length,2);
+assert.deepEqual(PATHS.dome,['dome/wiccans-chorus.mp3']);
+assert.equal(EFFECTS.dome.global,true);
 assert(EFFECTS.magic.priority>EFFECTS.garden.priority);
 assert.equal(await engine.play('swordHit',{x:0,z:0}),false,'locked until Start');
 assert.equal(engine.unlock(),true);
@@ -86,6 +88,13 @@ engine.setPaused(true);clock+=1100;
 assert.equal(await engine.play('wing',{x:14,z:0}),false);
 engine.setPaused(false);engine.reset();
 assert.equal(engine.snapshot().active,0);
+listener={x:100,z:100};clock+=1100;
+assert.equal(await engine.play('dome',{x:-23.5,z:-17.5}),true,
+  'the house incantation must be heard regardless of camera distance');
+const domeVoice=[...engine.active][0];
+clock+=200;engine.update();
+assert(engine.active.has(domeVoice),'the global chorus must not be distance-culled');
+engine.reset();
 assert(engine.snapshot().cached<=3,'decoded buffers obey the LRU limit');
 const htmlPath=new URL('../docs/index.html',import.meta.url);
 if(existsSync(htmlPath)){

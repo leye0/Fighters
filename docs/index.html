@@ -482,7 +482,8 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 <script src="./orc-appearance.js"></script>
 <script src="./rts-fog.js"></script>
 <script src="./rts-sound.js?v=voice-lines-20261105"></script>
-<script src="./rts-effects.js?v=immersive-20261106"></script>
+<script src="./rts-effects.js?v=witch-dome-20261106"></script>
+<script src="./rts-witch-dome.js?v=witch-dome-20261106"></script>
 <script src="./rts-farming.js"></script>
 <script src="./rts-orc-food.js"></script>
 <script src="./rts-forest.js"></script>
@@ -582,6 +583,8 @@ const WITCH_HOUSE_HEALTH=1500,GARDEN_HEALTH=600;
 const stoneHealing=window.FightersHealing;
 const repairRules=window.FightersRepair;
 const soulRules=window.FightersSouls;
+const domeRules=window.FightersWitchDome;
+let domeEffect=null;
 let standingStoneModel=null,stoneCircleSerial=0,healingAssignmentElapsed=0;
 const witchBuilding={
   id:'witch-house-01',kind:'witch-house',type:'witch-house',clanId:'witch',level:1,
@@ -1129,6 +1132,59 @@ function playEffect(type,position){
   if(!running||paused||!position||!visibleToPlayer(position.x,position.z))return;
   void effects.play(type,position,
     ()=>running&&!paused&&visibleToPlayer(position.x,position.z));
+}
+function clearWitchDome(){
+  if(!domeEffect)return;
+  for(const mesh of [domeEffect.shell,domeEffect.ring]){
+    mesh.parent?.remove(mesh);
+    mesh.geometry.dispose();mesh.material.dispose();
+  }
+  domeEffect=null;
+}
+function castWitchDome(building=selectedBuilding){
+  if(!domeRules.canCast(building,magic,{faction:activeFaction,running,paused,
+    active:!!domeEffect}))return false;
+  const {hitbox}=building;
+  const x=(hitbox.minX+hitbox.maxX)/2,z=(hitbox.minZ+hitbox.maxZ)/2;
+  // One shared translucent hemisphere and rim per activation, with no mesh
+  // per enemy. Both are removed and their GPU resources freed after the spell.
+  const shell=new THREE.Mesh(new THREE.SphereGeometry(1,48,24,0,Math.PI*2,0,Math.PI/2),
+    new THREE.MeshBasicMaterial({color:0x348dff,transparent:true,opacity:.19,
+      side:THREE.DoubleSide,depthWrite:false}));
+  shell.position.set(x,.07,z);shell.scale.setScalar(.001);shell.renderOrder=12;
+  const ring=new THREE.Mesh(new THREE.RingGeometry(.982,1.014,96),
+    new THREE.MeshBasicMaterial({color:0x7edbff,transparent:true,opacity:.77,
+      side:THREE.DoubleSide,depthWrite:false}));
+  ring.rotation.x=-Math.PI/2;ring.position.set(x,.12,z);
+  ring.scale.setScalar(.001);ring.renderOrder=13;
+  scene.add(shell,ring);
+  domeEffect={buildingId:building.id,x,z,elapsed:0,shell,ring,radius:0};
+  magic=Math.max(0,magic-domeRules.COST);
+  // The recorded four-voice cry is already mixed with 100% wet echoes and
+  // reverberation; it is heard regardless of camera position.
+  void effects.play('dome',{x,z},()=>running&&!paused);
+  showBanner('DÔME ARCANIQUE · 100 MAGIE');
+  refreshHUD();return true;
+}
+function stepWitchDome(dt){
+  if(!domeEffect)return;
+  const dome=domeEffect;
+  dome.elapsed+=dt;
+  const radius=domeRules.radiusAt(dome.elapsed);
+  dome.radius=radius;
+  dome.shell.scale.setScalar(Math.max(.001,radius));
+  dome.ring.scale.setScalar(Math.max(.001,radius));
+  const fading=Math.max(0,Math.min(1,(domeRules.DURATION-dome.elapsed)/1.5));
+  dome.shell.material.opacity=.19*fading;
+  dome.ring.material.opacity=.77*fading;
+  for(const actor of units){
+    if(actor.dead||actor.kind!=='orc'||
+      !domeRules.inRange(dome,actor.root.position,radius))continue;
+    // Standard death cleanup is maintained, but the corpses dissipate fast.
+    dealDamage(actor,actor.health,null);
+    actor.deadTime=Math.min(actor.deadTime,1.25);
+  }
+  if(dome.elapsed>=domeRules.DURATION){clearWitchDome();refreshHUD();}
 }
 function playConstructionHit(actor){playEffect('hammer',actor.root.position);}
 const ravenSoundState=new Map();
@@ -3164,10 +3220,11 @@ function refreshHUD(){
       const price=typeof cost==='object'?
         [cost.gold?cost.gold+'💰':'',cost.wood?cost.wood+'🪵':''].filter(Boolean).join(' '):
         cost?cost+'💰':'';
-      element.title=tooltip||name+(price?' · '+price:'');
+      const priceLabel=typeof cost==='object'&&cost.magic?cost.magic+'🔮':price;
+      element.title=tooltip||name+(priceLabel?' · '+priceLabel:'');
       element.setAttribute('aria-label',element.title);
       for(const [className,text] of [['action-symbol',symbol],['action-name',name],
-        ['action-cost',price]]){
+        ['action-cost',priceLabel]]){
         const span=document.createElement('span');span.className=className;span.textContent=text;
         element.appendChild(span);
       }
@@ -3208,7 +3265,7 @@ function refreshHUD(){
         b.type==='mine'?
         'Gisement d’or neutre et indestructible · exploitable par les ouvriers des deux clans.':
         !friendly?'Bâtiment ennemi · sélectionnez vos unités pour l’attaquer.':b.clanId==='witch'?
-        'Maison des sorcières : niveau 2 pour bâtir un cercle de roches; cercle requis pour entraîner des Arcanistes.':
+        'Maison des sorcières : niveau 2 pour le cercle de roches (requis pour les Arcanistes); niveau 3 pour le dôme arcanique (100 magie).':
         b.type==='barrack'?'Caserne orc · forme les guerriers et les lanceurs-mages (chaudron requis).':
         b.type==='hut'?'Hutte orc · abrite '+orcFoodRules.HUT_CAPACITY[b.level]+
           ' orcs. Population totale : '+orcPopulationCommitted()+' / '+orcHousingCap()+'.':
@@ -3241,6 +3298,12 @@ function refreshHUD(){
           b.queue.length>=MAX_QUEUE||paused,
         cost===null?'Niveau maximal':pending?'Amélioration déjà dans la file':
         'Améliorer au niveau '+(b.level+1));
+      if(friendly&&b.type==='witch-house'&&b.level>=3)
+        add('🔵','Dôme arcanique',{magic:domeRules.COST},()=>castWitchDome(b),
+          !domeRules.canCast(b,magic,{faction:activeFaction,running,paused,
+            active:!!domeEffect}),
+          'Pulvériser les orcs dans un rayon de '+domeRules.RADIUS+
+            ' autour de cette maison · coûte 100 magie');
       // Warcraft II buildings show their train/upgrade icons directly;
       // building construction belongs to the worker, never the barracks.
       if(friendly&&b.queue.length)
@@ -3346,6 +3409,8 @@ function refreshHUD(){
     else if(action==='Améliorer')disabled||=upgradeCost(b)===null||
       b?.queue.some(item=>item.kind==='upgrade')||
       gold[faction]<upgradeCost(b)||wood[faction]<40||b?.queue.length>=MAX_QUEUE;
+    else if(action==='Dôme arcanique')disabled||=!domeRules.canCast(b,magic,
+      {faction:activeFaction,running,paused,active:!!domeEffect});
     else if(action==='Annuler prochain')disabled=b?.queue.length===0;
     else if(constructionTab&&(['Maison','Potager','Cercle de roches'].includes(action)||Object.values(ORC_NAMES).includes(action))){
       const type=action==='Maison'?'witch-house':action==='Potager'?'garden':
@@ -3442,7 +3507,7 @@ function showBanner(message){
 function startSession(){
   if(!ready||(chosenFaction==='orc'&&!orcVillage))return;
   hairStyleDeck.length=0;hairColorDeck.length=0;
-  clearOrderPings();clearBolts();lastOrcAiVoice=-Infinity;
+  clearOrderPings();clearBolts();clearWitchDome();lastOrcAiVoice=-Infinity;
   for(const effect of soulEffects)disposeSoulEffect(effect);
   soulEffects.length=0;magic=0;soulAssignmentElapsed=0;
   for(const actor of units)releaseActor(actor);
@@ -3687,6 +3752,7 @@ function isSceneDescendant(node){
 function destroyBuilding(building){
   if(building.type==='mine'||building.clanId==='neutral'||building.destroyed)return;
   building.destroyed=true;building.health=0;building.queue.length=0;
+  if(domeEffect?.buildingId===building.id)clearWitchDome();
   building.progress=0;
   building.root.parent?.remove(building.root);
   if(building.healthBar)building.healthBar.root.visible=false;
@@ -5203,6 +5269,7 @@ function stepGame(dt){
   if(!ready||!running||paused)return;
   stepProduction(dt);
   magic=soulRules.magicAfterTime(magic,dt);
+  stepWitchDome(dt);
   stepHealing(dt);
   assignSoulHarvesters(dt);
   stepFarming(dt);
@@ -5720,6 +5787,9 @@ window.__fightersQA={
         x:u.root.position.x,z:u.root.position.z,remaining:u.deadTime,
         claimed:u.soulClaimed,reservedBy:u.soulReservedBy})),
       collecting:units.filter(u=>!!u.soulJob&&!u.dead).map(u=>({id:u.id,corpseId:u.soulJob.id}))},
+    dome:{active:!!domeEffect,cost:domeRules.COST,maxRadius:domeRules.RADIUS,
+      radius:domeEffect?.radius||0,elapsed:domeEffect?.elapsed||0,
+      origin:domeEffect?{x:domeEffect.x,z:domeEffect.z}:null},
     farming:{...farming.snapshot(),workers:units.filter(u=>u.farmJob&&!u.dead).map(u=>({
       id:u.id,gardenId:u.farmJob.gardenId,plotIndex:u.farmJob.plotIndex,
       phase:u.farmJob.phase,amount:u.farmJob.amount,carrying:!!u.carryWheat?.visible,
@@ -6081,6 +6151,10 @@ window.__fightersQA={
   enableOrcAI:value=>{orcDirector.enabled=!!value;orcDirector.reset();orcIncomeFraction=0;refreshHUD();},
   enableWitchAI:value=>{witchDirector.enabled=!!value;witchDirector.reset();refreshHUD();},
   upgradeHouse:()=>issueUpgrade(witchBuilding),
+  castDome:id=>castWitchDome(id?[witchBuilding,...buildingInstances.values()]
+    .find(b=>b.id===id):selectedBuilding),
+  setMagic:value=>{if(!Number.isFinite(value))return false;
+    magic=Math.max(0,Math.min(soulRules.MAX_MAGIC,value));refreshHUD();return true;},
   upgradeSelected:()=>issueUpgrade(selectedBuilding),
   upgradeBuilding:id=>issueUpgrade([witchBuilding,...buildingInstances.values()]
     .find(b=>b.id===id)),
