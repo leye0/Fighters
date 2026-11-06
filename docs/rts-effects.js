@@ -21,7 +21,8 @@
     caw:{files:3,gain:.56,cooldown:1000,limit:2,priority:3},
     // The full-wet incantation is a single cinematic spell, heard even when
     // the player has moved the camera away from the selected house.
-    dome:{files:1,gain:1.25,cooldown:1000,limit:1,priority:10,global:true}
+    dome:{files:1,gain:1.25,cooldown:1000,limit:1,priority:10,global:true},
+    fireRain:{files:1,gain:1.15,cooldown:1000,limit:1,priority:10,global:true}
   });
   const PATHS=Object.freeze({
     hammer:Array.from({length:4},(_,i)=>`hammer/${i+1}.ogg`),
@@ -32,7 +33,8 @@
     garden:Array.from({length:4},(_,i)=>`garden/${i+1}.ogg`),
     wing:['raven/wings.wav','raven/flutter.wav'],
     caw:['raven/caw-original.wav','raven/caw-soft.wav','raven/caw-dark.wav'],
-    dome:['dome/wiccans-chorus.mp3']
+    dome:['dome/wiccans-chorus.mp3'],
+    fireRain:['fire-rain/meteor-storm.mp3']
   });
   class Engine{
     constructor({fetcher,contextFactory,listener,now,random,
@@ -149,7 +151,8 @@
       }
       if(this.pending.has(path))return this.pending.get(path);
       // A full combat SFX queue must not silence the expensive 100-magic spell.
-      if(this.pending.size>=this.maxPending&&path!==PATHS.dome[0])return null;
+      if(this.pending.size>=this.maxPending&&
+        path!==PATHS.dome[0]&&path!==PATHS.fireRain[0])return null;
       const generation=this.generation,controller=new AbortController();
       this.controllers.add(controller);
       const task=(async()=>{
@@ -182,7 +185,8 @@
       while(this.cache.size>this.maxCached){
         // Keep the rare 7-second dome incantation decoded after warm-up: it
         // must not be re-fetched or arrive late during a busy battle.
-        const oldest=[...this.cache.keys()].find(key=>key!==PATHS.dome[0]);
+        const oldest=[...this.cache.keys()].find(key=>
+          key!==PATHS.dome[0]&&key!==PATHS.fireRain[0]);
         if(!oldest)break;
         this.cache.delete(oldest);this.levels.delete(oldest);
       }
@@ -193,7 +197,8 @@
       // games. Missing assets never prevent the battle from starting.
       const paths=['hammer/1.ogg','sword/hit-1.ogg','sword/swing-1.ogg',
         'mine/1.ogg','magic/0','garden/1.ogg','raven/wings.wav',
-        'raven/caw-original.wav','dome/wiccans-chorus.mp3'];
+        'raven/caw-original.wav','dome/wiccans-chorus.mp3',
+        'fire-rain/meteor-storm.mp3'];
       let next=0;
       await Promise.all(Array.from({length:2},async()=>{
         while(next<paths.length&&this.generation===generation)

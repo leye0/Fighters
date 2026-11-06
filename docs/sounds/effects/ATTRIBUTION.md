@@ -18,6 +18,7 @@ API, tracker, or CDN while playing. No Replicate or paid audio generation is use
 | `raven/wings.wav` | *short pigeon wing flap* by zouzmusic, Freesound #414671, processed in Griffin House of Rooks `natural063/wings-01.wav` | CC0 1.0 |
 | `raven/flutter.wav` | Another excerpt of the same wing-flap recording, processed in Griffin House of Rooks `raven-fight761/flutter.wav` | CC0 1.0 |
 | `raven/caw-*.wav` | *Crow Call* by qubodup / nigelcoop, Freesound #813114, three different filtered excerpts in Griffin House of Rooks | CC0 1.0 |
+| `fire-rain/meteor-storm.mp3` | Layered **real recordings**: [Short-Fireball-Woosh](https://freesound.org/people/wjl/sounds/267887/) by wjl (recorded stove flame/computer fans), [Fireball Explosion](https://freesound.org/people/Blankened/sounds/431174/) by Blankened, and [fire_explosion](https://freesound.org/people/ReadeOnly/sounds/186932/) by ReadeOnly. Seven staggered descending whooshes and impacts are mixed over an uninterrupted, roaring fire bed. The reproducible mix is in `scripts/build-orc-fire-rain.py`. | CC0 1.0 |
 
 The remaining Kenney grass recordings originate from
 https://kenney.nl/assets/impact-sounds and the CC0 Godot conversion at

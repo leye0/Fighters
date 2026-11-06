@@ -483,8 +483,10 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
 <script src="./orc-appearance.js"></script>
 <script src="./rts-fog.js"></script>
 <script src="./rts-sound.js?v=voice-lines-20261105"></script>
-<script src="./rts-effects.js?v=soft-wings-20261106"></script>
+<script src="./rts-effects.js?v=orc-fire-rain-20261106"></script>
 <script src="./rts-witch-dome.js?v=witch-dome-20261106"></script>
+<script src="./rts-fire-rain.js?v=orc-fire-rain-20261106"></script>
+<script src="./rts-spell-defense.js?v=orc-fire-rain-20261106"></script>
 <script src="./rts-farming.js"></script>
 <script src="./rts-orc-food.js"></script>
 <script src="./rts-forest.js"></script>
@@ -586,6 +588,9 @@ const repairRules=window.FightersRepair;
 const soulRules=window.FightersSouls;
 const domeRules=window.FightersWitchDome;
 let domeEffect=null;
+const fireRules=window.FightersFireRain;
+const spellDefense=window.FightersSpellDefense;
+let fireEffect=null,spellDecisionElapsed=0;
 let standingStoneModel=null,stoneCircleSerial=0,healingAssignmentElapsed=0;
 const witchBuilding={
   id:'witch-house-01',kind:'witch-house',type:'witch-house',clanId:'witch',level:1,
@@ -930,7 +935,7 @@ const ORC_COSTS={barrack:180,hut:120,cauldron:200,factory:250,wall:32};
 const ORC_NAMES={barrack:'Caserne',hut:'Hutte',mine:'Mine',cauldron:'Chaudron',factory:'Atelier',wall:'Mur de pierre'};
 const units=[],selected=new Set();
 const soulEffects=[];
-let magic=0,soulAssignmentElapsed=0;
+let magic=0,orcMagic=0,soulAssignmentElapsed=0;
 let female=null,male=null,swordModel=null,clothingFemale=null,clothingMale=null,hairBuns=null,hairBuzzed=null,hairParted=null,hairLong=null;
 const sharedClipCatalog=new Map(),sharedCostumeMaterials=new Map();
 // One shared, translucent ground-level ring per selected unit. Disable depth
@@ -1142,9 +1147,9 @@ function clearWitchDome(){
   }
   domeEffect=null;
 }
-function castWitchDome(building=selectedBuilding){
-  if(!domeRules.canCast(building,magic,{faction:activeFaction,running,paused,
-    active:!!domeEffect}))return false;
+function castWitchDome(building=selectedBuilding,{byAI=false}={}){
+  if(!domeRules.canCast(building,magic,{faction:byAI?'witch':activeFaction,running,paused,
+    active:!!domeEffect})||byAI&&!witchDirector.enabled)return false;
   const {hitbox}=building;
   const x=(hitbox.minX+hitbox.maxX)/2,z=(hitbox.minZ+hitbox.maxZ)/2;
   // One shared translucent hemisphere and rim per activation, with no mesh
@@ -1186,6 +1191,116 @@ function stepWitchDome(dt){
     actor.deadTime=Math.min(actor.deadTime,1.25);
   }
   if(dome.elapsed>=domeRules.DURATION){clearWitchDome();refreshHUD();}
+}
+function clearFireRain(){
+  if(!fireEffect)return;
+  for(const mesh of [fireEffect.bolts,fireEffect.trails,fireEffect.impacts]){
+    mesh.parent?.remove(mesh);mesh.geometry.dispose();mesh.material.dispose();
+  }
+  fireEffect.light.parent?.remove(fireEffect.light);
+  fireEffect=null;
+}
+function castFireRain(building=selectedBuilding,{byAI=false}={}){
+  if(!fireRules.canCast(building,orcMagic,{faction:byAI?'orc':activeFaction,
+    running,paused,active:!!fireEffect})||byAI&&!orcDirector.enabled)return false;
+  const x=(building.hitbox.minX+building.hitbox.maxX)/2;
+  const z=(building.hitbox.minZ+building.hitbox.maxZ)/2;
+  const amount=54,stars=[],dummy=new THREE.Object3D();
+  // GPU instancing: 54 fireballs and their glowing trails cost two draw calls,
+  // even during a large engagement. Each has a slightly different trajectory.
+  const bolts=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.32,1),
+    new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.95,
+      depthWrite:false,toneMapped:false}),amount);
+  const trails=new THREE.InstancedMesh(new THREE.CylinderGeometry(.02,.18,2.2,7),
+    new THREE.MeshBasicMaterial({color:0xff6f21,transparent:true,opacity:.68,
+      blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false}),amount);
+  const impacts=new THREE.InstancedMesh(new THREE.RingGeometry(.3,.85,28),
+    new THREE.MeshBasicMaterial({color:0xffae45,transparent:true,opacity:.68,
+      blending:THREE.AdditiveBlending,side:THREE.DoubleSide,
+      depthWrite:false,toneMapped:false}),amount);
+  for(const mesh of [bolts,trails,impacts]){
+    mesh.frustumCulled=false;mesh.renderOrder=14;scene.add(mesh);
+  }
+  for(let i=0;i<amount;i++){
+    const angle=i*2.399963+Math.sin(i*19.17)*.27;
+    const distance=Math.sqrt((i+.5)/amount)*fireRules.RADIUS*.96;
+    stars.push({x:x+Math.cos(angle)*distance,z:z+Math.sin(angle)*distance,
+      start:.08+i*3.3/amount,fall:.63+(i%7)*.075,
+      driftX:Math.cos(i*1.37)*2.7,driftZ:Math.sin(i*1.87)*2.7});
+    const flame=new THREE.Color().setHSL(.035+(i%5)*.014,1,.52+(i%4)*.07);
+    bolts.setColorAt(i,flame);
+  }
+  bolts.instanceColor.needsUpdate=true;
+  const light=new THREE.PointLight(0xff6619,2,23);
+  light.position.set(x,9,z);scene.add(light);
+  fireEffect={buildingId:building.id,x,z,elapsed:0,radius:0,
+    bolts,trails,impacts,light,stars,dummy};
+  orcMagic=Math.max(0,orcMagic-fireRules.COST);
+  void effects.play('fireRain',{x,z},()=>running&&!paused);
+  showBanner('PLUIE DE FEU · 100 MAGIE');refreshHUD();return true;
+}
+function stepFireRain(dt){
+  if(!fireEffect)return;
+  const effect=fireEffect;effect.elapsed+=dt;
+  const fade=Math.min(1,(fireRules.DURATION-effect.elapsed)/.85);
+  effect.radius=fireRules.impactRadiusAt(effect.elapsed);
+  effect.light.intensity=2.6*Math.max(0,fade)*(.83+.17*Math.sin(effect.elapsed*17));
+  const {dummy,bolts,trails,impacts}=effect;
+  for(let i=0;i<effect.stars.length;i++){
+    const star=effect.stars[i],age=effect.elapsed-star.start,
+      phase=age/star.fall,visible=phase>=0&&phase<1;
+    if(visible){
+      const y=25-24*phase*phase;
+      const px=star.x+star.driftX*(1-phase),pz=star.z+star.driftZ*(1-phase);
+      dummy.position.set(px,y,pz);dummy.rotation.set(0,0,0);
+      dummy.scale.setScalar(.84+.25*Math.sin(phase*23+i));
+      dummy.updateMatrix();bolts.setMatrixAt(i,dummy.matrix);
+      dummy.position.y+=1.22;dummy.rotation.set(.1,0,-.22);
+      dummy.scale.set(.75,1+.6*phase,.75);dummy.updateMatrix();
+      trails.setMatrixAt(i,dummy.matrix);
+    }else{
+      dummy.scale.setScalar(0);dummy.updateMatrix();
+      bolts.setMatrixAt(i,dummy.matrix);trails.setMatrixAt(i,dummy.matrix);
+    }
+    const impactAge=age-star.fall,impactVisible=impactAge>=0&&impactAge<.45;
+    dummy.position.set(star.x,.12,star.z);dummy.rotation.set(-Math.PI/2,0,0);
+    dummy.scale.setScalar(impactVisible?(1+impactAge*2.8)*(1-impactAge/.5):0);
+    dummy.updateMatrix();impacts.setMatrixAt(i,dummy.matrix);
+  }
+  bolts.instanceMatrix.needsUpdate=true;
+  trails.instanceMatrix.needsUpdate=true;
+  impacts.instanceMatrix.needsUpdate=true;
+  if(effect.elapsed>=fireRules.START_DAMAGE&&effect.elapsed<=fireRules.END_DAMAGE){
+    for(const actor of units){
+      if(actor.dead||actor.kind!=='witch'||
+        !fireRules.inRange(effect,actor.root.position,effect.radius))continue;
+      dealDamage(actor,actor.health,null);
+      actor.deadTime=Math.min(actor.deadTime,1.25);
+    }
+  }
+  if(effect.elapsed>=fireRules.DURATION){clearFireRain();refreshHUD();}
+}
+function stepSpellDefense(dt){
+  spellDecisionElapsed+=dt;
+  if(spellDecisionElapsed<1.5)return;
+  spellDecisionElapsed=0;
+  const homes=[...buildingInstances.values()].filter(b=>!b.destroyed&&b.type==='hut'&&b.level>=3);
+  if(witchDirector.enabled&&!witchBuilding.destroyed&&witchBuilding.level>=3)homes.push(witchBuilding);
+  for(const home of homes){
+    const faction=home.clanId==='witch'?'witch':'orc';
+    if(!(faction==='witch'?witchDirector.enabled:orcDirector.enabled)||
+      (faction==='witch'?magic:orcMagic)<100)continue;
+    const center={x:(home.hitbox.minX+home.hitbox.maxX)/2,
+      z:(home.hitbox.minZ+home.hitbox.maxZ)/2};
+    const threat=spellDefense.assess({faction,center,units,radius:domeRules.RADIUS,
+      visible:(x,z,clan)=>fogOfWar.visibleAt(x,z,clan)});
+    if(!threat.threatened)continue;
+    if(faction==='witch'){
+      if(!domeRules.canCast(home,magic,{faction:'witch',running,paused,
+        active:!!domeEffect}))continue;
+      castWitchDome(home,{byAI:true});
+    }else if(castFireRain(home,{byAI:true}))break;
+  }
 }
 function playConstructionHit(actor){playEffect('hammer',actor.root.position);}
 const ravenSoundState=new Map();
@@ -3190,8 +3305,12 @@ function refreshHUD(){
   setText('hud-food-label',activeFaction==='witch'?'🌾 VIVRES':'🍖 VIANDE');
   $('hud-food-chip').title=activeFaction==='witch'? 'Blé et baies · consommation des sorcières':
     'Lièvres et dépouilles de sorcières · les orcs mangent moins souvent';
-  setText('hud-magic',(Math.round(magic*10)/10)+'/'+soulRules.MAX_MAGIC);
-  $('hud-magic-fill').style.width=100*magic/soulRules.MAX_MAGIC+'%';
+  const factionMagic=activeFaction==='witch'?magic:orcMagic;
+  setText('hud-magic',(Math.round(factionMagic*10)/10)+'/'+soulRules.MAX_MAGIC);
+  $('hud-magic-fill').style.width=100*factionMagic/soulRules.MAX_MAGIC+'%';
+  $('hud-magic-chip').title=activeFaction==='witch'?
+    'Magie des sorcières · esprits siphonnés et 5 points toutes les 30 secondes':
+    'Magie des orcs · récupère 5 points toutes les 30 secondes';
   $('hud-gold-chip').title='Or des '+(activeFaction==='witch'?'sorcières':'orcs');
   $('hud-wood-chip').title='Bois des '+(activeFaction==='witch'?'sorcières':'orcs');
   setText('unit-count',units.filter(u=>u.kind==='witch'&&!u.dead).length+' : '+
@@ -3305,6 +3424,12 @@ function refreshHUD(){
             active:!!domeEffect}),
           'Pulvériser les orcs dans un rayon de '+domeRules.RADIUS+
             ' autour de cette maison · coûte 100 magie');
+      if(friendly&&b.type==='hut'&&b.level>=3)
+        add('🔥','Pluie de feu',{magic:fireRules.COST},()=>castFireRain(b),
+          !fireRules.canCast(b,orcMagic,{faction:activeFaction,running,paused,
+            active:!!fireEffect}),
+          'Déchaîner le feu du ciel sur les sorcières dans un rayon de '+
+            fireRules.RADIUS+' autour de cette hutte · coûte 100 magie');
       // Warcraft II buildings show their train/upgrade icons directly;
       // building construction belongs to the worker, never the barracks.
       if(friendly&&b.queue.length)
@@ -3412,6 +3537,8 @@ function refreshHUD(){
       gold[faction]<upgradeCost(b)||wood[faction]<40||b?.queue.length>=MAX_QUEUE;
     else if(action==='Dôme arcanique')disabled||=!domeRules.canCast(b,magic,
       {faction:activeFaction,running,paused,active:!!domeEffect});
+    else if(action==='Pluie de feu')disabled||=!fireRules.canCast(b,orcMagic,
+      {faction:activeFaction,running,paused,active:!!fireEffect});
     else if(action==='Annuler prochain')disabled=b?.queue.length===0;
     else if(constructionTab&&(['Maison','Potager','Cercle de roches'].includes(action)||Object.values(ORC_NAMES).includes(action))){
       const type=action==='Maison'?'witch-house':action==='Potager'?'garden':
@@ -3508,9 +3635,9 @@ function showBanner(message){
 function startSession(){
   if(!ready||(chosenFaction==='orc'&&!orcVillage))return;
   hairStyleDeck.length=0;hairColorDeck.length=0;
-  clearOrderPings();clearBolts();clearWitchDome();lastOrcAiVoice=-Infinity;
+  clearOrderPings();clearBolts();clearWitchDome();clearFireRain();lastOrcAiVoice=-Infinity;
   for(const effect of soulEffects)disposeSoulEffect(effect);
-  soulEffects.length=0;magic=0;soulAssignmentElapsed=0;
+  soulEffects.length=0;magic=0;orcMagic=0;spellDecisionElapsed=0;soulAssignmentElapsed=0;
   for(const actor of units)releaseActor(actor);
   units.length=0;selected.clear();selectedBuilding=null;selectedRaven=null;nextUnitId=1;
   for(const job of pendingBuilds)disposeConstructionPreview(job);
@@ -5270,13 +5397,16 @@ function stepGame(dt){
   if(!ready||!running||paused)return;
   stepProduction(dt);
   magic=soulRules.magicAfterTime(magic,dt);
+  orcMagic=soulRules.magicAfterTime(orcMagic,dt);
   stepWitchDome(dt);
+  stepFireRain(dt);
   stepHealing(dt);
   assignSoulHarvesters(dt);
   stepFarming(dt);
   stepOrcFood(dt);
   stepOrcStrategy(dt);
   stepWitchStrategy(dt);
+  stepSpellDefense(dt);
   if(ravenModelLoaded){
     ravenFlock.update(dt,units.filter(actor=>actor.kind==='orc'&&!actor.dead));
     tickRavenSounds();
@@ -5776,7 +5906,7 @@ window.__fightersQA={
           stones:b.root.children.filter(n=>n.name.startsWith('standing-stone-')).length,
           navigableCenter:navigatorRTS.pointClear(b.root.position)})),
       retreating:units.filter(u=>!!u.healJob&&!u.dead).map(u=>({id:u.id,circleId:u.healJob.id}))},
-    souls:{magic,maxMagic:soulRules.MAX_MAGIC,perCorpse:soulRules.SOUL_VALUE,
+    souls:{magic,orcMagic,maxMagic:soulRules.MAX_MAGIC,perCorpse:soulRules.SOUL_VALUE,
       passiveMagicPer30Seconds:soulRules.PASSIVE_MAGIC_PER_30_SECONDS,
       corpseLifetime:soulRules.CORPSE_SECONDS,buildUnlocked:circleUnlocked(),
       arcanistUnlocked:arcanistUnlocked(),activeSpirits:soulEffects.length,
@@ -5791,6 +5921,9 @@ window.__fightersQA={
     dome:{active:!!domeEffect,cost:domeRules.COST,maxRadius:domeRules.RADIUS,
       radius:domeEffect?.radius||0,elapsed:domeEffect?.elapsed||0,
       origin:domeEffect?{x:domeEffect.x,z:domeEffect.z}:null},
+    fireRain:{active:!!fireEffect,cost:fireRules.COST,maxRadius:fireRules.RADIUS,
+      radius:fireEffect?.radius||0,elapsed:fireEffect?.elapsed||0,
+      origin:fireEffect?{x:fireEffect.x,z:fireEffect.z}:null},
     farming:{...farming.snapshot(),workers:units.filter(u=>u.farmJob&&!u.dead).map(u=>({
       id:u.id,gardenId:u.farmJob.gardenId,plotIndex:u.farmJob.plotIndex,
       phase:u.farmJob.phase,amount:u.farmJob.amount,carrying:!!u.carryWheat?.visible,
@@ -6154,8 +6287,12 @@ window.__fightersQA={
   upgradeHouse:()=>issueUpgrade(witchBuilding),
   castDome:id=>castWitchDome(id?[witchBuilding,...buildingInstances.values()]
     .find(b=>b.id===id):selectedBuilding),
+  castFireRain:id=>castFireRain(id?[...buildingInstances.values()]
+    .find(b=>b.id===id):selectedBuilding),
   setMagic:value=>{if(!Number.isFinite(value))return false;
     magic=Math.max(0,Math.min(soulRules.MAX_MAGIC,value));refreshHUD();return true;},
+  setOrcMagic:value=>{if(!Number.isFinite(value))return false;
+    orcMagic=Math.max(0,Math.min(soulRules.MAX_MAGIC,value));refreshHUD();return true;},
   upgradeSelected:()=>issueUpgrade(selectedBuilding),
   upgradeBuilding:id=>issueUpgrade([witchBuilding,...buildingInstances.values()]
     .find(b=>b.id===id)),

@@ -134,8 +134,10 @@
    if(this.clock>this.upgradeAt&&canSpend(270,170)){
     const target=structures.filter(b=>b.level<3&&!b.queue.some(o=>o.kind==='upgrade'))
       .sort((a,b)=>{
-       const priorities={barrack:0,mine:1,hut:2,factory:3,cauldron:4};
-       return(a.level-b.level)||priorities[a.type]-priorities[b.type];
+       const priorities={hut:0,barrack:1,mine:2,factory:3,cauldron:4};
+       // A level-three hut is an emergency defense, so bring one home to
+       // level three before spending on a third different level-two building.
+       return(priorities[a.type]-priorities[b.type])||(b.level-a.level);
       })[0];
     if(target)orders.push({type:'upgrade',buildingId:target.id,reason:'development'});
    }

@@ -82,6 +82,9 @@
    if(home&&home.level<2&&this.clock>12&&canBuy(330,40,150)&&
      !home.queue.some(o=>o.kind==='upgrade'))actions.push({type:'upgrade',
      buildingId:home.id,reason:'unlock_sanctuary'});
+   if(home&&home.level===2&&this.clock>75&&canBuy(430,40,100)&&
+     !home.queue.some(o=>o.kind==='upgrade'))actions.push({type:'upgrade',
+     buildingId:home.id,reason:'unlock_defensive_dome'});
    if(workerCount&&state.circleUnlocked&&circles.length===0&&
      !pending.some(b=>b.type==='stone-circle')&&
      canBuy(COST['stone-circle'],85,100)){
