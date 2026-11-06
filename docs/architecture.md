@@ -31,6 +31,7 @@ dans [`../refactor.md`](../refactor.md).
 | Présentation | `styles/game.css`, `rts-minimap.js`, `rts-hud.js`, `game.js` (composition HUD/rendu) | `test-rts-minimap.mjs`, `test-rts-hud.mjs`, Chrome `visual`, `economy`, `combat` |
 | Validation navigateur | `scripts/browser-qa/` par scénario, `chrome-driver.mjs` commun | Workflow `browser-qa.yml` |
 | Architecture et intégration | `index.html`, `AGENTS.md`, `architecture.md`, `browser-qa.yml` | `test-rts-architecture.mjs` (frontières, includes, ownership et CI) |
+| Contrats de domaine | `rts-contracts.d.ts`, `scripts/contracts-smoke.ts` | `contracts.yml` avec compilateur TypeScript strict (sur modification seulement) |
 
 Un agent peut modifier un module isolé et son test sans toucher au code de
 présentation. Si une intégration dans `game.js` est nécessaire, un seul agent

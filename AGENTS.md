@@ -51,6 +51,9 @@ modules (`docs/rts-contracts.d.ts`).
 - `scripts/test-*.mjs` : tests unitaires ; ajouter un test au système modifié.
 - `scripts/test-rts-architecture.mjs` : garde-fou des frontières de modules,
   includes HTML, ownership, déclencheurs QA et restauration d'assets épinglés.
+- `docs/rts-contracts.d.ts`, `scripts/contracts-smoke.ts` : contrats progressifs
+  compilés en mode strict dans `contracts.yml`, déclenché uniquement si
+  les déclarations ou ce workflow changent. Pas de TypeScript au runtime.
 - `scripts/browser-qa.mjs` : orchestration des scénarios Chrome/WebGL.
 - `scripts/browser-qa/{visual,economy,combat,dome,touch}.mjs` : scénarios QA
   indépendants ; modifier le fichier du scénario concerné.

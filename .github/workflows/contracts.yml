@@ -1,0 +1,31 @@
+name: Fighters — verify RTS domain contracts
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/rts-contracts.d.ts'
+      - 'scripts/contracts-smoke.ts'
+      - '.github/workflows/contracts.yml'
+  pull_request:
+    paths:
+      - 'docs/rts-contracts.d.ts'
+      - 'scripts/contracts-smoke.ts'
+      - '.github/workflows/contracts.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contracts:
+    name: Typecheck domain declarations
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Compile strict RTS contract smoke test
+        run: |
+          npm exec --yes --package=typescript@5.9.3 -- \
+            tsc --strict --noEmit --target ES2022 --moduleResolution node \
+              --lib ES2022 docs/rts-contracts.d.ts scripts/contracts-smoke.ts

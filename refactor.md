@@ -54,6 +54,9 @@ qu'après modification, vérification et intégration dans `main`.
 - [ ] Valider avec un compilateur TypeScript les contrats progressifs ajoutés
       dans `docs/rts-contracts.d.ts` ; `GameState` y décrit l'état cible et non
       encore une structure effectivement centralisée dans le moteur.
+- [ ] Vérifier l'exécution du workflow TypeScript strict indépendant
+      `.github/workflows/contracts.yml`, sans télécharger de compilateur
+      dans chaque QA WebGL ni modifier le runtime du jeu.
 - [ ] Regrouper l'état mutable d'une partie dans un contexte explicite ; limiter
       les variables libres partagées par des dizaines de fonctions.
 - [x] Valider dans Chrome l'extraction d'or/bois dans `rts-match-state.js` :
