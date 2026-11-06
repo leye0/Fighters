@@ -33,6 +33,7 @@ const boundaries=[
   ['rts-world-state','FightersWorldState'],
   ['rts-orc-forager','FightersOrcForager'],
   ['rts-orc-hunt-planner','FightersOrcHuntPlanner'],
+  ['rts-food-cycle','FightersFoodCycle'],
   ['rts-orders','FightersOrders'],
   ['rts-picking','FightersPicking'],
   ['rts-camera','FightersCamera'],

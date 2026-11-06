@@ -371,8 +371,7 @@ const orcFoodRules=window.FightersOrcFood;
 const orcFood=new orcFoodRules.Economy();
 const hareField=new orcFoodRules.Hares({halfSize:arena.worldHalf,
   walkable:(x,z)=>navigatorRTS.pointClear({x,z})});
-let orcFamineAlerted=false;
-let farmAssignmentElapsed=0,farmSerial=0,famineAlerted=false;
+let farmAssignmentElapsed=0,farmSerial=0;
 const wildBerries=new window.FightersBerries.WildBerries(forestLayout,{map:arena});
 let berryAssignmentElapsed=0;
 const ROLE_IDS=roles.ROLE_IDS,ROLE_DEFINITIONS=roles.DEFINITIONS;
@@ -2904,8 +2903,8 @@ function startSession(){
   }
   resize();
   matchResources.resetEconomy();
-  farming.reset();farmSerial=0;farmAssignmentElapsed=0;famineAlerted=false;
-  orcFood.reset();orcHuntPlanner.reset();orcFamineAlerted=false;
+  farming.reset();farmSerial=0;farmAssignmentElapsed=0;
+  orcFood.reset();orcHuntPlanner.reset();foodCycle.reset();
   stoneCircleSerial=0;wallSerial=0;healingAssignmentElapsed=0;
   wildBerries.reset();berryAssignmentElapsed=0;syncBerryVisuals();
   buildMode=null;orcSpawned=false;
@@ -4001,38 +4000,18 @@ function assignOrcForagers(dt){
 function tickOrcForager(actor,dt){
   return orcForager.tick(actor,dt);
 }
+const foodCycle=window.FightersFoodCycle.create({
+  units,hareField,orcFood,orcFoodRules,assignOrcForagers,
+  wildBerries,syncBerryVisuals,farming,buildingInstances,syncGardenVisual,
+  assignGardenWorkers,assignBerryForagers,
+  witchStarvationDamage:window.FightersFarming.STARVATION_DAMAGE,
+  showBanner,dealDamage
+});
 function stepOrcFood(dt){
-  const orcs=units.filter(u=>u.kind==='orc'&&!u.dead);
-  hareField.step(dt,orcs.map(u=>u.root.position));
-  const result=orcFood.step(dt,orcs.length);
-  assignOrcForagers(dt);
-  if(orcFood.food>0)orcFamineAlerted=false;
-  else if(!orcFamineAlerted){orcFamineAlerted=true;showBanner('FAMINE : LES ORCS PERDENT DES PV');}
-  if(result.starvedSeconds>0){
-    const damage=result.starvedSeconds*orcFoodRules.STARVATION_DAMAGE;
-    for(const orc of orcs){
-      if(orc.health<=damage)dealDamage(orc,damage,null);
-      else orc.health-=damage;
-    }
-  }
+  return foodCycle.stepOrcs(dt);
 }
 function stepFarming(dt){
-  wildBerries.step(dt);syncBerryVisuals();
-  const witches=units.filter(u=>u.kind==='witch'&&!u.dead);
-  const result=farming.step(dt,witches.length);
-  for(const garden of buildingInstances.values())
-    if(garden.type==='garden'&&!garden.destroyed)syncGardenVisual(garden);
-  assignGardenWorkers(dt);
-  assignBerryForagers(dt);
-  if(farming.food>0)famineAlerted=false;
-  else if(!famineAlerted){famineAlerted=true;showBanner('FAMINE : LES SORCIÈRES PERDENT DES PV');}
-  if(result.starvedSeconds>0){
-    const damage=result.starvedSeconds*window.FightersFarming.STARVATION_DAMAGE;
-    for(const witch of witches){
-      if(witch.health<=damage)dealDamage(witch,damage,null);
-      else witch.health-=damage;
-    }
-  }
+  return foodCycle.stepWitches(dt);
 }
 function stepHealing(dt){
   const circles=[...buildingInstances.values()].filter(b=>

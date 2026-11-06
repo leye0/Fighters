@@ -29,6 +29,10 @@ modules (`docs/rts-contracts.d.ts`).
 - `docs/rts-orc-hunt-planner.js` : attribution des chasses (cadavres prioritaires,
   lièvres, brouillard, limites de tâches, menaces, exploration) et cadencement
   de 800 ms ; `rts-orc-forager.js` exécute ensuite la chasse physique.
+- `docs/rts-food-cycle.js` : pas alimentaire des deux factions : apparition des
+  lièvres, consommation, répartition des ouvriers, maturation des cultures et
+  famine (un seul avertissement par épisode). Les effets visuels, les dégâts
+  fatals et les règles économiques restent injectés par `game.js`.
 - `docs/rts-unit-tick.js` : état et priorités des unités à chaque tick
   (attaque, cible, poursuite, tâches, déplacement), avec services de navigation,
   combat, animation et IA injectés une seule fois par `game.js`.
