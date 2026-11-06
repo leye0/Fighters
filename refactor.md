@@ -195,18 +195,19 @@ qu'après modification, vérification et intégration dans `main`.
 - [x] Répéter la QA Chrome/WebGL complète après les extractions de ressources,
       sélection et tâches d'ouvriers (runs 42260838733 et 42261206611 ;
       visual, economy, combat verts).
-- [ ] Valider une relance Chrome automatique si DevTools ne démarre pas :
+- [x] Valider une relance Chrome automatique si DevTools ne démarre pas :
       le scénario `economy` du run 42259828733 a échoué au démarrage du
       navigateur, pas sur le jeu ; relance unique intégrée dans le driver.
       La politique de retry simulée est testée sous Node sur `main`
       (commit add7089) : échec initial, succès à la deuxième tentative,
-      échec terminal et nettoyage. Un essai d'échec réel de Chrome reste à
-      effectuer avant de cocher. Workflow dédié `chrome-retry.yml` ajouté :
-      il simule un premier processus Chrome mort puis vérifie la seconde
-      connexion DevTools sur un vrai navigateur GitHub Actions.
+      échec terminal et nettoyage. Le workflow dédié `chrome-retry.yml`
+      tue volontairement le premier lancement puis vérifie la reconnexion
+      DevTools sur un vrai Chrome : run 42278421772 vert en 23 secondes.
+      La QA WebGL complète après ce changement est aussi verte :
+      run 42278421711 (visual, economy, combat).
 - [x] Faire une QA Chrome/WebGL complète après les extractions caméra, IA et
       le durcissement du démarrage de Chrome : run 42262289649,
-      visual/economy/combat verts (la relance sur erreur reste à simuler).
+      visual/economy/combat verts (le retry réel a ensuite été vérifié ci-dessus).
 
 ## Définition de « terminé »
 
