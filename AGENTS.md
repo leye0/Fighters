@@ -51,6 +51,9 @@ modules (`docs/rts-contracts.d.ts`).
   coupe, réservation des bûches, ramassage et livraison du bois. Le module
   restitue les bûches à l'annulation d'un trajet chargé ; les modèles 3D,
   messages et ressources courantes sont adaptés par `game.js`.
+- `docs/rts-garden-worker-cycle.js` : attribution cadencée des jardinières,
+  réservation des rangs mûrs, récolte, transport physique du blé et livraison
+  à une maison ; les animations, visuels et effets restent injectés par `game.js`.
 - `docs/rts-unit-tick.js` : état et priorités des unités à chaque tick
   (attaque, cible, poursuite, tâches, déplacement), avec services de navigation,
   combat, animation et IA injectés une seule fois par `game.js`.
@@ -110,6 +113,8 @@ modules (`docs/rts-contracts.d.ts`).
   durée d'extraction, transport, crédit uniquement à la livraison et annulation.
 - `scripts/test-rts-wood-cycle.mjs` : planification orc/sorcière, arbres hors
   danger, coupe, ramassage, réservations, restitution, livraison et retry.
+- `scripts/test-rts-garden-worker-cycle.mjs` : cadence, reset, réservations,
+  trajets bloqués, durée de récolte, effet sonore et livraison effective.
 - `docs/rts-contracts.d.ts`, `scripts/contracts-smoke.ts` : contrats progressifs
   compilés en mode strict dans `contracts.yml`, déclenché uniquement si
   les déclarations ou ce workflow changent. Pas de TypeScript au runtime.

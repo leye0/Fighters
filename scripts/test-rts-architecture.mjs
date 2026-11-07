@@ -39,6 +39,7 @@ const boundaries=[
   ['rts-soul-harvester','FightersSoulHarvester'],
   ['rts-mining-cycle','FightersMiningCycle'],
   ['rts-wood-cycle','FightersWoodCycle'],
+  ['rts-garden-worker-cycle','FightersGardenWorkerCycle'],
   ['rts-orders','FightersOrders'],
   ['rts-picking','FightersPicking'],
   ['rts-camera','FightersCamera'],
