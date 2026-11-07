@@ -90,11 +90,18 @@ de prolonger indéfiniment un axe.
       et garde d'architecture verts ; QA Chrome `visual`, `economy`,
       `combat` verte (run 42339555236, incluant les deux sorts automatiques)
       et Pages verte (run 42339555207). Commit runtime f2c8f031.
-- [ ] **S2 — Navigation d'acteur** : séparer la politique de
+- [x] **S2 — Navigation d'acteur** : séparer la politique de
       `navigateActor` et `approachBuilding` (chemins, replanification,
       blocages, contacts) des appels de physique et d'animation existants.
       **Fini quand** ces décisions sont testées dans un module indépendant,
       avec mêmes distances, retries et trajectoires dans le navigateur.
+      **Validé** : `rts-actor-navigation.js` détient les règles de points
+      d'approche, caches, seuils d'arrivée, replanification A* et reprise
+      après blocage. La physique de foule, les collisions et la marche restent
+      injectées par `game.js`. Tests Node (dont trajectoires A* déterministes),
+      garde d'architecture et QA Chrome `visual`, `economy`, `combat` verts :
+      run 42341658596 ; Pages verte : run 42341658589.
+      Commit runtime fa8d60bc.
 - [ ] **S3 — Dégâts et destructions** : sortir les transitions métier de
       `dealDamage`, `damageBuilding` et `destroyBuilding` sans déplacer la
       suppression de meshes, les sons ou les effets graphiques.
