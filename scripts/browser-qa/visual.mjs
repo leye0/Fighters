@@ -136,17 +136,24 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
     'Only workers should carry hidden shared job tools before working');
  for(const clan of ['witch','orc']){
   const sharing=await evaluate('window.__fightersQA.auditRigSharing('+JSON.stringify(clan)+')');
-  check(sharing.bodyGeometryShared&&sharing.outfitGeometryShared&&
+  check(sharing.bodyGeometryShared&&
+    (clan==='orc'?sharing.outfitGeometryShared:!sharing.outfitGeometryShared)&&
     sharing.roles.length===3,'Role outfits must share body and garment geometry: '+
     JSON.stringify(sharing));
  }
- const witchGarments=await evaluate('window.__fightersQA.auditWitchGarmentDyes()');
- const witchPalette={worker:0x46b965,melee:0xee8a32,ranged:0xf3f3ed};
- check(witchGarments.length===3&&witchGarments.every(g=>
-   g.garmentMeshes===4&&g.dyeShaders&&g.colors.length===1&&
-   g.colors[0]===witchPalette[g.role]&&g.originalTexturePreserved&&
-   g.tintStrength>.15&&g.tintStrength<.30),
-   'Witch original clothing texture must remain dominant under a subtle role tint: '+
+ const witchGarments=await evaluate('window.__fightersQA.auditWitchWardrobe()');
+ check(witchGarments.length===3&&witchGarments.every(g=>{
+   if(!g.originalTexturePreserved||!g.noDye)return false;
+   const peasant=g.parts.filter(p=>p.startsWith('Female_Peasant_'));
+   const ranger=g.parts.filter(p=>p.startsWith('Female_Ranger_'));
+   if(g.role==='worker')return g.garmentMeshes===4&&g.hairMeshes===1&&
+     peasant.length===4&&ranger.length===0;
+   if(g.role==='melee')return g.garmentMeshes===8&&g.hairMeshes===1&&
+     ranger.length===8&&!ranger.includes('Female_Ranger_Head_Hood');
+   return g.role==='ranged'&&g.garmentMeshes===5&&g.hairMeshes===0&&
+     peasant.length===4&&ranger.length===1&&ranger[0]==='Female_Ranger_Head_Hood';
+ }),
+   'Witches must use native Peasant/Ranger geometry and textures without role dye: '+
    JSON.stringify(witchGarments));
  check(s.assets.sharedMaterials<120,
   'Too many cosmetic materials: '+s.assets.sharedMaterials);

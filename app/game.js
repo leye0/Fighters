@@ -382,7 +382,7 @@ const ORC_NAMES={barrack:'Caserne',hut:'Hutte',mine:'Mine',cauldron:'Chaudron',f
 const matchWorld=window.FightersWorldState.create();
 const {units,selected}=matchWorld;
 const soulEffects=[];
-let female=null,male=null,swordModel=null,clothingFemale=null,clothingMale=null,hairBuns=null,hairBuzzed=null,hairParted=null,hairLong=null;
+let female=null,male=null,swordModel=null,clothingFemale=null,clothingRanger=null,clothingMale=null,hairBuns=null,hairBuzzed=null,hairParted=null,hairLong=null;
 const sharedClipCatalog=new Map(),sharedCostumeMaterials=new Map();
 // One shared, translucent ground-level ring per selected unit. Disable depth
 // testing so paved streets and shallow building surfaces cannot bury it.
@@ -1220,24 +1220,6 @@ function sharedRoleMaterial(original,key,configure){
   }
   return material;
 }
-const WITCH_GARMENT_TINT_STRENGTH=.22;
-function dyeWitchGarment(material,color){
-  // Keep the original multicolored Peasant texture dominant. A subtle color
-  // balance, including a little brightening for white, must never replace the
-  // texture with a solid uniform (which looked like a jumpsuit).
-  material.color.setHex(0xffffff);
-  material.userData.witchGarmentDye=color;
-  material.onBeforeCompile=shader=>{
-    shader.uniforms.witchGarmentDye={value:new THREE.Color(color)};
-    shader.uniforms.witchGarmentStrength={value:WITCH_GARMENT_TINT_STRENGTH};
-    shader.fragmentShader='uniform vec3 witchGarmentDye;\n'+
-      'uniform float witchGarmentStrength;\n'+shader.fragmentShader;
-    shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',
-      '#include <map_fragment>\n'+
-      'diffuseColor.rgb=mix(diffuseColor.rgb,witchGarmentDye,witchGarmentStrength);');
-  };
-  material.customProgramCacheKey=()=>`witch-garment-${color.toString(16)}`;
-}
 function costumeLayers(visual,kind,index,role,appearance=null){
   const bodyName=kind==='witch'?'Superhero_Female':'SuperHero_Male';
   let body=null;
@@ -1260,15 +1242,26 @@ function costumeLayers(visual,kind,index,role,appearance=null){
   // Keep the original body skinning; the orcs' fingers stay green on their
   // native hand joints even when swinging or carrying objects.
   body.geometry=exposedSkinGeometry(body,kind);
-  const clothing=kind==='witch'?clothingFemale:clothingMale;
+  // Both original free Standard outfits share the female body's exact 65-bone
+  // rig and bind pose. Build three distinctive silhouettes from actual pieces,
+  // never a flat shader tint, purchased model, or foreign animation skeleton.
+  const clothing=kind==='witch'&&role==='melee'&&clothingRanger?clothingRanger:
+    kind==='witch'?clothingFemale:clothingMale;
   const hairstyle=kind==='witch'?({short:hairParted,long:hairLong,
     'very-long':hairLong,ponytail:hairParted,'side-buns':hairBuns}[appearance.style]):
     (index%2?hairParted:hairBuzzed);
   let garmentMeshes=0,hairMeshes=0;
-  for(const [source,type] of [[clothing,'garment'],[hairstyle,'hair']]){
-    if(!source)throw Error('Tenue ou coiffure manquante : '+type);
+  if(!clothing)
+    throw Error('Tenue Quaternius native manquante : '+kind+'/'+role);
+  for(const [source,type,include] of [
+    [clothing,'garment',o=>kind!=='witch'||role!=='melee'||o.name!=='Female_Ranger_Head_Hood'],
+    [kind==='witch'&&role==='ranged'?clothingRanger:null,'garment',
+      o=>o.name==='Female_Ranger_Head_Hood'],
+    [kind==='witch'&&role==='ranged'&&clothingRanger?null:hairstyle,'hair',()=>true]
+  ]){
+    if(!source)continue;
     source.scene.traverse(o=>{
-      if(!o.isSkinnedMesh)return;
+      if(!o.isSkinnedMesh||!include(o))return;
       if(o.skeleton.bones.length!==skeleton.bones.length||
          o.skeleton.bones.some((b,i)=>b.name!==skeleton.bones[i].name))
         throw Error('Ordre des os incompatible pour '+o.name);
@@ -1279,8 +1272,7 @@ function costumeLayers(visual,kind,index,role,appearance=null){
         m=>{
           if(!m.color)return;
           if(type==='garment'){
-            if(kind==='witch')dyeWitchGarment(m,profile.garment);
-            else m.color.lerp(new THREE.Color(profile.garment),.72);
+            if(kind==='orc')m.color.lerp(new THREE.Color(profile.garment),.72);
           }
           else if(kind==='witch')m.color.setHex(appearance.color.hex);
           else m.color.multiply(new THREE.Color(index%2?0x302a28:0x63452e));
@@ -1291,16 +1283,24 @@ function costumeLayers(visual,kind,index,role,appearance=null){
           veryLongHairGeometry(o.geometry):o.geometry;
       const layer=new THREE.SkinnedMesh(geometry,Array.isArray(o.material)?materials:materials[0]);
       layer.name=type+'_'+o.name;layer.userData.costumeLayer=type;
+      layer.userData.costumeSource=o.name;
       layer.frustumCulled=false;
       layer.bind(skeleton,body.bindMatrix.clone());
       visual.add(layer);
       if(type==='garment')garmentMeshes++;else hairMeshes++;
     });
   }
-  if(garmentMeshes<4||hairMeshes!==1)throw Error('Tenue civile incomplète');
-  if(kind==='witch'&&appearance.style==='ponytail')addPonytail(skeleton,appearance.color);
+  const expectedGarments=kind==='witch'&&clothingRanger?
+    (role==='melee'?8:role==='ranged'?5:4):4;
+  const expectedHair=kind==='witch'&&role==='ranged'&&clothingRanger?0:1;
+  if(garmentMeshes!==expectedGarments||hairMeshes!==expectedHair)
+    throw Error('Tenue modulaire incomplète : '+kind+'/'+role);
+  if(kind==='witch'&&expectedHair===1&&appearance.style==='ponytail')
+    addPonytail(skeleton,appearance.color);
   return {garmentMeshes,hairMeshes,headTriangles:body.geometry.getIndex()?.count/3||0,
-    role,hairStyle:appearance?.style||null,hairColor:appearance?.color.name||null};
+    role,outfit:kind==='witch'&&clothingRanger?
+      (role==='melee'?'ranger':role==='ranged'?'peasant-hood':'peasant'):'peasant',
+    hairStyle:appearance?.style||null,hairColor:appearance?.color.name||null};
 }
 // All tools are built once from tiny primitives. Their clones share geometry
 // and materials across every worker; no worker-only GLB or texture is loaded.
@@ -3702,6 +3702,12 @@ async function load(){
     const garments=await Promise.all(files.map(async file=>
       modelAssets.parse(await getBinary(file)) ));
     [clothingFemale,clothingMale,hairBuns,hairBuzzed,hairParted,hairLong]=garments;
+    // Until the new immutable runtime bundle is published, Pages may briefly
+    // serve the previous valid asset version. Keep the game playable with its
+    // original Peasant outfits during that release transition. WebGL QA still
+    // requires the actual Ranger geometry once the new bundle is built.
+    try{clothingRanger=await modelAssets.parse(await getBinary('quaternius_outfit_Female_Ranger.glb'));}
+    catch(err){console.warn('Ranger asset not yet deployed; retaining Peasant outfits',err);}
     $('load-bar').style.width='90%';
     swordModel=await modelAssets.load('./models/equipment.sword.arming.default.gltf?v=uncompressed-20261101');
     const grip=swordModel.scene.getObjectByName('grip');
@@ -4011,20 +4017,19 @@ if(qaMode)window.__fightersQA={
       outfitGeometryShared:meshes.every(m=>m.garment?.geometry===meshes[0]?.garment?.geometry),
       uniqueOutfitMaterials:new Set(meshes.map(m=>m.garment?.material)).size};
   },
-  auditWitchGarmentDyes:()=>units.filter(a=>a.kind==='witch'&&!a.dead).map(actor=>{
+  auditWitchWardrobe:()=>units.filter(a=>a.kind==='witch'&&!a.dead).map(actor=>{
     const garments=[];
+    const hair=[];
     actor.visual.traverse(o=>{
       if(o.userData.costumeLayer==='garment')garments.push(o);
+      if(o.userData.costumeLayer==='hair')hair.push(o);
     });
-    const probe={uniforms:{},fragmentShader:'#include <map_fragment>'};
-    garments[0]?.material.onBeforeCompile(probe);
     return {role:actor.role,garmentMeshes:garments.length,
-      colors:[...new Set(garments.map(o=>o.material.userData.witchGarmentDye))],
-      tintStrength:probe.uniforms.witchGarmentStrength?.value,
-      originalTexturePreserved:garments.every(o=>!!o.material.map)&&
-        probe.fragmentShader.includes('mix(diffuseColor.rgb,witchGarmentDye,witchGarmentStrength)'),
-      dyeShaders:garments.every(o=>o.material.customProgramCacheKey()
-        .startsWith('witch-garment-'))};
+      hairMeshes:hair.length,
+      parts:garments.map(o=>o.userData.costumeSource),
+      originalTexturePreserved:garments.every(o=>!!o.material.map),
+      noDye:garments.every(o=>!o.material.userData.witchGarmentDye&&
+        !o.material.onBeforeCompile.toString().includes('witchGarmentDye'))};
   }),
   auditOrcAppearance:()=>units.filter(a=>a.kind==='orc'&&!a.dead).map(actor=>{
     let body=null;const garments=[];

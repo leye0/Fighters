@@ -13,6 +13,7 @@ for(const source of [
   'scripts/download-costumes.sh',
   'scripts/download-sword.sh',
   'scripts/pack-hair-long.mjs',
+  'scripts/pack-female-ranger.mjs',
   'scripts/decompress-sword.mjs'
 ]) assert(isRuntimeAssetBuildInput(source),`${source} must request a new archive`);
 

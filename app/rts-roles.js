@@ -1,5 +1,5 @@
 /* Fighters RTS — one female or male rig per clan, three gameplay roles.
- * Role identity is data; do not introduce per-role GLBs or animation clips.
+ * Outfits may vary, but retain the native character skeleton and animation clips.
  */
 (function(root,factory){
   const api=factory();
@@ -10,9 +10,9 @@
   const ROLE_IDS=Object.freeze(['worker','melee','ranged']);
   const DEFINITIONS=Object.freeze({
     witch:Object.freeze({
-      worker:Object.freeze({name:'Ouvrière',icon:'🧹',cost:75,health:70,speed:3.35,damage:0,range:0,sight:0,garment:0x46b965}),
-      melee:Object.freeze({name:'Garde',icon:'⚔️',cost:120,health:85,speed:3.3,damage:17,range:1.65,sight:7.5,garment:0xee8a32}),
-      ranged:Object.freeze({name:'Arcaniste',icon:'✨',cost:150,health:65,speed:3.05,damage:12,range:6.2,sight:9,garment:0xf3f3ed})
+      worker:Object.freeze({name:'Ouvrière',icon:'🧹',cost:75,health:70,speed:3.35,damage:0,range:0,sight:0}),
+      melee:Object.freeze({name:'Garde',icon:'⚔️',cost:120,health:85,speed:3.3,damage:17,range:1.65,sight:7.5}),
+      ranged:Object.freeze({name:'Arcaniste',icon:'✨',cost:150,health:65,speed:3.05,damage:12,range:6.2,sight:9})
     }),
     orc:Object.freeze({
       worker:Object.freeze({name:'Ouvrier',icon:'⛏️',cost:65,health:80,speed:2.9,damage:0,range:0,sight:0,garment:0x978251}),

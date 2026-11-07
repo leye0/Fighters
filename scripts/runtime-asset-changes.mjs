@@ -19,6 +19,7 @@ const buildInputs=new Set([
   'scripts/build-runtime-characters.mjs',
   'scripts/download-costumes.sh',
   'scripts/pack-hair-long.mjs',
+  'scripts/pack-female-ranger.mjs',
   'scripts/download-sword.sh',
   'scripts/decompress-sword.mjs'
 ]);
