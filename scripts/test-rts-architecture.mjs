@@ -12,6 +12,9 @@ const game=read('app/game.js');
 const qaWorkflow=read('.github/workflows/browser-qa.yml');
 const pagesWorkflow=read('.github/workflows/pages.yml');
 const retryWorkflow=read('.github/workflows/chrome-retry.yml');
+const restoreAssets=read('scripts/use-pinned-runtime-assets.sh');
+const prepareAssets=read('scripts/prepare-runtime-assets.sh');
+const publishAssets=read('scripts/publish-runtime-assets.sh');
 const architecture=read('docs/architecture.md');
 const agentGuide=read('AGENTS.md');
 
@@ -98,6 +101,15 @@ assert(qaWorkflow.includes('python3 -m http.server 8000 --directory app'),
   'Real-browser QA must serve the same app/ directory as Pages');
 assert(qaWorkflow.includes('path: app'),
   'Chrome jobs must restore generated assets into app/');
+assert(restoreAssets.includes('unzip -oq "$local_archive" -d app')&&
+  restoreAssets.includes('test -s app/vendor/three/three.module.js'),
+  'Pinned assets must be extracted and verified in app/');
+assert(prepareAssets.includes('mkdir -p app/models')&&
+  prepareAssets.includes('mkdir -p app/vendor/three'),
+  'Exceptional source builds must write into app/');
+assert(publishAssets.includes('(cd app && zip -q -r')&&
+  publishAssets.includes('test -s app/models/witch_house.glb'),
+  'Verified archives must be assembled from app/');
 assert(qaWorkflow.includes('scripts/use-pinned-runtime-assets.sh'),
   'Chrome tests must reuse the immutable prepared runtime assets');
 assert(pagesWorkflow.includes('scripts/use-pinned-runtime-assets.sh'),
