@@ -75,7 +75,7 @@ def retune(directory: Path) -> int:
                 source = Path(temp) / "original" / sound["path"]
                 source.parent.mkdir(parents=True, exist_ok=True)
                 original = subprocess.run([
-                    "git", "show", f"{UNPROCESSED_SOURCE_REVISION}:docs/sounds/orcs/{sound['path']}"
+                    "git", "show", f"{UNPROCESSED_SOURCE_REVISION}:app/sounds/orcs/{sound['path']}"
                 ], check=True, capture_output=True).stdout
                 if len(original) < 2000:
                     raise RuntimeError(f"Original Orc recording invalid: {sound['path']}")
@@ -111,6 +111,6 @@ def retune(directory: Path) -> int:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--directory", type=Path, default=Path("docs/sounds/orcs"))
+    parser.add_argument("--directory", type=Path, default=Path("app/sounds/orcs"))
     arguments = parser.parse_args()
     retune(arguments.directory)

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const raid=require('../docs/rts-raiding.js');
+const raid=require('../app/rts-raiding.js');
 
 const actor={kind:'witch',root:{position:{x:12,z:10}},attackOrder:null,
  unreachableTarget:null,unreachableTime:0};
@@ -54,9 +54,9 @@ assert(!actor.raiding&&!actor.retaliationTarget,
 assert(!raid.attacked(actor,attacker,enemy),
  'A unit outside a raid must keep its normal defense rules');
 
-const html=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8')+'\n'+
-  readFileSync(new URL('../docs/rts-unit-tick.js',import.meta.url),'utf8');
-const entry=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const html=readFileSync(new URL('../app/game.js',import.meta.url),'utf8')+'\n'+
+  readFileSync(new URL('../app/rts-unit-tick.js',import.meta.url),'utf8');
+const entry=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 assert(entry.includes('src="./rts-raiding.js"')&&
   entry.indexOf('src="./rts-raiding.js"')<entry.indexOf('src="./game.js"'),
   'Load raid AI before the game engine');

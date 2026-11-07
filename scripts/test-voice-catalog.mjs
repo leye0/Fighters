@@ -8,7 +8,7 @@ const expected={
 };
 const supported={creation:5,interaction:4,attack:4};
 for(const [faction,voices] of Object.entries(expected)){
-  const dir=join('docs','sounds',faction);
+  const dir=join('app','sounds',faction);
   const manifest=JSON.parse(readFileSync(join(dir,'manifest.json'),'utf8'));
   const utterances=manifest.sounds.filter(s=>Object.hasOwn(supported,s.category));
   assert.equal(utterances.length,52,`${faction}: 52 distinct role/event lines expected`);

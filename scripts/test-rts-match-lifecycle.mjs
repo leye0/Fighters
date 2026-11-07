@@ -3,10 +3,10 @@ import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 
 const require=createRequire(import.meta.url);
-const {create:createWorld}=require('../docs/rts-world-state.js');
-const {create:createResources}=require('../docs/rts-match-state.js');
-const {create:createSession}=require('../docs/rts-session-state.js');
-const {create:createInteraction}=require('../docs/rts-player-interaction.js');
+const {create:createWorld}=require('../app/rts-world-state.js');
+const {create:createResources}=require('../app/rts-match-state.js');
+const {create:createSession}=require('../app/rts-session-state.js');
+const {create:createInteraction}=require('../app/rts-player-interaction.js');
 
 const world=createWorld(),resources=createResources({gold:{witch:2000,orc:900},
   wood:{witch:250,orc:350},magic:{witch:0,orc:0}});
@@ -132,7 +132,7 @@ for(const [index,faction] of ['witch','orc','witch'].entries()){
 
 // Regression guard against casually replacing a stable registry or changing
 // the disposal-before-drop order in the actual Three.js composition root.
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 const start=game.slice(game.indexOf('function startSession(){'),
   game.indexOf('function unitFaction(',game.indexOf('function startSession(){')));
 const boundaries=[

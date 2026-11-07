@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import cycle from '../docs/rts-spell-cycle.js';
-import dome from '../docs/rts-witch-dome.js';
-import fire from '../docs/rts-fire-rain.js';
+import cycle from '../app/rts-spell-cycle.js';
+import dome from '../app/rts-witch-dome.js';
+import fire from '../app/rts-fire-rain.js';
 
 const unit=(kind,role,x,z,health=100)=>({kind,role,health,maxHealth:health,
   dead:false,root:{position:{x,z}}});
@@ -106,8 +106,8 @@ const fresh={witch:0,orc:0};magic=fresh;
 defense.step(cycle.DEFENSE_INTERVAL);
 assert.deepEqual(casts,[],'the spell service reads fresh match resources after reset');
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
-const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 assert(html.includes('rts-spell-cycle.js'));
 assert(game.includes('spellCycle.createDefense('));
 assert(game.includes('spellCycle.advanceDome('));

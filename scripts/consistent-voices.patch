@@ -1,7 +1,7 @@
-diff --git a/docs/index.html b/docs/index.html
+diff --git a/app/index.html b/app/index.html
 index 02c52bf..7a1e59c 100644
---- a/docs/index.html
-+++ b/docs/index.html
+--- a/app/index.html
++++ b/app/index.html
 @@ -481,7 +481,7 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
  <script src="./rts-roles.js"></script>
  <script src="./orc-appearance.js"></script>
@@ -72,10 +72,10 @@ index 02c52bf..7a1e59c 100644
    const voiceLineIndex=1+Math.floor(Math.random()*4);
    const outfitInfo=costumeLayers(visual,kind,index,role,appearance);
    const bounds=new THREE.Box3().setFromObject(visual);
-diff --git a/docs/rts-sound.js b/docs/rts-sound.js
+diff --git a/app/rts-sound.js b/app/rts-sound.js
 index f247f6d..7f4a776 100644
---- a/docs/rts-sound.js
-+++ b/docs/rts-sound.js
+--- a/app/rts-sound.js
++++ b/app/rts-sound.js
 @@ -26,6 +26,7 @@
    class Engine{
      constructor({fetcher,contextFactory,random,now,
@@ -290,7 +290,7 @@ index affe647..145b168 100644
 +++ b/scripts/test-voice-catalog.mjs
 @@ -10,8 +10,8 @@ const supported={creation:5,interaction:4,attack:4};
  for(const [faction,voices] of Object.entries(expected)){
-   const dir=join('docs','sounds',faction);
+   const dir=join('app','sounds',faction);
    const manifest=JSON.parse(readFileSync(join(dir,'manifest.json'),'utf8'));
 -  const utterances=manifest.sounds.filter(s=>s.model==='qwen/qwen3-tts');
 -  assert.equal(utterances.length,52,`${faction}: 52 new lines expected`);

@@ -3,7 +3,7 @@ import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 import {gzipSync} from 'node:zlib';
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-assets.js');
+const {create}=require('../app/rts-assets.js');
 const model=Buffer.alloc(36);
 model.write('glTF',0,'ascii');
 model.writeUInt32LE(2,4);
@@ -45,8 +45,8 @@ const failed=create({loadingProfile:{characters:{}},
 await assert.rejects(failed.getBinary('human_male.rts.glb'),/Modèle RTS indisponible/);
 await assert.rejects(failed.fetchAsset('https://asset.test/404'),/HTTP 404/);
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
-const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 assert(game.includes('window.FightersAssets.create({loadingProfile})'));
 assert(html.includes('src="./rts-assets.js"')&&
   html.indexOf('src="./rts-assets.js"')<html.indexOf('src="./game.js"'));

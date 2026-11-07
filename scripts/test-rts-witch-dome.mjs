@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
-import dome from '../docs/rts-witch-dome.js';
+import dome from '../app/rts-witch-dome.js';
 
 const house={type:'witch-house',clanId:'witch',level:3,destroyed:false};
 assert.equal(dome.COST,100);
@@ -22,9 +22,9 @@ assert.equal(dome.radiusAt(dome.DURATION),dome.RADIUS);
 assert.equal(dome.inRange({x:10,z:10},{x:30,z:10},dome.RADIUS),true);
 assert.equal(dome.inRange({x:10,z:10},{x:31,z:10},dome.RADIUS),false);
 assert.equal(dome.inRange({x:10,z:10},{x:10,z:10},-1),false);
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 assert(game.includes('domeRules.canCast('));
 assert(game.includes('dealDamage(actor,actor.health,null)'));
 assert(game.includes("effects.play('dome'"));
-assert(existsSync(new URL('../docs/sounds/effects/dome/wiccans-chorus.mp3',import.meta.url)));
+assert(existsSync(new URL('../app/sounds/effects/dome/wiccans-chorus.mp3',import.meta.url)));
 console.log('PASS level 3 witch dome: 100 magic, 20-unit radius, combat and audio wiring');

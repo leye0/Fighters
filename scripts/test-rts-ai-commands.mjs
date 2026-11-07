@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-ai-commands.js');
+const {create}=require('../app/rts-ai-commands.js');
 
 const events=[],home={id:'witch-home',destroyed:false};
 const buildings=new Map([['barrack',{id:'barrack',destroyed:false}],
@@ -77,8 +77,8 @@ commands.witch([{type:'defend',x:0,z:0}],
 assert.equal(defender.attackOrder,orc);
 assert.equal(defender.defenseTime,24);
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
-const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 assert(game.includes('window.FightersAiCommands.create('));
 assert(game.includes('aiCommands.orc(actions,{aliveOrcs,enemyBaseKnown})'));
 assert(game.includes('aiCommands.witch(actions,{aliveWitches,buildings,enemyTarget})'));

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-camera.js');
+const {create}=require('../app/rts-camera.js');
 
 const look={x:0,y:0,z:0,set(x,y,z){this.x=x;this.y=y;this.z=z;return this;}};
 const camera={left:0,right:0,top:0,bottom:0,
@@ -44,8 +44,8 @@ assert.equal(camera.top,8*(1-.42),'mobile bottom HUD changes vertical framing');
 assert.equal(camera.bottom,-8*(1+.42));
 assert.equal(camera.updates,2);
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
-const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 assert(game.includes('window.FightersCamera.create('));
 assert(game.includes('cameraControls.pan(cameraFollow,dx,dy)'));
 assert(game.includes('cameraControls.resize()'));

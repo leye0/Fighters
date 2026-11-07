@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-healing-cycle.js');
-const stoneHealing=require('../docs/rts-healing.js');
+const {create}=require('../app/rts-healing-cycle.js');
+const stoneHealing=require('../app/rts-healing.js');
 
 const actor=(id,x,z,health=50)=>({id,kind:'witch',dead:false,health,maxHealth:100,
   healRetry:0,root:{position:{x,z}},route:{},approachCache:{}});
@@ -77,7 +77,7 @@ retreating.attackOrder={};
 assert.equal(healing.tickRetreat(retreating,.1),false);
 assert.equal(retreating.healJob,null,'Combat orders interrupt healing immediately');
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 assert(game.includes('window.FightersHealingCycle.create('));
 assert(game.includes('return healingCycle.step(dt)'));
 assert(game.includes('return healingCycle.tickRetreat(actor,dt)'));

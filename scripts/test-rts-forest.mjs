@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
 const require = createRequire(import.meta.url);
-const forest = require('../docs/rts-forest.js');
-const { Navigator } = require('../docs/rts-navigation.js');
+const forest = require('../app/rts-forest.js');
+const { Navigator } = require('../app/rts-navigation.js');
 
 const layout = forest.createLayout();
 assert.deepEqual(layout,forest.createLayout(),'forest must stay deterministic across resets');
@@ -41,7 +41,7 @@ layout[0].felled=false;
 assert.equal(forest.obstacles(layout).length,55,'Reset must restore the trunk');
 assert.ok(layout.every(tree=>Math.hypot(tree.x-8,tree.z+10)>=5),
   'Forest must preserve the standard orc construction site');
-const assets=path.join(path.dirname(fileURLToPath(import.meta.url)),'../docs/models/forest');
+const assets=path.join(path.dirname(fileURLToPath(import.meta.url)),'../app/models/forest');
 let assetBytes=0;
 for(const kind of forest.TYPES){
   const buffer=fs.readFileSync(path.join(assets,kind+'.glb'));

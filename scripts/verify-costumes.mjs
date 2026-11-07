@@ -3,7 +3,7 @@
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
-const dir='docs/models/';
+const dir='app/models/';
 function glb(file){
   const data=readFileSync(dir+file);
   assert.equal(data.toString('ascii',0,4),'glTF',file+' magic');

@@ -3,8 +3,8 @@
 import {createRequire} from 'node:module';
 import assert from 'node:assert/strict';
 const require=createRequire(import.meta.url);
-const {Navigator,segmentHitsBox}=require('../docs/rts-navigation.js');
-const forest=require('../docs/rts-forest.js');
+const {Navigator,segmentHitsBox}=require('../app/rts-navigation.js');
+const forest=require('../app/rts-forest.js');
 
 const nav=new Navigator({halfSize:28,cellSize:1,radius:.36});
 const house={id:'witch-house',minX:-3,maxX:3,minZ:-3,maxZ:3};

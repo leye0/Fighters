@@ -17,17 +17,17 @@ for(const source of [
 ]) assert(isRuntimeAssetBuildInput(source),`${source} must request a new archive`);
 
 for(const ordinary of [
-  'docs/game.js',
-  'docs/rts-visibility-cycle.js',
-  'docs/models/forest/oak.glb',
-  'docs/sounds/effects/attack.mp3',
+  'app/game.js',
+  'app/rts-visibility-cycle.js',
+  'app/models/forest/oak.glb',
+  'app/sounds/effects/attack.mp3',
   'assets/runtime-assets.lock',
   '.github/workflows/browser-qa.yml',
   'scripts/runtime-asset-changes.mjs',
   'refactor.md'
 ]) assert(!isRuntimeAssetBuildInput(ordinary),`${ordinary} must reuse the pinned archive`);
 
-assert(changedPathsRequireRebuild(['docs/game.js','scripts/download-sword.sh']));
-assert(!changedPathsRequireRebuild(['docs/game.js','assets/runtime-assets.lock']));
+assert(changedPathsRequireRebuild(['app/game.js','scripts/download-sword.sh']));
+assert(!changedPathsRequireRebuild(['app/game.js','assets/runtime-assets.lock']));
 assert(!changedPathsRequireRebuild([]));
 console.log('PASS exceptional source changes rebuild; ordinary QA and Pages reuse the pinned archive.');

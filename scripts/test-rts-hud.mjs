@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-hud.js');
+const {create}=require('../app/rts-hud.js');
 
 function element(tag='div'){
   return {tag,children:[],style:{},textContent:'',title:'',disabled:false,
@@ -53,8 +53,8 @@ assert.equal(health.children[1].className,'hp-track');
 assert.equal(health.children[1].children[0].className,'hp-fill');
 assert.equal(health.children[1].children[0].style.width,'50%');
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
-const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 assert(game.includes('window.FightersHud.create('));
 assert(game.includes('hudRenderer.commandButton(buttons,...args)'));
 assert(html.includes('src="./rts-hud.js"'));

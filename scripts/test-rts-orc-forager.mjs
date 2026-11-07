@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-orc-forager.js');
-const rules=require('../docs/rts-orc-food.js');
+const {create}=require('../app/rts-orc-forager.js');
+const rules=require('../app/rts-orc-food.js');
 
 const hareField=new rules.Hares({count:1,walkable:()=>true});
 Object.assign(hareField.hares[0],{x:3,z:0,active:true,caughtBy:null});
@@ -92,7 +92,7 @@ danger=true;
 actor.orcFoodJob={kind:'corpse',id:witch.id,progress:0};
 assert.equal(service.tick(actor,.1),false,'Danger cancels a scavenging job');
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 assert(game.includes('window.FightersOrcForager.create('));
 assert(game.includes('return orcForager.cancel(actor)'));
 assert(game.includes('return orcForager.tick(actor,dt)'));

@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-const forest=require('../docs/rts-forest.js');
-const berry=require('../docs/rts-berries.js');
-const farming=require('../docs/rts-farming.js');
+const forest=require('../app/rts-forest.js');
+const berry=require('../app/rts-berries.js');
+const farming=require('../app/rts-farming.js');
 const trees=forest.createLayout();
 const layout=berry.createLayout(trees);
 assert.deepEqual(layout,berry.createLayout(trees),'Wild berry distribution must be reproducible');

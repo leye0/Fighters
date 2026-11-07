@@ -3,142 +3,145 @@
 Lire `refactor.md` avant une modification d'architecture. Les fonctionnalités
 et le rendu actuels sont des contraintes de non-régression.
 Lire également `docs/architecture.md` pour les frontières et contrats de
-modules (`docs/rts-contracts.d.ts`).
+modules (`app/rts-contracts.d.ts`).
+Le code exécutable, les ressources et les styles résident sous `app/` ;
+`docs/` est réservé à la documentation. La racine publiée par Pages et servie
+par la QA Chrome est `app/`. Préserver cet alignement lors de tout ajout.
 
 ## Périmètres
 
-- `docs/index.html` : HTML, DOM, import map et démarrage. Ne pas y réintroduire
+- `app/index.html` : HTML, DOM, import map et démarrage. Ne pas y réintroduire
   du JavaScript de jeu inline.
-- `docs/game.js` : script d'intégration historique (déplacé à l'identique depuis
+- `app/game.js` : script d'intégration historique (déplacé à l'identique depuis
   l'ancien HTML), à décomposer progressivement par périmètre. Les tests de
   câblage métier inspectent ce fichier, les tests de menu inspectent le HTML.
-- `docs/rts-*.js`, `docs/orc-strategy.js`, `docs/witch-strategy.js` : règles de
+- `app/rts-*.js`, `app/orc-strategy.js`, `app/witch-strategy.js` : règles de
   domaine ; privilégier des fonctions pures, déterministes et testables sous Node.
-- `docs/rts-simulation.js` : ordonnanceur déterministe à 60 Hz et budget de
-  rattrapage ; les phases nommées sont assemblées dans `docs/game.js`.
+- `app/rts-simulation.js` : ordonnanceur déterministe à 60 Hz et budget de
+  rattrapage ; les phases nommées sont assemblées dans `app/game.js`.
   Préserver leur ordre exact et ne pas allouer d'objets à chaque tick.
-- `docs/rts-session-state.js` : propriétaire stable des scalaires de session
+- `app/rts-session-state.js` : propriétaire stable des scalaires de session
   (faction, statut, identifiants, cycles, statistiques minières, événements
   et cadences IA/sorts/brouillard) ; ses remises à zéro nommées sont appelées
   aux points historiques du reset, après les nettoyages visuels concernés.
   Les modes de clic et les sélections hors unités sont dans
   `rts-player-interaction.js` (lot E2). `beginMatch`/`endMatch` pilotent
   explicitement le démarrage et l'arrêt de la simulation (lot E3).
-- `docs/rts-spell-cycle.js` : décisions de simulation des deux sorts de zone
+- `app/rts-spell-cycle.js` : décisions de simulation des deux sorts de zone
   (rayon, fenêtre de dégâts, sélection des ennemis vivants), cadence de 1,5 s
   et priorité des sorts défensifs IA (huttes orcs avant maison sorcière).
   Il lit la magie courante via une fonction, sans Three.js, DOM ni allocation
   par tick ; `game.js` conserve les animations GPU, sons et morts réelles.
-- `docs/rts-actor-navigation.js` : sélection et partage de positions autour
+- `app/rts-actor-navigation.js` : sélection et partage de positions autour
   des bâtiments, caches des recherches impossibles, replanification A*,
   simplification des chemins, seuils d'arrivée et reprises après blocage.
   `game.js` injecte les silhouettes, A*, physique de foule, orientation et
   animation ; préserver les rayons, délais et ordres d'appels historiques.
-- `docs/rts-damage-cycle.js` : dégâts et transitions santé/mort des unités,
+- `app/rts-damage-cycle.js` : dégâts et transitions santé/mort des unités,
   destruction des bâtiments, nettoyage des commandes et tâches, sélection,
   disparition et conditions de victoire. Les effets visuels, sons, suppression
   3D et HUD sont injectés ; l'ordre historique des callbacks est contractuel.
-- `docs/rts-village-defense.js` : contre-attaques locales, postes et rayons
+- `app/rts-village-defense.js` : contre-attaques locales, postes et rayons
   défensifs, retours au poste, alarmes de bâtiments et choix des réparateurs
   d'urgence. Brouillard, navigation, annulation des tâches et ordres sont
   injectés ; préserver priorités, limites et ordre des interruptions.
-- `docs/rts-visibility-cycle.js` : constitution des sources de vision
+- `app/rts-visibility-cycle.js` : constitution des sources de vision
   (unités, bâtiments, corbeaux), découverte persistante des bâtiments ennemis
   pour chaque clan, politique de visibilité des unités, structures, barres de
   santé et chantiers. `rts-fog.js` garde les grilles ; les mutations de meshes,
   le shader WebGL et le rendu de mini-carte restent dans leurs adaptateurs.
-- `docs/rts-match-state.js` : propriétaire des ressources or/bois/magie d'une partie,
+- `app/rts-match-state.js` : propriétaire des ressources or/bois/magie d'une partie,
   avec réinitialisation en valeurs neuves ; les autres systèmes ne gardent
   jamais leurs références après une nouvelle partie.
-- `docs/rts-world-state.js` : propriétaire des conteneurs stables d'unités,
+- `app/rts-world-state.js` : propriétaire des conteneurs stables d'unités,
   bâtiments, chantiers et souvenirs du brouillard ; la remise à zéro des
   éléments 3D reste dans `game.js` pour préserver l'ordre de destruction.
   Les méthodes `resetActors`, `resetConstruction`, `removeConstructedBuildings`
   et `resetVisibility` effacent les registres **après** libération des meshes,
   sans remplacer les références détenues par les services (lot E3).
-- `docs/rts-orc-forager.js` : exécution d'une chasse ou récupération de cadavre
+- `app/rts-orc-forager.js` : exécution d'une chasse ou récupération de cadavre
   par un orc, avec poursuite réelle, réservation de proie, animation et
   restitution à l'économie injectées ; `rts-orc-hunt-planner.js` choisit la proie.
-- `docs/rts-orc-hunt-planner.js` : attribution des chasses (cadavres prioritaires,
+- `app/rts-orc-hunt-planner.js` : attribution des chasses (cadavres prioritaires,
   lièvres, brouillard, limites de tâches, menaces, exploration) et cadencement
   de 800 ms ; `rts-orc-forager.js` exécute ensuite la chasse physique.
-- `docs/rts-food-cycle.js` : pas alimentaire des deux factions : apparition des
+- `app/rts-food-cycle.js` : pas alimentaire des deux factions : apparition des
   lièvres, consommation, répartition des ouvriers, maturation des cultures et
   famine (un seul avertissement par épisode). Les effets visuels, les dégâts
   fatals et les règles économiques restent injectés par `game.js`.
-- `docs/rts-raven-distraction.js` : automate de diversion des combattants orcs
+- `app/rts-raven-distraction.js` : automate de diversion des combattants orcs
   par les corbeaux ; seuls les oiseaux effectivement visibles sont poursuivis,
   aucune attaque ni dégât n'est dirigé vers un corbeau. Navigation et animations
   restent injectées par l'adaptateur de simulation.
-- `docs/rts-healing-cycle.js` : soins automatiques et retraite vers les cercles
+- `app/rts-healing-cycle.js` : soins automatiques et retraite vers les cercles
   de pierres, avec cadence de 850 ms et magie partagée, réellement débitée à
   chaque restauration. Les ressources neuves après reset sont lues/écrites via
   les fonctions injectées, sans référence périmée à une ancienne partie.
-- `docs/rts-soul-harvester.js` : sélection et réservation de cadavres visibles
+- `app/rts-soul-harvester.js` : sélection et réservation de cadavres visibles
   par les mages, cadence de 650 ms, poursuite, annulation et attente de la pose
   réelle `Death01`. L'effet 3D d'âme est créé séparément dans `game.js`.
-- `docs/rts-mining-cycle.js` : attribution automatique des mineurs, extraction
+- `app/rts-mining-cycle.js` : attribution automatique des mineurs, extraction
   au contact et retour physique de l'or à une base alliée. Le trésor (réinitialisé
   à chaque partie), le chargement 3D et les alertes sont injectés par `game.js`.
-- `docs/rts-wood-cycle.js` : attribution des bûcherons, choix des arbres visibles,
+- `app/rts-wood-cycle.js` : attribution des bûcherons, choix des arbres visibles,
   coupe, réservation des bûches, ramassage et livraison du bois. Le module
   restitue les bûches à l'annulation d'un trajet chargé ; les modèles 3D,
   messages et ressources courantes sont adaptés par `game.js`.
-- `docs/rts-garden-worker-cycle.js` : attribution cadencée des jardinières,
+- `app/rts-garden-worker-cycle.js` : attribution cadencée des jardinières,
   réservation des rangs mûrs, récolte, transport physique du blé et livraison
   à une maison ; les animations, visuels et effets restent injectés par `game.js`.
-- `docs/rts-berry-forager-cycle.js` : attribution automatique de deux cueilleuses
+- `app/rts-berry-forager-cycle.js` : attribution automatique de deux cueilleuses
   au maximum, vigilance des combattantes, navigation et consommation sur place ;
   l'économie des buissons et leur rendu restent injectés par `game.js`.
-- `docs/rts-construction-worker-cycle.js` : trajet vers le chantier, animations,
+- `app/rts-construction-worker-cycle.js` : trajet vers le chantier, animations,
   durée d'ouvrage, annulation et remboursement, achèvement et paiement
   conditionnel ; les aperçus et réalisations 3D restent injectés par `game.js`.
-- `docs/rts-building-placement.js` : politique de construction indépendante du
+- `app/rts-building-placement.js` : politique de construction indépendante du
   rendu (coûts, ouvriers, géométrie, distances, remparts et sortie du village).
   Les silhouettes, arbres, ressources et chemins actuels sont injectés depuis
   `game.js` à chaque demande ; ne pas mémoriser un ancien état de partie.
-- `docs/rts-repair.js` : validation des réparations et automate des ouvriers
+- `app/rts-repair.js` : validation des réparations et automate des ouvriers
   réparateurs (approche, blocage, cadence et progression jusqu'aux PV maximum).
   Navigation, animation, son et affichage restent injectés par `game.js`.
-- `docs/rts-unit-tick.js` : état et priorités des unités à chaque tick
+- `app/rts-unit-tick.js` : état et priorités des unités à chaque tick
   (attaque, cible, poursuite, tâches, déplacement), avec services de navigation,
   combat, animation et IA injectés une seule fois par `game.js`.
-- `docs/rts-orders.js` : transitions de commandes d'unités (déplacement,
+- `app/rts-orders.js` : transitions de commandes d'unités (déplacement,
   attaque, arrêt, réparations, mines, bois, coupes, récoltes, constructions, entraînement,
   améliorations, remboursements et progression des files de production), ainsi
   que la finalisation des entraînements et des niveaux de bâtiment (apparition,
   ralliement, PV et ordre des callbacks injectés), sans UI ni Three.js ;
-  `docs/game.js` adapte les événements et services sans recopier les mutations.
-- `docs/rts-picking.js` : sélection des silhouettes en coordonnées écran,
+  `app/game.js` adapte les événements et services sans recopier les mutations.
+- `app/rts-picking.js` : sélection des silhouettes en coordonnées écran,
   corbeaux, arbres, bois et emprises de bâtiments ; dépendances injectées
-  pour les tests sans navigateur, `docs/game.js` adapte Three.js et l'état.
-- `docs/rts-camera.js` : cadrage orthographique et panoramique avec dépendances
-  injectées ; les événements pointeur restent dans `docs/game.js`.
-- `docs/rts-gestures.js` : automate des gestes tactiles et souris (tap, pan,
+  pour les tests sans navigateur, `app/game.js` adapte Three.js et l'état.
+- `app/rts-camera.js` : cadrage orthographique et panoramique avec dépendances
+  injectées ; les événements pointeur restent dans `app/game.js`.
+- `app/rts-gestures.js` : automate des gestes tactiles et souris (tap, pan,
   boîte à deux doigts, boîte desktop), sans état du moteur ; les callbacks
-  de commandes et le viewport sont injectés par `docs/game.js`.
-- `docs/rts-player-interaction.js` : propriétaire privé des modes de construction,
+  de commandes et le viewport sont injectés par `app/game.js`.
+- `app/rts-player-interaction.js` : propriétaire privé des modes de construction,
   attaque, corbeau et ralliement, onglets de construction et sélections
   bâtiment/corbeau. Transitions nommées depuis HUD, clavier et commandes ;
   la réparation reste un ordre direct, sans mode persistant. Aucun DOM ni Three.js.
-- `docs/rts-player-actions.js` : priorité des cibles et modes d'interaction
+- `app/rts-player-actions.js` : priorité des cibles et modes d'interaction
   après un tap, sélection de groupe par rectangle ; dépend seulement d'un
   état courant et de services injectés, sans moteur graphique.
-- `docs/rts-minimap.js` : dessin Canvas 2D de la mini-carte, brouillard du sol,
-  bâtiments et points d'unités ; `docs/game.js` conserve les événements d'entrée.
-- `docs/rts-hud.js` : fabrication des boutons, textes de ressources et barres
+- `app/rts-minimap.js` : dessin Canvas 2D de la mini-carte, brouillard du sol,
+  bâtiments et points d'unités ; `app/game.js` conserve les événements d'entrée.
+- `app/rts-hud.js` : fabrication des boutons, textes de ressources et barres
   de vie du HUD ; les décisions sur les commandes disponibles restent dans
-  `docs/game.js`, sans duplication du DOM dans les systèmes de gameplay.
-- `docs/rts-ai-commands.js` : exécution des intentions des deux IA (construction,
+  `app/game.js`, sans duplication du DOM dans les systèmes de gameplay.
+- `app/rts-ai-commands.js` : exécution des intentions des deux IA (construction,
   entraînement, reconnaissance, attaques, défense) ; les directeurs `*-strategy.js`
   choisissent les intentions et ne manipulent pas directement les objets 3D.
-- `docs/rts-ai-observations.js` : constitution des observations remises aux deux
+- `app/rts-ai-observations.js` : constitution des observations remises aux deux
   directeurs, avec filtrage par le brouillard de guerre ; conserver les champs,
   les règles de visibilité et le moment de lecture des compteurs.
-- `docs/rts-assets.js` : transfert binaire avec gzip, fallback et métriques ;
+- `app/rts-assets.js` : transfert binaire avec gzip, fallback et métriques ;
   aucune logique Three.js, scène ni DOM. Le parsing des GLB appartient
   maintenant à `rts-model-assets.js` et leur installation visuelle à `game.js`.
-- `docs/rts-model-assets.js` : création du décodeur GLTF/Meshopt, parsing des
+- `app/rts-model-assets.js` : création du décodeur GLTF/Meshopt, parsing des
   GLB et cache explicite des niveaux orcs ; les scènes 3D restent construites
   dans `game.js`. Les modèles non partagés ne sont jamais mis en cache.
 - `scripts/test-rts-model-assets.mjs` : assure l'initialisation Meshopt avant
@@ -172,7 +175,7 @@ modules (`docs/rts-contracts.d.ts`).
   Les workflows à génération ou réparation ponctuelle sont lancés manuellement
   via `workflow_dispatch`, pas à chaque modification de leur propre YAML :
   éviter des générations audio coûteuses non demandées.
-- `docs/styles/` : présentation CSS ; ne doit pas modifier les règles du jeu.
+- `app/styles/` : présentation CSS ; ne doit pas modifier les règles du jeu.
 - `scripts/test-*.mjs` : tests unitaires ; ajouter un test au système modifié.
 - `scripts/test-rts-architecture.mjs` : garde-fou des frontières de modules,
   includes HTML, ownership, déclencheurs QA et restauration d'assets épinglés.
@@ -188,7 +191,7 @@ modules (`docs/rts-contracts.d.ts`).
   rôles, menaces, interruptions, chemin bloqué et paiement alimentaire.
 - `scripts/test-rts-construction-worker-cycle.mjs` : contact des chantiers,
   délais, sons, annulations, remboursements et finitions par type de bâtiment.
-- `docs/rts-contracts.d.ts`, `scripts/contracts-smoke.ts` : contrats progressifs
+- `app/rts-contracts.d.ts`, `scripts/contracts-smoke.ts` : contrats progressifs
   compilés en mode strict dans `contracts.yml`, déclenché uniquement si
   les déclarations ou ce workflow changent. Pas de TypeScript au runtime.
 - `scripts/browser-qa.mjs` : orchestration des scénarios Chrome/WebGL.

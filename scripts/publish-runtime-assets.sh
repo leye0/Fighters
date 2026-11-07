@@ -10,10 +10,10 @@ if [[ ! "$version" =~ ^v[0-9]+$ ]]; then
 fi
 tag="fighters-runtime-assets-${version}"
 archive="${tag}.zip"
-test -s docs/models/witch_house.glb
-test -s docs/models/orc-buildings/manifest.json
-test -s docs/models/human_male.rts.glb.gz
-test -s docs/vendor/three/three.module.js
+test -s app/models/witch_house.glb
+test -s app/models/orc-buildings/manifest.json
+test -s app/models/human_male.rts.glb.gz
+test -s app/vendor/three/three.module.js
 
 current_tag="$(sed -n 's/^tag=//p' assets/runtime-assets.lock)"
 if [[ "$current_tag" =~ ^fighters-runtime-assets-v([0-9]+)$ ]] &&
@@ -34,7 +34,7 @@ if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
   exit 1
 fi
 
-(cd docs && zip -q -r "../${archive}" models vendor)
+(cd app && zip -q -r "../${archive}" models vendor)
 unzip -tq "$archive"
 sha="$(sha256sum "$archive" | cut -d' ' -f1)"
 gh release create "$tag" "$archive" \

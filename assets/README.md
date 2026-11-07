@@ -4,7 +4,7 @@ L'ajout de ressources n'exige **pas** de retélécharger et de convertir tous le
 modèles à chaque déploiement. Deux catégories existent :
 
 1. **Fichiers légers, directement utilisés** : ajouter le modèle ou le son sous
-   `docs/models/` ou `docs/sounds/`, avec son attribution et le code qui le charge.
+   `app/models/` ou `app/sounds/`, avec son attribution et le code qui le charge.
    GitHub Pages et la QA incluent déjà ces dossiers. Éviter d'utiliser un nom
    écrasé par le paquet généré.
 2. **Fichiers volumineux ou à transformer** (compression, découpage,

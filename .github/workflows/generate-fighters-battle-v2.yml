@@ -34,7 +34,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: fighters-constant-action-battle-candidates
-          path: docs/music/battle-v2-candidates/
+          path: app/music/battle-v2-candidates/
           retention-days: 30
           if-no-files-found: warn
       - name: Commit independent loop-ready candidates in review branch
@@ -42,7 +42,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/music/battle-v2-candidates/*-loop.mp3 docs/music/battle-v2-candidates/generation.json
+          git add app/music/battle-v2-candidates/*-loop.mp3 app/music/battle-v2-candidates/generation.json
           if ! git diff --cached --quiet; then
             git commit -m "Generate continuous fantasy battle alternatives"
             if [ "${GITHUB_REF_NAME}" = main ]; then

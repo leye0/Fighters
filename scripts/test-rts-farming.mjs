@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-const farming=require('../docs/rts-farming.js');
+const farming=require('../app/rts-farming.js');
 const farm=new farming.Economy();
 assert.deepEqual(farming.SPECIES,['wheat']);
 assert.equal(farm.addGarden('a'),true);

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-orders.js');
+const {create}=require('../app/rts-orders.js');
 const calls=[];
 const navigation={
   pointClear:()=>true,segmentClear:()=>true,plan:()=>null
@@ -76,7 +76,7 @@ for(const unit of [a,b]){
 assert.deepEqual(calls.slice(-4),[['soul','a'],['stopWork','a'],
   ['soul','b'],['stopWork','b']],
   'stop invokes soul cleanup before the remaining worker cleanup');
-const html=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 assert(html.includes('window.FightersOrders.create('));
 assert(html.includes('unitOrders.move(actors,destination,{spacing,withinRadius})'));
 assert(html.includes('unitOrders.attack(actors,target)'));

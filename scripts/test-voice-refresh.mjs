@@ -8,7 +8,7 @@ const roleNames={
   orcs:['worker','warrior','shaman','brute']
 };
 for(const [faction,roles] of Object.entries(roleNames)){
-  const directory=join('docs','sounds',faction);
+  const directory=join('app','sounds',faction);
   const manifest=JSON.parse(readFileSync(join(directory,'manifest.json'),'utf8'));
   const generated=manifest.sounds.filter(s=>Object.hasOwn(phraseCounts,s.category));
   assert.equal(generated.length,52,`${faction}: exactly 52 spoken phrases`);

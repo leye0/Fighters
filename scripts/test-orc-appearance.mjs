@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import appearance from '../docs/orc-appearance.js';
+import appearance from '../app/orc-appearance.js';
 
 assert.equal(appearance.SKIN_COLORS.length,4);
 for(const color of appearance.SKIN_COLORS){

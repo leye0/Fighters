@@ -5,7 +5,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {NodeIO} from '@gltf-transform/core';
 
-const directory=process.argv[2]||'docs/models/orc-buildings';
+const directory=process.argv[2]||'app/models/orc-buildings';
 const manifest=JSON.parse(await fs.readFile(path.join(directory,'manifest.json'),'utf8'));
 assert.equal(manifest.buildings.length,15,'One building per type and level');
 const io=new NodeIO();

@@ -45,7 +45,7 @@ export interface BuildJob {
   byAI: boolean;
   progress: number;
   site: { id: string; hitbox: Hitbox };
-  preview?: unknown; // Rendering-only object, owned by docs/game.js.
+  preview?: unknown; // Rendering-only object, owned by app/game.js.
 }
 
 export interface Unit {

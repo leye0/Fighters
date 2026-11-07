@@ -3,8 +3,8 @@ import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-garden-worker-cycle.js');
-const {Economy,HARVEST_SECONDS,FOOD_PER_HARVEST}=require('../docs/rts-farming.js');
+const {create}=require('../app/rts-garden-worker-cycle.js');
+const {Economy,HARVEST_SECONDS,FOOD_PER_HARVEST}=require('../app/rts-farming.js');
 
 function fixture(){
   const farming=new Economy();
@@ -168,7 +168,7 @@ function fixture(){
   assert.equal(f.farming.food,45,'Cancel does not prematurely credit the harvest');
 }
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 assert(game.includes('window.FightersGardenWorkerCycle.create('));
 for(const adapter of [
   'gardenCycle.reset()','return gardenCycle.cancel(actor)',

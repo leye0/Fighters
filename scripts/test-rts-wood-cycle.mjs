@@ -3,7 +3,7 @@ import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-wood-cycle.js');
+const {create}=require('../app/rts-wood-cycle.js');
 const worker=(id,kind,x)=>({id,kind,role:'worker',dead:false,
   root:{position:{x,z:0}},route:{old:true}});
 const tree=(x,felled=false)=>({x,z:0,radius:.4,felled});
@@ -194,7 +194,7 @@ function fixture(){
     'The post-delivery reserve threshold suppresses further auto-gathering');
 }
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 assert(game.includes('window.FightersWoodCycle.create('));
 for(const adapter of ['cancelWoodJob(actor){return woodCycle.cancel(actor)',
   'return woodCycle.storeFor(actor)','return woodCycle.tickWood(actor,dt)',

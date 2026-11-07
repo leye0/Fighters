@@ -3,11 +3,11 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-const map=require('../docs/rts-map.js');
-const {Navigator}=require('../docs/rts-navigation.js');
-const forest=require('../docs/rts-forest.js');
-const berries=require('../docs/rts-berries.js');
-const {Hares}=require('../docs/rts-orc-food.js');
+const map=require('../app/rts-map.js');
+const {Navigator}=require('../app/rts-navigation.js');
+const forest=require('../app/rts-forest.js');
+const berries=require('../app/rts-berries.js');
+const {Hares}=require('../app/rts-orc-food.js');
 
 for(const [u,v] of [[0,0],[-28,-28],[28,-28],[28,28],[-28,28],[7,-11]]){
   const world=map.toWorld(u,v),back=map.toMap(world.x,world.z);

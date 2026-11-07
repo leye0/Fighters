@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const sim=require('../docs/rts-simulation.js');
+const sim=require('../app/rts-simulation.js');
 assert.equal(sim.FIXED_DT,1/60);
 assert.equal(sim.MAX_TICKS_PER_FRAME,12);
 const phases=[],steps=[];
@@ -32,12 +32,12 @@ leftover=sim.advanceFrame(0,100,()=>capped++);
 assert.equal(capped,12,'a stalled tab never schedules unbounded catch-up work');
 assert.equal(leftover,0,'overrun is discarded just as before');
 assert.throws(()=>sim.createStepper(()=>true,[['bad']]),/Invalid/);
-const html=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 assert(html.includes('window.FightersSimulation.createStepper('));
 assert(html.includes('window.FightersSimulation.advanceFrame('));
 assert(html.includes('if(qaMode)window.__fightersQA={'),
   'the QA-only control interface must not be installed for players');
-const entry=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const entry=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 assert(entry.includes('<script type="module" src="./game.js"></script>'));
 assert(!entry.includes('<script type="module">'),
   'the playable HTML must remain a small bootstrap without the game monolith');

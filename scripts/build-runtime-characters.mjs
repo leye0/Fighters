@@ -13,7 +13,7 @@ import {join} from 'node:path';
 import {gzipSync,gunzipSync} from 'node:zlib';
 import {createHash} from 'node:crypto';
 
-const dir=process.argv[2]||'docs/models';
+const dir=process.argv[2]||'app/models';
 const RUNTIME_CLIPS=['Idle_Loop','Walk_Loop','Jog_Fwd_Loop',
   'Punch_Jab','Hit_Chest','Death01','Sword_Idle','Sword_Attack',
   'Farm_Harvest','Farm_PlantSeed','TreeChopping_Loop'];

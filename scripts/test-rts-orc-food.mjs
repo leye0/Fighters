@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-const rules=require('../docs/rts-orc-food.js');
+const rules=require('../app/rts-orc-food.js');
 
 const buildings=[
   {type:'hut',clanId:'orcs',level:1,destroyed:false},

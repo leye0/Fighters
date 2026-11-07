@@ -4,8 +4,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-visibility-cycle.js');
-const {FogGrid}=require('../docs/rts-fog.js');
+const {create}=require('../app/rts-visibility-cycle.js');
+const {FogGrid}=require('../app/rts-fog.js');
 
 const unit=(kind,id,x,z,dead=false)=>({kind,id,dead,
   root:{position:{x,z},visible:false}});
@@ -221,8 +221,8 @@ function fixture(){
     ['preview:second:true']);
 }
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
-const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 assert(html.includes('src="./rts-visibility-cycle.js"'));
 assert(game.includes('window.FightersVisibilityCycle.create({'));
 for(const method of ['buildingInDiscoveredZone(building,clan)',

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const {createWorkerOrders}=require('../docs/rts-orders.js');
+const {createWorkerOrders}=require('../app/rts-orders.js');
 
 const events=[];
 const cancel=(name,property)=>actor=>{
@@ -73,7 +73,7 @@ assert.deepEqual(farmer.farmJob,
   {gardenId:'garden',plotIndex:-1,progress:0,phase:'harvest',amount:0});
 assert.equal(orders.harvest([farmer],{...garden,destroyed:true}),0);
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 assert(game.includes('window.FightersOrders.createWorkerOrders('));
 for(const action of ['repair','mine','collectWood','chop','harvest'])
   assert(game.includes('workerOrders.'+action+'('),'missing runtime adapter '+action);

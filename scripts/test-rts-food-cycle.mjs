@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-food-cycle.js');
+const {create}=require('../app/rts-food-cycle.js');
 
 const orc1={id:1,kind:'orc',dead:false,health:5,root:{position:{x:1,z:2}}};
 const orc2={id:2,kind:'orc',dead:false,health:1,root:{position:{x:3,z:4}}};
@@ -66,7 +66,7 @@ events.length=0;cycle.stepOrcs(.5);
 assert(events.some(e=>e[0]==='banner'),
   'A new match resets the Orc famine alert independently');
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 assert(game.includes('window.FightersFoodCycle.create('));
 assert(game.includes('return foodCycle.stepOrcs(dt)'));
 assert(game.includes('return foodCycle.stepWitches(dt)'));

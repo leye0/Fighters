@@ -4,9 +4,9 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-actor-navigation.js');
-const {Navigator}=require('../docs/rts-navigation.js');
-const physics=require('../docs/rts-unit-physics.js');
+const {create}=require('../app/rts-actor-navigation.js');
+const {Navigator}=require('../app/rts-navigation.js');
+const physics=require('../app/rts-unit-physics.js');
 
 function actor(x=0,z=0){
   const position={x,z,y:0,set(x,y,z){this.x=x;this.y=y;this.z=z;}};
@@ -239,8 +239,8 @@ function travel(){
 }
 assert.deepEqual(travel(),travel(),'Repeated A* and physics runs must reproduce every step');
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
-const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 assert(html.includes('rts-actor-navigation.js'));
 assert(game.includes('window.FightersActorNavigation.create({'));
 assert(game.includes('return actorNavigation.approachBuilding(actor,building)'));

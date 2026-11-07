@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-const {Flock,SCOUT_SIGHT}=require('../docs/rts-ravens.js');
-const {createLayout}=require('../docs/rts-forest.js');
-const {FogGrid}=require('../docs/rts-fog.js');
+const {Flock,SCOUT_SIGHT}=require('../app/rts-ravens.js');
+const {createLayout}=require('../app/rts-forest.js');
+const {FogGrid}=require('../app/rts-fog.js');
 
 const trees=createLayout(),flock=new Flock(trees);
 assert.equal(flock.ravens.length,2,'the Witch faction starts with two ravens');
@@ -64,9 +64,9 @@ assert.deepEqual(flock.ravens,initial,'reset must restore deterministic original
 
 // The GLB must be fetched from Polyfork itself: their license allows hotlinks
 // but forbids redistributing their files on a repository or our own CDN.
-const html=fs.readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const html=fs.readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 assert.ok(html.includes('https://polyfork.dev/cdn/crow-base.glb'));
-assert.ok(!fs.existsSync(new URL('../docs/models/crow.glb.gz',import.meta.url)));
+assert.ok(!fs.existsSync(new URL('../app/models/crow.glb.gz',import.meta.url)));
 console.log('PASS ravens: direct licensed CDN, tree perches, evasions, scouting and bounded fog');
 
 function distance(a,b){return Math.hypot(a.x-b.x,a.z-b.z);}

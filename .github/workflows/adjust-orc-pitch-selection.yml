@@ -39,7 +39,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/sounds/orcs
+          git add app/sounds/orcs
           git diff --cached --check
           git commit -m 'Lighten Orc pitch to 75 percent while preserving tempo'
           bash scripts/publish-generated-result.sh adjust-orc-pitch-selection

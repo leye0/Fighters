@@ -3,8 +3,8 @@ import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-player-interaction.js');
-const {create:createActions}=require('../docs/rts-player-actions.js');
+const {create}=require('../app/rts-player-interaction.js');
+const {create:createActions}=require('../app/rts-player-actions.js');
 
 const blank=()=>({buildMode:null,attackMode:false,rallyMode:false,
   ravenMoveMode:false,constructionTab:false,selectedBuilding:null,selectedRaven:null});
@@ -155,8 +155,8 @@ assert.equal(selected.has(friend),true);
 
 // The runtime adapter must preserve the state property names consumed by
 // player actions, gesture mode checks, and QA snapshots.
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
-const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 assert(game.includes('window.FightersPlayerInteraction.create()'));
 for(const name of ['buildMode','attackMode','rallyMode','ravenMoveMode',
   'constructionTab','selectedBuilding','selectedRaven']){

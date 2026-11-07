@@ -20,7 +20,7 @@ from generate_fighters_three_themes import (
 )
 
 
-DESTINATION = Path("docs/music/battle-v2-candidates")
+DESTINATION = Path("app/music/battle-v2-candidates")
 RAW_DIR = DESTINATION / "originals"
 COMMON = (
     "Original fully instrumental fantasy RTS battle soundtrack for an eerie war of witches versus orcs. "

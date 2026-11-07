@@ -15,7 +15,7 @@ from urllib.request import urlretrieve
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / 'docs/sounds/effects/fire-rain/meteor-storm.mp3'
+OUTPUT = ROOT / 'app/sounds/effects/fire-rain/meteor-storm.mp3'
 SOURCE = {
     'whoosh': 'https://cdn.freesound.org/previews/267/267887_5025429-hq.mp3',
     'impact': 'https://cdn.freesound.org/previews/431/431174_6512859-hq.mp3',

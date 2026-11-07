@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const {createConstructionOrders}=require('../docs/rts-orders.js');
+const {createConstructionOrders}=require('../app/rts-orders.js');
 
 const actor=(id,kind='witch',x=0,z=0)=>({id,kind,role:'worker',dead:false,
   root:{position:{x,z}},constructJob:null,repairJob:null,workerRetryTime:0,
@@ -58,7 +58,7 @@ assert.equal(orders.assign({clan:'witch',x:1,z:1,cost:50,woodCost:10,
   createJob}),false,'busy workers cannot be assigned twice');
 assert.equal(creates,3);
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 assert(game.includes('window.FightersOrders.createConstructionOrders('));
 assert(game.includes('constructionOrders.assign({clan,x,z,cost,woodCost,byAI,'));
 console.log('PASS construction assignment, resource payment, worker priority and reset');

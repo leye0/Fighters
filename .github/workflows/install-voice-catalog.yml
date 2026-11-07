@@ -51,7 +51,7 @@ jobs:
         run: |
           node scripts/test-rts-sound.mjs
           node scripts/test-voice-catalog.mjs
-          node --check docs/rts-sound.js
+          node --check app/rts-sound.js
       - name: Keep a review artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -64,7 +64,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A docs/sounds/witches docs/sounds/orcs docs/index.html docs/rts-sound.js scripts/test-rts-sound.mjs
+          git add -A app/sounds/witches app/sounds/orcs app/index.html app/rts-sound.js scripts/test-rts-sound.mjs
           git diff --cached --check
           git diff --cached --quiet && { echo 'Expected voice assets to change'; exit 1; }
           git commit -m 'Install 104 role-based Witch and Orc voices'

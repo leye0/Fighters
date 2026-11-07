@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-world-state.js');
+const {create}=require('../app/rts-world-state.js');
 
 const world=create();
 assert(Object.isFrozen(world));
@@ -74,8 +74,8 @@ assert.notStrictEqual(other.buildingInstances,world.buildingInstances);
 assert.notStrictEqual(other.pendingBuilds,world.pendingBuilds);
 assert.notStrictEqual(other.knownEnemyBuildings.witch,memory.witch);
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
-const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 assert(game.includes('const matchWorld=window.FightersWorldState.create()'));
 for(const binding of ['units,selected','knownEnemyBuildings','buildingInstances','pendingBuilds']){
   assert(game.includes(`const {${binding}}=matchWorld;`),`${binding} must alias the world owner`);

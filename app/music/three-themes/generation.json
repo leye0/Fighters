@@ -12,8 +12,8 @@
       "original_seconds": 159.45,
       "loop_seconds": 154.44,
       "loop_crossfade_seconds": 5.0,
-      "loop_file": "docs/music/three-themes/01-forest-whispers-loop.mp3",
-      "original_file": "docs/music/three-themes/originals/01-forest-whispers.mp3",
+      "loop_file": "app/music/three-themes/01-forest-whispers-loop.mp3",
+      "original_file": "app/music/three-themes/originals/01-forest-whispers.mp3",
       "prompt": "Original instrumental high-fidelity orchestral dark fantasy real-time strategy game score. D minor, exactly 96 BPM, steady 4/4 time, medieval forest of witches and orcs. Natural acoustic orchestra, dark strings, clear woodwinds, rich French horns and hand drums. A memorable four-note D-F-E-A melodic motif that develops into new phrases. Musically composed, varied motifs and harmonic movement, not a repetitive ambient loop. No singing, no vocals, no choir, no electronics, no EDM, no rock guitars, no artificial trailer impacts. Wide dynamic range with space for game dialogue and sound effects. A beautiful eerie but inviting melody; serious ancient magical forest atmosphere, quietly compelling and emotional. Start very soft with distant solo flute, bowed strings and harp. After the introduction establish a gently propulsive bass and plucked strings pulse, then a distinct new melodic theme. Explore contrasting woodwind and warm horn countermelodies with a strong memorable musical hook. Build to a restrained epic orchestral passage, then return to subtle mystery at the ending. Clearly differentiated sections and development every 25 to 40 seconds. Never settle into a repeating four-bar ostinato. Make a full instrumental composition for exploration."
     },
     {
@@ -22,8 +22,8 @@
       "original_seconds": 179.91,
       "loop_seconds": 174.92,
       "loop_crossfade_seconds": 5.0,
-      "loop_file": "docs/music/three-themes/02-mystic-roads-loop.mp3",
-      "original_file": "docs/music/three-themes/originals/02-mystic-roads.mp3",
+      "loop_file": "app/music/three-themes/02-mystic-roads-loop.mp3",
+      "original_file": "app/music/three-themes/originals/02-mystic-roads.mp3",
       "prompt": "Original instrumental high-fidelity orchestral dark fantasy real-time strategy game score. D minor, exactly 96 BPM, steady 4/4 time, medieval forest of witches and orcs. Natural acoustic orchestra, dark strings, clear woodwinds, rich French horns and hand drums. A memorable four-note D-F-E-A melodic motif that develops into new phrases. Musically composed, varied motifs and harmonic movement, not a repetitive ambient loop. No singing, no vocals, no choir, no electronics, no EDM, no rock guitars, no artificial trailer impacts. Wide dynamic range with space for game dialogue and sound effects. A second, clearly different beautiful exploration composition, darker and more adventurous, with witchcraft and distant orc threat. Begin mysterious and restrained with harp, bassoon and low strings, and a haunting original woodwind melody. Build an engaging, flowing 96 BPM rhythm with pizzicato strings and discreet hand percussion. Introduce a noble horn melody after the opening, then explore rich contrasting harmonies, an emotional quiet middle, and a serious cinematic epic rise near the end. A full multi-section melody-led fantasy score, not constant drums, not repetitive drones, no battle climax. End with a graceful return to the eerie opening atmosphere."
     },
     {
@@ -32,8 +32,8 @@
       "original_seconds": 201.85,
       "loop_seconds": 196.86,
       "loop_crossfade_seconds": 5.0,
-      "loop_file": "docs/music/three-themes/03-war-of-witches-and-orcs-loop.mp3",
-      "original_file": "docs/music/three-themes/originals/03-war-of-witches-and-orcs.mp3",
+      "loop_file": "app/music/three-themes/03-war-of-witches-and-orcs-loop.mp3",
+      "original_file": "app/music/three-themes/originals/03-war-of-witches-and-orcs.mp3",
       "prompt": "Original instrumental high-fidelity orchestral dark fantasy real-time strategy game score. D minor, exactly 96 BPM, steady 4/4 time, medieval forest of witches and orcs. Natural acoustic orchestra, dark strings, clear woodwinds, rich French horns and hand drums. A memorable four-note D-F-E-A melodic motif that develops into new phrases. Musically composed, varied motifs and harmonic movement, not a repetitive ambient loop. No singing, no vocals, no choir, no electronics, no EDM, no rock guitars, no artificial trailer impacts. Wide dynamic range with space for game dialogue and sound effects. A serious epic fantasy battle theme, intense and very melodic, sharing the same D minor key and exactly 96 BPM as both exploration pieces. Begin with a tense musical pickup of low strings and muffled war drums; rapidly establish a powerful steady marching beat. Staccato strings race against bold French horn and low brass themes, a clear heroic four-note D-F-E-A motif recurs in transformations. Include different sections: fierce first engagement, urgent brass response, a sudden quieter dramatic tactical pause, then a thunderous decisive climax with full acoustic orchestra and layered percussion. Make the melody memorable and the harmonic progression adventurous, not a wall of noise or an endlessly repeated drum pattern. Finish with an unresolved rhythmic transition suited to looping during battle."
     }
   ]

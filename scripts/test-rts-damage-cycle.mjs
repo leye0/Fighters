@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-damage-cycle.js');
+const {create}=require('../app/rts-damage-cycle.js');
 
 const unit=(kind,id='unit-1',health=50)=>({kind,id,dead:false,health,
   maxHealth:health,stun:0,root:{position:{x:2,z:3}},
@@ -193,8 +193,8 @@ for(const killer of [{kind:'orc',dead:true},{kind:'orc',dead:false,
   assert.deepEqual(f.events.slice(-2),['refreshHud','endBattle:false']);
 }
 
-const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 assert(html.includes('rts-damage-cycle.js'));
 assert(game.includes('window.FightersDamageCycle.create({'));
 for(const fn of ['destroyBuilding(building)','damageBuilding(building,amount,attacker)',

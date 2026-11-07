@@ -3,7 +3,7 @@ import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-construction-worker-cycle.js');
+const {create}=require('../app/rts-construction-worker-cycle.js');
 
 function fixture(type='garden',{byAI=false,axis='x',kind='witch'}={}){
   const actor={id:3,kind,role:'worker',root:{position:{x:0,z:0}},
@@ -167,7 +167,7 @@ function fixture(type='garden',{byAI=false,axis='x',kind='witch'}={}){
   assert.equal(f.events.filter(e=>e[0]==='hud').length,1);
 }
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 assert(game.includes('window.FightersConstructionWorkerCycle.create('));
 assert(game.includes('return constructionWorkerCycle.cancel(actor,refund)'));
 assert(game.includes('return constructionWorkerCycle.tick(actor,dt)'));

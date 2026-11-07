@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import souls from '../docs/rts-souls.js';
+import souls from '../app/rts-souls.js';
 const buildings=[{type:'witch-house',clanId:'witch',level:1,destroyed:false}];
 assert.equal(souls.canBuildCircle(buildings),false,'House must be upgraded first');
 buildings[0].level=2;
@@ -23,7 +23,7 @@ assert.equal(souls.magicAfterTime(99,30),souls.MAX_MAGIC);
 assert.equal(souls.magicAfterTime(0,0),0);
 assert.throws(()=>souls.magicAfterTime(0,-1),/Invalid magic regeneration time/);
 assert.throws(()=>souls.magicAfterTime(0,Number.NaN),/Invalid magic regeneration time/);
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 assert(game.includes('matchResources.magic.witch=soulRules.magicAfterTime(matchResources.magic.witch,dt)'),
   'each active game tick must regenerate magic independent of spirit siphoning');
 const corpse=(x,z,extra={})=>({x,z,dead:true,deadTime:100,...extra});

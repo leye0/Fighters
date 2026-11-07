@@ -7,8 +7,8 @@ import {fileURLToPath} from 'node:url';
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const read=path=>readFileSync(resolve(root,path),'utf8');
-const html=read('docs/index.html');
-const game=read('docs/game.js');
+const html=read('app/index.html');
+const game=read('app/game.js');
 const qaWorkflow=read('.github/workflows/browser-qa.yml');
 const pagesWorkflow=read('.github/workflows/pages.yml');
 const retryWorkflow=read('.github/workflows/chrome-retry.yml');
@@ -64,7 +64,7 @@ const boundaries=[
 ];
 const loadedAt=new Map(scripts.map((src,index)=>[src,index]));
 for(const [name,global] of boundaries){
-  const script=`./${name}.js`,source=`docs/${name}.js`;
+  const script=`./${name}.js`,source=`app/${name}.js`;
   assert(existsSync(resolve(root,source)),`${source} missing`);
   assert(loadedAt.has(script),`${source} must load from index.html`);
   assert(loadedAt.get(script)<loadedAt.get('./game.js'),
@@ -81,9 +81,23 @@ for(const [name,global] of boundaries){
   assert(agentGuide.includes(name),`${source} needs an owner in AGENTS.md`);
 }
 
-assert(existsSync(resolve(root,'docs/styles/game.css')));
-assert(pagesWorkflow.includes("'docs/**'"),
+assert(existsSync(resolve(root,'app/styles/game.css')));
+assert(existsSync(resolve(root,'app/index.html'))&&
+  existsSync(resolve(root,'app/game.js')),
+  'The playable site must live in app/, outside documentation');
+assert(!existsSync(resolve(root,'docs/index.html'))&&
+  !existsSync(resolve(root,'docs/game.js')),
+  'docs/ must contain documentation, not game entrypoints');
+assert(existsSync(resolve(root,'docs/architecture.md')),
+  'Architecture documentation must remain under docs/');
+assert(pagesWorkflow.includes("'app/**'"),
   'Pages must redeploy whenever any browser module changes');
+assert(/path: app\s/.test(pagesWorkflow),
+  'Pages must publish app/, not docs/');
+assert(qaWorkflow.includes('python3 -m http.server 8000 --directory app'),
+  'Real-browser QA must serve the same app/ directory as Pages');
+assert(qaWorkflow.includes('path: app'),
+  'Chrome jobs must restore generated assets into app/');
 assert(qaWorkflow.includes('scripts/use-pinned-runtime-assets.sh'),
   'Chrome tests must reuse the immutable prepared runtime assets');
 assert(pagesWorkflow.includes('scripts/use-pinned-runtime-assets.sh'),

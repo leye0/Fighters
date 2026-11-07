@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-village-defense.js');
+const {create}=require('../app/rts-village-defense.js');
 
 function unit(kind,id,x=0,z=0,role='melee'){
   return {kind,id,role,dead:false,raiding:false,root:{position:{x,z}},
@@ -313,8 +313,8 @@ function fixture(){
   assert.equal(guard.attackOrder,null);assert.deepEqual(f.events,[]);
 }
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
-const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 assert(html.includes('rts-village-defense.js'));
 assert(game.includes('window.FightersVillageDefense.create({'));
 for(const call of ['alertNearbyDefenders(victim,attacker)',

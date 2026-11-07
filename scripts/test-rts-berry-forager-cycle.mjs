@@ -3,9 +3,9 @@ import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-berry-forager-cycle.js');
-const {WildBerries,FORAGE_SIGHT,EAT_SECONDS,FOOD_PER_BUSH}=require('../docs/rts-berries.js');
-const {Economy}=require('../docs/rts-farming.js');
+const {create}=require('../app/rts-berry-forager-cycle.js');
+const {WildBerries,FORAGE_SIGHT,EAT_SECONDS,FOOD_PER_BUSH}=require('../app/rts-berries.js');
+const {Economy}=require('../app/rts-farming.js');
 
 function fixture(){
   const wildBerries=new WildBerries();
@@ -146,7 +146,7 @@ function fixture(){
   assert.equal(f.farming.food,45);
 }
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 assert(game.includes('window.FightersBerryForagerCycle.create('));
 for(const adapter of [
   'berryForagerCycle.reset()',

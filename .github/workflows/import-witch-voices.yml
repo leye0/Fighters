@@ -36,7 +36,7 @@ jobs:
           python3 - <<'PY'
           import json
           from pathlib import Path
-          root=Path("docs/sounds/witches")
+          root=Path("app/sounds/witches")
           catalog=json.loads((root/"manifest.json").read_text())
           assert catalog["counts"]["interaction"]==10
           assert {s["utterance"] for s in catalog["sounds"] if s["category"]=="interaction"}=={"yes","uhu"}
@@ -52,7 +52,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/sounds/witches
+          git add app/sounds/witches
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else

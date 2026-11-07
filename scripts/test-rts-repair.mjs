@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const repair=require('../docs/rts-repair.js');
-const gameSource=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const repair=require('../app/rts-repair.js');
+const gameSource=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 assert(gameSource.indexOf('const BUILDING_CONTACT=')<
   gameSource.indexOf('const repairWorkerCycle='),
   'The repair cycle must initialize after the building contact constant');

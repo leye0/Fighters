@@ -18,7 +18,7 @@ from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 
-DESTINATION = Path("docs/music/three-themes")
+DESTINATION = Path("app/music/three-themes")
 RAW_DIR = DESTINATION / "originals"
 MODEL = "minimax/music-2.6"
 LOOP_CROSSFADE_SECONDS = 5.0  # two 4/4 measures at 96 beats/minute

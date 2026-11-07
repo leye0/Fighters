@@ -3,8 +3,8 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-const G=require('../docs/rts-footprint.js');
-const {Navigator}=require('../docs/rts-navigation.js');
+const G=require('../app/rts-footprint.js');
+const {Navigator}=require('../app/rts-navigation.js');
 const L=G.shapeFromPolygons([[[[0,0],[4,0],[4,1],[1,1],[1,4],[0,4]]]]);
 assert.equal(L.shape,'polygon');
 assert(G.inside({x:.6,z:3},L),'solid building wing');

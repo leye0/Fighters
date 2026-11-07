@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-soul-harvester.js');
-const soulRules=require('../docs/rts-souls.js');
+const {create}=require('../app/rts-soul-harvester.js');
+const soulRules=require('../app/rts-souls.js');
 
 const mage=(id,x,z)=>({id,kind:'witch',role:'ranged',dead:false,
   root:{position:{x,z}},soulJob:null});
@@ -83,7 +83,7 @@ service.assign(.55);
 assert.equal(second.soulJob,body2,'The available corpse can be reserved again');
 assert.equal(first.soulJob,null,'An earlier Mage reserves the corpse first');
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 assert(game.includes('window.FightersSoulHarvester.create('));
 assert(game.includes('return soulHarvester.cancel(actor)'));
 assert(game.includes('return soulHarvester.assign(dt)'));

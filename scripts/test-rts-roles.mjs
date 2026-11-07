@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import roles from '../docs/rts-roles.js';
+import roles from '../app/rts-roles.js';
 assert.deepEqual(roles.ROLE_IDS,['worker','melee','ranged']);
 for(const clan of ['witch','orc']){
   for(const role of roles.ROLE_IDS){

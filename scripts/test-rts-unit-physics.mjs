@@ -3,8 +3,8 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-const {RADIUS,crowdPenalty,sweptCircleHit,freeForUnit,watchMovement,step,separate,formationGoals}=require('../docs/rts-unit-physics.js');
-const {Navigator}=require('../docs/rts-navigation.js');
+const {RADIUS,crowdPenalty,sweptCircleHit,freeForUnit,watchMovement,step,separate,formationGoals}=require('../app/rts-unit-physics.js');
+const {Navigator}=require('../app/rts-navigation.js');
 const unit=(id,x,z)=>({id,dead:false,root:{position:{x,z}}});
 const nav=new Navigator({halfSize:28,radius:RADIUS});
 nav.setObstacles([{minX:6,maxX:9,minZ:6,maxZ:9}]);

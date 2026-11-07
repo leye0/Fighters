@@ -1,7 +1,7 @@
-diff --git a/docs/index.html b/docs/index.html
+diff --git a/app/index.html b/app/index.html
 index 71fbd8d..b178b4e 100644
---- a/docs/index.html
-+++ b/docs/index.html
+--- a/app/index.html
++++ b/app/index.html
 @@ -956,9 +956,11 @@ let qaPassiveKind=null;
  const fogOfWar=new window.FightersFog.FogGrid({
    halfSize:arena.worldHalf,cellSize:.5,radius:7.5,fade:1.25
@@ -161,10 +161,10 @@ index 71fbd8d..b178b4e 100644
    return issued>0;
  }
  function removeRallyMarker(b){
-diff --git a/docs/rts-sound.js b/docs/rts-sound.js
+diff --git a/app/rts-sound.js b/app/rts-sound.js
 index 1209cc3..b5a43af 100644
---- a/docs/rts-sound.js
-+++ b/docs/rts-sound.js
+--- a/app/rts-sound.js
++++ b/app/rts-sound.js
 @@ -19,6 +19,7 @@
      work:{gain:.22,cooldown:450},
      interaction:{gain:.34,cooldown:450},
@@ -243,7 +243,7 @@ index 212e457..e8215c2 100644
 -// recording on each selection.
 +// The game uses one stable timbre per role; events vary within that role.
 +// Attack orders must use the battle-cry pool, never the quiet acknowledgement.
- const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+ const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 -const importer=readFileSync(new URL('./import-witch-voices.py',import.meta.url),'utf8');
 -const presetBlock=html.match(/const WITCH_VOICE_PRESETS=Object.freeze\(\[([\s\S]*?)\]\);/)?.[1];
 -assert(presetBlock,'witch voice persona catalog must exist');

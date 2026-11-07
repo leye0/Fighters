@@ -5,6 +5,10 @@ plus simple à faire évoluer par plusieurs agents en parallèle, **sans changer
 le gameplay, le rendu, les sons ou les performances**. Chaque case n'est cochée
 qu'après modification, vérification et intégration dans `main`.
 
+Le dossier de publication historique `docs/` a été séparé : `app/` contient
+maintenant le site jouable et ses médias, tandis que `docs/` conserve les
+documents techniques. La QA Chrome et Pages utilisent toutes deux `app/`.
+
 ## Tableau de bord du travail restant (audit du 6 novembre 2026)
 
 **Ne plus annoncer « 4 grands chantiers encore ouverts » comme mesure de
@@ -13,7 +17,7 @@ unités de travail : ils peuvent rester ouverts pendant plusieurs extractions.
 Les **12 lots vérifiables ci-dessous** forment désormais le reste à faire
 identifié. Les 67 cases cochées plus bas constituent l'historique, **pas** le
 dénominateur du travail restant. Cet inventaire décrit ce qui est encore
-présent dans `docs/game.js` à la date de l'audit ; il n'annule aucune extraction
+présent dans `app/game.js` à la date de l'audit ; il n'annule aucune extraction
 déjà validée.
 
 Pour un chiffre **à jour**, exécuter `node scripts/refactor-progress.mjs` : la
@@ -195,7 +199,7 @@ objectif** : les responsabilités de rendu restent intentionnellement ici.
 - Préserver les règles du jeu, les ressources et les assets existants.
 - Lancer les tests Node ciblés, puis la QA Chrome/WebGL pour toute modification
   qui touche au DOM, au rendu, aux interactions ou à la simulation.
-- Les fichiers sous `docs/models/` et `docs/vendor/` peuvent être générés par
+- Les fichiers sous `app/models/` et `app/vendor/` peuvent être générés par
   les workflows : ne pas y déplacer du code métier.
 - Si plusieurs agents travaillent simultanément, leur donner des périmètres
   distincts et des worktrees/branches distincts. Une seule intégration à la
@@ -203,11 +207,11 @@ objectif** : les responsabilités de rendu restent intentionnellement ici.
 
 ## 1. Fondations et conflits Git
 
-- [x] Inventorier les points de couplage (`docs/index.html`, `scripts/browser-qa.mjs`, CI).
+- [x] Inventorier les points de couplage (`app/index.html`, `scripts/browser-qa.mjs`, CI).
 - [x] Documenter les conventions de contribution pour agents dans `AGENTS.md`.
-- [x] Isoler les styles du jeu dans `docs/styles/game.css`, sans modification visuelle.
+- [x] Isoler les styles du jeu dans `app/styles/game.css`, sans modification visuelle.
 - [x] Séparer les périmètres CSS et gameplay et faire déclencher la QA Chrome
-      par les changements sous `docs/styles/**`.
+      par les changements sous `app/styles/**`.
 - [x] Auditer les workflows historiques qui committent directement sur `main` :
       sept workflows ont `git push origin HEAD:main` et deux workflows de
       musique poussent vers `${GITHUB_REF_NAME}` (qui peut désigner `main`).
@@ -240,10 +244,10 @@ objectif** : les responsabilités de rendu restent intentionnellement ici.
 ## 2. Séparer le cœur de la simulation
 
 - [x] Définir les contrats `Unit`, `Building`, `GameState`, `Order`, `Resources`
-      en TypeScript progressif dans `docs/rts-contracts.d.ts`, sans migration
+      en TypeScript progressif dans `app/rts-contracts.d.ts`, sans migration
       globale forcée ni dépendance TypeScript au runtime.
 - [x] Valider avec un compilateur TypeScript les contrats progressifs ajoutés
-      dans `docs/rts-contracts.d.ts` ; `GameState` y décrit l'état cible et non
+      dans `app/rts-contracts.d.ts` ; `GameState` y décrit l'état cible et non
       encore une structure effectivement centralisée dans le moteur :
       run 42269109685, compilation stricte verte.
 - [x] Vérifier l'exécution du workflow TypeScript strict indépendant
@@ -298,10 +302,10 @@ objectif** : les responsabilités de rendu restent intentionnellement ici.
       `game.js`. Les 4 956 caractères de logique normalisés sont identiques
       avant/après l'extraction ; tests Node et garde d'architecture verts.
       Run 42276399265 : visual, economy et combat verts.
-- Décisions de simulation restantes dans `docs/game.js` : **lots S1–S5** du
+- Décisions de simulation restantes dans `app/game.js` : **lots S1–S5** du
   tableau de bord. L'ordonnanceur a déjà été extrait de l'ancien script HTML.
 - Règles d'ouvriers et de bâtiments restantes : **lots W1–W3** du tableau de
-  bord. `docs/index.html` ne contient plus le script de jeu intégré.
+  bord. `app/index.html` ne contient plus le script de jeu intégré.
 - [x] Extraire la poursuite, la capture, l'interruption et la consommation des
       proies orcs dans `rts-orc-forager.js` ; tests Node et run 42284582091 :
       Chrome `visual`, `economy` et `combat` verts.
@@ -400,12 +404,12 @@ objectif** : les responsabilités de rendu restent intentionnellement ici.
       binaire et du cache de modèles de niveaux dans `rts-model-assets.js` ;
       tests Node ajoutés, scènes non partagées toujours chargées séparément.
       Run 42277316420 : visual, economy et combat verts.
-- [x] Réduire `docs/index.html` à l'import map, au DOM et au démarrage de
+- [x] Réduire `app/index.html` à l'import map, au DOM et au démarrage de
       l'application (111 lignes initiales, puis includes des nouveaux modules).
-      Le module `docs/game.js` a été déplacé à
+      Le module `app/game.js` a été déplacé à
       l'octet près, sans modification de gameplay ; QA Chrome et Pages verts
       (runs 42258497349 et 42258497356).
-- [x] Commencer la décomposition effective de `docs/game.js` en composants
+- [x] Commencer la décomposition effective de `app/game.js` en composants
       testables indépendants (simulation, commandes, gestes, sélection,
       mini-carte, HUD, caméra, IA, assets, ressources). La poursuite du
       découpage des ticks reste suivie dans la section 2.

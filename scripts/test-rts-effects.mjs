@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {existsSync,readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const {Engine,PATHS,EFFECTS}=require('../docs/rts-effects.js');
+const {Engine,PATHS,EFFECTS}=require('../app/rts-effects.js');
 
 let clock=1000,downloads=0,starts=0,stops=0;
 const sources=[];
@@ -96,12 +96,12 @@ clock+=200;engine.update();
 assert(engine.active.has(domeVoice),'the global chorus must not be distance-culled');
 engine.reset();
 assert(engine.snapshot().cached<=3,'decoded buffers obey the LRU limit');
-const htmlPath=new URL('../docs/game.js',import.meta.url);
+const htmlPath=new URL('../app/game.js',import.meta.url);
 if(existsSync(htmlPath)){
   const html=readFileSync(htmlPath,'utf8')+'\n'+
-    readFileSync(new URL('../docs/rts-unit-tick.js',import.meta.url),'utf8')+'\n'+
-    readFileSync(new URL('../docs/rts-mining-cycle.js',import.meta.url),'utf8')+'\n'+
-    readFileSync(new URL('../docs/rts-garden-worker-cycle.js',import.meta.url),'utf8');
+    readFileSync(new URL('../app/rts-unit-tick.js',import.meta.url),'utf8')+'\n'+
+    readFileSync(new URL('../app/rts-mining-cycle.js',import.meta.url),'utf8')+'\n'+
+    readFileSync(new URL('../app/rts-garden-worker-cycle.js',import.meta.url),'utf8');
   for(const event of ['hammer','mine','swordHit','swordSwing','magic','garden','wing','caw'])
     assert(html.includes(`playEffect('${event}'`),`${event} has no gameplay trigger`);
   assert(html.includes('effects.update()'),'spatial motion must update in the game loop');

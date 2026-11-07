@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const {Engine}=require('../docs/rts-sound.js');
+const {Engine}=require('../app/rts-sound.js');
 
 const manifest={sounds:[
   {category:'short',path:'short/Orc_04.mp3'},
@@ -175,7 +175,7 @@ assert.equal(witch.snapshot().active,0);
 
 // The game uses one stable timbre per role; events vary within that role.
 // Attack orders must use the battle-cry pool, never the quiet acknowledgement.
-const html=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 assert(html.includes("categories:['interaction','creation','attack','loud','work']"),
   'Orc battle cries are loaded alongside the death-grunt effects');
 assert(html.includes("categories:['interaction','creation','attack','destruction','work']"),

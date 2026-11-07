@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-match-state.js');
+const {create}=require('../app/rts-match-state.js');
 
 const initialGold={witch:2000,orc:900};
 const initialWood={witch:250,orc:350};
@@ -43,8 +43,8 @@ assert.equal(getGold().orc,900,'service getters observe the new match');
 assert.equal(getWood().witch,250);
 assert.deepEqual(state.magic,initialMagic,'full reset clears the spell budget');
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
-const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 assert(game.includes('window.FightersMatchState.create('));
 assert(game.includes('matchResources.resetMagic()'));
 assert(game.includes('matchResources.resetEconomy()'));

@@ -15,8 +15,8 @@ from scipy.signal import fftconvolve, butter, sosfilt
 
 
 ROOT = Path(__file__).resolve().parents[1]
-VOICE_ROOT = ROOT / "docs/sounds/witches"
-OUTPUT = ROOT / "docs/sounds/effects/dome/wiccans-chorus.mp3"
+VOICE_ROOT = ROOT / "app/sounds/witches"
+OUTPUT = ROOT / "app/sounds/effects/dome/wiccans-chorus.mp3"
 RATE = 44100
 ROLES = ("worker", "guard", "arcane", "elder")
 

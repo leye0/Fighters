@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-const observations=require('../docs/rts-ai-observations.js');
+const observations=require('../app/rts-ai-observations.js');
 
 const unit=(kind,id,x,z,role='melee')=>({
   kind,id,root:{position:{x,z}},role,health:70,maxHealth:100,dead:false,

@@ -1,5 +1,18 @@
 # Orks & Sorcières — prototype RTS
 
+## Organisation du dépôt
+
+- `app/` : site jouable complet (`index.html`, moteur, styles, sons et modèles).
+  C'est le répertoire servi par la QA Chrome et publié par GitHub Pages.
+- `docs/` : documentation technique (`architecture.md`, `ci-metrics.md`).
+- `scripts/` : tests, génération et restauration des ressources ; `assets/`
+  contient le verrou de la Release des ressources précompilées.
+
+Pour un aperçu local après restauration des ressources avec
+`bash scripts/use-pinned-runtime-assets.sh`, lancer
+`python3 -m http.server 8000 --directory app` et ouvrir
+`http://localhost:8000/`.
+
 ## Remparts orcs
 
 Les ouvriers orcs peuvent maintenant construire des **petits murs de pierre**
@@ -43,7 +56,7 @@ ne peut être consommé qu'une seule fois et rapporte **42 vivres**. Le combat e
 les ordres explicites restent prioritaires sur la recherche de nourriture.
 Les lièvres sont des animaux neutres, non sélectionnables et invisibles sur la
 mini-carte; leur modèle low-poly est partagé et chargé à la demande depuis le
-[CDN officiel Polyfork](docs/HARE_ASSET_LICENSE.md).
+[CDN officiel Polyfork](app/HARE_ASSET_LICENSE.md).
 
 **[Démo jouable](https://www.streamlev.com/Fighters/)** · [Laboratoire des 86 animations](https://www.streamlev.com/Fighters/motion-lab.html) · [Tests Chrome/WebGL](https://github.com/leye0/Fighters/actions/workflows/browser-qa.yml)
 
@@ -57,13 +70,13 @@ libre est sous **70 %** de vie et qu'aucun ennemi n'est proche, elle se dirige
 automatiquement vers un cercle accessible, y reste jusqu'à **96 %** de vie,
 puis reprend son activité autonome. Les ordres du joueur et les tâches en cours
 restent prioritaires; les orcs ne bénéficient pas de la guérison. Les six pierres
-partagent un seul modèle GLB de 24 Kio, sous [licence CC0](docs/models/STANDING_STONE_LICENSE.md).
+partagent un seul modèle GLB de 24 Kio, sous [licence CC0](app/models/STANDING_STONE_LICENSE.md).
 
 Orks & Sorcières est un prototype de **stratégie en temps réel** en 3D isométrique. À l'écran de démarrage, le joueur choisit d'incarner les **sorcières** ou les **orks**. Il contrôle uniquement son camp; l'autre faction est autonome et peut développer son village, produire des troupes, récolter des ressources, explorer, défendre ses bâtiments et attaquer. Le beat ’em up et ses gestes de combat direct ne font plus partie du jeu.
 
 ### Carte carrée en projection isométrique
 
-La caméra conserve son azimut à 45° et son élévation isométrique. Le terrain jouable est orienté et dimensionné pour **apparaître carré à l'écran**, plutôt qu'en losange. La mini-carte carrée reprend exactement les axes visuels du terrain (gauche/droite, haut/bas), et son cadre montre l'emprise réelle de la caméra. Les personnages et les bâtiments conservent leurs coordonnées physiques X/Z; `docs/rts-map.js` centralise la conversion de ces coordonnées, les limites de navigation et les clics sur la mini-carte. Le brouillard de guerre garde des rayons de vision circulaires dans le monde 3D.
+La caméra conserve son azimut à 45° et son élévation isométrique. Le terrain jouable est orienté et dimensionné pour **apparaître carré à l'écran**, plutôt qu'en losange. La mini-carte carrée reprend exactement les axes visuels du terrain (gauche/droite, haut/bas), et son cadre montre l'emprise réelle de la caméra. Les personnages et les bâtiments conservent leurs coordonnées physiques X/Z; `app/rts-map.js` centralise la conversion de ces coordonnées, les limites de navigation et les clics sur la mini-carte. Le brouillard de guerre garde des rayons de vision circulaires dans le monde 3D.
 
 ## Commandes
 
@@ -94,13 +107,13 @@ Quatre **vrais corbeaux 3D animés** se posent sur la cime des arbres près des 
 
 **Sélectionnez directement un corbeau** sur la carte, puis touchez le terrain pour lui donner un ordre de déplacement (ou choisissez son bouton **🧭 Déplacer**). Le corbeau rejoint la destination, effectue quelques détours de reconnaissance volontairement imprécis, puis retourne se poser sur un arbre. Son champ de vision en vol est limité à **3,1 unités** (contre 7,5 pour les unités ordinaires) et dévoile progressivement le brouillard de guerre de la faction des sorcières uniquement. Les orcs qui aperçoivent un corbeau peuvent abandonner momentanément leur trajet pour le poursuivre, sans parvenir à l'attaquer; ils reprennent ensuite leurs activités.
 
-Le modèle externe [Crow de Polyfork](https://polyfork.dev/asset/crow-base) conserve son squelette et ses animations natives `Fly` et `Idle`. Il est partagé par les quatre corbeaux et chargé à la demande depuis le **CDN officiel**, conformément à la licence (GLB d'environ 2,94 Mo, sans textures supplémentaires). [Source et licence](docs/models/RAVEN_ASSET_LICENSE.md).
+Le modèle externe [Crow de Polyfork](https://polyfork.dev/asset/crow-base) conserve son squelette et ses animations natives `Fly` et `Idle`. Il est partagé par les quatre corbeaux et chargé à la demande depuis le **CDN officiel**, conformément à la licence (GLB d'environ 2,94 Mo, sans textures supplémentaires). [Source et licence](app/models/RAVEN_ASSET_LICENSE.md).
 
 ## Forêt fantastique
 
 Le décor urbain provisoire a laissé place à des chemins de terre et à **55 vrais arbres 3D**, exclusivement des arbres tortueux rougeâtres et des arbres morts sombres. Les bosquets sont plus mystiques du côté des sorcières et plus austères du côté des orcs. Leur disposition est déterministe et préserve les bâtiments et les points de départ.
 
-Deux modèles d'arbres du créateur **Quaternius**, sous licence **CC0**, sont intégrés localement et totalisent environ **800 Kio** après réduction des textures en WebP 256 px. Le rendu réemploie les géométries et matériaux dans des instances GPU; un petit obstacle représente seulement le tronc, et les unités peuvent passer sous les branches. Une ouvrière sélectionnée peut toucher un arbre découvert : elle s'en approche, le coupe avec une hache et l'animation native `TreeChopping_Loop`, puis l'arbre laisse au sol une **petite brassée de bûches** (modèle Quaternius CC0 de 27 Ko). Elle se penche pour ramasser les bûches, les porte devant elle et les livre à un bâtiment de son clan. **Chaque arbre rapporte 80 bois uniquement à la livraison**; on peut aussi cliquer sur une brassée abandonnée pour la reprendre. La coupe retire la collision du tronc, interrompre un transport remet ses bûches au sol et une nouvelle partie restaure les arbres. [Sources et licences](docs/models/forest/ASSET_LICENSES.md).
+Deux modèles d'arbres du créateur **Quaternius**, sous licence **CC0**, sont intégrés localement et totalisent environ **800 Kio** après réduction des textures en WebP 256 px. Le rendu réemploie les géométries et matériaux dans des instances GPU; un petit obstacle représente seulement le tronc, et les unités peuvent passer sous les branches. Une ouvrière sélectionnée peut toucher un arbre découvert : elle s'en approche, le coupe avec une hache et l'animation native `TreeChopping_Loop`, puis l'arbre laisse au sol une **petite brassée de bûches** (modèle Quaternius CC0 de 27 Ko). Elle se penche pour ramasser les bûches, les porte devant elle et les livre à un bâtiment de son clan. **Chaque arbre rapporte 80 bois uniquement à la livraison**; on peut aussi cliquer sur une brassée abandonnée pour la reprendre. La coupe retire la collision du tronc, interrompre un transport remet ses bûches au sol et une nouvelle partie restaure les arbres. [Sources et licences](app/models/forest/ASSET_LICENSES.md).
 
 Le bois est une deuxième monnaie de construction : maison des sorcières **75**, huttes orcs **55**, casernes **95**, chaudrons **80** et usines **130** bois. Les améliorations coûtent **40** bois en plus de l'or; les potagers restent en terre et ne nécessitent que de l'or. Les deux factions ont leur propre réserve initiale (250/350 bois), débitée au lancement du chantier et remboursée si celui-ci est annulé. Le village orc affecte un bûcheron lorsqu'il manque de bois.
 
@@ -118,7 +131,7 @@ La maison des sorcières et la caserne orc permettent d'entraîner trois rôles 
 
 Le panneau contextuel n'est plus reconstruit à chaque mise à jour d'or ou de points de vie : les boutons restent les mêmes objets DOM et seules les valeurs dynamiques changent. Les statistiques de développement exposent le nombre de reconstructions. La planification de l'IA orc est évaluée à cadence réduite plutôt que de recréer les mêmes tableaux soixante fois par seconde. Les unités mortes conservent leur animation de chute au sol pendant deux minutes, puis libèrent leurs squelettes et leurs actions; un plafond de 40 cadavres limite la mémoire durant les grandes batailles. Les constructions retirées libèrent les animations et barres de vie dont elles sont propriétaires. Les mires bleues/rouges ont une durée de vie limitée et un plafond simultané. Les tests de régression contrôlent la stabilité des menus sur une partie simulée prolongée.
 
-Pendant une construction, chaque cycle du geste d'ouvrier peut déclencher un bref coup de marteau réel, partagé par les deux clans. Il se produit au moment de l'impact du geste, uniquement à proximité de la caméra et dans une zone explorée, avec une limite globale d'un coup toutes les 450 ms. Les moteurs audio déjà présents assurent le décodage paresseux, la pause et la libération des voix; le fichier MP3 de 4,8 Ko est sous licence CC0 ([source et détails](docs/sounds/WORK_ATTRIBUTION.md)).
+Pendant une construction, chaque cycle du geste d'ouvrier peut déclencher un bref coup de marteau réel, partagé par les deux clans. Il se produit au moment de l'impact du geste, uniquement à proximité de la caméra et dans une zone explorée, avec une limite globale d'un coup toutes les 450 ms. Les moteurs audio déjà présents assurent le décodage paresseux, la pause et la libération des voix; le fichier MP3 de 4,8 Ko est sous licence CC0 ([source et détails](app/sounds/WORK_ATTRIBUTION.md)).
 
 Les ouvriers utilisent désormais une **pioche** dans les mines, un **marteau** pour construire et réparer et une **hache** pour couper les arbres. Les récoltes continuent de se faire à la main. Ces outils low-poly utilisent des géométries et matériaux partagés, sans téléchargement de modèle supplémentaire.
 
@@ -132,7 +145,7 @@ Les **barres de vie orcs** ne sont plus des enfants des GLB redimensionnés/tour
 
 ## Navigation — inspirée de WarConquer
 
-Le fichier `docs/rts-navigation.js` adapte les principes utiles de `leye0/WarConquer/scripts/perception-brain.js` :
+Le fichier `app/rts-navigation.js` adapte les principes utiles de `leye0/WarConquer/scripts/perception-brain.js` :
 
 - **A*** sur grille de 1 m, huit directions, heuristique octile et aucun passage en diagonale entre deux coins bloqués;
 - détection continue **cercle mobile contre AABB**, sans traverser un mur lors d'un grand pas de simulation;
@@ -140,11 +153,11 @@ Le fichier `docs/rts-navigation.js` adapte les principes utiles de `leye0/WarCon
 - destination praticable lorsque l'utilisateur désigne un endroit occupé;
 - recalcul de chemin après construction **ou destruction** de bâtiments.
 
-Les bâtiments possèdent maintenant **deux volumes distincts** calculés sur les vrais GLB : le volume visuel complet pour sélectionner les toits au toucher, et la **base physique au niveau du sol** pour la navigation, la construction et les combats. Les personnages combattent depuis la frontière physique et regardent le centre du bâtiment. Les bâtiments sont des **obstacles rigides**. Les personnages utilisent maintenant `docs/rts-unit-physics.js` : **évitement local souple**, anticipation des zones encombrées, légère dispersion des unités immobiles et **destinations de groupe réservées et uniques**, y compris lorsque la cible touche un mur ou le bord du terrain. L'évitement local s'atténue au point d'arrivée pour éviter les marches perpétuelles. Une unité ne bloque pas rigidement les autres : si un passage n'offre aucune alternative, elles peuvent temporairement se chevaucher plutôt que de se coincer. La séparation de très grandes armées peut encore être améliorée.
+Les bâtiments possèdent maintenant **deux volumes distincts** calculés sur les vrais GLB : le volume visuel complet pour sélectionner les toits au toucher, et la **base physique au niveau du sol** pour la navigation, la construction et les combats. Les personnages combattent depuis la frontière physique et regardent le centre du bâtiment. Les bâtiments sont des **obstacles rigides**. Les personnages utilisent maintenant `app/rts-unit-physics.js` : **évitement local souple**, anticipation des zones encombrées, légère dispersion des unités immobiles et **destinations de groupe réservées et uniques**, y compris lorsque la cible touche un mur ou le bord du terrain. L'évitement local s'atténue au point d'arrivée pour éviter les marches perpétuelles. Une unité ne bloque pas rigidement les autres : si un passage n'offre aucune alternative, elles peuvent temporairement se chevaucher plutôt que de se coincer. La séparation de très grandes armées peut encore être améliorée.
 
 ## IA orc autonome
 
-`docs/orc-strategy.js` implémente un **directeur stratégique déterministe**, indépendant de Three.js. Il analyse périodiquement la composition du village, la trésorerie, les files de production, les unités, la pression ennemie et le temps écoulé :
+`app/orc-strategy.js` implémente un **directeur stratégique déterministe**, indépendant de Three.js. Il analyse périodiquement la composition du village, la trésorerie, les files de production, les unités, la pression ennemie et le temps écoulé :
 
 1. **Économie :** des mineurs orcs doivent rejoindre physiquement une mine et terminer un cycle de travail avant que l'or soit crédité. **Aucun revenu passif** n'est généré par une mine vide. Les mines sont **des gisements naturels fixes, non constructibles**, aussi bien pour le joueur que pour l'IA. Cette dernière entretient ses mineurs, améliore ses installations et développe les autres bâtiments.
 2. **Urbanisme :** un planificateur propose des emplacements candidats dans des secteurs du territoire orc, avec marges autour des bâtiments, espacement et préférence pour les regroupements fonctionnels. La validation utilise les vraies hitboxes.
@@ -156,7 +169,7 @@ Cette IA est **un moteur de décisions tactiques et économiques par règles**, 
 
 ## IA sorcière autonome
 
-Lorsque le joueur choisit les orks, `docs/witch-strategy.js` dirige les sorcières par règles, à une fréquence réduite et avec une mémoire d'exploration indépendante :
+Lorsque le joueur choisit les orks, `app/witch-strategy.js` dirige les sorcières par règles, à une fréquence réduite et avec une mémoire d'exploration indépendante :
 
 1. **Survie et économie :** recrutement d'ouvrières, culture de potagers selon les réserves de nourriture, coupe et livraison de bois, extraction physique d'or uniquement dans les mines déjà découvertes.
 2. **Expansion et magie :** placement des bâtiments après validation des vraies empreintes au sol, amélioration de la maison, construction du cercle de roches et recrutement d'Arcanistes lorsque cette technologie est débloquée.
@@ -167,7 +180,7 @@ En mode normal, **une seule IA stratégique dirige le camp adverse**. Le joueur 
 
 ## Modèles et déploiement
 
-Le **jeu RTS** utilise désormais deux modèles GLB légers dérivés du même kit Quaternius, avec leur **squelette natif de 65 os**, leur géométrie, leur skinning et les **8 animations natives utiles au combat** conservées avec leurs données de keyframes intactes : Idle, Walk, Jog, Punch, Hit, Death et deux animations d'épée. Aucune animation n'est retargetée. Les deux **GLB originaux à 86 animations** restent disponibles sans modification dans le laboratoire `docs/motion-lab.html`.
+Le **jeu RTS** utilise désormais deux modèles GLB légers dérivés du même kit Quaternius, avec leur **squelette natif de 65 os**, leur géométrie, leur skinning et les **8 animations natives utiles au combat** conservées avec leurs données de keyframes intactes : Idle, Walk, Jog, Punch, Hit, Death et deux animations d'épée. Aucune animation n'est retargetée. Les deux **GLB originaux à 86 animations** restent disponibles sans modification dans le laboratoire `app/motion-lab.html`.
 
 Les **orcs** ont désormais quatre nuances de **vert vif saturé**, avec une légère contribution lumineuse pour que leur peau reste reconnaissable sous les arbres. La peau de leurs mains est visible au même titre que celle du visage. Leur vêtement masculin a un **torse, des épaules et des bras nettement plus massifs** : les sommets du costume sont élargis progressivement en position de repos et mis en cache pour toutes les unités. Cette transformation ne déplace **aucun os du squelette**, n'étire pas la taille globale du personnage et protège les sommets influencés par les os de préhension. Ainsi, les animations natives, les prises d'épée/hache/pioche/marteau et les coordonnées de déplacement restent identiques. `scripts/test-orc-appearance.mjs` et la QA WebGL vérifient le rendu et les attaches.
 
@@ -190,7 +203,7 @@ Le workflow `.github/workflows/browser-qa.yml` exécute :
 
 Un paramètre `?qa=1` active les contrôles d'injection de test `window.__fightersQA` et désactive l'IA autonome initialement pour des essais reproductibles; la partie normale active l'IA.
 
-Le laboratoire d'animations `docs/motion-lab.html` est conservé. Ouvrir le jeu via HTTPS et non en `file://`.
+Le laboratoire d'animations `app/motion-lab.html` est conservé. Ouvrir le jeu via HTTPS et non en `file://`.
 
 ## Cercle de roches et magie
 
@@ -207,7 +220,7 @@ Les ouvrières peuvent être assignées par clic sur le potager ou avec la comma
 
 Pendant la construction, l'extraction d'or et la récolte du blé, les ouvriers utilisent désormais un **geste de coupe continu** : les sorcières manient une faux et les orcs une hache. L'outil apparaît seulement quand l'unité travaille effectivement au contact de sa cible; elle le range pour marcher ou rester au repos. Ce mouvement réemploie l'animation native d'épée du squelette existant, distincte du coup de poing de combat, et les maillages d'outils partagent leurs géométries et matériaux entre ouvriers. Aucun GLB, texture ou nouveau squelette n'est chargé.
 
-Les plantes utilisent maintenant les **vrais maillages et textures Sketchfab** : [Crops (low poly)](https://sketchfab.com/3d-models/crops-low-poly-637198c4b8be41e6aeaca8cea8fb81f4), de **Bumroker**, sous licence [Creative Commons Attribution 4.0 (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). Modèle original `crops_low_poly.glb` conservé à la racine, rendu Three.js adapté (Z vers Y) et 3 variantes `Wheat_F1/F2/F3` extraites par `scripts/build-runtime-crops.mjs` au déploiement. Les stades 1→2→3 correspondent à de **vraies géométries distinctes**; le stade 3 reste mûr jusqu'à la récolte et revient au stade 1. Le pack est distribué en GLB compressé gzip et chargé en arrière-plan au début de la partie pour les arbustes et les potagers; le navigateur conserve un repli sur le GLB brut. Il partage ses géométries et textures entre toutes les parcelles, avec un rendu géométrique provisoire pendant le chargement. Les règles de nourriture et les tests sont définis dans `docs/rts-farming.js`, `scripts/test-rts-farming.mjs` et `scripts/browser-qa.mjs`.
+Les plantes utilisent maintenant les **vrais maillages et textures Sketchfab** : [Crops (low poly)](https://sketchfab.com/3d-models/crops-low-poly-637198c4b8be41e6aeaca8cea8fb81f4), de **Bumroker**, sous licence [Creative Commons Attribution 4.0 (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). Modèle original `crops_low_poly.glb` conservé à la racine, rendu Three.js adapté (Z vers Y) et 3 variantes `Wheat_F1/F2/F3` extraites par `scripts/build-runtime-crops.mjs` au déploiement. Les stades 1→2→3 correspondent à de **vraies géométries distinctes**; le stade 3 reste mûr jusqu'à la récolte et revient au stade 1. Le pack est distribué en GLB compressé gzip et chargé en arrière-plan au début de la partie pour les arbustes et les potagers; le navigateur conserve un repli sur le GLB brut. Il partage ses géométries et textures entre toutes les parcelles, avec un rendu géométrique provisoire pendant le chargement. Les règles de nourriture et les tests sont définis dans `app/rts-farming.js`, `scripts/test-rts-farming.mjs` et `scripts/browser-qa.mjs`.
 
 ### Baies sauvages
 

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-raven-distraction.js');
+const {create}=require('../app/rts-raven-distraction.js');
 
 const actor={id:1,kind:'orc',role:'melee',profile:{sight:8},
   root:{position:{x:0,z:0}},route:{},weapon:true};
@@ -66,7 +66,7 @@ actor.ravenCooldown=0;
 flock.ravens.length=0;
 assert.equal(decoy.tick(actor,.1),false,'Disappearing birds leave no ghost target');
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 assert(game.includes('window.FightersRavenDistraction.create('));
 assert(game.includes('return ravenDistraction.tick(actor,dt)'));
 console.log('PASS harmless Raven distractions: sight, roles, bounded chase, cooldown, navigation and disappearance.');

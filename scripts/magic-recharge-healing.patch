@@ -1,7 +1,7 @@
-diff --git a/docs/index.html b/docs/index.html
+diff --git a/app/index.html b/app/index.html
 index 3350635..02c52bf 100644
---- a/docs/index.html
-+++ b/docs/index.html
+--- a/app/index.html
++++ b/app/index.html
 @@ -487,15 +487,15 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
  <script src="./rts-forest.js"></script>
  <script src="./rts-berries.js"></script>
@@ -82,10 +82,10 @@ index 3350635..02c52bf 100644
        corpseLifetime:soulRules.CORPSE_SECONDS,buildUnlocked:circleUnlocked(),
        arcanistUnlocked:arcanistUnlocked(),activeSpirits:soulEffects.length,
        spirits:soulEffects.map(e=>({sameGeometry:e.sameGeometry,samePose:e.samePose,
-diff --git a/docs/rts-healing.js b/docs/rts-healing.js
+diff --git a/app/rts-healing.js b/app/rts-healing.js
 index 0ff082b..043cb7f 100644
---- a/docs/rts-healing.js
-+++ b/docs/rts-healing.js
+--- a/app/rts-healing.js
++++ b/app/rts-healing.js
 @@ -6,6 +6,9 @@
  })(typeof globalThis==='object'?globalThis:this,function(){
    'use strict';
@@ -141,10 +141,10 @@ index 0ff082b..043cb7f 100644
 +  return Object.freeze({RADIUS,HEAL_PER_SECOND,HEALTH_PER_MAGIC,RETREAT_AT,RECOVER_TO,
 +    HOSTILE_SAFETY_DISTANCE,inside,restore,restoreGroup,needsRest,recovered,nearestCircle});
  });
-diff --git a/docs/rts-souls.js b/docs/rts-souls.js
+diff --git a/app/rts-souls.js b/app/rts-souls.js
 index 3899900..8f50513 100644
---- a/docs/rts-souls.js
-+++ b/docs/rts-souls.js
+--- a/app/rts-souls.js
++++ b/app/rts-souls.js
 @@ -7,11 +7,17 @@
    'use strict';
    const CORPSE_SECONDS=120,MAX_CORPSES=40,SOUL_SIGHT=8,
@@ -214,7 +214,7 @@ index 2bd16d8..32cc6b5 100644
  import {createRequire} from 'node:module';
 +import {readFileSync} from 'node:fs';
  const require=createRequire(import.meta.url);
- const healing=require('../docs/rts-healing.js');
+ const healing=require('../app/rts-healing.js');
  const witch={x:0,z:0,health:45,maxHealth:85};
 @@ -15,7 +16,34 @@ assert.equal(healing.restore(45,85,2),67);
  assert.equal(healing.restore(80,85,2),85);
@@ -244,7 +244,7 @@ index 2bd16d8..32cc6b5 100644
 +assert.equal(bill.spent,0,'full health costs nothing');
 +assert.throws(()=>healing.restoreGroup([wounded],-1,1),/Invalid healing time/);
 +assert.throws(()=>healing.restoreGroup([wounded],1,-1),/Invalid magic budget/);
-+const game=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
++const game=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 +assert(game.includes('magic=stoneHealing.restoreGroup(resting,dt,magic).magic'),
 +  'the actual circle must debit the shared in-game magic reserve');
  assert.equal(healing.recovered({health:80,maxHealth:85}),false);
@@ -259,7 +259,7 @@ index 9de9e7b..c9bcae5 100644
 @@ -1,4 +1,5 @@
  import assert from 'node:assert/strict';
 +import {readFileSync} from 'node:fs';
- import souls from '../docs/rts-souls.js';
+ import souls from '../app/rts-souls.js';
  const buildings=[{type:'witch-house',clanId:'witch',level:1,destroyed:false}];
  assert.equal(souls.canBuildCircle(buildings),false,'House must be upgraded first');
 @@ -14,6 +15,17 @@ assert.equal(souls.canTrainMage(buildings),false);
@@ -274,7 +274,7 @@ index 9de9e7b..c9bcae5 100644
 +assert.equal(souls.magicAfterTime(0,0),0);
 +assert.throws(()=>souls.magicAfterTime(0,-1),/Invalid magic regeneration time/);
 +assert.throws(()=>souls.magicAfterTime(0,Number.NaN),/Invalid magic regeneration time/);
-+const game=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
++const game=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 +assert(game.includes('magic=soulRules.magicAfterTime(magic,dt)'),
 +  'each active game tick must regenerate magic independent of spirit siphoning');
  const corpse=(x,z,extra={})=>({x,z,dead:true,deadTime:100,...extra});

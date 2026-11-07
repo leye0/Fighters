@@ -3,7 +3,7 @@ import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-session-state.js');
+const {create}=require('../app/rts-session-state.js');
 const owner=create(),state=owner.state;
 
 assert.deepEqual(state,{
@@ -93,7 +93,7 @@ assert.equal(owner.state,stable,'full reset preserves the stable object identity
 assert.deepEqual(owner.state,another.state,
   'full reset restores exactly the initial values without touching another game');
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 assert(game.includes('window.FightersSessionState.create()'));
 assert(game.includes('sessionOwner.beginMatch()'));
 assert(game.includes('sessionOwner.endMatch()'));

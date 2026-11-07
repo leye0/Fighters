@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import {existsSync,readFileSync,statSync} from 'node:fs';
-import fire from '../docs/rts-fire-rain.js';
-import defense from '../docs/rts-spell-defense.js';
-import dome from '../docs/rts-witch-dome.js';
+import fire from '../app/rts-fire-rain.js';
+import defense from '../app/rts-spell-defense.js';
+import dome from '../app/rts-witch-dome.js';
 
 const hut={type:'hut',clanId:'orcs',level:3,destroyed:false};
 assert.equal(fire.RADIUS,dome.RADIUS);
@@ -47,11 +47,11 @@ assert.equal(reverse.threatened,true,'witch AI must use exactly the same intelli
 assert(defense.power(actor('witch','ranged',0,0))>
   defense.power(actor('witch','worker',0,0)));
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 for(const item of ['castFireRain(','stepFireRain(dt)','stepSpellDefense(dt)',
   "effects.play('fireRain'",'Pluie de feu',
   'matchResources.magic.orc=soulRules.magicAfterTime',
   'castWitchDome(home,{byAI:true})'])assert(game.includes(item),item);
-const sound=new URL('../docs/sounds/effects/fire-rain/meteor-storm.mp3',import.meta.url);
+const sound=new URL('../app/sounds/effects/fire-rain/meteor-storm.mp3',import.meta.url);
 assert(existsSync(sound)&&statSync(sound).size>40000,'real-recording mix is bundled');
 console.log('PASS firestorm: same 20-unit radius, 100 magic, real sound, symmetric sight-limited AI');

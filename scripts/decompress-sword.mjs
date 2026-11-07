@@ -6,7 +6,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve, dirname, basename } from 'node:path';
 import { MeshoptDecoder } from 'meshoptimizer';
 
-const file='docs/models/equipment.sword.arming.default.gltf';
+const file='app/models/equipment.sword.arming.default.gltf';
 const source=JSON.parse(readFileSync(file,'utf8'));
 if(!source.extensionsRequired?.includes('EXT_meshopt_compression'))
   throw Error('Input sword was not Meshopt-compressed; check pinned upstream version.');

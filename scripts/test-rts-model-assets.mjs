@@ -3,7 +3,7 @@ import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-model-assets.js');
+const {create}=require('../app/rts-model-assets.js');
 const events=[];
 class Loader{
   constructor(){events.push('constructed');}
@@ -37,8 +37,8 @@ const fresh=create({GLTFLoader:Loader,MeshoptDecoder:decoder});
 assert.notEqual(assets,fresh,'separate games or tests have separate loader caches');
 assert.throws(()=>create({GLTFLoader:null,MeshoptDecoder:decoder}),/GLTFLoader/);
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
-const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 assert(game.includes('window.FightersModelAssets.create({GLTFLoader,MeshoptDecoder})'));
 assert(game.includes('modelAssets.cached(key,entry.file)'));
 assert(!game.includes('loader.loadAsync(')&&!game.includes('loader.parseAsync('));

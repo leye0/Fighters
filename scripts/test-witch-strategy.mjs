@@ -4,8 +4,8 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const {Director,planSite,defendersNear}=require('../docs/witch-strategy.js');
-const {FogGrid}=require('../docs/rts-fog.js');
+const {Director,planSite,defendersNear}=require('../app/witch-strategy.js');
+const {FogGrid}=require('../app/rts-fog.js');
 
 const house={id:'home',type:'witch-house',x:-23,z:-17,level:1,
  health:500,maxHealth:500,queue:[]};
@@ -92,8 +92,8 @@ assert.equal(director.snapshot().decisions.length,0);
 director.enabled=false;
 assert.deepEqual(director.update(3,state,valid),[]);
 
-const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 assert(html.includes('Orks &amp; Sorcières'),'The menu must show the exact new title');
 assert(html.includes('id="choose-orc"')&&html.includes('id="choose-witch"'),
  'The menu must expose both playable factions');

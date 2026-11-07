@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const healing=require('../docs/rts-healing.js');
+const healing=require('../app/rts-healing.js');
 const witch={x:0,z:0,health:45,maxHealth:85};
 const near={id:'near',x:2,z:0,destroyed:false};
 const far={id:'far',x:20,z:0,destroyed:false};
@@ -40,8 +40,8 @@ bill=healing.restoreGroup([almostFull],2,bill.magic);
 assert.equal(bill.spent,0,'full health costs nothing');
 assert.throws(()=>healing.restoreGroup([wounded],-1,1),/Invalid healing time/);
 assert.throws(()=>healing.restoreGroup([wounded],1,-1),/Invalid magic budget/);
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
-const cycle=readFileSync(new URL('../docs/rts-healing-cycle.js',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
+const cycle=readFileSync(new URL('../app/rts-healing-cycle.js',import.meta.url),'utf8');
 assert(game.includes('getWitchMagic:()=>matchResources.magic.witch')&&
   game.includes('setWitchMagic:value=>{matchResources.magic.witch=value;}')&&
   cycle.includes('setWitchMagic(stoneHealing.restoreGroup(resting,dt,'),

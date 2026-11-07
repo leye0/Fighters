@@ -3,7 +3,7 @@
 import type {
   Building,BuildingClan,BuildingType,Faction,GameState,Point2D,
   ProductionOrder,ResourceStore,Role,Unit,UnitOrder
-} from '../docs/rts-contracts';
+} from '../app/rts-contracts';
 
 const initialResources:ResourceStore={witch:2000,orc:900};
 const selectedRole:Role='worker';

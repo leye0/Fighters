@@ -3,7 +3,7 @@ import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 
 const require=createRequire(import.meta.url);
-const {createProductionOrders,createProductionCompletions}=require('../docs/rts-orders.js');
+const {createProductionOrders,createProductionCompletions}=require('../app/rts-orders.js');
 
 let gold={witch:500,orc:500},wood={witch:120,orc:120};
 let arcanist=false,orcMage=false;
@@ -206,7 +206,7 @@ assert.deepEqual(endEvents,[['before',0,50]]);
 assert.equal(producer.queue.length,0);
 assert.equal(paid.witch,50,'blocked exit does not create an implicit refund');
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 assert(game.includes('window.FightersOrders.createProductionOrders('));
 assert(game.includes('window.FightersOrders.createProductionCompletions('));
 assert(game.includes('finishUpgrade:productionCompletions.finishUpgrade'));

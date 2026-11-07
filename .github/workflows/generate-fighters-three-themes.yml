@@ -34,7 +34,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: fighters-three-original-soundtrack-themes
-          path: docs/music/three-themes/
+          path: app/music/three-themes/
           retention-days: 30
           if-no-files-found: warn
       - name: Commit loop-ready themes to this isolated branch
@@ -42,7 +42,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/music/three-themes/*-loop.mp3 docs/music/three-themes/generation.json
+          git add app/music/three-themes/*-loop.mp3 app/music/three-themes/generation.json
           if ! git diff --cached --quiet; then
             git commit -m "Add three independent loop-ready Fighters orchestral themes"
             if [ "${GITHUB_REF_NAME}" = main ]; then

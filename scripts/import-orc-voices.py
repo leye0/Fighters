@@ -2,7 +2,7 @@
 """Download and classify the 51 Voices - Orcs Freesound MP3 previews.
 
 python3 scripts/import-orc-voices.py download --output /tmp/orc-previews
-python3 scripts/import-orc-voices.py classify --input /tmp/orc-previews --output docs/sounds/orcs
+python3 scripts/import-orc-voices.py classify --input /tmp/orc-previews --output app/sounds/orcs
 """
 from __future__ import annotations
 import argparse

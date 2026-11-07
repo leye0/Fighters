@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const placement=require('../docs/rts-building-placement.js');
-const footprint=require('../docs/rts-footprint.js');
-const walls=require('../docs/rts-walls.js');
+const placement=require('../app/rts-building-placement.js');
+const footprint=require('../app/rts-footprint.js');
+const walls=require('../app/rts-walls.js');
 
 const rect=(x,z,w=2,h=w)=>footprint.shapeFromPolygons([[[
   [x-w/2,z-h/2],[x+w/2,z-h/2],
@@ -152,8 +152,8 @@ function fixture(){
     'Remote isolated sections cannot float beyond village anchors');
 }
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
-const entry=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
+const entry=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 assert(entry.indexOf('src="./rts-building-placement.js"')<entry.indexOf('src="./game.js"'));
 assert(game.includes('window.FightersBuildingPlacement.create({'));
 assert(game.includes('return buildingPlacement.validBuildPosition(x,z,type,axis)'));

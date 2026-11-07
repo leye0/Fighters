@@ -3,7 +3,7 @@ import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-unit-tick.js');
+const {create}=require('../app/rts-unit-tick.js');
 
 const calls=[];
 let passiveKind=null,workStep=null,moveResult='moving',returnDefense=false;
@@ -109,10 +109,10 @@ assert.equal(blocked.unreachableTime,6);
 assert.equal(returnDefense,true);
 
 // The game must construct the ticker once and keep Three.js out of the module.
-const integration=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
-const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const integration=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 assert(integration.includes('window.FightersUnitTick.create({'));
 assert(html.includes('<script src="./rts-unit-tick.js"></script>'));
 assert(!/THREE|document\.|window\./.test(readFileSync(
-  new URL('../docs/rts-unit-tick.js',import.meta.url),'utf8')));
+  new URL('../app/rts-unit-tick.js',import.meta.url),'utf8')));
 console.log('PASS independent unit tick: death, impact, switching orders, worker dispatch and blocked paths');

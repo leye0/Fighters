@@ -3,46 +3,46 @@ on:
   push:
     branches: [main]
     paths:
-      - 'docs/index.html'
-      - 'docs/game.js'
-      - 'docs/styles/**'
-      - 'docs/rts-map.js'
-      - 'docs/rts-footprint.js'
-      - 'docs/rts-walls.js'
-      - 'docs/rts-building-placement.js'
-      - 'docs/rts-navigation.js'
-      - 'docs/rts-actor-navigation.js'
-      - 'docs/rts-damage-cycle.js'
-      - 'docs/rts-village-defense.js'
-      - 'docs/rts-visibility-cycle.js'
-      - 'docs/rts-raiding.js'
-      - 'docs/rts-fog.js'
-      - 'docs/rts-sound.js'
-      - 'docs/rts-effects.js'
-      - 'docs/sounds/effects/**'
-      - 'docs/rts-farming.js'
-      - 'docs/rts-orc-food.js'
-      - 'docs/rts-orc-forager.js'
-      - 'docs/rts-orc-hunt-planner.js'
-      - 'docs/rts-food-cycle.js'
-      - 'docs/HARE_ASSET_LICENSE.md'
-      - 'docs/rts-forest.js'
-      - 'docs/rts-berries.js'
-      - 'docs/rts-ravens.js'
-      - 'docs/rts-raven-distraction.js'
-      - 'docs/rts-healing.js'
-      - 'docs/rts-healing-cycle.js'
-      - 'docs/rts-repair.js'
-      - 'docs/rts-souls.js'
-      - 'docs/rts-soul-harvester.js'
-      - 'docs/rts-mining-cycle.js'
-      - 'docs/rts-wood-cycle.js'
-      - 'docs/rts-garden-worker-cycle.js'
-      - 'docs/rts-berry-forager-cycle.js'
-      - 'docs/rts-construction-worker-cycle.js'
-      - 'docs/models/standing-stone.glb'
-      - 'docs/models/STANDING_STONE_LICENSE.md'
-      - 'docs/models/forest/**'
+      - 'app/index.html'
+      - 'app/game.js'
+      - 'app/styles/**'
+      - 'app/rts-map.js'
+      - 'app/rts-footprint.js'
+      - 'app/rts-walls.js'
+      - 'app/rts-building-placement.js'
+      - 'app/rts-navigation.js'
+      - 'app/rts-actor-navigation.js'
+      - 'app/rts-damage-cycle.js'
+      - 'app/rts-village-defense.js'
+      - 'app/rts-visibility-cycle.js'
+      - 'app/rts-raiding.js'
+      - 'app/rts-fog.js'
+      - 'app/rts-sound.js'
+      - 'app/rts-effects.js'
+      - 'app/sounds/effects/**'
+      - 'app/rts-farming.js'
+      - 'app/rts-orc-food.js'
+      - 'app/rts-orc-forager.js'
+      - 'app/rts-orc-hunt-planner.js'
+      - 'app/rts-food-cycle.js'
+      - 'app/HARE_ASSET_LICENSE.md'
+      - 'app/rts-forest.js'
+      - 'app/rts-berries.js'
+      - 'app/rts-ravens.js'
+      - 'app/rts-raven-distraction.js'
+      - 'app/rts-healing.js'
+      - 'app/rts-healing-cycle.js'
+      - 'app/rts-repair.js'
+      - 'app/rts-souls.js'
+      - 'app/rts-soul-harvester.js'
+      - 'app/rts-mining-cycle.js'
+      - 'app/rts-wood-cycle.js'
+      - 'app/rts-garden-worker-cycle.js'
+      - 'app/rts-berry-forager-cycle.js'
+      - 'app/rts-construction-worker-cycle.js'
+      - 'app/models/standing-stone.glb'
+      - 'app/models/STANDING_STONE_LICENSE.md'
+      - 'app/models/forest/**'
       - 'scripts/test-rts-forest.mjs'
       - 'scripts/test-rts-berries.mjs'
       - 'scripts/test-rts-ravens.mjs'
@@ -68,25 +68,25 @@ on:
       - 'scripts/test-rts-footprint.mjs'
       - 'scripts/test-rts-walls.mjs'
       - 'scripts/test-rts-building-placement.mjs'
-      - 'docs/rts-unit-physics.js'
-      - 'docs/rts-simulation.js'
-      - 'docs/rts-unit-tick.js'
-      - 'docs/rts-session-state.js'
-      - 'docs/rts-match-state.js'
-      - 'docs/rts-world-state.js'
-      - 'docs/rts-orders.js'
-      - 'docs/rts-picking.js'
-      - 'docs/rts-camera.js'
-      - 'docs/rts-gestures.js'
-      - 'docs/rts-player-interaction.js'
-      - 'docs/rts-player-actions.js'
-      - 'docs/rts-minimap.js'
-      - 'docs/rts-hud.js'
-      - 'docs/rts-ai-commands.js'
-      - 'docs/rts-ai-observations.js'
-      - 'docs/rts-spell-cycle.js'
-      - 'docs/rts-assets.js'
-      - 'docs/rts-model-assets.js'
+      - 'app/rts-unit-physics.js'
+      - 'app/rts-simulation.js'
+      - 'app/rts-unit-tick.js'
+      - 'app/rts-session-state.js'
+      - 'app/rts-match-state.js'
+      - 'app/rts-world-state.js'
+      - 'app/rts-orders.js'
+      - 'app/rts-picking.js'
+      - 'app/rts-camera.js'
+      - 'app/rts-gestures.js'
+      - 'app/rts-player-interaction.js'
+      - 'app/rts-player-actions.js'
+      - 'app/rts-minimap.js'
+      - 'app/rts-hud.js'
+      - 'app/rts-ai-commands.js'
+      - 'app/rts-ai-observations.js'
+      - 'app/rts-spell-cycle.js'
+      - 'app/rts-assets.js'
+      - 'app/rts-model-assets.js'
       - 'scripts/test-rts-unit-physics.mjs'
       - 'scripts/test-rts-simulation.mjs'
       - 'scripts/test-rts-unit-tick.mjs'
@@ -112,10 +112,10 @@ on:
       - 'scripts/test-rts-ai-observations.mjs'
       - 'scripts/test-rts-assets.mjs'
       - 'scripts/test-rts-model-assets.mjs'
-      - 'docs/orc-strategy.js'
-      - 'docs/witch-strategy.js'
-      - 'docs/rts-roles.js'
-      - 'docs/orc-appearance.js'
+      - 'app/orc-strategy.js'
+      - 'app/witch-strategy.js'
+      - 'app/rts-roles.js'
+      - 'app/orc-appearance.js'
       - 'scripts/test-rts-roles.mjs'
       - 'scripts/test-orc-appearance.mjs'
       - 'scripts/test-orc-strategy.mjs'
@@ -294,8 +294,8 @@ jobs:
         with:
           name: fighters-runtime-assets
           path: |
-            docs/models
-            docs/vendor
+            app/models
+            app/vendor
           retention-days: 1
           if-no-files-found: error
   chrome:
@@ -318,16 +318,16 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: fighters-runtime-assets
-          path: docs
+          path: app
       - name: Verify restored runtime assets
         run: |
-          test -s docs/models/witch_house.glb
-          test -s docs/models/orc-buildings/manifest.json
-          test -s docs/models/human_male.rts.glb.gz
-          test -s docs/vendor/three/three.module.js
+          test -s app/models/witch_house.glb
+          test -s app/models/orc-buildings/manifest.json
+          test -s app/models/human_male.rts.glb.gz
+          test -s app/vendor/three/three.module.js
       - name: Start preview server
         run: |
-          python3 -m http.server 8000 --directory docs >/tmp/fighters-browser-qa-http.log 2>&1 &
+          python3 -m http.server 8000 --directory app >/tmp/fighters-browser-qa-http.log 2>&1 &
           for i in {1..40}; do
             if curl -fsS http://127.0.0.1:8000/ >/dev/null; then exit 0; fi
             sleep 0.25
@@ -367,6 +367,6 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: fighters-runtime-assets
-          path: docs
+          path: app
       - name: Publish only the archive tested by Chrome and pin its SHA-256
         run: bash scripts/publish-runtime-assets.sh

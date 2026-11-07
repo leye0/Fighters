@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-minimap.js');
+const {create}=require('../app/rts-minimap.js');
 
 const operations=[],createContext=()=>({
   createImageData:(w,h)=>({data:new Uint8ClampedArray(w*h*4)}),
@@ -56,8 +56,8 @@ assert.deepEqual(minimap.worldAt(10,20),{x:-10,z:-10});
 faction='orc';minimap.draw();
 assert.equal(groundFog.updates.at(-1)[0],'orc');
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
-const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 assert(game.includes('window.FightersMinimap.create('));
 assert(game.includes('const minimapGroundFog=minimapRenderer.groundFog'));
 assert(html.includes('src="./rts-minimap.js"'));

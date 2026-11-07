@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-const {FogGrid}=require('../docs/rts-fog.js');
+const {FogGrid}=require('../app/rts-fog.js');
 
 const fog=new FogGrid({halfSize:28,cellSize:.5,radius:7.5,fade:1.25});
 assert.equal(fog.size,112);

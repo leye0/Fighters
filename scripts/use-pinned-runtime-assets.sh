@@ -16,7 +16,7 @@ if [[ ! "$tag" =~ ^fighters-runtime-assets-v[0-9]+$ ]] ||
 fi
 
 cache_dir='.cache/fighters'
-mkdir -p "$cache_dir" docs
+mkdir -p "$cache_dir" app
 local_archive="${cache_dir}/${archive}"
 
 if [[ -f "$local_archive" ]] && ! echo "${expected_sha}  ${local_archive}" | sha256sum --check --status; then
@@ -34,9 +34,9 @@ if [[ ! -f "$local_archive" ]]; then
 fi
 
 echo "${expected_sha}  ${local_archive}" | sha256sum --check
-unzip -oq "$local_archive" -d docs
-test -s docs/models/witch_house.glb
-test -s docs/models/orc-buildings/manifest.json
-test -s docs/models/human_male.rts.glb.gz
-test -s docs/vendor/three/three.module.js
-echo "Restored verified ${tag} into docs/"
+unzip -oq "$local_archive" -d app
+test -s app/models/witch_house.glb
+test -s app/models/orc-buildings/manifest.json
+test -s app/models/human_male.rts.glb.gz
+test -s app/vendor/three/three.module.js
+echo "Restored verified ${tag} into app/"

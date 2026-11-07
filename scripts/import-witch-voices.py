@@ -15,7 +15,7 @@ import subprocess
 import tempfile
 import urllib.request
 
-ROOT = Path("docs/sounds/witches")
+ROOT = Path("app/sounds/witches")
 BASE = "https://freesound.org/people/{author}/sounds/{sound_id}/"
 
 # Individually checked for a short affirmative female utterance and explicit

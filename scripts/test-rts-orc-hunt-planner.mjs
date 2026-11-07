@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-orc-hunt-planner.js');
-const rules=require('../docs/rts-orc-food.js');
+const {create}=require('../app/rts-orc-hunt-planner.js');
+const rules=require('../app/rts-orc-food.js');
 
 const actor=(id,x,z,kind='orc')=>({id,kind,dead:false,root:{position:{x,z}},
   orcFoodJob:null,route:{},approachCache:{}});
@@ -70,7 +70,7 @@ planner.assign(.4);planner.reset();
 planner.assign(.4);
 assert.equal(scout.orcFoodJob,null,'Reset clears the previous match timer');
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 assert(game.includes('window.FightersOrcHuntPlanner.create('));
 assert(game.includes('return orcHuntPlanner.assign(dt)'));
 assert(game.includes('orcHuntPlanner.reset()'));

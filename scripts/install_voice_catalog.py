@@ -180,7 +180,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--approved-witches", type=Path, required=True)
     parser.add_argument("--stage", type=Path, default=Path("generated-voices/final"))
-    parser.add_argument("--install-root", type=Path, default=Path("docs/sounds"))
+    parser.add_argument("--install-root", type=Path, default=Path("app/sounds"))
     args = parser.parse_args()
     token = os.environ.get("REPLICATE_API_KEY")
     if not token:

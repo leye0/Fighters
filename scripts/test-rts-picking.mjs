@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-picking.js');
+const {create}=require('../app/rts-picking.js');
 
 const viewport={clientWidth:1000,getBoundingClientRect:()=>({left:0,top:0,width:200,height:200})};
 const friendly={id:1,kind:'witch',dead:false,root:{position:{x:0,z:0}}};
@@ -48,8 +48,8 @@ assert.equal(picking.building({x:5.5,z:4.5}),null,'roofs outside footprint not s
 canSee=false;
 assert.equal(picking.building({x:4.5,z:4.5}),null,'fog also hides building selection');
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
-const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 assert(game.includes('window.FightersPicking.create('));
 assert(game.includes('return screenPicking.unit(x,y,includeEnemies)'));
 assert(html.includes('src="./rts-picking.js"'));

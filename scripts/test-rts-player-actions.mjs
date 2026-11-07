@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-player-actions.js');
+const {create}=require('../app/rts-player-actions.js');
 
 const witch={id:'w',kind:'witch',dead:false,sx:60,sy:70};
 const other={id:'w2',kind:'witch',dead:false,sx:82,sy:91};
@@ -121,8 +121,8 @@ actions.box({x:50,y:60},{x:100,y:110},false);
 assert.deepEqual(calls[0][1],[witch]);
 
 function kindsAfterTap(){tap();return kinds();}
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
-const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 assert(game.includes('window.FightersPlayerActions.create('));
 assert(game.includes('playerActions.tap(x,y,append)'));
 assert(game.includes('playerActions.box(a,b,append)'));

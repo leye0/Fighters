@@ -3,8 +3,8 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-const {Director,planSite,COST}=require('../docs/orc-strategy.js');
-const {FogGrid}=require('../docs/rts-fog.js');
+const {Director,planSite,COST}=require('../app/orc-strategy.js');
+const {FogGrid}=require('../app/rts-fog.js');
 const valid=(x,z)=>x>=3&&x<=25&&z>=3&&z<=25&&!(x>=14&&x<=19&&z>=14&&z<=20);
 const starting=[
  {id:'b',type:'barrack',x:15,z:20,level:1,queue:[],maxHealth:100,health:100},

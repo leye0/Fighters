@@ -225,7 +225,7 @@ def generate(directory: Path, token: str, stage: Path) -> int:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--directory", type=Path, default=Path("docs/sounds/witches"))
+    parser.add_argument("--directory", type=Path, default=Path("app/sounds/witches"))
     parser.add_argument("--checkpoint", type=Path,
                         default=Path("generated-voices/witches-checkpoint"))
     arguments = parser.parse_args()

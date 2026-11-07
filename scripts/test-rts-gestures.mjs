@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-const {create}=require('../docs/rts-gestures.js');
+const {create}=require('../app/rts-gestures.js');
 
 let clock=10000,enabled=true,selectionEnabled=true,selected=3;
 let buildMode=null,attackMode=false,ravenMoveMode=false;
@@ -100,8 +100,8 @@ const previousBoxes=count('box');
 gestures.up(pointer(13,130,140,{type:'mouse',phase:'pointerup'}));
 assert.equal(count('box'),previousBoxes,'build mode must never box-select');
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
-const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 assert(game.includes('window.FightersGestures.create('));
 assert(game.includes('viewport.addEventListener(\'pointerdown\',gestures.down)'));
 assert(html.includes('src="./rts-gestures.js"'));

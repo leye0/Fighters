@@ -3,7 +3,7 @@
 # Unlike animation resampling or rig retargeting, gzip preserves every byte,
 # native joint index, keyframe, and all 86 authored clips.
 set -euo pipefail
-dir="${1:-docs/models}"
+dir="${1:-app/models}"
 for name in human_female human_male; do
   input="$dir/$name.glb"
   output="$input.gz"

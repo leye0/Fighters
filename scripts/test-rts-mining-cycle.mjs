@@ -3,7 +3,7 @@ import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 
 const require=createRequire(import.meta.url);
-const {create,canMine}=require('../docs/rts-mining-cycle.js');
+const {create,canMine}=require('../app/rts-mining-cycle.js');
 const worker=(id,kind,x)=>({id,kind,role:'worker',dead:false,
   root:{position:{x,y:0,z:0}},route:{old:true},approachCache:{old:true}});
 const building=(id,type,x,clanId='neutral',level=1)=>({id,type,clanId,level,
@@ -158,7 +158,7 @@ function fixture(){
   assert.equal(f.treasury().orc,0);
 }
 
-const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 assert(game.includes('window.FightersMiningCycle.create('));
 assert(game.includes('return miningCycle.assign(clan)'));
 assert(game.includes('return miningCycle.tick(actor,dt)'));

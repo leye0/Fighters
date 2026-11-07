@@ -3,9 +3,9 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-const wall=require('../docs/rts-walls.js');
-const fp=require('../docs/rts-footprint.js');
-const {Director}=require('../docs/orc-strategy.js');
+const wall=require('../app/rts-walls.js');
+const fp=require('../app/rts-footprint.js');
+const {Director}=require('../app/orc-strategy.js');
 
 const horizontal={x:10,z:12,axis:'x'};
 const next={x:13.2,z:12,axis:'x'};
