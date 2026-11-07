@@ -102,11 +102,19 @@ de prolonger indéfiniment un axe.
       garde d'architecture et QA Chrome `visual`, `economy`, `combat` verts :
       run 42341658596 ; Pages verte : run 42341658589.
       Commit runtime fa8d60bc.
-- [ ] **S3 — Dégâts et destructions** : sortir les transitions métier de
+- [x] **S3 — Dégâts et destructions** : sortir les transitions métier de
       `dealDamage`, `damageBuilding` et `destroyBuilding` sans déplacer la
       suppression de meshes, les sons ou les effets graphiques.
       **Fini quand** santé, mort, récompenses, nettoyage des cibles et ordre
       des callbacks sont couverts par tests Node et QA combat.
+      **Validé** : `rts-damage-cycle.js` possède les transitions de santé,
+      décès, attribution de cadavres aux orcs, annulation des tâches et cibles,
+      destruction des bâtiments et fin de partie. Les voix, animations,
+      meshes, barres de vie et HUD restent injectés par `game.js` ; les tests
+      Node vérifient l'ordre historique exact des callbacks. Suite Node,
+      garde d'architecture et Chrome `visual`, `economy`, `combat` verts :
+      run 42380074120 ; Pages verte : run 42380074124.
+      Commit runtime 25cf6840.
 - [ ] **S4 — Défense du village** : extraire les décisions de
       `alertNearbyDefenders`, `localDefensePost`, `returnFromDefense`,
       `updateVillageDefense` et `alertVillageUnderAttack`, y compris les
