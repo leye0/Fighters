@@ -206,11 +206,17 @@ modules (`docs/rts-contracts.d.ts`).
 - `assets/README.md`, `assets/runtime-assets.lock` : méthode d'ajout et version
   immuable des modèles préparés, avec SHA-256. Ne pas changer le verrou sans
   une nouvelle Release vérifiée.
+- `scripts/runtime-asset-changes.mjs`, `assets/runtime-rebuild.request` :
+  distinction des commits ordinaires (ZIP épinglé) et des rares changements
+  de sources qui exigent une nouvelle version via `browser-qa.yml`.
+- `scripts/publish-runtime-assets.sh` : publie seulement le paquet ayant passé
+  les trois suites Chrome du workflow habituel, puis épingle la Release et
+  redéclenche QA/Pages ; aucun force-push ni écrasement de version.
 - `scripts/use-pinned-runtime-assets.sh` : restauration commune pour Pages et
   QA ; aucun modèle source externe n'est téléchargé à chaque commit.
 - `scripts/prepare-runtime-assets.sh` : reconstruction exceptionnelle du paquet
-  pour une nouvelle version (workflow `rebuild-runtime-assets.yml`) ; utiliser
-  exclusivement `npm ci` et les versions de `package-lock.json`.
+  dans le chemin conditionnel de `browser-qa.yml` (pas de workflow séparé) ;
+  utiliser exclusivement `npm ci` et les versions de `package-lock.json`.
 - `package.json`, `package-lock.json`, `scripts/test-runtime-build-manifest.mjs` :
   manifeste et verrou de l'outillage GLB/Three.js/Sharp/Meshopt, résolus et
   revérifiés par `build-lock.yml` sur changement du manifeste. Ne pas employer

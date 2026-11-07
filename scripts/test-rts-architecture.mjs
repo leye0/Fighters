@@ -88,8 +88,16 @@ assert(qaWorkflow.includes('scripts/use-pinned-runtime-assets.sh'),
   'Chrome tests must reuse the immutable prepared runtime assets');
 assert(pagesWorkflow.includes('scripts/use-pinned-runtime-assets.sh'),
   'Pages must use the same prepared runtime assets as Chrome');
-assert(!/run:\s*bash scripts\/prepare-runtime-assets\.sh/.test(qaWorkflow),
-  'Do not rebuild large models for each code-only browser QA');
+assert(/if: steps\.choose\.outputs\.rebuild != 'true'\s+run: bash scripts\/use-pinned-runtime-assets\.sh/.test(qaWorkflow),
+  'Ordinary QA must restore the locked archive when no asset sources changed');
+assert(/if: steps\.choose\.outputs\.rebuild == 'true'\s+run: bash scripts\/prepare-runtime-assets\.sh/.test(qaWorkflow),
+  'Expensive reconstruction must be conditional on changed asset sources');
+assert(qaWorkflow.includes('scripts/runtime-asset-changes.mjs')&&
+  qaWorkflow.includes('scripts/publish-runtime-assets.sh')&&
+  qaWorkflow.includes('needs: [assets, chrome]'),
+  'The existing browser QA must own source rebuild and publish only after Chrome');
+assert(!existsSync(resolve(root,'.github/workflows/rebuild-runtime-assets.yml')),
+  'No duplicate asset rebuild workflow should exist');
 
 const self='scripts/test-rts-architecture.mjs';
 assert(qaWorkflow.includes(`'${self}'`),'architecture test changes must trigger QA');

@@ -27,13 +27,14 @@ de prolonger indéfiniment un axe.
 
 ### A — Chaîne de publication des assets (1 lot)
 
-- [ ] **A1 — Première reconstruction réellement versionnée** : exécuter le
-      parcours manuel `rebuild-runtime-assets.yml` avec une **nouvelle** version
-      (v2 ou suivante), vérifier les sources et empreintes épinglées, les trois
-      scénarios Chrome, la Release immuable, la mise à jour du verrou et Pages.
-      **Fini quand** le workflow complet a réussi et que QA/Pages utilisent la
-      même archive et le même SHA-256, sans PR ni force-push. Ne pas lancer de
-      reconstruction coûteuse uniquement pour améliorer le compteur.
+- [ ] **A1 — Première reconstruction réellement versionnée** : passer par les
+      workflows habituels : `browser-qa.yml` reconstruit exceptionnellement les
+      sources modifiées (ou une demande explicite), vérifie les trois groupes
+      Chrome, publie la prochaine Release unique et met à jour le verrou ;
+      `pages.yml` déploie ensuite l'archive épinglée. Le premier essai vise v2.
+      **Fini quand** QA, publication et Pages sont verts et utilisent la même
+      archive et le même SHA-256, sans PR ni force-push. Les commits ordinaires
+      doivent continuer à restaurer les assets déjà épinglés.
 
 ### E — État explicite d'une partie et de l'interface (3 lots)
 
@@ -219,10 +220,10 @@ objectif** : les responsabilités de rendu restent intentionnellement ici.
 - [x] Stocker une version des modèles déjà préparés dans une GitHub Release
       immuable, avec SHA-256, et faire utiliser la même version à Pages et à QA.
 - [x] Documenter l'ajout d'assets légers ou générés dans `assets/README.md`
-      et installer le workflow manuel de reconstruction versionnée. La version
-      courante v1 passe Pages et les trois scénarios Chrome.
+      et installer la reconstruction conditionnelle versionnée dans la QA Chrome
+      habituelle. La version courante v1 passe Pages et les trois scénarios.
 - Parcours complet de reconstruction encore à valider : **lot A1** du tableau
-  de bord (le workflow et les sources épinglées existent déjà).
+  de bord (la QA habituelle et les sources épinglées sont en place).
 - [x] Ajouter un manifeste de dépendances avec versions exactes et
       `package-lock.json` vérifié ; le build utilise désormais `npm ci` et
       le workflow `build-lock.yml` reconstruit le verrou au besoin.

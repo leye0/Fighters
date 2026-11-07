@@ -1,0 +1,4 @@
+# Request a one-time v2 rebuild through the ordinary Chrome QA workflow.
+# Future source changes auto-rebuild; changing this file requests a rebuild
+# without altering the model sources. Never overwrite a published release.
+v2

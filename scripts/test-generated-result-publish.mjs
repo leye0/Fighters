@@ -100,8 +100,7 @@ try{
   const migrated=[
     'import-orc-voices','import-witch-voices','install-voice-catalog',
     'install-consistent-voices','fix-voice-consistency',
-    'adjust-orc-pitch-selection','install-magic-recharge',
-    'rebuild-runtime-assets'
+    'adjust-orc-pitch-selection','install-magic-recharge'
   ];
   for(const name of migrated){
     const source=readFileSync(join(root,'.github/workflows',name+'.yml'),'utf8');
@@ -112,6 +111,9 @@ try{
     assert(source.includes('workflow_dispatch:'),
       `${name} must remain available for manual publication`);
   }
+  const assetPublisher=readFileSync(join(root,'scripts/publish-runtime-assets.sh'),'utf8');
+  assert(assetPublisher.includes('bash scripts/publish-generated-result.sh browser-qa-runtime-assets'),
+    'Normal Chrome QA asset publication must retain its recoverable result branch');
   for(const name of ['install-voice-catalog','install-consistent-voices',
     'fix-voice-consistency','adjust-orc-pitch-selection',
     'install-magic-recharge']){
@@ -124,7 +126,7 @@ try{
     assert(source.includes('if [ "${GITHUB_REF_NAME}" = main ]; then'));
     assert(source.includes('refs/heads/automation-results/music-'));
   }
-  console.log('PASS generated results: durable branches, concurrent fast-forward, conflict safety and 10 workflow guards.');
+  console.log('PASS generated results: durable branches, concurrent fast-forward, conflict safety and 9 workflow guards plus Chrome asset publisher.');
 }finally{
   rmSync(temp,{recursive:true,force:true});
 }

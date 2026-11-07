@@ -132,8 +132,14 @@ on:
       - 'scripts/browser-qa.mjs'
       - 'scripts/browser-qa/**'
       - 'scripts/prepare-runtime-assets.sh'
+      - 'scripts/runtime-asset-changes.mjs'
+      - 'scripts/test-rts-runtime-asset-changes.mjs'
+      - 'scripts/publish-runtime-assets.sh'
       - 'scripts/use-pinned-runtime-assets.sh'
       - 'assets/runtime-assets.lock'
+      - 'assets/runtime-rebuild.request'
+      - 'package.json'
+      - 'package-lock.json'
       - 'scripts/verify-costumes.mjs'
       - 'crops_low_poly.glb'
       - 'scripts/build-runtime-crops.mjs'
@@ -152,18 +158,31 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      rebuild_assets:
+        description: 'Exceptionally build and publish the next immutable asset version'
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
   assets:
     name: Prepare verified runtime assets
     runs-on: ubuntu-24.04
-    timeout-minutes: 12
+    timeout-minutes: 25
+    outputs:
+      rebuild: ${{ steps.choose.outputs.rebuild }}
+      version: ${{ steps.choose.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Test deterministic navigation and orc strategic planning
         run: |
           node --check scripts/browser-qa.mjs
@@ -229,12 +248,48 @@ jobs:
           node scripts/test-rts-garden-worker-cycle.mjs
           node scripts/test-rts-berry-forager-cycle.mjs
           node scripts/test-rts-construction-worker-cycle.mjs
+          node scripts/test-rts-runtime-asset-changes.mjs
+      - name: Decide whether source assets need rebuilding
+        id: choose
+        env:
+          PREVIOUS_SHA: ${{ github.event.before }}
+          REQUESTED_REBUILD: ${{ inputs.rebuild_assets }}
+        run: |
+          set -euo pipefail
+          rebuild=false
+          if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && "$REQUESTED_REBUILD" == true ]]; then
+            rebuild=true
+          elif [[ "$GITHUB_EVENT_NAME" == push ]]; then
+            if [[ "$PREVIOUS_SHA" != "0000000000000000000000000000000000000000" ]] &&
+               ! git cat-file -e "${PREVIOUS_SHA}^{commit}" 2>/dev/null; then
+              git fetch --no-tags --depth=1 origin "$PREVIOUS_SHA"
+            fi
+            rebuild="$(node scripts/runtime-asset-changes.mjs "$PREVIOUS_SHA" "$GITHUB_SHA")"
+          fi
+          echo "rebuild=$rebuild" >> "$GITHUB_OUTPUT"
+          if [[ "$rebuild" == true ]]; then
+            old_tag="$(sed -n 's/^tag=//p' assets/runtime-assets.lock)"
+            if [[ ! "$old_tag" =~ ^fighters-runtime-assets-v([0-9]+)$ ]]; then
+              echo 'Invalid runtime asset version in lock' >&2
+              exit 1
+            fi
+            version="v$(( ${BASH_REMATCH[1]} + 1 ))"
+            echo "version=$version" >> "$GITHUB_OUTPUT"
+            echo "Rebuilding pinned sources into ${version}."
+          else
+            echo 'Restoring the existing verified archive; no rebuild needed.'
+          fi
       - uses: actions/cache@v4
+        if: steps.choose.outputs.rebuild != 'true'
         with:
           path: .cache/fighters
           key: fighters-runtime-${{ hashFiles('assets/runtime-assets.lock') }}
       - name: Restore verified, prebuilt runtime assets
+        if: steps.choose.outputs.rebuild != 'true'
         run: bash scripts/use-pinned-runtime-assets.sh
+      - name: Rebuild runtime assets from pinned sources
+        if: steps.choose.outputs.rebuild == 'true'
+        run: bash scripts/prepare-runtime-assets.sh
       - uses: actions/upload-artifact@v4
         with:
           name: fighters-runtime-assets
@@ -292,3 +347,26 @@ jobs:
           path: captures/
           retention-days: 3
           if-no-files-found: ignore
+  publish_assets:
+    name: Publish newly verified runtime assets
+    if: github.event_name != 'pull_request' && needs.assets.outputs.rebuild == 'true'
+    needs: [assets, chrome]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    concurrency:
+      group: fighters-runtime-assets-publisher
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      FIGHTERS_ASSET_VERSION: ${{ needs.assets.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: fighters-runtime-assets
+          path: docs
+      - name: Publish only the archive tested by Chrome and pin its SHA-256
+        run: bash scripts/publish-runtime-assets.sh

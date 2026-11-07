@@ -56,7 +56,12 @@ scripts d'import effectifs.
 Le build *exceptionnel* des modèles/Three.js utilise `npm ci` avec versions
 transitives et intégrités enregistrées dans `package-lock.json` ; l'étape
 `build-lock.yml` est réservée à la génération/validation de ce verrou.
-Le démarrage normal de Pages ou Chrome ne fait jamais `npm ci`.
+`browser-qa.yml` restaure le ZIP épinglé pour les commits ordinaires ; seules
+les modifications des sources identifiées par `runtime-asset-changes.mjs`
+(ou une demande explicite) reconstruisent le paquet. Les trois suites Chrome
+valident alors **le même artefact** que `publish-runtime-assets.sh` archive en
+Release versionnée et épingle avec SHA-256. Le workflow Pages ne reconstruit
+jamais les modèles ; il restaure le ZIP de la nouvelle version validée.
 
 ## Contrats et règles de cohérence
 

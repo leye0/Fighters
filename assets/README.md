@@ -14,16 +14,26 @@ modèles à chaque déploiement. Deux catégories existent :
    `scripts/prepare-runtime-assets.sh`. Ne jamais dépendre d'une URL changeante
    sans vérification d'intégrité ou oublier les conditions de licence.
 
-## Publier une nouvelle version (sans PR)
+## Publier une nouvelle version par les workflows habituels (sans PR)
 
-1. Pousser les sources et les scripts de transformation sur `main`.
-2. Ouvrir **Actions → Rebuild and publish a new runtime asset version → Run
-   workflow**, et entrer la prochaine version (`v2`, puis `v3`, etc.).
-3. Le job reconstruit les modèles, exécute les tests Node et les trois groupes
-   Chrome (`visual`, `economy`, `combat`). Si un test échoue, rien n'est publié.
-4. Si tout passe, le job crée une **GitHub Release versionnée**, écrit la nouvelle
-   version et son SHA-256 dans `assets/runtime-assets.lock`, puis déclenche la
-   QA et la publication Pages. Il ne force jamais de mise à jour de `main`.
+1. Pousser une modification d'une source de reconstruction sur `main`.
+   `scripts/runtime-asset-changes.mjs` détermine précisément quels fichiers
+   demandent une reconstruction ; les autres modifications réutilisent le ZIP
+   existant. Le fichier `assets/runtime-rebuild.request` permet également de
+   réclamer une reconstruction sans changer de source.
+2. Le **workflow Chrome habituel** `browser-qa.yml` reconstruit le paquet avec
+   les versions épinglées, puis exécute ses suites Node et Chrome habituelles
+   (`visual`, `economy`, `combat`). Si un test échoue, rien n'est publié.
+3. Le job de publication de cette même QA reprend **exactement les fichiers
+   testés**, crée la prochaine GitHub Release (`v2`, puis `v3`...), et écrit
+   son SHA-256 dans `assets/runtime-assets.lock`, sans PR ni force-push.
+4. La QA habituelle et Pages sont ensuite relancées sur `main` pour restaurer
+   et vérifier l'archive publiée. Le workflow Pages conserve sa responsabilité
+   exclusive pour le déploiement du site.
+
+Le même workflow Chrome permet un lancement manuel exceptionnel en cochant
+`rebuild_assets` dans ses entrées ; il n'existe aucun deuxième workflow de
+reconstruction. Une version déjà publiée ne peut pas être écrasée.
 
 Les versions publiées sont conservées ; elles ne sont jamais écrasées. Pour
 revenir à une version antérieure, restaurer sa valeur de `tag`, `archive` et
@@ -36,6 +46,5 @@ revenir à une version antérieure, restaurer sa valeur de `tag`, `archive` et
   est réutilisé ; GitHub Actions met ce cache de côté entre les exécutions.
 - La QA et Pages partagent donc exactement les mêmes modèles sans npm, pip,
   téléchargements de sources externes ni transformations 3D par commit.
-- `scripts/prepare-runtime-assets.sh` reste l'outil **de reconstruction** lors
-  de l'ajout ou de la modification des ressources. Ce n'est plus le chemin
-  de déploiement quotidien.
+- `scripts/prepare-runtime-assets.sh` est appelé **seulement** par le chemin
+  conditionnel de la QA ordinaire pour une reconstruction exceptionnelle.
