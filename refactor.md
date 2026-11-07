@@ -159,6 +159,12 @@ qu'après modification, vérification et intégration dans `main`.
       paiement à la livraison, interruptions, trajets bloqués et reset.
       Tests Node et QA Chrome `visual`, `economy`, `combat` verts :
       run 42320598280 ; Pages vert : run 42320598368.
+- [x] Extraire la cueillette des baies sauvages dans
+      `rts-berry-forager-cycle.js` : cadence de 850 ms, deux cueilleuses au
+      maximum, portée de 3 unités, vigilance des combattantes, navigation,
+      interruptions, consommation sur place pendant 1,6 seconde et reset.
+      Tests Node et QA Chrome `visual`, `economy`, `combat` verts :
+      run 42321954353 ; Pages vert : run 42321954323.
 - [x] Séparer la décision stratégique des deux IA de l'exécution des commandes :
       directeurs `*-strategy.js`, exécution `rts-ai-commands.js`.
 - [x] Valider en Chrome l'exécution des actions Orc/Sorcière extraite dans
