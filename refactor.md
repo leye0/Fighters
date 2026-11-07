@@ -165,6 +165,13 @@ qu'après modification, vérification et intégration dans `main`.
       interruptions, consommation sur place pendant 1,6 seconde et reset.
       Tests Node et QA Chrome `visual`, `economy`, `combat` verts :
       run 42321954353 ; Pages vert : run 42321954323.
+- [x] Extraire le travail des constructeurs dans
+      `rts-construction-worker-cycle.js` : trajet et contact des chantiers,
+      animations et cadence du marteau/potager, six secondes de travail,
+      annulation, remboursement des ressources courantes et achèvement de
+      chaque type de bâtiment sans déplacer le rendu 3D hors de `game.js`.
+      Tests Node et QA Chrome `visual`, `economy`, `combat` verts :
+      run 42324863037 ; Pages vert : run 42324863022.
 - [x] Séparer la décision stratégique des deux IA de l'exécution des commandes :
       directeurs `*-strategy.js`, exécution `rts-ai-commands.js`.
 - [x] Valider en Chrome l'exécution des actions Orc/Sorcière extraite dans
