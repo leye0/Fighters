@@ -27,7 +27,7 @@ de prolonger indéfiniment un axe.
 
 ### A — Chaîne de publication des assets (1 lot)
 
-- [ ] **A1 — Première reconstruction réellement versionnée** : passer par les
+- [x] **A1 — Première reconstruction réellement versionnée** : passer par les
       workflows habituels : `browser-qa.yml` reconstruit exceptionnellement les
       sources modifiées (ou une demande explicite), vérifie les trois groupes
       Chrome, publie la prochaine Release unique et met à jour le verrou ;
@@ -35,6 +35,13 @@ de prolonger indéfiniment un axe.
       **Fini quand** QA, publication et Pages sont verts et utilisent la même
       archive et le même SHA-256, sans PR ni force-push. Les commits ordinaires
       doivent continuer à restaurer les assets déjà épinglés.
+      **Validé** : reconstruction `v2` et trois suites Chrome vertes dans
+      `browser-qa.yml` (run 42405984071), Release
+      `fighters-runtime-assets-v2` publiée et épinglée par le commit 216ae9d ;
+      empreinte SHA-256 `484a69b486c6ac6a829cdadbdf40e32e1ad28a64428547cc3363b03ffafc3e02`
+      identique dans la Release et `runtime-assets.lock`. QA Chrome relancée
+      depuis l'archive verrouillée (run 42406300912, trois suites vertes),
+      Pages verte (run 42406302788). Aucun workflow séparé ni force-push.
 
 ### E — État explicite d'une partie et de l'interface (3 lots)
 
