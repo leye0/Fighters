@@ -1815,23 +1815,23 @@ function beginRally(){
   rallyMode=true;buildMode=null;constructionTab=false;refreshHUD();return true;
 }
 
-const WITCH_BUILD_COST=230,GARDEN_BUILD_COST=175,STONE_BUILD_COST=260,BUILD_SECONDS=6;
-const BUILD_WOOD_COST=Object.freeze({'witch-house':75,garden:0,'stone-circle':85,
-  hut:55,barrack:95,cauldron:80,factory:130,wall:10});
+const {WITCH_BUILD_COST,GARDEN_BUILD_COST,STONE_BUILD_COST}=
+  window.FightersBuildingPlacement;
+const BUILD_SECONDS=6;
 const {pendingBuilds}=matchWorld;
-function constructionCost(type){
-  return type==='witch-house'?WITCH_BUILD_COST:type==='garden'?GARDEN_BUILD_COST:
-    type==='stone-circle'?STONE_BUILD_COST:ORC_COSTS[type]||null;
-}
-function constructionWood(type){return BUILD_WOOD_COST[type]??0;}
-function canAffordConstruction(clan,type){
-  return matchResources.gold[clan]>=constructionCost(type)&&
-    matchResources.wood[clan]>=constructionWood(type);
-}
-function buildFaction(type){return ['witch-house','garden','stone-circle'].includes(type)?'witch':'orc';}
-function builderAvailable(clan){
-  return units.some(u=>u.kind===clan&&roles.isWorker(u)&&!u.dead);
-}
+const buildingPlacement=window.FightersBuildingPlacement.create({
+  orcCosts:ORC_COSTS,getGold:()=>matchResources.gold,getWood:()=>matchResources.wood,
+  units,isWorker:roles.isWorker,arena,clearance:BUILD_CLEARANCE,
+  unitRadius:UNIT_RADIUS,navigatorRTS,Navigator:window.FightersNavigation.Navigator,
+  footprints:window.FightersFootprints,walls:window.FightersWalls,
+  getForestObstacles:()=>forestObstacles,getBushes:()=>wildBerries.bushes,
+  liveBuildings,pendingBuilds,wallNeighbours,wallPlacement,buildShape,circleUnlocked
+});
+function constructionCost(type){return buildingPlacement.constructionCost(type);}
+function constructionWood(type){return buildingPlacement.constructionWood(type);}
+function canAffordConstruction(clan,type){return buildingPlacement.canAffordConstruction(clan,type);}
+function buildFaction(type){return buildingPlacement.buildFaction(type);}
+function builderAvailable(clan){return buildingPlacement.builderAvailable(clan);}
 function beginBuild(type){
   const clan=buildFaction(type),cost=constructionCost(type);
   if(!running||paused||activeFaction!==clan||!cost||
@@ -1846,25 +1846,6 @@ function wallNeighbours(){return [...buildingInstances.values()].filter(b=>b.typ
   .map(b=>({x:b.root.position.x,z:b.root.position.z,axis:b.wallAxis,hitbox:b.hitbox}));}
 function wallPlacement(x,z,axis){return window.FightersWalls.resolve(x,z,wallNeighbours(),
   liveBuildings().filter(b=>b.clanId==='orcs'),axis);}
-function wallKeepsVillageExit(proposed){
-  // Compare paths from an actual village orc to westward exits before/after
-  // placement. Even a player-placed wall cannot seal the last usable exit.
-  const inside=units.filter(u=>u.kind==='orc'&&!u.dead&&
-    Math.hypot(u.root.position.x-19,u.root.position.z-18)<10&&
-    navigatorRTS.pointClear(u.root.position)).sort((a,b)=>
-    Math.hypot(a.root.position.x-19,a.root.position.z-18)-
-    Math.hypot(b.root.position.x-19,b.root.position.z-18))[0];
-  const source=inside?{x:inside.root.position.x,z:inside.root.position.z}:
-    navigatorRTS.findSafeGoal({x:19,z:18});
-  if(!source)return true;
-  const exits=[{x:3,z:18},{x:6,z:10},{x:5,z:26}].filter(p=>
-    navigatorRTS.pointClear(p)&&!!navigatorRTS.plan(source,p));
-  if(!exits.length)return true;
-  const check=new window.FightersNavigation.Navigator({
-    halfSize:arena.worldHalf,cellSize:1,radius:UNIT_RADIUS,region:arena});
-  check.setObstacles([...navigatorRTS.obstacles,proposed]);
-  return check.pointClear(source)&&exits.some(p=>check.pointClear(p)&&!!check.plan(source,p));
-}
 function buildShape(type,x,z,axis){
   const geometry=window.FightersFootprints;
   if(type==='wall')return window.FightersWalls.shape(x,z,axis||wallPlacement(x,z).axis);
@@ -1876,48 +1857,7 @@ function buildShape(type,x,z,axis){
   return template?.collisionLocal?geometry.translated(template.collisionLocal,x,z):null;
 }
 function validBuildPosition(x,z,type='hut',axis){
-  if(!constructionCost(type))return false;
-  if(type==='stone-circle'&&!circleUnlocked())return false;
-  if(type==='wall'&&!axis){const point=wallPlacement(x,z);x=point.x;z=point.z;axis=point.axis;}
-  const proposed=buildShape(type,x,z,axis);
-  if(!proposed)return false;
-  const clan=buildFaction(type),geometry=window.FightersFootprints;
-  const minX=clan==='witch'?-arena.worldHalf:0,
-    maxX=clan==='witch'?0:arena.worldHalf;
-  // Keep the existing faction territories on their world X side, but test
-  // every silhouette vertex against the actual screen-square battlefield.
-  if(proposed.minX<minX+BUILD_CLEARANCE||proposed.maxX>maxX-BUILD_CLEARANCE||
-    proposed.polygons.some(poly=>poly.some(ring=>ring.some(([px,pz])=>
-      !arena.contains(px,pz,BUILD_CLEARANCE)))))return false;
-  // The same true projected X/Z polygons govern construction and collision.
-  if(forestObstacles.some(tree=>geometry.withinClearance(proposed,tree,BUILD_CLEARANCE))||
-     wildBerries.bushes.some(b=>geometry.distanceTo({x:b.x,z:b.z},proposed)<1.65)||
-     liveBuildings().some(b=>b.type!=='wall'&&geometry.withinClearance(proposed,b.hitbox,BUILD_CLEARANCE))||
-     pendingBuilds.some(job=>job.type!=='wall'&&geometry.withinClearance(proposed,job.site.hitbox,BUILD_CLEARANCE)))return false;
-  const walls=wallNeighbours(),candidate={x,z,axis:axis||wallPlacement(x,z).axis};
-  const pendingWalls=pendingBuilds.filter(j=>j.type==='wall').map(j=>({
-    x:j.x,z:j.z,axis:j.axis,hitbox:j.site.hitbox}));
-  if(type==='wall'){
-    if([...walls,...pendingWalls].some(w=>!window.FightersWalls.compatible(candidate,w)))return false;
-    // Wall-to-wall placement cannot leave an isolated distant section; touching
-    // caps are permitted (indeed preferred) at straight runs and corners.
-    if(![...walls,...pendingWalls].some(w=>geometry.withinClearance(proposed,w.hitbox,
-      window.FightersWalls.MAX_LINK_GAP))&&
-      !liveBuildings().some(b=>b.clanId==='orcs'&&b.type!=='mine'&&b.type!=='wall'&&
-        geometry.withinClearance(proposed,b.hitbox,16)))return false;
-    if(!wallKeepsVillageExit(proposed))return false;
-  }else{
-    // New structures must grow from a real allied structure, never from walls
-    // or neutral gold deposits. Both clans obey the same 8-world-unit limit.
-    if(!liveBuildings().some(b=>b.clanId===(clan==='orc'?'orcs':'witch')&&
-      b.type!=='wall'&&b.type!=='mine'&&
-      geometry.withinClearance(proposed,b.hitbox,8)))return false;
-    if([...walls,...pendingWalls].some(w=>geometry.withinClearance(proposed,w.hitbox,BUILD_CLEARANCE)))return false;
-  }
-  // The garden is cultivated ground, not a solid building: occupying a bed
-  // must not prevent the gardener from finishing construction inside it.
-  return type==='garden'||type==='stone-circle'||units.every(actor=>actor.dead||
-    !geometry.pointBlocked(actor.root.position,proposed,UNIT_RADIUS));
+  return buildingPlacement.validBuildPosition(x,z,type,axis);
 }
 function stoneCircleShape(x,z){
   const points=Array.from({length:24},(_,i)=>{

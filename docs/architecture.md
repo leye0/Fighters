@@ -29,6 +29,7 @@ dans [`../refactor.md`](../refactor.md).
 | Commandes joueur | `rts-picking.js`, `rts-camera.js`, `rts-gestures.js`, `rts-player-actions.js` | `test-rts-picking.mjs`, `test-rts-camera.mjs`, `test-rts-gestures.mjs`, `test-rts-player-actions.mjs`, QA Chrome tactile |
 | Modèles et ressources | `rts-assets.js`, `rts-model-assets.js`, `assets/runtime-assets.lock`, `package.json`, `package-lock.json`, `scripts/use-pinned-runtime-assets.sh` | `test-rts-assets.mjs`, `test-rts-model-assets.mjs`, `test-runtime-build-manifest.mjs`, QA Chrome, Pages |
 | Monde et visibilité | `rts-map.js`, `rts-footprint.js`, `rts-fog.js`, `rts-forest.js` | `test-rts-map.mjs`, `test-rts-footprint.mjs`, `test-rts-fog.mjs`, `test-rts-forest.mjs` |
+| Placement de bâtiments | `rts-building-placement.js`, `rts-walls.js` (raccords de remparts), `game.js` (formes et visualisation) | `test-rts-building-placement.mjs`, `test-rts-walls.mjs`, Chrome `economy`, `visual` |
 | Présentation | `styles/game.css`, `rts-minimap.js`, `rts-hud.js`, `game.js` (composition HUD/rendu) | `test-rts-minimap.mjs`, `test-rts-hud.mjs`, Chrome `visual`, `economy`, `combat` |
 | Validation navigateur | `scripts/browser-qa/` par scénario, `chrome-driver.mjs` commun | Workflows `browser-qa.yml` et `chrome-retry.yml` (relance réelle ciblée) |
 | Architecture et intégration | `index.html`, `AGENTS.md`, `architecture.md`, `browser-qa.yml`, `publish-generated-result.sh` | `test-rts-architecture.mjs` (frontières, includes, ownership et CI), `test-generated-result-publish.mjs`, workflow `generated-results.yml` |
@@ -96,6 +97,10 @@ Le démarrage normal de Pages ou Chrome ne fait jamais `npm ci`.
   contact (6 secondes), des annulations et des remboursements ; les aperçus,
   bâtiments réels, sons et ressources de la partie sont injectés sans référence
   périmée au trésor précédent.
+- `rts-building-placement.js` décide si un bâtiment peut être placé : économie
+  actuelle, travailleurs vivants, camp du constructeur, silhouettes X/Z,
+  obstacles, liens entre remparts et sortie praticable du village orc. Il ne
+  crée ni mesh ni bâtiment ; `game.js` fournit formes, monde et navigation.
 - `rts-repair.js` possède aussi l'automate des réparateurs : annulation,
   approche, blocages, animations de marteau cadencées et restauration
   proportionnelle jusqu'aux PV maximum. `game.js` injecte navigation, son,

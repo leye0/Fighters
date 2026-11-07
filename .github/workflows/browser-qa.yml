@@ -9,6 +9,7 @@ on:
       - 'docs/rts-map.js'
       - 'docs/rts-footprint.js'
       - 'docs/rts-walls.js'
+      - 'docs/rts-building-placement.js'
       - 'docs/rts-navigation.js'
       - 'docs/rts-raiding.js'
       - 'docs/rts-fog.js'
@@ -62,6 +63,7 @@ on:
       - 'scripts/test-rts-fog.mjs'
       - 'scripts/test-rts-footprint.mjs'
       - 'scripts/test-rts-walls.mjs'
+      - 'scripts/test-rts-building-placement.mjs'
       - 'docs/rts-unit-physics.js'
       - 'docs/rts-simulation.js'
       - 'docs/rts-unit-tick.js'
@@ -153,6 +155,7 @@ jobs:
           for qa_file in scripts/browser-qa/*.mjs; do node --check "$qa_file"; done
           node scripts/test-rts-footprint.mjs
           node scripts/test-rts-walls.mjs
+          node scripts/test-rts-building-placement.mjs
           node scripts/test-rts-navigation.mjs
           node scripts/test-rts-raiding.mjs
           node scripts/test-rts-map.mjs

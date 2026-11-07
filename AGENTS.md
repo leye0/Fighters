@@ -60,6 +60,10 @@ modules (`docs/rts-contracts.d.ts`).
 - `docs/rts-construction-worker-cycle.js` : trajet vers le chantier, animations,
   durée d'ouvrage, annulation et remboursement, achèvement et paiement
   conditionnel ; les aperçus et réalisations 3D restent injectés par `game.js`.
+- `docs/rts-building-placement.js` : politique de construction indépendante du
+  rendu (coûts, ouvriers, géométrie, distances, remparts et sortie du village).
+  Les silhouettes, arbres, ressources et chemins actuels sont injectés depuis
+  `game.js` à chaque demande ; ne pas mémoriser un ancien état de partie.
 - `docs/rts-repair.js` : validation des réparations et automate des ouvriers
   réparateurs (approche, blocage, cadence et progression jusqu'aux PV maximum).
   Navigation, animation, son et affichage restent injectés par `game.js`.
