@@ -37,12 +37,17 @@ de prolonger indéfiniment un axe.
 
 ### E — État explicite d'une partie et de l'interface (3 lots)
 
-- [ ] **E1 — Scalaires de session** : sortir de `game.js` les compteurs et
+- [x] **E1 — Scalaires de session** : sortir de `game.js` les compteurs et
       drapeaux propres à une partie (`nextUnitId`, accumulateurs stratégiques,
       cycles d'extraction, événements/factions de match), dans un propriétaire
       initialisable et réinitialisable. **Fini quand** les modules utilisent
       cet état sans variables libres métier et que deux parties consécutives
       conservent exactement le même comportement et les mêmes compteurs.
+      Réalisé dans `rts-session-state.js` (état stable, resets aux points
+      historiques, statuts/factions, IDs, cycles, IA, brouillard, voix et
+      statistiques minières). Tests Node de deux parties et états indépendants ;
+      QA Chrome `visual`, `economy`, `combat` verte : run 42333881695 ;
+      Pages verte : run 42333881676. Les modes de clic sont réservés à E2.
 - [ ] **E2 — Modes d'interaction du joueur** : regrouper les modes construction,
       attaque, réparation, corbeau et ralliement ainsi que les sélections
       associées, avec accès contrôlé depuis HUD, gestes et commandes.
