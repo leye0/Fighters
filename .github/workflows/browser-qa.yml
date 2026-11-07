@@ -14,6 +14,7 @@ on:
       - 'docs/rts-actor-navigation.js'
       - 'docs/rts-damage-cycle.js'
       - 'docs/rts-village-defense.js'
+      - 'docs/rts-visibility-cycle.js'
       - 'docs/rts-raiding.js'
       - 'docs/rts-fog.js'
       - 'docs/rts-sound.js'
@@ -125,6 +126,7 @@ on:
       - 'scripts/test-rts-actor-navigation.mjs'
       - 'scripts/test-rts-damage-cycle.mjs'
       - 'scripts/test-rts-village-defense.mjs'
+      - 'scripts/test-rts-visibility-cycle.mjs'
       - 'scripts/test-rts-raiding.mjs'
       - 'scripts/test-rts-map.mjs'
       - 'scripts/browser-qa.mjs'
@@ -173,6 +175,7 @@ jobs:
           node scripts/test-rts-actor-navigation.mjs
           node scripts/test-rts-damage-cycle.mjs
           node scripts/test-rts-village-defense.mjs
+          node scripts/test-rts-visibility-cycle.mjs
           node scripts/test-rts-raiding.mjs
           node scripts/test-rts-map.mjs
           node scripts/test-rts-fog.mjs

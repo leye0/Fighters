@@ -28,7 +28,7 @@ dans [`../refactor.md`](../refactor.md).
 | IA | `orc-strategy.js`, `witch-strategy.js`, `rts-ai-observations.js`, `rts-ai-commands.js` | `test-orc-strategy.mjs`, `test-witch-strategy.mjs`, `test-rts-ai-observations.mjs`, `test-rts-ai-commands.mjs` |
 | Commandes joueur | `rts-picking.js`, `rts-camera.js`, `rts-gestures.js`, `rts-player-interaction.js`, `rts-player-actions.js` | `test-rts-picking.mjs`, `test-rts-camera.mjs`, `test-rts-gestures.mjs`, `test-rts-player-interaction.mjs`, `test-rts-player-actions.mjs`, QA Chrome tactile |
 | Modèles et ressources | `rts-assets.js`, `rts-model-assets.js`, `assets/runtime-assets.lock`, `package.json`, `package-lock.json`, `scripts/use-pinned-runtime-assets.sh` | `test-rts-assets.mjs`, `test-rts-model-assets.mjs`, `test-runtime-build-manifest.mjs`, QA Chrome, Pages |
-| Monde et visibilité | `rts-map.js`, `rts-footprint.js`, `rts-fog.js`, `rts-forest.js` | `test-rts-map.mjs`, `test-rts-footprint.mjs`, `test-rts-fog.mjs`, `test-rts-forest.mjs` |
+| Monde et visibilité | `rts-map.js`, `rts-footprint.js`, `rts-fog.js`, `rts-visibility-cycle.js`, `rts-forest.js` | `test-rts-map.mjs`, `test-rts-footprint.mjs`, `test-rts-fog.mjs`, `test-rts-visibility-cycle.mjs`, `test-rts-forest.mjs`, Chrome `visual`, `economy`, `combat` |
 | Placement de bâtiments | `rts-building-placement.js`, `rts-walls.js` (raccords de remparts), `game.js` (formes et visualisation) | `test-rts-building-placement.mjs`, `test-rts-walls.mjs`, Chrome `economy`, `visual` |
 | Présentation | `styles/game.css`, `rts-minimap.js`, `rts-hud.js`, `game.js` (composition HUD/rendu) | `test-rts-minimap.mjs`, `test-rts-hud.mjs`, Chrome `visual`, `economy`, `combat` |
 | Validation navigateur | `scripts/browser-qa/` par scénario, `chrome-driver.mjs` commun | Workflows `browser-qa.yml` et `chrome-retry.yml` (relance réelle ciblée) |
@@ -110,6 +110,14 @@ Le démarrage normal de Pages ou Chrome ne fait jamais `npm ci`.
   au moment de chaque décision ; navigation et ordres restent injectés.
   L'ordre historique des annulations et les seuils 8/13/18, 6/8 gardes,
   72 %/40 %/30 % de dégâts sont conservés.
+- `rts-visibility-cycle.js` possède les sources terrestres et aériennes de
+  vision, l'identification persistante des bâtiments adverses et les décisions
+  de visibilité dépendantes du clan actif. `rts-fog.js` conserve les deux grilles
+  de couverture et leur historique ; les neuf points de découverte des
+  bâtiments et l'ordre sorcières puis orcs sont conservés. `game.js` adapte
+  uniquement les booléens décidés au rendu 3D et à la texture du brouillard ;
+  `rts-minimap.js` garde son canevas 2D et sa vision terrestre distincte pour
+  que les corbeaux ne signalent pas leur position sur la mini-carte.
 - `rts-player-interaction.js` conserve les modes de construction, attaque,
   ralliement et déplacement de corbeau, l'onglet du HUD et la sélection
   bâtiment/corbeau. La sélection des unités reste dans `rts-world-state.js`.

@@ -34,6 +34,7 @@ const boundaries=[
   ['rts-actor-navigation','FightersActorNavigation'],
   ['rts-damage-cycle','FightersDamageCycle'],
   ['rts-village-defense','FightersVillageDefense'],
+  ['rts-visibility-cycle','FightersVisibilityCycle'],
   ['rts-match-state','FightersMatchState'],
   ['rts-world-state','FightersWorldState'],
   ['rts-orc-forager','FightersOrcForager'],

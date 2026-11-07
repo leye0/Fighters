@@ -42,6 +42,11 @@ modules (`docs/rts-contracts.d.ts`).
   défensifs, retours au poste, alarmes de bâtiments et choix des réparateurs
   d'urgence. Brouillard, navigation, annulation des tâches et ordres sont
   injectés ; préserver priorités, limites et ordre des interruptions.
+- `docs/rts-visibility-cycle.js` : constitution des sources de vision
+  (unités, bâtiments, corbeaux), découverte persistante des bâtiments ennemis
+  pour chaque clan, politique de visibilité des unités, structures, barres de
+  santé et chantiers. `rts-fog.js` garde les grilles ; les mutations de meshes,
+  le shader WebGL et le rendu de mini-carte restent dans leurs adaptateurs.
 - `docs/rts-match-state.js` : propriétaire des ressources or/bois/magie d'une partie,
   avec réinitialisation en valeurs neuves ; les autres systèmes ne gardent
   jamais leurs références après une nouvelle partie.
@@ -153,6 +158,9 @@ modules (`docs/rts-contracts.d.ts`).
 - `scripts/test-rts-village-defense.mjs` : contre-attaque de raid, mobilisation
   locale et globale, périmètres et retours, sélection des menaces visibles,
   interventions urgentes des réparateurs et priorités, sans Three.js.
+- `scripts/test-rts-visibility-cycle.mjs` : neuf échantillons de découverte,
+  sources aériennes/terrestres, mémoire indépendante des clans, visibilité
+  persistante, santé et chantiers, ordre des mises à jour, sans Three.js.
 - `scripts/publish-generated-result.sh` : préserve les fichiers produits par les
   workflows sous `automation-results/<workflow>/<run>-<tentative>`, puis applique
   leur commit sur la tête actuelle de `main` sans force-push ni PR ; un conflit

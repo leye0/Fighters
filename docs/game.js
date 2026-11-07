@@ -478,74 +478,37 @@ function positionFogOverlay(){
   fogShader.uniforms.right.value.set(fogBR.x-fogBL.x,fogBR.z-fogBL.z);
   fogShader.uniforms.up.value.set(fogTL.x-fogBL.x,fogTL.z-fogBL.z);
 }
+const visibilityCycle=window.FightersVisibilityCycle.create({
+  fogOfWar,knownEnemyBuildings,units,liveBuildings,
+  getFaction:()=>session.activeFaction,
+  getSelectedBuilding:()=>interaction.selectedBuilding,
+  getPendingBuilds:()=>pendingBuilds,buildFaction,
+  ravenReady:()=>ravenModelLoaded,
+  ravenSightSources:()=>ravenFlock.visionSources(),
+  setActorVisible:(actor,visible)=>{actor.root.visible=visible;},
+  setBuildingVisible:(building,visible)=>{
+    if(building.root)building.root.visible=visible;
+  },
+  setBuildingHealthBarVisible:(building,visible)=>{
+    building.healthBar.root.visible=visible;
+  },
+  setPreviewVisible:(job,visible)=>{job.preview.root.visible=visible;},
+  uploadFogTexture:clan=>{
+    fogTexture.image.data=fogOfWar.textureData(clan);
+    fogTexture.needsUpdate=true;
+  }
+});
 function buildingInDiscoveredZone(building,clan){
-  const h=building.hitbox;
-  if(!h)return false;
-  const midX=(h.minX+h.maxX)/2,midZ=(h.minZ+h.maxZ)/2;
-  // Large/irregular buildings are discovered by their perimeter as well as
-  // their centre. Five axis samples alone could leave the model invisible
-  // while a nearby soldier was already attacking the exposed corner.
-  // Keep the exact nine samples and short-circuit order without allocating
-  // nine coordinate arrays every time a health bar is updated.
-  return fogOfWar.exploredAt(midX,midZ,clan)||
-    fogOfWar.exploredAt(h.minX,midZ,clan)||
-    fogOfWar.exploredAt(h.maxX,midZ,clan)||
-    fogOfWar.exploredAt(midX,h.minZ,clan)||
-    fogOfWar.exploredAt(midX,h.maxZ,clan)||
-    fogOfWar.exploredAt(h.minX,h.minZ,clan)||
-    fogOfWar.exploredAt(h.minX,h.maxZ,clan)||
-    fogOfWar.exploredAt(h.maxX,h.minZ,clan)||
-    fogOfWar.exploredAt(h.maxX,h.maxZ,clan);
+  return visibilityCycle.buildingInDiscoveredZone(building,clan);
 }
 function groundSightSources(clan,structures=liveBuildings()){
-  const ownership=clan==='witch'?'witch':'orcs';
-  const sources=units.filter(actor=>actor.kind===clan&&!actor.dead)
-    .map(actor=>({x:actor.root.position.x,z:actor.root.position.z}));
-  // Completed clan buildings have the same sight radius as a character.
-  // Natural gold mines are deposits, not watchtowers.
-  for(const b of structures){
-    if(b.clanId!==ownership||b.type==='mine'||b.type==='wall'||!b.hitbox)continue;
-    sources.push({x:(b.hitbox.minX+b.hitbox.maxX)/2,
-      z:(b.hitbox.minZ+b.hitbox.maxZ)/2});
-  }
-  return sources;
+  return visibilityCycle.groundSightSources(clan,structures);
 }
 function updateVision(){
-  const structures=liveBuildings();
-  for(const [clan,ownership] of [['witch','witch'],['orc','orcs']]){
-    const sources=groundSightSources(clan,structures);
-    if(clan==='witch'&&ravenModelLoaded)sources.push(...ravenFlock.visionSources());
-    fogOfWar.update(clan,sources);
-    for(const b of structures){
-      if(b.clanId!==ownership&&b.clanId!=='neutral'&&buildingInDiscoveredZone(b,clan))
-        knownEnemyBuildings[clan].add(b.id);
-    }
-  }
-  // Only active-faction discovery controls gameplay visibility. The player
-  // keeps seeing all units in discovered zones, even after scouts leave;
-  // the Orc clan's discovery never leaks into the Witch player's map.
-  const ownership=session.activeFaction==='witch'?'witch':'orcs';
-  for(const actor of units){
-    actor.root.visible=actor.kind===session.activeFaction||
-      fogOfWar.exploredAt(actor.root.position.x,actor.root.position.z,session.activeFaction);
-  }
-  for(const b of structures){
-    const friendly=b.clanId===ownership;
-    const discovered=buildingInDiscoveredZone(b,session.activeFaction);
-    if(b.root)b.root.visible=friendly||discovered;
-    if(b.healthBar)b.healthBar.root.visible=(friendly||discovered)&&
-      (b.health<b.maxHealth||interaction.selectedBuilding===b);
-  }
-  for(const job of pendingBuilds)if(job.preview){
-    const owner=buildFaction(job.type);
-    job.preview.root.visible=owner===session.activeFaction||
-      fogOfWar.exploredAt(job.x,job.z,session.activeFaction);
-  }
-  fogTexture.image.data=fogOfWar.textureData(session.activeFaction);
-  fogTexture.needsUpdate=true;
+  return visibilityCycle.updateVision();
 }
 function visibleToPlayer(x,z){
-  return fogOfWar.exploredAt(x,z,session.activeFaction);
+  return visibilityCycle.visibleToPlayer(x,z);
 }
 // Units in explored terrain remain visible and audible; units in the
 // never-discovered black territory remain hidden and silent.
