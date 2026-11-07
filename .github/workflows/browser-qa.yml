@@ -12,6 +12,7 @@ on:
       - 'docs/rts-building-placement.js'
       - 'docs/rts-navigation.js'
       - 'docs/rts-actor-navigation.js'
+      - 'docs/rts-damage-cycle.js'
       - 'docs/rts-raiding.js'
       - 'docs/rts-fog.js'
       - 'docs/rts-sound.js'
@@ -121,6 +122,7 @@ on:
       - 'scripts/build-runtime-characters.mjs'
       - 'scripts/test-rts-navigation.mjs'
       - 'scripts/test-rts-actor-navigation.mjs'
+      - 'scripts/test-rts-damage-cycle.mjs'
       - 'scripts/test-rts-raiding.mjs'
       - 'scripts/test-rts-map.mjs'
       - 'scripts/browser-qa.mjs'
@@ -167,6 +169,7 @@ jobs:
           node scripts/test-rts-building-placement.mjs
           node scripts/test-rts-navigation.mjs
           node scripts/test-rts-actor-navigation.mjs
+          node scripts/test-rts-damage-cycle.mjs
           node scripts/test-rts-raiding.mjs
           node scripts/test-rts-map.mjs
           node scripts/test-rts-fog.mjs

@@ -34,6 +34,10 @@ modules (`docs/rts-contracts.d.ts`).
   simplification des chemins, seuils d'arrivée et reprises après blocage.
   `game.js` injecte les silhouettes, A*, physique de foule, orientation et
   animation ; préserver les rayons, délais et ordres d'appels historiques.
+- `docs/rts-damage-cycle.js` : dégâts et transitions santé/mort des unités,
+  destruction des bâtiments, nettoyage des commandes et tâches, sélection,
+  disparition et conditions de victoire. Les effets visuels, sons, suppression
+  3D et HUD sont injectés ; l'ordre historique des callbacks est contractuel.
 - `docs/rts-match-state.js` : propriétaire des ressources or/bois/magie d'une partie,
   avec réinitialisation en valeurs neuves ; les autres systèmes ne gardent
   jamais leurs références après une nouvelle partie.
@@ -139,6 +143,9 @@ modules (`docs/rts-contracts.d.ts`).
 - `scripts/test-rts-actor-navigation.mjs` : choix des périmètres, entraide
   entre attaquants, caches, seuils d'arrivée, replanification et reprises
   après blocage, sans scène Three.js.
+- `scripts/test-rts-damage-cycle.mjs` : dégâts partiels, mort, récompenses
+  de cadavre, mines protégées, annulations, destruction et victoire, en
+  vérifiant l'ordre exact des callbacks avec des objets Node.
 - `scripts/publish-generated-result.sh` : préserve les fichiers produits par les
   workflows sous `automation-results/<workflow>/<run>-<tentative>`, puis applique
   leur commit sur la tête actuelle de `main` sans force-push ni PR ; un conflit

@@ -2889,37 +2889,32 @@ function isSceneDescendant(node){
   for(let n=node;n;n=n.parent)if(n===scene)return true;
   return false;
 }
+const damageCycle=window.FightersDamageCycle.create({
+  isBuilding,units,buildingInstances,witchBuilding,selected,
+  clearDomeFor:building=>{
+    if(domeEffect?.buildingId===building.id)clearWitchDome();
+  },
+  removeBuildingModel:building=>building.root.parent?.remove(building.root),
+  hideBuildingHealthBar:building=>{
+    if(building.healthBar)building.healthBar.root.visible=false;
+  },
+  removeRallyMarker,forgetBuilding:building=>interaction.forgetBuilding(building),
+  drawBuildingSelection,cancelMineJob,cancelFarmJob,cancelRepair,
+  removeGarden:id=>farming.removeGarden(id),releaseConstructedBuilding,
+  syncWallJoints,updateNavObstacles,
+  invalidateHud:()=>{lastHudSignature='';},refreshHUD,endBattle,
+  alertVillageUnderAttack,showBuildingDamage:building=>{
+    building.healthBar.fill.material.color.setHex(0x72cb6a);
+    updateHealthBar(building);
+  },
+  showBanner,selectedBuilding:()=>interaction.selectedBuilding,
+  alertNearbyDefenders,cancelSoulJob,cancelConstruction,cancelWoodJob,
+  playOrcVoice,playWitchVoice,
+  hideUnitSelection:actor=>{actor.selectionRing.visible=false;},
+  animation,corpseSeconds:soulRules.CORPSE_SECONDS
+});
 function destroyBuilding(building){
-  if(building.type==='mine'||building.clanId==='neutral'||building.destroyed)return;
-  building.destroyed=true;building.health=0;building.queue.length=0;
-  if(domeEffect?.buildingId===building.id)clearWitchDome();
-  building.progress=0;
-  building.root.parent?.remove(building.root);
-  if(building.healthBar)building.healthBar.root.visible=false;
-  removeRallyMarker(building);
-  if(interaction.forgetBuilding(building))drawBuildingSelection();
-  // The next discovered enemy building will replace this one on the next
-  // combat tick, once the destroyed building has left navigation obstacles.
-  for(const actor of units){
-    if(actor.attackOrder===building)actor.attackOrder=null;
-    if(actor.attack?.target===building)actor.attack=null;
-  }
-  for(const actor of units){
-    if(actor.mineJob?.mineId===building.id)cancelMineJob(actor);
-    if(actor.farmJob?.gardenId===building.id)cancelFarmJob(actor);
-    if(actor.healJob?.id===building.id)actor.healJob=null;
-    if(actor.repairJob?.buildingId===building.id)cancelRepair(actor);
-  }
-  if(building.type==='garden')farming.removeGarden(building.id);
-  if((building.clanId==='orcs'||building.type==='garden'||building.type==='stone-circle')&&!building.initial){
-    releaseConstructedBuilding(building);
-    buildingInstances.delete(building.id);
-  }
-  if(building.type==='wall')syncWallJoints();
-  updateNavObstacles();lastHudSignature='';refreshHUD();
-  if(building===witchBuilding)endBattle(false);
-  else if(building.clanId==='orcs'&&![...buildingInstances.values()].some(
-    b=>!b.destroyed&&b.clanId==='orcs'&&b.type!=='wall'))endBattle(true);
+  return damageCycle.destroyBuilding(building);
 }
 function alertNearbyDefenders(victim,attacker){
   if(!attacker||attacker.dead||victim.dead||!enemyOf(attacker,victim))return;
@@ -3054,15 +3049,7 @@ function alertVillageUnderAttack(building,attacker){
     orderRepair([worker],building,{byAI:true});
 }
 function damageBuilding(building,amount,attacker){
-  if(building.type==='mine'||building.clanId==='neutral'||building.destroyed)return;
-  building.health=Math.max(0,building.health-amount);
-  alertVillageUnderAttack(building,attacker);
-  if(building.healthBar){
-    building.healthBar.fill.material.color.setHex(0x72cb6a);
-    updateHealthBar(building);
-  }
-  if(building.health===0){showBanner('BÂTIMENT DÉTRUIT');destroyBuilding(building);}
-  else if(interaction.selectedBuilding===building)refreshHUD();
+  return damageCycle.damageBuilding(building,amount,attacker);
 }
 function endBattle(victory){
   sessionOwner.endMatch();
@@ -3076,28 +3063,7 @@ function endBattle(victory){
   $('overlay').hidden=false;$('pause').disabled=true;
 }
 function dealDamage(target,amount,attacker){
-  if(isBuilding(target)){damageBuilding(target,amount,attacker);return;}
-  if(target.dead)return;
-  alertNearbyDefenders(target,attacker);
-  target.health=Math.max(0,target.health-amount);target.stun=.24;
-  if(!target.health){
-    cancelSoulJob(target);
-    cancelConstruction(target);cancelWoodJob(target);cancelFarmJob(target);
-    if(target.kind==='orc')playOrcVoice('loud',target.root.position);
-    else if(target.kind==='witch')playWitchVoice('destruction',target.root.position);
-    target.dead=true;target.deadTime=soulRules.CORPSE_SECONDS;
-    target.soulClaimed=false;target.soulReservedBy=null;
-    target.destination=null;target.attackOrder=null;
-    selected.delete(target);target.selectionRing.visible=false;
-    animation(target,'Death01',true);refreshHUD();
-    // The killer can visibly feast on the fallen witch after its finishing
-    // attack. Nearby living enemies still interrupt this opportunistic meal.
-    if(target.kind==='witch'&&attacker?.kind==='orc'&&!attacker.dead&&
-      !attacker.orcFoodJob){
-      attacker.orcFoodJob={kind:'corpse',id:target.id,progress:0};
-      attacker.ravenDistraction=null;
-    }
-  }else animation(target,'Hit_Chest',true);
+  return damageCycle.dealDamage(target,amount,attacker);
 }
 
 const soulHarvester=window.FightersSoulHarvester.create({
