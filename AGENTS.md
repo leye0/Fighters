@@ -60,6 +60,9 @@ modules (`docs/rts-contracts.d.ts`).
 - `docs/rts-construction-worker-cycle.js` : trajet vers le chantier, animations,
   durée d'ouvrage, annulation et remboursement, achèvement et paiement
   conditionnel ; les aperçus et réalisations 3D restent injectés par `game.js`.
+- `docs/rts-repair.js` : validation des réparations et automate des ouvriers
+  réparateurs (approche, blocage, cadence et progression jusqu'aux PV maximum).
+  Navigation, animation, son et affichage restent injectés par `game.js`.
 - `docs/rts-unit-tick.js` : état et priorités des unités à chaque tick
   (attaque, cible, poursuite, tâches, déplacement), avec services de navigation,
   combat, animation et IA injectés une seule fois par `game.js`.

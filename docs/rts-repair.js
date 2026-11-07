@@ -22,5 +22,49 @@
       previous+building.maxHealth*HEALTH_PER_SECOND*seconds);
     return building.health-previous;
   }
-  return {HEALTH_PER_SECOND,canRepair,restore};
+  // Worker state machine. Navigation and presentation are provided by the
+  // composition root, but target lookup and repair progress belong here.
+  // Lookup stays live: a restarted match must not retain old building objects.
+  function createCycle({getBuilding,buildingContact,targetDistance,
+    approachBuilding,navigateActor,markWorkBlocked,animation,
+    faceBuildingCenter,workSwing,playConstructionHit,updateHealthBar,
+    showBanner,refreshHUD}){
+    function cancel(actor){actor.repairJob=null;}
+    function tick(actor,dt){
+      if(!actor.repairJob)return false;
+      const building=getBuilding(actor.repairJob.buildingId);
+      if(!canRepair(actor,building)){
+        cancel(actor);animation(actor,'Idle_Loop');return false;
+      }
+      if(targetDistance(actor,building)>buildingContact){
+        const goal=approachBuilding(actor,building);
+        if(goal){
+          const status=navigateActor(actor,goal,dt,'engage');
+          if(status==='blocked'){
+            markWorkBlocked(actor);cancel(actor);animation(actor,'Idle_Loop');return false;
+          }
+          if(status!=='moving')animation(actor,'Idle_Loop');
+        }else{
+          markWorkBlocked(actor);cancel(actor);animation(actor,'Idle_Loop');return false;
+        }
+        return true;
+      }
+      faceBuildingCenter(actor,building);
+      animation(actor,workSwing);
+      actor.workHitTimer=(actor.workHitTimer||0)+dt;
+      const swingSeconds=Math.max(.35,actor.clipCatalog.get('Sword_Attack')?.duration||1);
+      if(actor.workHitTimer>=swingSeconds){
+        actor.workHitTimer-=swingSeconds;playConstructionHit(actor);
+      }
+      restore(building,dt);
+      if(building.healthBar)updateHealthBar(building);
+      if(building.health>=building.maxHealth){
+        cancel(actor);animation(actor,'Idle_Loop');
+        showBanner('BÂTIMENT RÉPARÉ');refreshHUD();
+      }
+      return true;
+    }
+    return Object.freeze({cancel,tick});
+  }
+  return {HEALTH_PER_SECOND,canRepair,restore,createCycle};
 });

@@ -96,6 +96,11 @@ Le démarrage normal de Pages ou Chrome ne fait jamais `npm ci`.
   contact (6 secondes), des annulations et des remboursements ; les aperçus,
   bâtiments réels, sons et ressources de la partie sont injectés sans référence
   périmée au trésor précédent.
+- `rts-repair.js` possède aussi l'automate des réparateurs : annulation,
+  approche, blocages, animations de marteau cadencées et restauration
+  proportionnelle jusqu'aux PV maximum. `game.js` injecte navigation, son,
+  barres de santé et HUD ; la cible est résolue à chaque tick, pas mémorisée
+  d'une ancienne partie.
 - Les états `witch`/`orc` des unités ne sont pas synonymes des `clanId`
   `witch`/`orcs`/`neutral` des bâtiments.
 - La simulation demeure à **60 ticks/seconde** avec au plus 12 ticks de
