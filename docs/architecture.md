@@ -23,10 +23,10 @@ dans [`../refactor.md`](../refactor.md).
 | Système | Fichiers principaux | Vérification ciblée |
 |---|---|---|
 | Simulation et déplacements | `rts-simulation.js`, `rts-food-cycle.js`, `rts-raven-distraction.js`, `rts-healing-cycle.js`, `rts-soul-harvester.js`, `rts-unit-tick.js`, `rts-unit-physics.js`, `rts-navigation.js` | `test-rts-simulation.mjs`, `test-rts-food-cycle.mjs`, `test-rts-raven-distraction.mjs`, `test-rts-healing-cycle.mjs`, `test-rts-soul-harvester.mjs`, `test-rts-unit-tick.mjs`, `test-rts-unit-physics.mjs`, `test-rts-navigation.mjs` |
-| État de partie | `rts-session-state.js` (scalaires et reset par phase), `rts-match-state.js` (or, bois et magie), `rts-world-state.js` (collections d'entités), `game.js` (modes d'interaction, transitoire) | `test-rts-session-state.mjs`, `test-rts-match-state.mjs`, `test-rts-world-state.mjs`, Chrome `visual`, `economy`, `combat` |
+| État de partie | `rts-session-state.js` (scalaires et reset par phase), `rts-match-state.js` (or, bois et magie), `rts-world-state.js` (collections d'entités), `rts-player-interaction.js` (modes et sélection bâtiment/corbeau) | `test-rts-session-state.mjs`, `test-rts-match-state.mjs`, `test-rts-world-state.mjs`, `test-rts-player-interaction.mjs`, Chrome `visual`, `economy`, `combat` |
 | Ordres et tâches, finalisation de production | `rts-orders.js` (files, transitions de formation/amélioration, coût, progression, PV et ordre des effets injectés), `rts-mining-cycle.js`, `rts-wood-cycle.js`, `rts-garden-worker-cycle.js`, `rts-berry-forager-cycle.js`, `rts-construction-worker-cycle.js`, `rts-orc-forager.js`, `rts-orc-hunt-planner.js`, règles `rts-repair.js`, `rts-farming.js` | `test-rts-orders.mjs`, `test-rts-mining-cycle.mjs`, `test-rts-wood-cycle.mjs`, `test-rts-garden-worker-cycle.mjs`, `test-rts-berry-forager-cycle.mjs`, `test-rts-construction-worker-cycle.mjs`, `test-rts-worker-orders.mjs`, `test-rts-orc-forager.mjs`, `test-rts-orc-hunt-planner.mjs`, `test-rts-construction-orders.mjs`, `test-rts-production-orders.mjs` |
 | IA | `orc-strategy.js`, `witch-strategy.js`, `rts-ai-observations.js`, `rts-ai-commands.js` | `test-orc-strategy.mjs`, `test-witch-strategy.mjs`, `test-rts-ai-observations.mjs`, `test-rts-ai-commands.mjs` |
-| Commandes joueur | `rts-picking.js`, `rts-camera.js`, `rts-gestures.js`, `rts-player-actions.js` | `test-rts-picking.mjs`, `test-rts-camera.mjs`, `test-rts-gestures.mjs`, `test-rts-player-actions.mjs`, QA Chrome tactile |
+| Commandes joueur | `rts-picking.js`, `rts-camera.js`, `rts-gestures.js`, `rts-player-interaction.js`, `rts-player-actions.js` | `test-rts-picking.mjs`, `test-rts-camera.mjs`, `test-rts-gestures.mjs`, `test-rts-player-interaction.mjs`, `test-rts-player-actions.mjs`, QA Chrome tactile |
 | Modèles et ressources | `rts-assets.js`, `rts-model-assets.js`, `assets/runtime-assets.lock`, `package.json`, `package-lock.json`, `scripts/use-pinned-runtime-assets.sh` | `test-rts-assets.mjs`, `test-rts-model-assets.mjs`, `test-runtime-build-manifest.mjs`, QA Chrome, Pages |
 | Monde et visibilité | `rts-map.js`, `rts-footprint.js`, `rts-fog.js`, `rts-forest.js` | `test-rts-map.mjs`, `test-rts-footprint.mjs`, `test-rts-fog.mjs`, `test-rts-forest.mjs` |
 | Placement de bâtiments | `rts-building-placement.js`, `rts-walls.js` (raccords de remparts), `game.js` (formes et visualisation) | `test-rts-building-placement.mjs`, `test-rts-walls.mjs`, Chrome `economy`, `visual` |
@@ -80,8 +80,14 @@ Le démarrage normal de Pages ou Chrome ne fait jamais `npm ci`.
   destruction visuelle et économique, et déclenche `beginMatch` après la
   restauration des bâtiments. Le module n'alloue rien dans les ticks et son
   objet `state` conserve son identité entre deux parties. Les accumulateurs
-  du rendu et les modes d'interaction demeurent dans `game.js` ; les modes
-  relèvent du lot E2.
+  du rendu restent dans `game.js`. Les modes d'interaction sont gérés dans
+  `rts-player-interaction.js`, sous forme de transitions explicites (lot E2).
+- `rts-player-interaction.js` conserve les modes de construction, attaque,
+  ralliement et déplacement de corbeau, l'onglet du HUD et la sélection
+  bâtiment/corbeau. La sélection des unités reste dans `rts-world-state.js`.
+  `game.js` conserve les wrappers qui synchronisent anneaux 3D et HUD ; les
+  gestes et la priorité des taps consultent les getters courants. L'ordre
+  « Réparer » demeure immédiat : il n'existe aucun `repairMode` implicite.
 - `rts-world-state.js` possède les collections stables des unités, de la
   sélection, des bâtiments, des chantiers et des souvenirs ennemis par clan.
   `game.js` conserve temporairement des alias vers ces collections ; elles

@@ -21,7 +21,8 @@ modules (`docs/rts-contracts.d.ts`).
   (faction, statut, identifiants, cycles, statistiques minières, événements
   et cadences IA/sorts/brouillard) ; ses remises à zéro nommées sont appelées
   aux points historiques du reset, après les nettoyages visuels concernés.
-  Les modes d'interaction restent provisoirement dans `game.js` (lot E2).
+  Les modes de clic et les sélections hors unités sont dans
+  `rts-player-interaction.js` (lot E2).
 - `docs/rts-match-state.js` : propriétaire des ressources or/bois/magie d'une partie,
   avec réinitialisation en valeurs neuves ; les autres systèmes ne gardent
   jamais leurs références après une nouvelle partie.
@@ -89,6 +90,10 @@ modules (`docs/rts-contracts.d.ts`).
 - `docs/rts-gestures.js` : automate des gestes tactiles et souris (tap, pan,
   boîte à deux doigts, boîte desktop), sans état du moteur ; les callbacks
   de commandes et le viewport sont injectés par `docs/game.js`.
+- `docs/rts-player-interaction.js` : propriétaire privé des modes de construction,
+  attaque, corbeau et ralliement, onglets de construction et sélections
+  bâtiment/corbeau. Transitions nommées depuis HUD, clavier et commandes ;
+  la réparation reste un ordre direct, sans mode persistant. Aucun DOM ni Three.js.
 - `docs/rts-player-actions.js` : priorité des cibles et modes d'interaction
   après un tap, sélection de groupe par rectangle ; dépend seulement d'un
   état courant et de services injectés, sans moteur graphique.

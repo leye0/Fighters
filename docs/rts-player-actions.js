@@ -1,6 +1,7 @@
 // Maps screen taps and screen-space box selection to player intentions.
 // The domain services make the actual mutations; this file only owns the
-// priority of hit targets and the user interaction modes.
+// priority of hit targets. Modes come from rts-player-interaction.js via the
+// freshly read getState adapter, never from local mutable flags.
 (function(root,factory){
   const api=factory();
   if(typeof module==='object'&&module.exports)module.exports=api;

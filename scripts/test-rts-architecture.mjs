@@ -48,6 +48,7 @@ const boundaries=[
   ['rts-picking','FightersPicking'],
   ['rts-camera','FightersCamera'],
   ['rts-gestures','FightersGestures'],
+  ['rts-player-interaction','FightersPlayerInteraction'],
   ['rts-player-actions','FightersPlayerActions'],
   ['rts-minimap','FightersMinimap'],
   ['rts-hud','FightersHud'],

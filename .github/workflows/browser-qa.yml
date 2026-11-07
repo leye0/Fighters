@@ -74,6 +74,7 @@ on:
       - 'docs/rts-picking.js'
       - 'docs/rts-camera.js'
       - 'docs/rts-gestures.js'
+      - 'docs/rts-player-interaction.js'
       - 'docs/rts-player-actions.js'
       - 'docs/rts-minimap.js'
       - 'docs/rts-hud.js'
@@ -96,6 +97,7 @@ on:
       - 'scripts/test-rts-picking.mjs'
       - 'scripts/test-rts-camera.mjs'
       - 'scripts/test-rts-gestures.mjs'
+      - 'scripts/test-rts-player-interaction.mjs'
       - 'scripts/test-rts-player-actions.mjs'
       - 'scripts/test-rts-minimap.mjs'
       - 'scripts/test-rts-hud.mjs'
@@ -179,6 +181,7 @@ jobs:
           node scripts/test-rts-picking.mjs
           node scripts/test-rts-camera.mjs
           node scripts/test-rts-gestures.mjs
+          node scripts/test-rts-player-interaction.mjs
           node scripts/test-rts-player-actions.mjs
           node scripts/test-rts-minimap.mjs
           node scripts/test-rts-hud.mjs
