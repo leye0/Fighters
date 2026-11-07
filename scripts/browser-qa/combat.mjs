@@ -417,7 +417,7 @@ export async function runCombatQa({evaluate,call,check,until,screenshot,sleep,fi
  await evaluate('window.__fightersQA.enableOrcAI(false)');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.witches.length===3&&s.orcs.length===4&&
-  s.buildings.filter(b=>!b.destroyed).length===6,'Reset after AI restores starting match');
+  s.buildings.filter(b=>!b.destroyed).length===8,'Reset after AI restores starting match');
  // The playable faction comes from the start overlay, not the test-only
  // setFaction helper. Launch an actual orc match, then exercise the enemy AI.
  check(await evaluate("document.title==='Orks & Sorcières'"),

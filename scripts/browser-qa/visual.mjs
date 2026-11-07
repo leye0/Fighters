@@ -420,7 +420,7 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
   'Warcraft II HUD must be a compact left sidebar, not a huge bottom panel: '+
   JSON.stringify(warcraftHud));
  const miniPan=await evaluate("(()=>{const c=document.querySelector('#war2-minimap'),r=c.getBoundingClientRect();c.dispatchEvent(new MouseEvent('click',{clientX:r.left+r.width*.25,clientY:r.top+r.height*.25,bubbles:true}));return window.__fightersQA.snapshot().cameraCenter})()");
- const expectedMiniPan=await evaluate('window.__fightersQA.mapToWorld(-14,-14)');
+ const expectedMiniPan=await evaluate('window.__fightersQA.mapToWorld(-21,-21)');
  check(Math.hypot(miniPan.x-expectedMiniPan.x,miniPan.z-expectedMiniPan.z)<1,
   'Clicking the square minimap must recenter the isometric camera: '+JSON.stringify(miniPan));
  const mapCorners=await evaluate('window.__fightersQA.mapCorners()');
