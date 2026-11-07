@@ -36,9 +36,12 @@ export async function runEconomyQa({evaluate,call,check,until,screenshot,sleep,f
  check(!await evaluate("window.__fightersQA.attackBuilding('neutral-gold-mine')")&&
   !await evaluate("window.__fightersQA.attackBuilding('neutral-gold-mine-01')"),
   'Neither neutral deposit may become a hostile combat target');
+ await evaluate("window.__fightersQA.selectUnit('witch',1)");
  check(await evaluate("window.__fightersQA.orderMine('witch',1,'neutral-gold-mine-01')")&&
   await evaluate("window.__fightersQA.orderMine('orc',1,'neutral-gold-mine')"),
   'Both clans must be able to mine either neutral deposit');
+ check((await evaluate('window.__fightersQA.snapshot()')).selectedIds.length===0,
+   'Accepting a mining order must deselect the worker');
  await evaluate("window.__fightersQA.orderMine('orc',1,'neutral-gold-mine-01')");
  const witchGoldBefore=s.gold.witch;
  check(await evaluate("window.__fightersQA.orderMine('witch',1,'neutral-gold-mine')"),
@@ -268,8 +271,11 @@ export async function runEconomyQa({evaluate,call,check,until,screenshot,sleep,f
  // The worker can be explicitly assigned; the auto-harvester also works when idle.
  // Unlike mining and building, wheat is picked by hand using the authored
  // Quaternius Farm_Harvest clip, with the work tool hidden.
+ await evaluate("window.__fightersQA.selectUnit('witch',1)");
  check(await evaluate('window.__fightersQA.orderHarvest(1,'+JSON.stringify(gardenId)+')'),
    'Witch worker could not be assigned to garden');
+ check((await evaluate('window.__fightersQA.snapshot()')).selectedIds.length===0,
+   'Accepting a garden harvest order must deselect the worker');
   const harvestGesture=await evaluate("(()=>{let seen=false,inside=false,carrying=false,"+
     "notCredited=false,delivered=false;for(let i=0;i<90;i++){"+
     "window.__fightersQA.advance(.5);const s=window.__fightersQA.snapshot();"+

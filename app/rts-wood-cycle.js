@@ -139,7 +139,7 @@
       candidates.sort((a,b)=>a.d-b.d);
       for(const {actor,index} of candidates.slice(0,12)){
         const goal=treeChopGoal(actor,forestLayout[index]);
-        if(goal&&orderChop([actor],index))return;
+        if(goal&&orderChop([actor],index,{byAI:true}))return;
       }
     }
     function assignWitchLumberjack(){

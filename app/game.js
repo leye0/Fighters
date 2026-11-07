@@ -1076,6 +1076,7 @@ const WORK_SWING='Work_Swing';
 const FARM_HARVEST='Farm_Harvest';
 const FARM_PLANT='Farm_PlantSeed';
 const TREE_CHOP='TreeChopping_Loop';
+const WALK_ANIMATION_RATE=1.25;
 function showWorkerTool(actor,name){
   if(!actor.workTool)return;
   const swing=name===WORK_SWING;
@@ -1089,7 +1090,14 @@ function showWorkerTool(actor,name){
 function animation(actor,name,force=false){
   if(!actor)return;
   showWorkerTool(actor,name);
-  if(!force&&actor.current===name)return;
+  const locomotion=name==='Walk_Loop'||name==='Jog_Fwd_Loop';
+  // Keep accelerated panic movement and its leg cadence in step as well.
+  const locomotionRate=WALK_ANIMATION_RATE*(actor.fearTime>0?1.75:1);
+  if(!force&&actor.current===name){
+    if(locomotion&&actor.action?.getEffectiveTimeScale()!==locomotionRate)
+      actor.action.setEffectiveTimeScale(locomotionRate);
+    return;
+  }
   // Initialize only clips ACTUALLY played. Previously every new unit allocated
   // 86 mixer actions and thousands of joint-track bindings at creation time.
   let next=actor.actions.get(name);
@@ -1103,7 +1111,8 @@ function animation(actor,name,force=false){
   if(last&&last!==next)last.fadeOut(.13);
   // Complete one natural pick gesture per harvest and three planting gestures
   // during construction, preserving every original native keyframe.
-  const rate=name===FARM_HARVEST?
+  const rate=locomotion?locomotionRate:
+    name===FARM_HARVEST?
     next.getClip().duration/window.FightersFarming.HARVEST_SECONDS:
     name===FARM_PLANT?next.getClip().duration/(BUILD_SECONDS/3):1;
   next.reset().stopFading().setEffectiveWeight(1).setEffectiveTimeScale(rate);
@@ -1463,6 +1472,10 @@ function clearSelection(){
   interaction.clearSelection();
   for(const actor of selected)actor.selectionRing.visible=false;
   selected.clear();drawBuildingSelection();refreshHUD();
+}
+function clearSelectionAfterWorkerOrder(actors,{byAI=false}={}){
+  // Automatic jobs must never discard a selection made by the player.
+  if(!byAI&&actors.some(actor=>selected.has(actor)))clearSelection();
 }
 function selectRaven(raven){
   if(session.activeFaction!=='witch')return;
@@ -2409,6 +2422,7 @@ function orderRepair(actors,building,{byAI=false}={}){
       showOrderPing({x:(box.minX+box.maxX)/2,z:(box.minZ+box.maxZ)/2,y:.15},'move');
       acknowledgePlayerOrder(actors);
       showBanner('RÉPARATION EN COURS');
+      clearSelectionAfterWorkerOrder(actors);
     }
     refreshHUD();
   }
@@ -3154,7 +3168,8 @@ function canMine(actor,mine){
 }
 function orderMine(actors,mine){
   const issued=workerOrders.mine(actors,mine);
-  if(issued){showBanner('EXTRACTION D’OR');acknowledgePlayerOrder(actors);refreshHUD();}
+  if(issued){showBanner('EXTRACTION D’OR');acknowledgePlayerOrder(actors);
+    clearSelectionAfterWorkerOrder(actors);refreshHUD();}
   return issued>0;
 }
 function tickMineWorker(actor,dt){
@@ -3192,7 +3207,8 @@ function cancelWoodJob(actor){return woodCycle.cancel(actor);}
 function orderCollectWood(actors,index,{byAI=false}={}){
   const deposit=woodDeposits.get(index);
   const assigned=workerOrders.collectWood(actors,index,deposit);
-  if(assigned){if(!byAI)showBanner('RAMASSAGE DES BÛCHES');refreshHUD();}
+  if(assigned){if(!byAI){showBanner('RAMASSAGE DES BÛCHES');
+    clearSelectionAfterWorkerOrder(actors);}refreshHUD();}
   return assigned>0;
 }
 function woodStoreFor(actor){
@@ -3210,7 +3226,8 @@ function assignWitchLumberjack(){
 function orderChop(actors,index,{byAI=false}={}){
   const tree=forestLayout[index];
   const assigned=workerOrders.chop(actors,index,tree);
-  if(assigned){if(!byAI){showBanner('COUPE DU BOIS');acknowledgePlayerOrder(actors);}refreshHUD();}
+  if(assigned){if(!byAI){showBanner('COUPE DU BOIS');acknowledgePlayerOrder(actors);
+    clearSelectionAfterWorkerOrder(actors);}refreshHUD();}
   return assigned>0;
 }
 function tickTreeWorker(actor,dt){
@@ -3246,7 +3263,8 @@ const gardenCycle=window.FightersGardenWorkerCycle.create({
 function cancelFarmJob(actor){return gardenCycle.cancel(actor);}
 function orderHarvest(actors,garden){
   const assigned=workerOrders.harvest(actors,garden);
-  if(assigned){showBanner('RÉCOLTE DU POTAGER');acknowledgePlayerOrder(actors);refreshHUD();}
+  if(assigned){showBanner('RÉCOLTE DU POTAGER');acknowledgePlayerOrder(actors);
+    clearSelectionAfterWorkerOrder(actors);refreshHUD();}
   return assigned>0;
 }
 function assignGardenWorkers(dt){
@@ -3827,6 +3845,7 @@ if(qaMode)window.__fightersQA={
     witches:units.filter(a=>a.kind==='witch'&&!a.dead).map(a=>({
       id:a.id,role:a.role,hairStyle:a.outfitInfo.hairStyle,hairColor:a.outfitInfo.hairColor,
       x:a.root.position.x,z:a.root.position.z,radius:a.radius,health:a.health,animation:a.current,
+      animationRate:a.action?.getEffectiveTimeScale()??null,
       workTool:a.workTool?.name||null,workToolVisible:!!a.workTool?.visible,
       hammerTool:a.hammerTool?.name||null,hammerToolVisible:!!a.hammerTool?.visible,
       pickTool:a.pickTool?.name||null,pickToolVisible:!!a.pickTool?.visible,
@@ -3848,6 +3867,7 @@ if(qaMode)window.__fightersQA={
     })),
     orcs:units.filter(a=>a.kind==='orc'&&!a.dead).map(a=>({
       id:a.id,role:a.role,x:a.root.position.x,z:a.root.position.z,health:a.health,animation:a.current,
+      animationRate:a.action?.getEffectiveTimeScale()??null,
       workTool:a.workTool?.name||null,workToolVisible:!!a.workTool?.visible,
       hammerTool:a.hammerTool?.name||null,hammerToolVisible:!!a.hammerTool?.visible,
       pickTool:a.pickTool?.name||null,pickToolVisible:!!a.pickTool?.visible,

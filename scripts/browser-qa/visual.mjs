@@ -215,7 +215,7 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
  const houseTap=await evaluate("window.__fightersQA.buildingScreenPoint('witch-house-01')");
  await evaluate('window.__fightersQA.tap('+houseTap.x+','+houseTap.y+')');
  s=await evaluate('window.__fightersQA.snapshot()');
- check(s.witches[1].repairTargetId==='witch-house-01'&&s.selectedIds.includes(s.witches[1].id)&&
+ check(s.witches[1].repairTargetId==='witch-house-01'&&s.selectedIds.length===0&&
    !s.selectedBuildingId,'Tapping an allied damaged house must order a selected worker to repair it');
  const repairWorking=await evaluate("(()=>{for(let i=0;i<36;i++){"+
    "window.__fightersQA.advance(.25);const s=window.__fightersQA.snapshot();"+
@@ -233,8 +233,10 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
    "window.__fightersQA.selectUnit('witch',1);"+
    "Array.from(document.querySelectorAll('#command-buttons button')).find(b=>"+
    "b.textContent.includes('Réparer')).click()");
- check((await evaluate('window.__fightersQA.snapshot()')).witches[1].repairTargetId==='witch-house-01',
+ check((await evaluate('window.__fightersQA.snapshot()')).witches[1].repairTargetId==='witch-house-01'&&
+   (await evaluate('window.__fightersQA.snapshot()')).selectedIds.length===0,
    'Repair panel action must find the nearest damaged allied building');
+ await evaluate("window.__fightersQA.selectUnit('witch',1)");
  await evaluate('window.__fightersQA.move(-8,-8)');
  check(!(await evaluate('window.__fightersQA.snapshot()')).repairs.length,
    'Explicit movement must cancel the repair job');
@@ -247,7 +249,8 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
  const hutTap=await evaluate('window.__fightersQA.buildingScreenPoint('+JSON.stringify(orcHut.id)+')');
  await evaluate('window.__fightersQA.tap('+hutTap.x+','+hutTap.y+')');
  s=await evaluate('window.__fightersQA.snapshot()');
- check(s.orcs[1].repairTargetId===orcHut.id,'Orc worker must repair a damaged allied hut by tap');
+ check(s.orcs[1].repairTargetId===orcHut.id&&s.selectedIds.length===0,
+   'Orc worker must repair a damaged allied hut by tap and become deselected');
  await evaluate('window.__fightersQA.advance(10)');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.buildings.find(b=>b.id===orcHut.id).health===orcHut.maxHealth&&
@@ -342,7 +345,8 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
      'Tree cannot be selected at its visible 3D trunk');
    await evaluate('window.__fightersQA.tap('+point.x+','+point.y+')');
    s=await evaluate('window.__fightersQA.snapshot()');
-   check(s.forestry.workers.some(w=>w.clan===kind&&w.index===treeIndex),
+   check(s.forestry.workers.some(w=>w.clan===kind&&w.index===treeIndex)&&
+     s.selectedIds.length===0,
      'Tapping the tree must order the '+kind+' worker to chop, not to mine or attack');
    const chop=await evaluate("(()=>{let swinging=false;for(let i=0;i<320;i++){"+
      "window.__fightersQA.advance(.25);const s=window.__fightersQA.snapshot();"+
@@ -357,6 +361,11 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
      chop.forest.trees[treeIndex].felled,
      'Felling must use a visible axe, remove exactly one tree obstacle and leave GLB logs: '+
      JSON.stringify(chop));
+   await evaluate("window.__fightersQA.selectUnit('"+kind+"',"+workerIndex+")");
+   check(await evaluate("window.__fightersQA.orderCollectWood('"+kind+"',"+
+     workerIndex+","+treeIndex+")")&&
+     (await evaluate('window.__fightersQA.snapshot()')).selectedIds.length===0,
+     'Assigning log pickup must deselect the worker');
    const delivery=await evaluate("(()=>{let carried=false;for(let i=0;i<260;i++){"+
      "window.__fightersQA.advance(.25);const s=window.__fightersQA.snapshot();"+
      "carried ||= s.forestry.haulers.some(h=>h.clan==='"+kind+"'&&h.carrying);"+
@@ -623,6 +632,8 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
  s=await evaluate('window.__fightersQA.snapshot()');
  check(Math.hypot(s.witches[0].x-before.x,s.witches[0].z-before.z)>1,
   'Group move order not followed');
+ check(s.witches[0].animation==='Walk_Loop'&&s.witches[0].animationRate===1.25,
+   'Walk-loop keyframes must play 25% faster without changing movement speed');
 
  await until('window.__fightersQA.snapshot().blueprints.length===5',
   'Five real orc building blueprints',100000);

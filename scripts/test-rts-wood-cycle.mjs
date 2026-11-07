@@ -78,7 +78,8 @@ function fixture(){
   assert.equal(f.orc.treeJob,undefined,'Orc AI cannot cut unexplored trees');
   f.setExplored(true);f.cycle.assignOrcLumberjack();
   assert.equal(f.orc.treeJob.index,0,'Orc chooses nearest eligible trunk');
-  assert(f.events.some(e=>e[0]==='order chop'&&e[1]===f.orc.id));
+  assert(f.events.some(e=>e[0]==='order chop'&&e[1]===f.orc.id&&e[3]===true),
+    'Autonomous Orc lumberjacks must issue AI-tagged orders');
   f.cycle.assignOrcLumberjack();
   assert.equal(f.events.filter(e=>e[0]==='order chop').length,1,
     'One active logging worker blocks duplicate auto-assignments');
