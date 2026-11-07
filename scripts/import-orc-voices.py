@@ -179,7 +179,8 @@ def classify(src, dest):
         f"from the Freesound pack [Voices - Orcs]({PACK_URL}).\n\n"
         f"License: [Creative Commons Attribution 4.0]({LICENSE_URL}). "
         "The MP3 previews are unmodified and sorted into folders. "
-        "Each original sound ID and URL appears in manifest.json.\n\n"
+        "Each original sound ID and URL appears in previews-manifest.json. "
+        "The separate manifest.json is reserved for the game's role-based voices.\n\n"
         "Classification is an automatic first pass; audition each group "
         "before hooking the audio to game events.\n",
         encoding="utf-8",
