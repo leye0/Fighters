@@ -1,3 +1,5 @@
+import {runSpellQa} from './spells.mjs';
+
 export async function runCombatQa({evaluate,call,check,until,screenshot,sleep,findWitchSite}){
  let s;
  await until('window.__fightersQA.snapshot().blueprints.length===5',
@@ -6,6 +8,7 @@ export async function runCombatQa({evaluate,call,check,until,screenshot,sleep,fi
    'Real hares for combat QA',30000);
  const hutId=(await evaluate('window.__fightersQA.snapshot()')).buildings
    .find(b=>b.type==='hut'&&!b.destroyed).id;
+ await runSpellQa({evaluate,check});
  await evaluate('window.__fightersQA.reset()');
 
  // Real native animation, target acquisition, damage and destruction.

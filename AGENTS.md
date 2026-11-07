@@ -24,6 +24,11 @@ modules (`docs/rts-contracts.d.ts`).
   Les modes de clic et les sélections hors unités sont dans
   `rts-player-interaction.js` (lot E2). `beginMatch`/`endMatch` pilotent
   explicitement le démarrage et l'arrêt de la simulation (lot E3).
+- `docs/rts-spell-cycle.js` : décisions de simulation des deux sorts de zone
+  (rayon, fenêtre de dégâts, sélection des ennemis vivants), cadence de 1,5 s
+  et priorité des sorts défensifs IA (huttes orcs avant maison sorcière).
+  Il lit la magie courante via une fonction, sans Three.js, DOM ni allocation
+  par tick ; `game.js` conserve les animations GPU, sons et morts réelles.
 - `docs/rts-match-state.js` : propriétaire des ressources or/bois/magie d'une partie,
   avec réinitialisation en valeurs neuves ; les autres systèmes ne gardent
   jamais leurs références après une nouvelle partie.
@@ -124,6 +129,8 @@ modules (`docs/rts-contracts.d.ts`).
   trois parties successives (witch → orc → witch), ordre de destruction,
   références stables et trésors remplacés ; le navigateur passe réellement
   par l'écran de défaite/victoire et le bouton « Nouvelle partie ».
+- `scripts/test-rts-spell-cycle.mjs` : cadence, interruption, sélection et
+  ordre des sorts automatiques, avec état de magie frais après reset.
 - `scripts/publish-generated-result.sh` : préserve les fichiers produits par les
   workflows sous `automation-results/<workflow>/<run>-<tentative>`, puis applique
   leur commit sur la tête actuelle de `main` sans force-push ni PR ; un conflit

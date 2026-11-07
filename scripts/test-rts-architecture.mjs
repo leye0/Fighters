@@ -30,6 +30,7 @@ const boundaries=[
   ['rts-simulation','FightersSimulation'],
   ['rts-unit-tick','FightersUnitTick'],
   ['rts-session-state','FightersSessionState'],
+  ['rts-spell-cycle','FightersSpellCycle'],
   ['rts-match-state','FightersMatchState'],
   ['rts-world-state','FightersWorldState'],
   ['rts-orc-forager','FightersOrcForager'],
@@ -64,7 +65,7 @@ for(const [name,global] of boundaries){
   assert(loadedAt.has(script),`${source} must load from index.html`);
   assert(loadedAt.get(script)<loadedAt.get('./game.js'),
     `${source} must initialize before game.js`);
-  assert(game.includes(`window.${global}.`),`game.js is not wired to ${global}`);
+  assert(game.includes(`window.${global}`),`game.js is not wired to ${global}`);
   assert(qaWorkflow.includes(`'${source}'`),
     `${source} must trigger all real-browser QA scenarios`);
   const code=read(source);

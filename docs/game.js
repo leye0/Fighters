@@ -38,7 +38,7 @@ const soulRules=window.FightersSouls;
 const domeRules=window.FightersWitchDome;
 let domeEffect=null;
 const fireRules=window.FightersFireRain;
-const spellDefense=window.FightersSpellDefense;
+const spellCycle=window.FightersSpellCycle;
 let fireEffect=null;
 let standingStoneModel=null;
 const witchBuilding={
@@ -616,22 +616,19 @@ function castWitchDome(building=interaction.selectedBuilding,{byAI=false}={}){
 function stepWitchDome(dt){
   if(!domeEffect)return;
   const dome=domeEffect;
-  dome.elapsed+=dt;
-  const radius=domeRules.radiusAt(dome.elapsed);
-  dome.radius=radius;
-  dome.shell.scale.setScalar(Math.max(.001,radius));
-  dome.ring.scale.setScalar(Math.max(.001,radius));
+  const finished=spellCycle.advanceDome(dome,dt);
+  dome.shell.scale.setScalar(Math.max(.001,dome.radius));
+  dome.ring.scale.setScalar(Math.max(.001,dome.radius));
   const fading=Math.max(0,Math.min(1,(domeRules.DURATION-dome.elapsed)/1.5));
   dome.shell.material.opacity=.19*fading;
   dome.ring.material.opacity=.77*fading;
-  for(const actor of units){
-    if(actor.dead||actor.kind!=='orc'||
-      !domeRules.inRange(dome,actor.root.position,radius))continue;
-    // Standard death cleanup is maintained, but the corpses dissipate fast.
-    dealDamage(actor,actor.health,null);
-    actor.deadTime=Math.min(actor.deadTime,1.25);
-  }
-  if(dome.elapsed>=domeRules.DURATION){clearWitchDome();refreshHUD();}
+  spellCycle.applyDomeDamage(dome,units,killSpellTarget);
+  if(finished){clearWitchDome();refreshHUD();}
+}
+function killSpellTarget(actor){
+  // Preserve the ordinary death pipeline and shortened spell-corpse lifetime.
+  dealDamage(actor,actor.health,null);
+  actor.deadTime=Math.min(actor.deadTime,1.25);
 }
 function clearFireRain(){
   if(!fireEffect)return;
@@ -683,9 +680,9 @@ function castFireRain(building=interaction.selectedBuilding,{byAI=false}={}){
 }
 function stepFireRain(dt){
   if(!fireEffect)return;
-  const effect=fireEffect;effect.elapsed+=dt;
+  const effect=fireEffect;
+  const finished=spellCycle.advanceFireRain(effect,dt);
   const fade=Math.min(1,(fireRules.DURATION-effect.elapsed)/.85);
-  effect.radius=fireRules.impactRadiusAt(effect.elapsed);
   effect.light.intensity=2.6*Math.max(0,fade)*(.83+.17*Math.sin(effect.elapsed*17));
   const {dummy,bolts,trails,impacts}=effect;
   for(let i=0;i<effect.stars.length;i++){
@@ -712,38 +709,19 @@ function stepFireRain(dt){
   bolts.instanceMatrix.needsUpdate=true;
   trails.instanceMatrix.needsUpdate=true;
   impacts.instanceMatrix.needsUpdate=true;
-  if(effect.elapsed>=fireRules.START_DAMAGE&&effect.elapsed<=fireRules.END_DAMAGE){
-    for(const actor of units){
-      if(actor.dead||actor.kind!=='witch'||
-        !fireRules.inRange(effect,actor.root.position,effect.radius))continue;
-      dealDamage(actor,actor.health,null);
-      actor.deadTime=Math.min(actor.deadTime,1.25);
-    }
-  }
-  if(effect.elapsed>=fireRules.DURATION){clearFireRain();refreshHUD();}
+  spellCycle.applyFireRainDamage(effect,units,killSpellTarget);
+  if(finished){clearFireRain();refreshHUD();}
 }
-function stepSpellDefense(dt){
-  session.spellDecisionElapsed+=dt;
-  if(session.spellDecisionElapsed<1.5)return;
-  session.spellDecisionElapsed=0;
-  const homes=[...buildingInstances.values()].filter(b=>!b.destroyed&&b.type==='hut'&&b.level>=3);
-  if(witchDirector.enabled&&!witchBuilding.destroyed&&witchBuilding.level>=3)homes.push(witchBuilding);
-  for(const home of homes){
-    const faction=home.clanId==='witch'?'witch':'orc';
-    if(!(faction==='witch'?witchDirector.enabled:orcDirector.enabled)||
-      (faction==='witch'?matchResources.magic.witch:matchResources.magic.orc)<100)continue;
-    const center={x:(home.hitbox.minX+home.hitbox.maxX)/2,
-      z:(home.hitbox.minZ+home.hitbox.maxZ)/2};
-    const threat=spellDefense.assess({faction,center,units,radius:domeRules.RADIUS,
-      visible:(x,z,clan)=>fogOfWar.visibleAt(x,z,clan)});
-    if(!threat.threatened)continue;
-    if(faction==='witch'){
-      if(!domeRules.canCast(home,matchResources.magic.witch,{faction:'witch',running:session.running,paused:session.paused,
-        active:!!domeEffect}))continue;
-      castWitchDome(home,{byAI:true});
-    }else if(castFireRain(home,{byAI:true}))break;
-  }
-}
+const autonomousSpellDefense=spellCycle.createDefense({
+  state:session,getBuildings:()=>buildingInstances.values(),getWitchHouse:()=>witchBuilding,
+  getUnits:()=>units,getMagic:()=>matchResources.magic,
+  witchEnabled:()=>witchDirector.enabled,orcEnabled:()=>orcDirector.enabled,
+  domeActive:()=>!!domeEffect,fireActive:()=>!!fireEffect,
+  visible:(x,z,clan)=>fogOfWar.visibleAt(x,z,clan),
+  castWitch:home=>castWitchDome(home,{byAI:true}),
+  castOrc:home=>castFireRain(home,{byAI:true})
+});
+function stepSpellDefense(dt){autonomousSpellDefense.step(dt);}
 function playConstructionHit(actor){playEffect('hammer',actor.root.position);}
 const ravenSoundState=new Map();
 function tickRavenSounds(){
