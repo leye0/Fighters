@@ -79,11 +79,17 @@ de prolonger indéfiniment un axe.
 
 ### S — Décisions de simulation encore dans le point d'intégration (5 lots)
 
-- [ ] **S1 — Sorts automatiques** : extraire les décisions de
+- [x] **S1 — Sorts automatiques** : extraire les décisions de
       `stepWitchDome`, `stepFireRain` et `stepSpellDefense`, en laissant les
       animations, sons et effets 3D dans les adaptateurs. **Fini quand** les
       coûts, cibles, priorités, cadences et interruptions sont testables sous
-      Node et identiques dans Chrome.
+      Node et identiques dans Chrome. **Validé** :
+      `rts-spell-cycle.js` possède les décisions de cadence, priorité,
+      visibilité, coût, rayon et fenêtres de dégâts ; le rendu WebGL, les
+      sons et la suppression visuelle demeurent dans `game.js`. Tests Node
+      et garde d'architecture verts ; QA Chrome `visual`, `economy`,
+      `combat` verte (run 42339555236, incluant les deux sorts automatiques)
+      et Pages verte (run 42339555207). Commit runtime f2c8f031.
 - [ ] **S2 — Navigation d'acteur** : séparer la politique de
       `navigateActor` et `approachBuilding` (chemins, replanification,
       blocages, contacts) des appels de physique et d'animation existants.
