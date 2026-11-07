@@ -60,12 +60,22 @@ de prolonger indéfiniment un axe.
       Tests Node des transitions, des clics, de la priorité de réparation, du
       reset et des adaptateurs gestes/commandes ; QA Chrome `visual`, `economy`,
       `combat` verte : run 42334924707 ; Pages verte : run 42334924679.
-- [ ] **E3 — Fermeture du cycle de reset** : auditer les références vers l'état
+- [x] **E3 — Fermeture du cycle de reset** : auditer les références vers l'état
       de partie, y compris les alias de `rts-world-state.js` et les objets
       remplacés par `rts-match-state.js` ; ajouter des tests de démarrage,
       arrêt et redémarrage successifs. **Fini quand** les états métier ont un
       propriétaire et un point de reset explicites, sans référence périmée ni
       perte de l'ordre historique de nettoyage 3D.
+      Réalisé : registres stables `rts-world-state.js`, mutations de reset
+      nommées après libération des objets 3D, `endMatch` dans
+      `rts-session-state.js`, ressources fraîches lues par les services et
+      test Node de trois parties consécutives. Le parcours Chrome déclenche
+      une vraie défaite, une victoire en changeant de faction et deux clics
+      sur « Nouvelle partie », avec chantier inachevé et contrôle de l'état
+      réinitialisé. Chrome `visual`, `economy` et `combat` verts :
+      run 42337015602 ; Pages verte pour le code : run 42336433962.
+      Un premier échec intermittent du nouveau scénario a conduit à préciser
+      les messages de divergence de l'assertion, sans modifier le moteur.
 
 ### S — Décisions de simulation encore dans le point d'intégration (5 lots)
 
