@@ -5,6 +5,110 @@ plus simple à faire évoluer par plusieurs agents en parallèle, **sans changer
 le gameplay, le rendu, les sons ou les performances**. Chaque case n'est cochée
 qu'après modification, vérification et intégration dans `main`.
 
+## Tableau de bord du travail restant (audit du 6 novembre 2026)
+
+**Ne plus annoncer « 4 grands chantiers encore ouverts » comme mesure de
+progression.** Ces quatre axes (`A`, `E`, `S`, `W`) sont des catégories, pas des
+unités de travail : ils peuvent rester ouverts pendant plusieurs extractions.
+Les **12 lots vérifiables ci-dessous** forment désormais le reste à faire
+identifié. Les 67 cases cochées plus bas constituent l'historique, **pas** le
+dénominateur du travail restant. Cet inventaire décrit ce qui est encore
+présent dans `docs/game.js` à la date de l'audit ; il n'annule aucune extraction
+déjà validée.
+
+Pour un chiffre **à jour**, exécuter `node scripts/refactor-progress.mjs` : la
+commande lit les cases ci-dessous et affiche le nombre de lots terminés et
+restants par axe, puis au total. Ne pas recopier un total statique dans les
+comptes rendus. Quand un lot est fini, **cocher sa case existante** ; ne pas
+ajouter une nouvelle ligne `[x]` à chaque commit. Un lot ne se clôt qu'une fois
+le code intégré dans `main` et les vérifications passées. Tout nouveau besoin
+découvert exige un lot défini avec un critère de sortie explicite, plutôt que
+de prolonger indéfiniment un axe.
+
+### A — Chaîne de publication des assets (1 lot)
+
+- [ ] **A1 — Première reconstruction réellement versionnée** : exécuter le
+      parcours manuel `rebuild-runtime-assets.yml` avec une **nouvelle** version
+      (v2 ou suivante), vérifier les sources et empreintes épinglées, les trois
+      scénarios Chrome, la Release immuable, la mise à jour du verrou et Pages.
+      **Fini quand** le workflow complet a réussi et que QA/Pages utilisent la
+      même archive et le même SHA-256, sans PR ni force-push. Ne pas lancer de
+      reconstruction coûteuse uniquement pour améliorer le compteur.
+
+### E — État explicite d'une partie et de l'interface (3 lots)
+
+- [ ] **E1 — Scalaires de session** : sortir de `game.js` les compteurs et
+      drapeaux propres à une partie (`nextUnitId`, accumulateurs stratégiques,
+      cycles d'extraction, événements/factions de match), dans un propriétaire
+      initialisable et réinitialisable. **Fini quand** les modules utilisent
+      cet état sans variables libres métier et que deux parties consécutives
+      conservent exactement le même comportement et les mêmes compteurs.
+- [ ] **E2 — Modes d'interaction du joueur** : regrouper les modes construction,
+      attaque, réparation, corbeau et ralliement ainsi que les sélections
+      associées, avec accès contrôlé depuis HUD, gestes et commandes.
+      **Fini quand** aucun de ces modes n'est un drapeau dispersé dans
+      `game.js` et que clics, gestes tactiles et changements de sélection sont
+      testés sans régression.
+- [ ] **E3 — Fermeture du cycle de reset** : auditer les références vers l'état
+      de partie, y compris les alias de `rts-world-state.js` et les objets
+      remplacés par `rts-match-state.js` ; ajouter des tests de démarrage,
+      arrêt et redémarrage successifs. **Fini quand** les états métier ont un
+      propriétaire et un point de reset explicites, sans référence périmée ni
+      perte de l'ordre historique de nettoyage 3D.
+
+### S — Décisions de simulation encore dans le point d'intégration (5 lots)
+
+- [ ] **S1 — Sorts automatiques** : extraire les décisions de
+      `stepWitchDome`, `stepFireRain` et `stepSpellDefense`, en laissant les
+      animations, sons et effets 3D dans les adaptateurs. **Fini quand** les
+      coûts, cibles, priorités, cadences et interruptions sont testables sous
+      Node et identiques dans Chrome.
+- [ ] **S2 — Navigation d'acteur** : séparer la politique de
+      `navigateActor` et `approachBuilding` (chemins, replanification,
+      blocages, contacts) des appels de physique et d'animation existants.
+      **Fini quand** ces décisions sont testées dans un module indépendant,
+      avec mêmes distances, retries et trajectoires dans le navigateur.
+- [ ] **S3 — Dégâts et destructions** : sortir les transitions métier de
+      `dealDamage`, `damageBuilding` et `destroyBuilding` sans déplacer la
+      suppression de meshes, les sons ou les effets graphiques.
+      **Fini quand** santé, mort, récompenses, nettoyage des cibles et ordre
+      des callbacks sont couverts par tests Node et QA combat.
+- [ ] **S4 — Défense du village** : extraire les décisions de
+      `alertNearbyDefenders`, `localDefensePost`, `returnFromDefense`,
+      `updateVillageDefense` et `alertVillageUnderAttack`, y compris les
+      priorités d'intervention. **Fini quand** attribution, interruption et
+      retour des défenseurs sont déterministes et vérifiés sous Node/Chrome.
+- [ ] **S5 — Visibilité** : séparer de `updateVision` les règles de révélation,
+      mémoire et visibilité de l'affichage du brouillard et de la mini-carte.
+      **Fini quand** le domaine est testable sans Three.js et que les deux
+      factions, les corbeaux et les cibles restent visibles aux mêmes moments.
+
+### W — Règles restantes d'ouvriers, unités et bâtiments (3 lots)
+
+- [ ] **W1 — Réparation en cours** : transférer la décision/progression de
+      `tickRepairWorker` dans le système de réparation, tout en gardant les
+      animations et effets injectés. **Fini quand** portées, cadence, coût,
+      interruptions et achèvement ont des tests Node et une QA Chrome verte.
+- [ ] **W2 — Placement des bâtiments** : extraire `canAffordConstruction`,
+      `builderAvailable`, `wallKeepsVillageExit` et `validBuildPosition` dans
+      des règles indépendantes du rendu. **Fini quand** coûts, collisions,
+      accès au village, orientation des murs et modes de placement sont
+      testables sans scène 3D et inchangés en jeu.
+- [ ] **W3 — Fin de formation et amélioration** : séparer les transitions de
+      `finishTraining` et `finishUpgrade` de l'apparition des modèles et des
+      effets de niveau. **Fini quand** files, unités produites, bâtiments,
+      coûts et ordre des événements sont testés sans DOM/Three.js et que le
+      jeu conserve ses animations et timings.
+
+**Critères communs de clôture des axes** : `A` est clos lorsque `A1` l'est ;
+`E` lorsque `E1–E3` le sont ; `S` lorsque `S1–S5` le sont ; `W` lorsque
+`W1–W3` le sont. Les tests Node ciblés et la QA Chrome (`visual`, `economy`,
+`combat`) sont obligatoires pour les modifications de runtime ; Pages est
+revalidé en cas d'impact sur la livraison. Un audit final de `game.js` doit
+confirmer que seules l'orchestration, les entrées et les adaptations DOM/3D
+y gardent des décisions locales. **Réduire le nombre de lignes n'est pas un
+objectif** : les responsabilités de rendu restent intentionnellement ici.
+
 ## Règles de progression
 
 - Livrer des étapes petites et vérifiables. Garder le jeu jouable à chaque étape.
@@ -45,10 +149,8 @@ qu'après modification, vérification et intégration dans `main`.
 - [x] Documenter l'ajout d'assets légers ou générés dans `assets/README.md`
       et installer le workflow manuel de reconstruction versionnée. La version
       courante v1 passe Pages et les trois scénarios Chrome.
-- [ ] Mettre en place un chemin d'ajout/mise à jour : sources épinglées,
-      reconstruction occasionnelle, validation Chrome puis publication v2/v3
-      et actualisation du verrou sans PR. Le code du workflow existe ; son
-      premier parcours complet avec une nouvelle version reste à vérifier.
+- Parcours complet de reconstruction encore à valider : **lot A1** du tableau
+  de bord (le workflow et les sources épinglées existent déjà).
 - [x] Ajouter un manifeste de dépendances avec versions exactes et
       `package-lock.json` vérifié ; le build utilise désormais `npm ci` et
       le workflow `build-lock.yml` reconstruit le verrou au besoin.
@@ -68,8 +170,8 @@ qu'après modification, vérification et intégration dans `main`.
       `.github/workflows/contracts.yml`, sans télécharger de compilateur
       dans chaque QA WebGL ni modifier le runtime du jeu :
       run 42269109685, terminé en 11 secondes.
-- [ ] Regrouper l'état mutable d'une partie dans un contexte explicite ; limiter
-      les variables libres partagées par des dizaines de fonctions.
+- Centralisation des scalaires et validation du reset : **lots E1–E3** du
+  tableau de bord (les ressources et collections ont déjà leurs propriétaires).
 - [x] Centraliser les conteneurs d'unités, sélection, bâtiments, chantiers et
       mémoire ennemie dans `rts-world-state.js` sans changer les références ni
       l'ordre du reset ; tests Node et run 42283713354 : trois suites Chrome
@@ -116,10 +218,10 @@ qu'après modification, vérification et intégration dans `main`.
       `game.js`. Les 4 956 caractères de logique normalisés sont identiques
       avant/après l'extraction ; tests Node et garde d'architecture verts.
       Run 42276399265 : visual, economy et combat verts.
-- [ ] Extraire progressivement les systèmes de simulation eux-mêmes du
-      script HTML derrière les interfaces de l'ordonnanceur.
-- [ ] Sortir progressivement la logique des ouvriers, unités et bâtiments du
-      script intégré à `docs/index.html`.
+- Décisions de simulation restantes dans `docs/game.js` : **lots S1–S5** du
+  tableau de bord. L'ordonnanceur a déjà été extrait de l'ancien script HTML.
+- Règles d'ouvriers et de bâtiments restantes : **lots W1–W3** du tableau de
+  bord. `docs/index.html` ne contient plus le script de jeu intégré.
 - [x] Extraire la poursuite, la capture, l'interruption et la consommation des
       proies orcs dans `rts-orc-forager.js` ; tests Node et run 42284582091 :
       Chrome `visual`, `economy` et `combat` verts.
