@@ -2459,12 +2459,6 @@ function scheduleBuild(type,x,z,{byAI=false,axis=null}={}){
 function tickConstructWorker(actor,dt){
   return constructionWorkerCycle.tick(actor,dt);
 }
-const repairWorkerCycle=repairRules.createCycle({
-  getBuilding:id=>id===witchBuilding.id?witchBuilding:buildingInstances.get(id),
-  buildingContact:BUILDING_CONTACT,targetDistance,approachBuilding,navigateActor,
-  markWorkBlocked,animation,faceBuildingCenter,workSwing:WORK_SWING,
-  playConstructionHit,updateHealthBar,showBanner,refreshHUD
-});
 function cancelRepair(actor){repairWorkerCycle.cancel(actor);}
 function orderRepair(actors,building,{byAI=false}={}){
   if(!running||paused)return false;
@@ -2897,6 +2891,12 @@ function nearestHostile(actor,maxDistance=Infinity){
   return nearest?{target:nearest,distance}:null;
 }
 const BUILDING_CONTACT=.78;
+const repairWorkerCycle=repairRules.createCycle({
+  getBuilding:id=>id===witchBuilding.id?witchBuilding:buildingInstances.get(id),
+  buildingContact:BUILDING_CONTACT,targetDistance,approachBuilding,navigateActor,
+  markWorkBlocked,animation,faceBuildingCenter,workSwing:WORK_SWING,
+  playConstructionHit,updateHealthBar,showBanner,refreshHUD
+});
 const constructionWorkerCycle=window.FightersConstructionWorkerCycle.create({
   pendingBuilds,getGold:()=>matchResources.gold,getWood:()=>matchResources.wood,
   disposeConstructionPreview,updateConstructionPreview,

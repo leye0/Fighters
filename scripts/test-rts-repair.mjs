@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
+import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
 const repair=require('../docs/rts-repair.js');
+const gameSource=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
+assert(gameSource.indexOf('const BUILDING_CONTACT=')<
+  gameSource.indexOf('const repairWorkerCycle='),
+  'The repair cycle must initialize after the building contact constant');
 const worker={kind:'witch',role:'worker',dead:false};
 const house={type:'witch-house',clanId:'witch',health:50,maxHealth:500,destroyed:false};
 assert(repair.canRepair(worker,house),'An allied worker may repair a damaged house');
