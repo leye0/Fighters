@@ -94,11 +94,16 @@ de prolonger indéfiniment un axe.
       cadence, santé, annulation et cible fraîche après reset ; QA Chrome
       `visual`, `economy`, `combat` verte : run 42329587893 ; Pages vert :
       run 42329587750.
-- [ ] **W2 — Placement des bâtiments** : extraire `canAffordConstruction`,
+- [x] **W2 — Placement des bâtiments** : extraire `canAffordConstruction`,
       `builderAvailable`, `wallKeepsVillageExit` et `validBuildPosition` dans
       des règles indépendantes du rendu. **Fini quand** coûts, collisions,
       accès au village, orientation des murs et modes de placement sont
       testables sans scène 3D et inchangés en jeu.
+      Réalisé dans `rts-building-placement.js` avec les coûts et la faction
+      des bâtiments : dépendances injectées, ressources fraîches après reset,
+      tests Node des géométries, terrains, remparts et sorties orcs ; run
+      42331856175 : QA Chrome `visual`, `economy`, `combat` verte ; Pages
+      run 42331856332 vert.
 - [ ] **W3 — Fin de formation et amélioration** : séparer les transitions de
       `finishTraining` et `finishUpgrade` de l'apparition des modèles et des
       effets de niveau. **Fini quand** files, unités produites, bâtiments,
