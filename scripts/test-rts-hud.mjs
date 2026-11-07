@@ -6,6 +6,7 @@ const {create}=require('../app/rts-hud.js');
 
 function element(tag='div'){
   return {tag,children:[],style:{},textContent:'',title:'',disabled:false,
+    classList:{add(name){this.className+=(this.className?' ':'')+name;},className:''},
     attributes:{},appendChild(item){this.children.push(item);},
     append(...items){this.children.push(...items);},
     setAttribute(key,value){this.attributes[key]=value;}};
@@ -52,6 +53,12 @@ assert.equal(health.children[0].textContent,'PV 50 / 100');
 assert.equal(health.children[1].className,'hp-track');
 assert.equal(health.children[1].children[0].className,'hp-fill');
 assert.equal(health.children[1].children[0].style.width,'50%');
+const hostile=element();
+hud.healthTrack(hostile,'PV 12 / 70',17.14,'enemy');
+assert.equal(hostile.children[1].children[0].classList.className,'hp-enemy');
+const deposit=element();
+hud.healthTrack(deposit,'Or restant',65,'gold');
+assert.equal(deposit.children[1].children[0].classList.className,'hp-gold');
 
 const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');

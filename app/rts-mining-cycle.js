@@ -9,11 +9,11 @@
 })(typeof globalThis==='object'?globalThis:this,function(){
   'use strict';
 
-  const MINING_SECONDS=4.5,MINING_PAY=60;
+  const MINING_SECONDS=4.5,MINING_PAY=60,MINE_CAPACITY=8000;
 
   function canMine(actor,mine,isWorker){
     return isWorker(actor)&&mine?.type==='mine'&&
-      mine.clanId==='neutral'&&!mine.destroyed;
+      mine.clanId==='neutral'&&!mine.destroyed&&mine.goldRemaining>0;
   }
 
   function create({units,buildingInstances,roles,fogOfWar,isRunning,
@@ -34,7 +34,7 @@
     function assign(clan='orc'){
       if(!isRunning()||!directorEnabled(clan))return;
       const mines=[...buildingInstances.values()].filter(b=>b.type==='mine'&&
-        b.clanId==='neutral'&&!b.destroyed&&
+        b.clanId==='neutral'&&!b.destroyed&&b.goldRemaining>0&&
         (clan==='orc'||fogOfWar.exploredAt(b.root.position.x,b.root.position.z,clan)));
       const workers=units.filter(u=>u.kind===clan&&roles.isWorker(u)&&!u.dead&&
         !u.constructJob&&!u.repairJob&&!u.treeJob&&!u.woodJob&&!u.farmJob&&
@@ -66,7 +66,8 @@
       if(job.retryWait>0){job.retryWait=Math.max(0,job.retryWait-dt);
         animation(actor,'Idle_Loop');return true;}
       const mine=buildingInstances.get(job.mineId);
-      if(!canMine(actor,mine,roles.isWorker)){cancel(actor);return false;}
+      if((job.phase==='carry'?!mine||mine.destroyed:
+        !canMine(actor,mine,roles.isWorker))){cancel(actor);return false;}
       // Workers are economic units: they never acquire combat targets.
       if(job.phase==='carry'){
         const store=goldStoreFor(actor);
@@ -106,7 +107,9 @@
       }
       job.progress+=dt;
       if(job.progress>=MINING_SECONDS){
-        job.progress=0;job.phase='carry';job.amount=MINING_PAY*mine.level;
+        job.progress=0;job.phase='carry';
+        job.amount=Math.min(MINING_PAY*mine.level,mine.goldRemaining);
+        mine.goldRemaining-=job.amount;
         actor.route=null;actor.approachCache=null;
         mountCarriedGold(actor);animation(actor,'Idle_Loop');
       }
@@ -114,5 +117,5 @@
     }
     return Object.freeze({assign,tick,cancel});
   }
-  return Object.freeze({create,canMine});
+  return Object.freeze({create,canMine,MINE_CAPACITY});
 });

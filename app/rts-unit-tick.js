@@ -8,6 +8,7 @@
   else root.FightersUnitTick=api;
 })(typeof globalThis==='object'?globalThis:this,function(){
   'use strict';
+  const WORKER_DANGER_RADIUS=9;
 
   function create({units,getPassiveKind,orcDirector,witchDirector,roles,raiding,
     buildingContact,cancelOrcFoodJob,enemyOf,isBuilding,faceBuildingCenter,
@@ -16,11 +17,52 @@
     liveBuildings,tickHealingRetreat,tickSoulHarvester,tickBerryForager,
     tickOrcForager,tickConstructWorker,tickRepairWorker,tickMineWorker,
     tickTreeWorker,tickWoodWorker,tickGardenWorker,navigateActor,nearestHostile,
-    returnFromDefense,approachBuilding,fireBolt,rand}){
+    returnFromDefense,approachBuilding,fireBolt,rand,findSafeGoal}){
     if(!Array.isArray(units)||typeof getPassiveKind!=='function'||
       !raiding||typeof raiding.retaliation!=='function'||
       typeof raiding.end!=='function'||typeof navigateActor!=='function')
       throw Error('Missing unit tick service');
+
+    function retreatWorker(actor,dt){
+      actor.fearScan=(actor.fearScan||0)-dt;
+      if(actor.fearScan<=0){
+        actor.fearScan=.25;
+        const pos=actor.root.position;
+        let threat=null,nearest=WORKER_DANGER_RADIUS;
+        for(const other of units){
+          if(other.dead||other.kind===actor.kind||!roles.isFighter(other))continue;
+          const distance=Math.hypot(pos.x-other.root.position.x,pos.z-other.root.position.z);
+          if(distance<nearest){nearest=distance;threat=other;}
+        }
+        if(threat){
+          actor.fearTime=1.3;
+          const danger=threat.root.position;
+          let guard=null,best=Infinity;
+          for(const other of units){
+            if(other.dead||other.kind!==actor.kind||!roles.isFighter(other))continue;
+            const ally=other.root.position;
+            const distance=Math.hypot(pos.x-ally.x,pos.z-ally.z);
+            if(distance>27)continue;
+            const dangerGap=Math.hypot(ally.x-danger.x,ally.z-danger.z);
+            const score=distance+Math.max(0,7-dangerGap)*2;
+            if(score<best){best=score;guard=other;}
+          }
+          const safe=guard?.root.position||pos;
+          const dx=safe.x-danger.x,dz=safe.z-danger.z;
+          const length=Math.hypot(dx,dz)||1;
+          const distance=guard?2.0:7;
+          actor.fearGoal=findSafeGoal({x:safe.x+dx/length*distance,
+            z:safe.z+dz/length*distance});
+        }
+      }
+      actor.fearTime=Math.max(0,(actor.fearTime||0)-dt);
+      if(!actor.fearTime){actor.fearGoal=null;return false;}
+      if(!actor.fearGoal){animation(actor,'Idle_Loop');return true;}
+      const status=navigateActor(actor,actor.fearGoal,dt,'order');
+      if(status==='blocked'){actor.fearGoal=null;actor.fearScan=0;}
+      if(status!=='moving')animation(actor,'Idle_Loop');
+      return true;
+    }
 
     function tickUnit(actor,dt){
       if(actor.dead){
@@ -59,6 +101,7 @@
         return;
       }
       if(actor.stun>0)return;
+      if(roles.isWorker(actor)&&retreatWorker(actor,dt))return;
       if(!actor.raiding&&tickRavenDistraction(actor,dt))return;
       if(actor.attackOrder&&!enemyOf(actor,actor.attackOrder))actor.attackOrder=null;
       if(!actor.orcFoodJob)updateVillageDefense(actor);

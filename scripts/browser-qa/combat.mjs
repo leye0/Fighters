@@ -184,13 +184,13 @@ export async function runCombatQa({evaluate,call,check,until,screenshot,sleep,fi
   .every(b=>b.healthbarParent==='scene'),
   'Autonomously built HP bars inherited building transforms');
  await screenshot('rts-orc-autonomous-village');
- // Victory requires destroying only clan buildings. Both neutral deposits
+ // Victory requires destroying only clan buildings. All four neutral deposits
  // must survive the end of the match and remain navigational obstacles.
  const orcStructures=s.buildings.filter(b=>b.clanId==='orcs').map(b=>b.id);
  for(const id of orcStructures)
   await evaluate("window.__fightersQA.damageBuilding("+JSON.stringify(id)+",999999)");
  s=await evaluate('window.__fightersQA.snapshot()');
- check(!s.running&&s.buildings.filter(b=>b.type==='mine').length===2&&
+ check(!s.running&&s.buildings.filter(b=>b.type==='mine').length===4&&
   s.buildings.filter(b=>b.type==='mine').every(b=>!b.destroyed&&b.clanId==='neutral'),
   'Victory must ignore neutral gold deposits while keeping them intact');
 

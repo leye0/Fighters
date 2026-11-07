@@ -197,9 +197,11 @@ const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 const game=readFileSync(new URL('../app/game.js',import.meta.url),'utf8');
 assert(html.includes('rts-damage-cycle.js'));
 assert(game.includes('window.FightersDamageCycle.create({'));
-for(const fn of ['destroyBuilding(building)','damageBuilding(building,amount,attacker)',
-  'dealDamage(target,amount,attacker)'])
+for(const fn of ['destroyBuilding(building)','damageBuilding(building,amount,attacker)'])
   assert(game.includes('return damageCycle.'+fn),fn+' should delegate to the domain');
+assert(game.includes('const result=damageCycle.dealDamage(target,amount,attacker)')&&
+  game.includes('target.damageBarTimer=2.4'),
+  'The damage adapter must delegate to the domain before showing temporary health');
 assert(game.includes('building.healthBar.fill.material.color.setHex(0x72cb6a)'),
   'The visual healthbar adapter must remain in game.js');
 console.log('PASS damage cycle: health, voices, death, corpse reward, target cleanup, protected mines, callback order, victory and defeat');

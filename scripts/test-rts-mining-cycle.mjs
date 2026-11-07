@@ -3,11 +3,12 @@ import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 
 const require=createRequire(import.meta.url);
-const {create,canMine}=require('../app/rts-mining-cycle.js');
+const {create,canMine,MINE_CAPACITY}=require('../app/rts-mining-cycle.js');
 const worker=(id,kind,x)=>({id,kind,role:'worker',dead:false,
   root:{position:{x,y:0,z:0}},route:{old:true},approachCache:{old:true}});
 const building=(id,type,x,clanId='neutral',level=1)=>({id,type,clanId,level,
-  destroyed:false,root:{position:{x,z:0}}});
+  destroyed:false,goldRemaining:type==='mine'?MINE_CAPACITY:null,
+  root:{position:{x,z:0}}});
 
 function fixture(){
   const orc1=worker(1,'orc',0),orc2=worker(2,'orc',7),
@@ -108,6 +109,8 @@ function fixture(){
   assert.equal(f.cycle.tick(miner,.01),true);
   assert.equal(job.phase,'carry');
   assert.equal(job.amount,120,'Ore payout preserves 60 gold per mine level');
+  assert.equal(f.mine1.goldRemaining,MINE_CAPACITY-120,
+    'Ore leaves the deposit on extraction, not on delivery');
   assert.equal(job.progress,0);
   assert.equal(miner.carryGold.visible,true);
   assert.equal(f.treasury().orc,0,'Extracting does not credit the treasury');
@@ -127,6 +130,26 @@ function fixture(){
   assert.equal(miner.approachCache,null);
   assert(f.events.some(e=>e[0]==='hud'));
   assert.equal(f.cycle.tick(f.orc3,.1),false,'Workers without mining tasks are ignored');
+}
+
+{
+  const f=fixture();
+  f.mine1.goldRemaining=35;
+  f.cycle.assign();
+  const miner=f.orc1;
+  assert.equal(f.cycle.tick(miner,4.5),true);
+  assert.equal(miner.mineJob.amount,35,'Final haul cannot exceed the remaining ore');
+  assert.equal(f.mine1.goldRemaining,0);
+  assert.equal(canMine(f.orc2,f.mine1,u=>u.role==='worker'),false);
+  // A depleted mine must still let the final already-loaded worker return.
+  assert.equal(f.cycle.tick(miner,.1),true);
+  miner.root.position.x=f.barrack.root.position.x;
+  assert.equal(f.cycle.tick(miner,.1),true);
+  assert.equal(f.treasury().orc,35);
+  assert.equal(f.cycle.tick(miner,.1),false,'No extraction is possible after depletion');
+  assert.equal(miner.mineJob,null);
+  f.cycle.assign();
+  assert(f.orc2.mineJob?.mineId!==f.mine1.id,'AI skips empty deposits');
 }
 
 {

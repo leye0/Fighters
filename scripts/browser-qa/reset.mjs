@@ -57,7 +57,7 @@ export async function runResetQa({evaluate,check,findWitchSite}){
   s=await snapshot();
   check(s.running&&s.activeFaction==='witch'&&s.chosenFaction==='witch'&&
     s.house.health===1500&&!s.house.destroyed&&s.witches.length===3&&s.orcs.length===4&&
-    s.buildings.length===6&&s.construction.length===0&&s.constructionPreviewCount===0&&
+    s.buildings.length===8&&s.construction.length===0&&s.constructionPreviewCount===0&&
     s.gold.witch===2000&&s.wood.witch===250&&s.souls.magic===0&&
     !s.paused&&s.mining.completedMiningCycles===0,
     'The third match must start cleanly again without stale world or economy state');

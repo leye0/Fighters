@@ -32,6 +32,7 @@ let witchHouse=null;
 const STONE_RING_RADIUS=2.45,STONE_RING_COUNT=6,STONE_RING_SLOTS=7,
   STONE_RING_START=-5*Math.PI/7,STONE_CIRCLE_HEALTH=850;
 const WITCH_HOUSE_HEALTH=1500,GARDEN_HEALTH=600;
+const MINE_CAPACITY=window.FightersMiningCycle.MINE_CAPACITY;
 const stoneHealing=window.FightersHealing;
 const repairRules=window.FightersRepair;
 const soulRules=window.FightersSouls;
@@ -878,6 +879,7 @@ function createBuildingInstance(entry,type,level,anchor,footprint,model,projecti
     id,modelId:entry.id,sourceNode:entry.sourceNode||entry.name,
     type,level,clanId:type==='mine'?'neutral':'orcs',
     health:spec.maxHealth,maxHealth:spec.maxHealth,
+    goldRemaining:type==='mine'?MINE_CAPACITY:null,
     constructionCost:spec.constructionCost,requiredTechnology:spec.requiredTechnology,
     hitbox:buildingBounds(model,projection),visualHitbox:buildingVisualBounds(anchor),
     queue:[],progress:0,rally:null,rallyMarker:null,
@@ -1021,19 +1023,23 @@ async function loadOrcVillage(limit=3){
       description:entries[i].description,originalFootprint:footprint,targetFootprint:target};
     village.add(anchor);
     if(type==='mine'){
-      // Reuse the loaded mine's geometry and materials for a neutral deposit
-      // close to the witch base. No second GLB is downloaded or decoded.
-      const mirror=anchor.clone(true);
-      mirror.position.set(-12,0,-21);mirror.rotation.y=0;
-      mirror.updateMatrixWorld(true);
-      const mirrorModel=mirror.children[0]?.children[0];
-      if(mirrorModel){
-        const deposit=createBuildingInstance(entries[i],type,1,mirror,target,mirrorModel,projection);
-        const generatedId=deposit.id;
-        deposit.initial=true;deposit.id='neutral-gold-mine';
-        buildingInstances.delete(generatedId);
-        buildingInstances.set(deposit.id,deposit);
-        village.add(mirror);updateNavObstacles();
+      // Two neutral 8,000-gold deposits on each side, all sharing the same
+      // source geometry, materials and single downloaded mine GLB.
+      for(const [id,x,z] of [
+        ['neutral-gold-mine',-12,-21],
+        ['neutral-gold-mine-witch-02',-35,-26],
+        ['neutral-gold-mine-orc-02',32,31]
+      ]){
+        const copy=anchor.clone(true);
+        copy.position.set(x,0,z);copy.rotation.y=0;
+        copy.updateMatrixWorld(true);
+        const cloneModel=copy.children[0]?.children[0];
+        if(!cloneModel)throw Error('Mine clone model missing');
+        const deposit=createBuildingInstance(entries[i],type,1,copy,target,cloneModel,projection);
+        buildingInstances.delete(deposit.id);
+        deposit.initial=true;deposit.id=id;
+        buildingInstances.set(id,deposit);
+        village.add(copy);updateNavObstacles();
       }
     }
   }
@@ -1374,6 +1380,27 @@ function mountWorkTool(actor){
   actor.chopTool=chopTool;
 }
 
+const unitHealthGeometry={background:new THREE.PlaneGeometry(1.38,.22),
+  fill:new THREE.PlaneGeometry(1.3,.14)};
+const unitHealthMaterials={background:new THREE.MeshBasicMaterial({color:0x20252b,
+    depthTest:false,side:THREE.DoubleSide}),
+  friendly:new THREE.MeshBasicMaterial({color:0x6bd65d,
+    depthTest:false,side:THREE.DoubleSide}),
+  enemy:new THREE.MeshBasicMaterial({color:0xe7474c,
+    depthTest:false,side:THREE.DoubleSide})};
+function updateUnitHealthBar(actor){
+  if(!actor.healthBar)return;
+  const bar=actor.healthBar.root;
+  bar.visible=!actor.dead&&actor.root.visible&&
+    (actor.damageBarTimer>0||interaction.selectedEnemy===actor);
+  actor.healthBar.fill.material=unitHealthMaterials[
+    actor.kind===session.activeFaction?'friendly':'enemy'];
+  if(!bar.visible)return;
+  bar.quaternion.copy(camera.quaternion);
+  const fraction=THREE.MathUtils.clamp(actor.health/actor.maxHealth,0,1);
+  actor.healthBar.fill.scale.x=fraction;
+  actor.healthBar.fill.position.x=-.65*(1-fraction);
+}
 function spawnUnit(kind,x,z,index=0,role='melee'){
   const source=kind==='witch'?female:male;
   if(!source)throw Error('Source GLB absente pour '+kind);
@@ -1396,12 +1423,14 @@ function spawnUnit(kind,x,z,index=0,role='melee'){
     mixer:new THREE.AnimationMixer(visual),actions:new Map(),
     clipCatalog:sharedClipCatalog.get(kind),current:'',action:null,
     health:profile.health,maxHealth:profile.health,
+    healthBar:null,damageBarTimer:0,
     heading:{x:kind==='witch'?1:-1,z:0},facing:1,attack:null,stun:0,cooldown:rand(.25,1),dead:false,deadTime:0,
     speed:profile.speed,destination:null,attackOrder:null,raiding:false,
     retaliationTarget:null,retaliationOrigin:null,route:null,routeVersion:-1,
     routeGoal:null,routeAge:0,approachCache:null,approachAge:0,
     navWatch:null,unstickSeconds:0,noStepFailures:0,
     unreachableTarget:null,unreachableTime:0,workerRetryTime:0,
+    fearScan:0,fearTime:0,fearGoal:null,
     mineJob:null,carryGold:null,defenseTime:0,defenseAnchor:null,
     constructJob:null,repairJob:null,farmJob:null,carryWheat:null,
     treeJob:null,woodJob:null,carryBundle:null,berryJob:null,
@@ -1410,6 +1439,12 @@ function spawnUnit(kind,x,z,index=0,role='melee'){
     workTool:null,hammerTool:null,pickTool:null,chopTool:null,
     weapon:null,selectionRing:marker,outfitInfo,voiceLineIndex
   };
+  const bar=new THREE.Group(),background=new THREE.Mesh(unitHealthGeometry.background,
+    unitHealthMaterials.background);
+  const fill=new THREE.Mesh(unitHealthGeometry.fill,unitHealthMaterials.friendly);
+  fill.position.z=.01;bar.position.y=2.68;bar.renderOrder=30;
+  bar.add(background,fill);bar.visible=false;root.add(bar);
+  actor.healthBar={root:bar,fill};
   // A single sword asset is cloned as a lightweight scene node for melee orcs.
   // Workers and ranged units never allocate weapons.
   if(kind==='orc'&&role==='melee'&&swordModel)mountNativeSword(actor);
@@ -1447,6 +1482,10 @@ function selectUnits(actors,append=false){
 function selectBuilding(building){
   clearSelection();interaction.selectBuilding(building);
   drawBuildingSelection();refreshHUD();
+}
+function selectEnemy(actor){
+  if(actor.dead||actor.kind===session.activeFaction)return;
+  clearSelection();interaction.selectEnemy(actor);refreshHUD();
 }
 function worldPoint(clientX,clientY){
   const rect=viewport.getBoundingClientRect();
@@ -1603,8 +1642,11 @@ const productionCompletions=window.FightersOrders.createProductionCompletions({
   countActors:kind=>units.filter(u=>u.kind===kind).length,
   spawnActor:(kind,position,index,role)=>spawnUnit(kind,position.x,position.z,index,role),
   resolveRally:point=>navigatorRTS.findSafeGoal(point),
-  playCreationVoice:(kind,actor)=>kind==='orc'?
-    playOrcVoice('creation',actor):playWitchVoice('creation',actor),
+  playCreationVoice:(kind,actor)=>{
+    if(kind!==session.activeFaction)return;
+    if(kind==='orc')playOrcVoice('creation',actor);
+    else playWitchVoice('creation',actor);
+  },
   profile:(kind,role)=>roles.profile(kind,role),
   showBanner,witchHouseHealth:WITCH_HOUSE_HEALTH,
   orcLevelHealth:(type,level)=>BUILDING_TYPES[type].levels[level].maxHealth,
@@ -1664,7 +1706,8 @@ function buildingPerimeterSites(building,clearance=UNIT_RADIUS+.08){
   return sites;
 }
 function safeSpawnNear(building){
-  const sites=buildingPerimeterSites(building,UNIT_RADIUS+.14);
+  const sites=window.FightersActorNavigation.frontSpawnSites(
+    buildingPerimeterSites(building,UNIT_RADIUS+.14),building.hitbox);
   // Exact polygons can leave narrow pockets between a wall and the map edge.
   // A point may be collision-free yet have no A* exit; do not spawn a unit
   // that can never reach the rest of the battlefield.
@@ -1683,11 +1726,13 @@ function safeSpawnNear(building){
     if(!building.spawnReachable.get(i))continue;
     return point;
   }
-  const b=building.hitbox;
-  const fallback=navigatorRTS.findSafeSpawn(building.rally||{
-    x:(b.minX+b.maxX)/2,z:b.maxZ+UNIT_RADIUS*3
+  const b=building.hitbox,center={x:(b.minX+b.maxX)/2,z:(b.minZ+b.maxZ)/2};
+  // Never fall back to an arbitrary rally location on the rear side.
+  const fallback=navigatorRTS.findSafeSpawn({
+    x:b.maxX+UNIT_RADIUS*3,z:b.maxZ+UNIT_RADIUS*3
   });
-  return fallback&&navigatorRTS.plan(fallback,hub)?fallback:null;
+  return fallback&&(fallback.x-center.x)+(fallback.z-center.z)>.05&&
+    navigatorRTS.plan(fallback,hub)?fallback:null;
 }
 async function useOrcLevelModel(building,level){
   const key=building.type+':'+level,entry=orcLevelEntries.get(key);
@@ -1956,6 +2001,23 @@ const berryBatches=[],berryInstanceRecords=[],berryVisualStages=[];
 const berryHiddenMatrix=new THREE.Matrix4().makeScale(0,0,0);
 const berryFallbackMaterial=new THREE.MeshLambertMaterial({color:0xb43148});
 let berryFallbackStages=null;
+function circularBerryMaterial(source,center,radius){
+  const material=source.clone();
+  // Each crop GLB is a square planting patch. Clipping is in its own local
+  // X/Z coordinates so one shader works for every instance and orientation.
+  const cx=center.x.toFixed(5),cz=center.z.toFixed(5),r2=(radius*radius).toFixed(6);
+  material.onBeforeCompile=shader=>{
+    shader.vertexShader='varying vec2 vBerryPatch;\n'+shader.vertexShader;
+    shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>',
+      'vBerryPatch = position.xz;\n#include <begin_vertex>');
+    shader.fragmentShader='varying vec2 vBerryPatch;\n'+shader.fragmentShader;
+    shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>',
+      '#include <clipping_planes_fragment>\n'+
+      'if (dot(vBerryPatch - vec2('+cx+', '+cz+'), vBerryPatch - vec2('+cx+', '+cz+')) > '+r2+') discard;');
+  };
+  material.customProgramCacheKey=()=>`berry-disc-${cx}-${cz}-${r2}`;
+  return material;
+}
 function fallbackBerryStages(){
   if(berryFallbackStages)return berryFallbackStages;
   berryFallbackStages=[1,2,3].map(stage=>{
@@ -1978,7 +2040,11 @@ function fallbackBerryStages(){
   return berryFallbackStages;
 }
 function rebuildBerryVisuals(){
-  for(const batch of berryBatches){scene.remove(batch);batch.dispose();}
+  for(const batch of berryBatches){
+    scene.remove(batch);batch.dispose();batch.geometry.dispose();
+    const materials=Array.isArray(batch.material)?batch.material:[batch.material];
+    for(const material of materials)material.dispose();
+  }
   berryBatches.length=0;berryInstanceRecords.length=0;berryVisualStages.length=0;
   for(let i=0;i<wildBerries.bushes.length;i++)berryInstanceRecords.push([]);
   const stages=cropCatalog?.get(1)||fallbackBerryStages();
@@ -1987,16 +2053,24 @@ function rebuildBerryVisuals(){
   const yAxis=new THREE.Vector3(0,1,0);
   for(let stage=1;stage<=3;stage++){
     const template=stages[stage-1];template.updateMatrixWorld(true);
+    const bounds=new THREE.Box3().setFromObject(template);
+    const center=bounds.getCenter(new THREE.Vector3());
+    const size=bounds.getSize(new THREE.Vector3());
+    const radius=Math.min(size.x,size.z)*.49;
     template.traverse(mesh=>{
       if(!mesh.isMesh)return;
-      const batch=new THREE.InstancedMesh(mesh.geometry,mesh.material,wildBerries.bushes.length);
+      const geometry=mesh.geometry.clone();geometry.applyMatrix4(mesh.matrixWorld);
+      const material=Array.isArray(mesh.material)?mesh.material.map(m=>
+        circularBerryMaterial(m,center,radius)):
+        circularBerryMaterial(mesh.material,center,radius);
+      const batch=new THREE.InstancedMesh(geometry,material,wildBerries.bushes.length);
       batch.name='wild-berry-stage-'+stage;
       batch.frustumCulled=false;batch.castShadow=false;batch.receiveShadow=false;
       wildBerries.bushes.forEach((bush,i)=>{
         position.set(bush.x,0,bush.z);
         rotation.setFromAxisAngle(yAxis,bush.angle);
         scale.setScalar(bush.scale);
-        placement.compose(position,rotation,scale).multiply(mesh.matrixWorld);
+        placement.compose(position,rotation,scale);
         const matrix=placement.clone();
         berryInstanceRecords[i].push({stage,batch,matrix});
         batch.setMatrixAt(i,bush.stage===stage?matrix:berryHiddenMatrix);
@@ -2317,8 +2391,9 @@ function scheduleBuild(type,x,z,{byAI=false,axis=null}={}){
     }
   });
   if(!assigned)return false;
-  interaction.completeBuild();
-  if(!byAI)showBanner('OUVRIER EN CONSTRUCTION');
+  if(!byAI){
+    interaction.completeBuild();clearSelection();showBanner('OUVRIER EN CONSTRUCTION');
+  }
   refreshHUD();return true;
 }
 function tickConstructWorker(actor,dt){
@@ -2363,11 +2438,12 @@ function refreshHUD(){
     orcCount:units.filter(u=>u.kind==='orc'&&!u.dead).length,
     orcHousingCap:orcHousingCap(),aiEnabled:director.enabled,aiMode:director.mode});
 
-  const b=interaction.selectedBuilding,alive=[...selected].filter(u=>!u.dead),
+  const b=interaction.selectedBuilding,enemy=interaction.selectedEnemy,
+    alive=[...selected].filter(u=>!u.dead),
     faction=b?.clanId==='witch'?'witch':'orc',
     title=$('command-title'),info=$('command-info'),health=$('command-health'),
     portrait=$('command-icon'),buttons=$('command-buttons'),queueUI=$('training-progress');
-  const context=[session.activeFaction,b?.id||'',interaction.selectedRaven?.id||'',b?.level||0,alive.map(u=>u.id).join(','),
+  const context=[session.activeFaction,b?.id||'',interaction.selectedRaven?.id||'',enemy?.id||'',b?.level||0,alive.map(u=>u.id).join(','),
     interaction.constructionTab,interaction.constructionTab?buildingBlueprints.size:0,
     b?.queue.length||0,!!interaction.buildMode,interaction.attackMode,interaction.rallyMode,interaction.ravenMoveMode].join('|');
 
@@ -2416,7 +2492,10 @@ function refreshHUD(){
         b.type==='cauldron'?'Chaudron orc · débloque les lanceurs-mages dans les casernes.':
         b.type==='wall'?'Mur de pierre infranchissable · les sections s’assemblent en angle.':
         'Bâtiment orc · améliorer la structure et définir un point de rassemblement.';
-      if(b.type!=='mine'){
+      if(b.type==='mine'){
+        hudRenderer.healthTrack(health,'Or restant : '+b.goldRemaining+' / '+MINE_CAPACITY,
+          100*b.goldRemaining/MINE_CAPACITY,'gold');
+      }else{
         hudRenderer.healthTrack(health,'Niv. '+b.level+' · PV '+Math.ceil(b.health)+' / '+b.maxHealth,
           100*b.health/b.maxHealth);
       }
@@ -2457,6 +2536,13 @@ function refreshHUD(){
       // building construction belongs to the worker, never the barracks.
       if(friendly&&b.queue.length)
         add('✖','Annuler','',()=>cancelOrder(b,0),false,'Annuler la prochaine production');
+    }else if(enemy&&!enemy.dead){
+      portrait.textContent=enemy.profile.icon;
+      title.textContent=enemy.profile.name+(enemy.kind==='witch'?' ennemie':' ennemi');
+      info.textContent=enemy.role==='worker'?'Ouvrier ennemi · collecte et construit, sans combattre.':
+        enemy.role==='ranged'?'Combattant ennemi à distance.':'Combattant ennemi au corps à corps.';
+      hudRenderer.healthTrack(health,'PV : '+Math.ceil(enemy.health)+' / '+enemy.maxHealth,
+        100*enemy.health/enemy.maxHealth,'enemy');
     }else if(interaction.selectedRaven){
       portrait.textContent='🐦‍⬛';title.textContent='Corbeau familier';
       info.textContent='Reconnaissance aérienne · attire les orcs, mais reste intouchable.';
@@ -2517,8 +2603,9 @@ function refreshHUD(){
       add('↩','Annuler','',cancelTransientMode,false,'Annuler l’ordre en cours');
     $('selection-summary').textContent=interaction.buildMode?'Poser '+(ORC_NAMES[interaction.buildMode]||
       (interaction.buildMode==='garden'?'potager':interaction.buildMode==='stone-circle'?'cercle de roches':'maison')):
-      interaction.rallyMode?'Choisir un point de rassemblement':interaction.selectedRaven?'Corbeau · éclaireur aérien':b?
-      b.type==='mine'?'Gisement d’or · neutre':b.type==='garden'?'Potager · nourriture':
+      interaction.rallyMode?'Choisir un point de rassemblement':interaction.selectedRaven?'Corbeau · éclaireur aérien':enemy?
+      enemy.profile.name+' · ennemi':b?
+      b.type==='mine'?'Gisement d’or · '+b.goldRemaining+' pièces restantes':b.type==='garden'?'Potager · nourriture':
       b.type==='stone-circle'?'Cercle de roches · guérison':
       (b.type==='witch-house'?'Maison des sorcières':ORC_NAMES[b.type])+' · niveau '+b.level:
       alive.length+' unité(s) sélectionnée(s)';
@@ -2531,12 +2618,22 @@ function refreshHUD(){
     const ready=plots.filter(p=>p.stage===3).length;
     info.textContent='Cultures prêtes : '+ready+' / '+plots.length+' · stade 3 = récoltable.';
   }
-  if(b&&b.type!=='mine'){
+  if(b?.type==='mine'){
+    const fill=health.querySelector('.hp-fill');
+    const label='Or restant : '+b.goldRemaining+' / '+MINE_CAPACITY;
+    if(health.firstChild?.nodeType===Node.TEXT_NODE)health.firstChild.textContent=label;
+    if(fill)fill.style.width=100*b.goldRemaining/MINE_CAPACITY+'%';
+  }else if(b){
     const hp=health.firstChild,fill=health.querySelector('.hp-fill');
     const text='Niv. '+b.level+' · PV '+Math.ceil(b.health)+' / '+b.maxHealth+
       (b.queue.length?' · ⏳ '+Math.floor(100*clamp(b.progress/b.queue[0].duration,0,1))+'%':'');
     if(hp?.nodeType===Node.TEXT_NODE&&hp.textContent!==text)hp.textContent=text;
     if(fill)fill.style.width=(100*b.health/b.maxHealth)+'%';
+  }else if(enemy&&!enemy.dead){
+    const fill=health.querySelector('.hp-fill');
+    if(health.firstChild?.nodeType===Node.TEXT_NODE)
+      health.firstChild.textContent='PV : '+Math.ceil(enemy.health)+' / '+enemy.maxHealth;
+    if(fill)fill.style.width=100*enemy.health/enemy.maxHealth+'%';
   }else if(alive.length){
     const average=Math.round(alive.reduce((sum,u)=>sum+u.health/u.maxHealth,0)/alive.length*100);
     const hp=health.firstChild,fill=health.querySelector('.hp-fill');
@@ -2690,7 +2787,8 @@ function startSession(){
   sessionOwner.resetPassive();
   sessionOwner.resetMining();
   lastHudSignature='';
-  for(const b of liveBuildings()){b.queue=[];b.progress=0;b.level=1;
+  for(const b of liveBuildings()){b.queue=[];b.progress=0;b.spawnBlocked=false;b.level=1;
+    if(b.type==='mine')b.goldRemaining=MINE_CAPACITY;
     b.maxHealth=b.clanId==='witch'?
       (b.type==='garden'?GARDEN_HEALTH:b.type==='stone-circle'?STONE_CIRCLE_HEALTH:WITCH_HOUSE_HEALTH):
       BUILDING_TYPES[b.type].levels[1].maxHealth;
@@ -2921,7 +3019,14 @@ function endBattle(victory){
   $('overlay').hidden=false;$('pause').disabled=true;
 }
 function dealDamage(target,amount,attacker){
-  return damageCycle.dealDamage(target,amount,attacker);
+  const result=damageCycle.dealDamage(target,amount,attacker);
+  if(!isBuilding(target)){
+    if(!target.dead)target.damageBarTimer=2.4;
+    else if(interaction.forgetEnemy(target))lastHudSignature='';
+    updateUnitHealthBar(target);
+    if(interaction.selectedEnemy===target||target.dead)refreshHUD();
+  }
+  return result;
 }
 
 const soulHarvester=window.FightersSoulHarvester.create({
@@ -3278,7 +3383,8 @@ const tickUnit=window.FightersUnitTick.create({
   tickHealingRetreat,tickSoulHarvester,tickBerryForager,tickOrcForager,
   tickConstructWorker,tickRepairWorker,tickMineWorker,tickTreeWorker,
   tickWoodWorker,tickGardenWorker,navigateActor,nearestHostile,
-  returnFromDefense,approachBuilding,fireBolt,rand
+  returnFromDefense,approachBuilding,fireBolt,rand,
+  findSafeGoal:point=>navigatorRTS.findSafeGoal(point)
 });
 function stepOrcStrategy(dt){
   if(!orcDirector.enabled||!session.running||session.paused)return;
@@ -3422,6 +3528,10 @@ function frame(){
   for(const mixer of orcAnimationMixers)if(!session.paused&&isSceneDescendant(mixer.getRoot()))mixer.update(dt);
   accumulator=window.FightersSimulation.advanceFrame(accumulator,dt,stepGame);
   if(!session.paused)for(const actor of units){applyFacing(actor);actor.mixer.update(dt);}
+  if(!session.paused)for(const actor of units)
+    actor.damageBarTimer=Math.max(0,actor.damageBarTimer-dt);
+  for(const actor of units)if(actor.damageBarTimer>0||actor.healthBar.root.visible||
+    interaction.selectedEnemy===actor)updateUnitHealthBar(actor);
   animateStoneCircles(dt);
   syncRavenVisuals(dt);
   syncHareVisuals();
@@ -3446,7 +3556,7 @@ const playerActions=window.FightersPlayerActions.create({
     selected,selectedRaven:interaction.selectedRaven}),
   worldPoint,issueRavenMove,setRally,scheduleBuild,showBanner,
   liveBuildings,insideFootprint:(point,hitbox)=>window.FightersFootprints.inside(point,hitbox),
-  issueStoneCircleMove,pickRaven,selectRaven,pickUnit,pickBuilding,pickTree,pickLogBundle,
+  issueStoneCircleMove,pickRaven,selectRaven,pickUnit,pickBuilding,pickTree,pickLogBundle,selectEnemy,
   targetFaction,orderRepair,orderMine,orderHarvest,orderAttack,orderChop,orderCollectWood,
   selectUnits,selectBuilding,issueMove,clearSelection,
   getUnits:()=>units,screenPoint,getViewportWidth:()=>viewport.clientWidth
@@ -3630,6 +3740,10 @@ if(qaMode)window.__fightersQA={
           real:!!v.variants,visible:v.variants?v.variants.filter(n=>n.visible).length:0,
           model:v.variants?v.variants.find(n=>n.visible)?.children[0]?.name:null})))},
     berries:{...wildBerries.snapshot(),real:!!cropCatalog?.get(1),batches:berryBatches.length,
+      circularClipping:berryBatches.length>0&&berryBatches.every(batch=>{
+        const material=Array.isArray(batch.material)?batch.material[0]:batch.material;
+        return material.customProgramCacheKey().startsWith('berry-disc-');
+      }),
       forageSight:window.FightersBerries.FORAGE_SIGHT,
       bushes:wildBerries.bushes.map(b=>({id:b.id,x:b.x,z:b.z,scale:b.scale,stage:b.stage,
         rendered:berryVisualStages[b.id]===b.stage})),
@@ -3718,6 +3832,9 @@ if(qaMode)window.__fightersQA={
       pickTool:a.pickTool?.name||null,pickToolVisible:!!a.pickTool?.visible,
       chopTool:a.chopTool?.name||null,chopToolVisible:!!a.chopTool?.visible,
       visible:a.root.visible,berryTarget:a.berryJob?.index??null,
+      fearTime:a.fearTime,fearGoal:a.fearGoal,
+      damageBarVisible:a.healthBar.root.visible,
+      damageBarColor:a.healthBar.fill.material.color.getHex(),
       repairTargetId:a.repairJob?.buildingId||null,
       healingTarget:a.healJob?.id||null,
       heading:{...a.heading},combatTargetId:a.attack?.target?.id||null,
@@ -3736,6 +3853,9 @@ if(qaMode)window.__fightersQA={
       pickTool:a.pickTool?.name||null,pickToolVisible:!!a.pickTool?.visible,
       chopTool:a.chopTool?.name||null,chopToolVisible:!!a.chopTool?.visible,
       visible:a.root.visible,
+      fearTime:a.fearTime,fearGoal:a.fearGoal,
+      damageBarVisible:a.healthBar.root.visible,
+      damageBarColor:a.healthBar.fill.material.color.getHex(),
       repairTargetId:a.repairJob?.buildingId||null,
       foodTarget:a.orcFoodJob?{...a.orcFoodJob}:null,
       heading:{...a.heading},combatTargetId:a.attack?.target?.id||null,
@@ -3747,7 +3867,8 @@ if(qaMode)window.__fightersQA={
       defenseAnchor:a.defenseAnchor?{x:a.defenseAnchor.x,z:a.defenseAnchor.z}:null,
       navStalls:a.navWatch?.stalls||0
     })),
-    selectedIds:[...selected].map(a=>a.id),selectedBuilding:interaction.selectedBuilding?.kind||interaction.selectedBuilding?.type||null,
+    selectedIds:[...selected].map(a=>a.id),selectedEnemyId:interaction.selectedEnemy?.id||null,
+    selectedBuilding:interaction.selectedBuilding?.kind||interaction.selectedBuilding?.type||null,
     selectedBuildingId:interaction.selectedBuilding?.id||null,
     trainingCount:witchBuilding.queue.filter(j=>j.kind==='witch').length,
     trainElapsed:witchBuilding.progress,house:{id:witchBuilding.id,level:witchBuilding.level,
@@ -3760,7 +3881,7 @@ if(qaMode)window.__fightersQA={
       x:b.root.position.x,z:b.root.position.z,hitbox:{...b.hitbox},
       queue:b.queue.map(j=>({...j})),initial:b.initial,destroyed:b.destroyed,
       destructible:b.type!=='mine'&&b.clanId!=='neutral',
-      health:b.health,maxHealth:b.maxHealth,
+      health:b.health,maxHealth:b.maxHealth,goldRemaining:b.goldRemaining,
       healthbarParent:b.healthBar?(b.healthBar.root.parent===scene?'scene':'incorrect'):null,
       healthbarQuaternion:b.healthBar?b.healthBar.root.quaternion.toArray():null,
       healthbarPosition:b.healthBar?b.healthBar.root.position.toArray():null,
@@ -4053,6 +4174,10 @@ if(qaMode)window.__fightersQA={
   selectUnit:(kind,index)=>{
     const a=units.filter(u=>u.kind===kind&&!u.dead)[index];
     if(a)selectUnits([a]);
+  },
+  inspectEnemy:(kind,index)=>{
+    const a=units.filter(u=>u.kind===kind&&!u.dead)[index];
+    if(a)selectEnemy(a);
   },
   tap:(x,y)=>touchAt(x,y),
   unitScreenPoint:(kind,index)=>{

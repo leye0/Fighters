@@ -9,17 +9,17 @@ const forest=require('../app/rts-forest.js');
 const berries=require('../app/rts-berries.js');
 const {Hares}=require('../app/rts-orc-food.js');
 
-for(const [u,v] of [[0,0],[-28,-28],[28,-28],[28,28],[-28,28],[7,-11]]){
+for(const [u,v] of [[0,0],[-42,-42],[42,-42],[42,42],[-42,42],[7,-11]]){
   const world=map.toWorld(u,v),back=map.toMap(world.x,world.z);
   assert.ok(Math.hypot(back.x-u,back.z-v)<1e-10,'Map/world conversion must round-trip');
 }
 // For the fixed 45°/35.264° orthographic camera, the screen coordinates of
-// ground points are (x-z)/sqrt(2) and (x+z)/sqrt(6). Both extents are 56.
+// ground points are (x-z)/sqrt(2) and (x+z)/sqrt(6). Both extents are now 84.
 const corners=map.corners().map(p=>({
   x:(p.x-p.z)/Math.sqrt(2),y:(p.x+p.z)/Math.sqrt(6)
 }));
 assert.deepEqual(corners.map(c=>[Math.round(c.x),Math.round(c.y)]),
-  [[-28,-28],[28,-28],[28,28],[-28,28]],
+  [[-42,-42],[42,-42],[42,42],[-42,42]],
   'The isometric terrain, not just its minimap canvas, must look square');
 assert.ok(map.contains(-23.5,-17.5,3)&&map.contains(22,21,3),
   'Both headquarters must remain inside the playing field');
@@ -38,7 +38,10 @@ for(const waypoint of route.waypoints)
   assert.ok(map.contains(waypoint.x,waypoint.z,.3),'A* must not leave the square map');
 
 const trees=forest.createLayout({map});
-assert.equal(trees.length,55,'Preserve the forest population');
+assert.equal(trees.length,91,'36 additional trees populate the expanded perimeter');
+assert(trees.some(t=>Math.max(Math.abs(map.toMap(t.x,t.z).x),
+  Math.abs(map.toMap(t.x,t.z).z))>32),
+  'New land must not be an entirely empty visual border');
 assert.deepEqual(trees,forest.createLayout({map}),'Forest relocation must be deterministic');
 assert.ok(trees.every(t=>map.contains(t.x,t.z,t.radius)),
   'Trees must not grow beyond the new terrain border');

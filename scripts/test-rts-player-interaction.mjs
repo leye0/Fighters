@@ -7,13 +7,14 @@ const {create}=require('../app/rts-player-interaction.js');
 const {create:createActions}=require('../app/rts-player-actions.js');
 
 const blank=()=>({buildMode:null,attackMode:false,rallyMode:false,
-  ravenMoveMode:false,constructionTab:false,selectedBuilding:null,selectedRaven:null});
+  ravenMoveMode:false,constructionTab:false,selectedBuilding:null,selectedRaven:null,selectedEnemy:null});
 const snapshot=state=>({buildMode:state.buildMode,attackMode:state.attackMode,
   rallyMode:state.rallyMode,ravenMoveMode:state.ravenMoveMode,
   constructionTab:state.constructionTab,selectedBuilding:state.selectedBuilding,
-  selectedRaven:state.selectedRaven});
+  selectedRaven:state.selectedRaven,selectedEnemy:state.selectedEnemy});
 const state=create(),another=create();
 const house={id:'house',clanId:'witch'},raven={id:'r1'};
+const enemyActor={id:'orc-2',kind:'orc'};
 assert.deepEqual(snapshot(state),blank());
 assert(Object.isFrozen(state),'only named transitions may mutate interaction state');
 assert.notEqual(state,another,'each match/player gets independent state');
@@ -75,6 +76,14 @@ assert.equal(state.selectedBuilding,house);
 assert.equal(state.forgetBuilding(house),true);
 assert.equal(state.selectedBuilding,null,'destroyed building is forgotten');
 
+state.selectEnemy(enemyActor);
+assert.equal(state.selectedEnemy,enemyActor);
+assert.equal(state.selectedBuilding,null);
+assert.equal(state.forgetEnemy({id:enemyActor.id}),false);
+assert.equal(state.forgetEnemy(enemyActor),true,'dead enemy must be forgotten');
+state.selectEnemy(enemyActor);state.clearSelection();
+assert.equal(state.selectedEnemy,null,'clear must discard inspection');
+
 state.selectBuilding(house);
 state.beginRally();
 state.beginAttack();
@@ -105,6 +114,7 @@ const actions=createActions({
   showBanner:message=>ordered.push(['banner',message]),
   liveBuildings:()=>[],insideFootprint:()=>false,issueStoneCircleMove:()=>false,
   pickRaven:()=>null,selectRaven:r=>state.selectRaven(r),
+  selectEnemy:a=>state.selectEnemy(a),
   pickUnit:(_x,_y,hostile)=>hostile?null:pickedFriend,
   pickBuilding:()=>pickedBuilding,pickTree:()=>null,pickLogBundle:()=>null,
   targetFaction:b=>b.clanId,

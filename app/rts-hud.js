@@ -55,9 +55,10 @@
       return element;
     }
 
-    function healthTrack(parent,label,width){
+    function healthTrack(parent,label,width,tone='friendly'){
       const track=document.createElement('div');track.className='hp-track';
       const fill=document.createElement('div');fill.className='hp-fill';
+      if(tone!=='friendly')fill.classList.add('hp-'+tone);
       fill.style.width=width+'%';track.appendChild(fill);
       parent.append(document.createTextNode(label),track);
     }

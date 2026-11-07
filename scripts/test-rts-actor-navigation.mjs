@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-const {create}=require('../app/rts-actor-navigation.js');
+const {create,frontSpawnSites}=require('../app/rts-actor-navigation.js');
 const {Navigator}=require('../app/rts-navigation.js');
 const physics=require('../app/rts-unit-physics.js');
 
@@ -13,6 +13,14 @@ function actor(x=0,z=0){
   return {root:{position},dead:false,speed:5,route:null,routeVersion:-1,
     routeGoal:null,routeAge:0,approachCache:null,approachAge:0,
     navWatch:null,unstickSeconds:0,noStepFailures:0};
+}
+
+{
+  const sites=[{x:-2,z:-1},{x:1,z:-2},{x:0,z:2},{x:2,z:1},{x:-1,z:-2}];
+  const result=frontSpawnSites(sites,{minX:-1,maxX:1,minZ:-1,maxZ:1});
+  assert.deepEqual(result,[sites[3],sites[2]],
+    'Trained troops may only appear on the camera-facing half of a building');
+  assert.equal(sites.length,5,'Spawn ranking cannot mutate the shared perimeter cache');
 }
 function harness({navigation,party,sites,closest,watch,step}={}){
   const events={plans:[],watch:[],steps:[],faces:[],animations:[]};
@@ -47,6 +55,13 @@ for(const [mode,radius] of [['engage',.055],['pursuit',1.35],['order',.36]]){
   assert.equal(api.navigateActor(moving,{x:radius+.1,z:0},.01,mode),'moving');
   assert(Math.abs(events.steps.at(-1)[2]-.05)<1e-10,
     'The original speed * dt movement budget must not change');
+}
+{
+  const {api,events}=harness();
+  const fleeing=actor();fleeing.fearTime=1;
+  api.navigateActor(fleeing,{x:10,z:0},.1,'order');
+  assert(Math.abs(events.steps[0][2]-.875)<1e-9,
+    'A frightened worker walks 75% faster than its ordinary 5m/s pace');
 }
 
 // Failed-route caching: a first impossible goal triggers only one A* call;

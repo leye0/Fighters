@@ -10,7 +10,7 @@
   const FIRST_STAGE=1,LAST_STAGE=3,GROWTH_SECONDS=15;
   const EAT_SECONDS=1.6,FOOD_PER_BUSH=3,BUSH_COUNT=28,FORAGE_SIGHT=3;
   const RESERVED=[[-23.5,-17.5,6.8],[22,20,8.0],[15,20,5.5],
-    [-12,-21,4.6],[8,-10,4.5],[1,26,4.5]];
+    [-12,-21,4.6],[-35,-26,4.6],[32,31,4.6],[8,-10,4.5],[1,26,4.5]];
   const STARTING_SHRUBS=[[-18,-9.5],[-21,-10.5]];
   function createLayout(trees=[],seed=0x4ba9a123,map=null){
     let state=seed>>>0;

@@ -16,7 +16,14 @@ export async function runEconomyQa({evaluate,call,check,until,screenshot,sleep,f
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.gold.orc===noWorkerGold&&s.mining.totalMinedGold===0&&
    s.mining.workers.length===0,'Mine generated gold without any worker');
- check(s.house.level===1&&s.buildings.length===6,'Reset starting buildings');
+ check(s.house.level===1&&s.buildings.length===8,'Reset starting buildings');
+ check(s.buildings.filter(b=>b.type==='mine').length===4&&
+   s.buildings.filter(b=>b.type==='mine').every(b=>b.goldRemaining===8000),
+   'Two finite 8,000-gold deposits must be available on each side');
+ const mines=s.buildings.filter(b=>b.type==='mine');
+ check(mines.filter(b=>Math.hypot(b.x+23.5,b.z+17.5)<23).length===2&&
+   mines.filter(b=>Math.hypot(b.x-15,b.z-20)<23).length===2,
+   'Each clan needs exactly two distinct mines near its starting headquarters');
  // A witch worker can mine a neutral deposit; soldiers cannot mine, and
  // workers cannot attack buildings. Collection requires physical contact.
  const hutForWorker=s.buildings.find(b=>b.type==='hut').id;
@@ -48,6 +55,9 @@ export async function runEconomyQa({evaluate,call,check,until,screenshot,sleep,f
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.gold.witch>witchGoldBefore&&s.mining.totalMinedGold>0,
   'Witch worker never mined physical gold: '+JSON.stringify(s.mining));
+ check(s.buildings.filter(b=>b.type==='mine').some(b=>b.goldRemaining<8000)&&
+   s.buildings.filter(b=>b.type==='mine').every(b=>b.goldRemaining>=0),
+   'The physical ore reserves must decrease without going negative');
   check(miningSwing.witch&&miningSwing.orc,
     'Workers of both clans must swing a pickaxe, not a scythe/axe, when mining: '+JSON.stringify(miningSwing));
  check(miningSwing.cargo&&miningSwing.unpaid,
@@ -61,10 +71,12 @@ export async function runEconomyQa({evaluate,call,check,until,screenshot,sleep,f
  check(site,'No safe witch house construction site');
  const buildingsBefore=s.buildings.length,goldBeforeBuild=s.gold.witch,
   woodBeforeBuild=s.wood.witch;
+ await evaluate("window.__fightersQA.selectUnit('witch',1)");
  check(await evaluate('window.__fightersQA.orderBuild("witch-house",'+site.x+','+site.z+')'),
   'Witch worker could not start a construction job');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.buildings.length===buildingsBefore&&s.construction.length===1&&
+  s.selectedIds.length===0&&
   s.construction[0].previewVisible&&s.constructionPreviewCount===1&&
   s.gold.witch===goldBeforeBuild-230&&s.wood.witch===woodBeforeBuild-75,
   'Construction must reserve both gold and wood and wait for worker');
@@ -86,7 +98,7 @@ export async function runEconomyQa({evaluate,call,check,until,screenshot,sleep,f
  console.log('PASS ECONOMIC ROLES: witch mined gold, constructed a shared-model house; soldiers cannot mine, workers cannot fight.');
  await evaluate('window.__fightersQA.reset()');
  s=await evaluate('window.__fightersQA.snapshot()');
- check(s.buildings.length===6,'Reset must remove the additional witch house');
+ check(s.buildings.length===8,'Reset must remove the additional witch house');
  check(await evaluate('window.__fightersQA.isClear(8,-10)'),
   'Reset must remove constructed building hitboxes');
 

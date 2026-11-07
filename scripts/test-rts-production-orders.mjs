@@ -100,6 +100,26 @@ assert(Math.abs(witch.progress)<1e-8);
 orders.step(.5);
 assert.equal(witch.progress,0,'no production order accumulates progress');
 
+{
+  let exitClear=false,spawnAttempts=0;
+  const depot=building('witch','witch-house');
+  const stalled=createProductionOrders({
+    roles:{profile:()=>({cost:10})},trainingDuration:()=>1,
+    upgradeCost:()=>100,arcanistUnlocked:()=>true,canTrainOrcRole:()=>true,
+    maxQueue:3,getGold:()=>({witch:100}),getWood:()=>({witch:100}),
+    liveBuildings:()=>[depot],finishTraining:()=>{spawnAttempts++;return exitClear;}
+  });
+  depot.queue.push({kind:'witch',role:'worker',duration:1});
+  stalled.step(1);
+  assert.equal(depot.queue.length,1,'A blocked spawn keeps the paid trainee queued');
+  assert.equal(depot.progress,1);
+  stalled.step(.2);
+  assert.equal(depot.queue.length,1);
+  exitClear=true;stalled.step(.1);
+  assert.equal(depot.queue.length,0,'The recruit exits as soon as the front clears');
+  assert.equal(spawnAttempts,3);
+}
+
 // Completion transitions are domain operations: no DOM, scene, GLB or voices
 // are needed to verify their decisions and the historical callback order.
 const events=[];
@@ -129,7 +149,10 @@ const completions=createProductionCompletions({
 blocked=true;
 assert.equal(completions.finishTraining(witch,'witch','melee'),false);
 assert.deepEqual(events,[['safeSpawn','witch-house'],['banner','SORTIE BLOQUÉE']],
-  'blocked training consumes the queued order without spawning an actor');
+  'blocked training announces the obstructed exit without spawning an actor');
+assert.equal(completions.finishTraining(witch,'witch','melee'),false);
+assert.equal(events.filter(event=>event[0]==='banner').length,1,
+  'A blocked exit must not spam the HUD every simulation tick');
 events.length=0;blocked=false;
 witch.rally={x:14,z:5};
 assert.equal(completions.finishTraining(witch,'witch','ranged'),true);

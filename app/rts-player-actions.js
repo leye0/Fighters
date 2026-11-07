@@ -10,7 +10,7 @@
   'use strict';
   function create({getState,worldPoint,issueRavenMove,setRally,scheduleBuild,
     showBanner,liveBuildings,insideFootprint,issueStoneCircleMove,
-    pickRaven,selectRaven,pickUnit,pickBuilding,pickTree,pickLogBundle,
+    pickRaven,selectRaven,pickUnit,pickBuilding,pickTree,pickLogBundle,selectEnemy,
     targetFaction,orderRepair,orderMine,orderHarvest,orderAttack,
     orderChop,orderCollectWood,selectUnits,selectBuilding,issueMove,
     clearSelection,getUnits,screenPoint,getViewportWidth}){
@@ -54,6 +54,7 @@
       }
       if(state.attackMode){showBanner('CIBLE ENNEMIE REQUISE');return;}
       if(friend){selectUnits([friend],append);return;}
+      if(unit&&targetFaction(unit)!==faction){selectEnemy(unit);return;}
       if(building){selectBuilding(building);return;}
       if(state.selectedRaven){issueRavenMove(pos);return;}
       if(state.selected.size){issueMove(pos);return;}

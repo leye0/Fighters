@@ -9,6 +9,16 @@
 })(typeof globalThis==='object'?globalThis:this,function(){
   'use strict';
 
+  // The camera faces the +X/+Z sides of the arena. Training exits are on
+  // that visible half of a building, never behind its silhouette.
+  function frontSpawnSites(sites,hitbox,front={x:1,z:1}){
+    const cx=(hitbox.minX+hitbox.maxX)/2,cz=(hitbox.minZ+hitbox.maxZ)/2;
+    const candidates=sites.filter(point=>(point.x-cx)*front.x+(point.z-cz)*front.z>.05);
+    return candidates.sort((a,b)=>
+      ((b.x-cx)*front.x+(b.z-cz)*front.z)-
+      ((a.x-cx)*front.x+(a.z-cz)*front.z));
+  }
+
   function create({navigatorRTS,units,unitRadius,buildingPerimeterSites,
     closestBoundary,watchMovement,stepPhysics,faceDirection,animation}){
     function approachBuilding(actor,building){
@@ -110,7 +120,7 @@
         if(stalls>=3){actor.navWatch=null;return 'blocked';}
         return 'retrying';
       }
-      const speed=actor.speed*dt;
+      const speed=actor.speed*(actor.fearTime>0?1.75:1)*dt;
       const budget=Math.max(0,Math.min(gap-(actor.route?0:arrival),speed));
       const next=stepPhysics(from,waypoint,budget,actor,units,navigatorRTS,unitRadius);
       if(!next){
@@ -128,5 +138,5 @@
 
     return Object.freeze({approachBuilding,navigateActor});
   }
-  return Object.freeze({create});
+  return Object.freeze({create,frontSpawnSites});
 });

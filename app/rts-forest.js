@@ -33,7 +33,7 @@
     {side:'center-groves',count:9,types:['twisted','dead','twisted','dead']}
   ];
   const RESERVED=[[-23.5,-17.5,7.4],[-18,-14,4.8],[22,20,9.2],
-    [15,20,7.8],[1,26,4.4],
+    [15,20,7.8],[1,26,4.4],[-12,-21,4.4],[-35,-26,4.6],[32,31,4.6],
     // Canonical orc construction site exercised in the playable browser QA.
     [8,-10,5.0]];
   function createLayout({map=null}={}){
@@ -83,6 +83,23 @@
         radius:type==='dead'?.38:.46});
     }
     if(placed.length!==trees.length)throw Error('Cannot distribute the forest inside the map');
+    // Keep the established home groves while populating the newly added
+    // perimeter. Otherwise a 50%-wider map would have empty outer quarters.
+    const outerCount=map.HALF>28?36:0;
+    for(let trial=0,added=0;trial<outerCount*200&&added<outerCount;trial++){
+      const mapX=(random()*2-1)*(map.HALF-1.8);
+      const mapZ=(random()*2-1)*(map.HALF-1.8);
+      if(Math.max(Math.abs(mapX),Math.abs(mapZ))<29)continue;
+      const {x,z}=map.toWorld(mapX,mapZ);
+      if(RESERVED.some(([rx,rz,r])=>Math.hypot(x-rx,z-rz)<r)||
+        placed.some(t=>Math.hypot(t.x-x,t.z-z)<2.15))continue;
+      const type=TYPES[Math.floor(random()*TYPES.length)];
+      placed.push({x,z,type,angle:random()*Math.PI*2,
+        height:(type==='dead'?4.8:5.4)*(.83+random()*.34),
+        radius:type==='dead'?.38:.46});
+      added++;
+    }
+    if(placed.length!==trees.length+outerCount)throw Error('Cannot populate expanded map perimeter');
     return placed;
   }
   function obstacles(layout){

@@ -11,7 +11,8 @@
   const INV_SQRT2=Math.SQRT1_2;
   const SQRT3=Math.sqrt(3);
   const INV_SQRT6=1/Math.sqrt(6);
-  const HALF=28,SIZE=HALF*2;
+  // 50% more width and height than the original 56 × 56 battlefield.
+  const HALF=42,SIZE=HALF*2;
   // The current camera is at (+X,+Y,+Z), with a 45-degree azimuth and a
   // 35.264-degree elevation. Its orthographic ground projection is exactly
   // screenX=(x-z)/sqrt(2), screenDown=(x+z)/sqrt(6).

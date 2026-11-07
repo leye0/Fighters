@@ -8,7 +8,7 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
    ravens.birds.every(b=>b.y>3.5),
    'Two real animated ravens must fly or perch above the ground: '+JSON.stringify(ravens));
  const forest=await evaluate('window.__fightersQA.snapshot().forest');
- check(forest.instances===55&&forest.obstacleCount===55&&forest.visibleInViewport>=3,
+ check(forest.instances===91&&forest.obstacleCount===91&&forest.visibleInViewport>=3,
    'At least three real trees must be revealed and on screen at witch spawn: '+JSON.stringify(forest));
  console.log('PASS FOREST BROWSER:',JSON.stringify(forest));
  await screenshot('rts-forest-start');
@@ -53,6 +53,11 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
  // raven scouting and the emergency defense tests before resetting the world.
  await evaluate("window.__fightersQA.setFaction('witch')");
  s=await evaluate('window.__fightersQA.snapshot()');
+ await evaluate("window.__fightersQA.inspectEnemy('orc',0)");
+ check((await evaluate('window.__fightersQA.snapshot()')).selectedEnemyId===s.orcs[0].id&&
+   await evaluate("document.querySelector('#command-health .hp-fill')?.classList.contains('hp-enemy')")&&
+   await evaluate("document.querySelector('#command-info').textContent.includes('ennemi')"),
+   'Inspecting an enemy must show its role, description and red health meter');
  await evaluate('window.__fightersQA.selectRaven(0)');
  check((await evaluate('window.__fightersQA.snapshot().ravens.selectedId'))==='raven-1'&&
    await evaluate('document.querySelector("#command-title").textContent')==='Corbeau familier'&&
@@ -71,6 +76,8 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
  check(await evaluate("window.__fightersQA.strikeUnit('orc',0,'witch',1,5)"),
    'Could not simulate an assault on a witch worker');
  const struck=await evaluate('window.__fightersQA.snapshot()');
+ check(struck.witches[1].damageBarVisible&&struck.witches[1].damageBarColor===0x6bd65d,
+   'Damaged friendly units must briefly show a green world-space health meter');
  check(struck.witches.filter(u=>u.role!=='worker').every(u=>
    u.attackTargetId===struck.orcs[0].id),
    'Nearby autonomous witch guards must retaliate when a worker is struck');
@@ -254,6 +261,8 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
  await until('window.__fightersQA.snapshot().crops.loaded',
    'real six-stage source model for wheat and wild berry bushes',30000);
  s=await evaluate('window.__fightersQA.snapshot()');
+ check(s.berries.circularClipping,
+   'Real square crop models must be trimmed by a circular shader mask');
  check(s.crops.templates===6&&s.berries.count===28&&s.berries.real&&s.berries.batches>0&&
    s.berries.forageSight===3&&
    s.berries.bushes.every(b=>b.stage===1&&b.rendered&&b.scale>=.48&&b.scale<.63),
@@ -343,8 +352,8 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
        "w.workToolVisible&&!w.chopToolVisible")+"&&!w.hammerToolVisible)swinging=true;"+
      "if(s.forest.felled)return {swinging,forest:s.forest};"+
      "}return {swinging,forest:window.__fightersQA.snapshot().forest};})()");
-   check(chop.swinging&&chop.forest.felled===1&&chop.forest.instances===54&&
-     chop.forest.obstacleCount===54&&chop.forest.logBundles===1&&
+   check(chop.swinging&&chop.forest.felled===1&&chop.forest.instances===90&&
+     chop.forest.obstacleCount===90&&chop.forest.logBundles===1&&
      chop.forest.trees[treeIndex].felled,
      'Felling must use a visible axe, remove exactly one tree obstacle and leave GLB logs: '+
      JSON.stringify(chop));
@@ -373,8 +382,8 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
      'Forest trees are terrain resources, not attackable buildings');
    await evaluate('window.__fightersQA.reset()');
    s=await evaluate('window.__fightersQA.snapshot()');
-   check(s.forest.instances===55&&s.forest.felled===0&&
-     s.forest.obstacleCount===55&&s.forest.logBundles===0,
+   check(s.forest.instances===91&&s.forest.felled===0&&
+     s.forest.obstacleCount===91&&s.forest.logBundles===0,
      'Reset must restore every tree and release all log bundle scene nodes');
  }
  console.log('PASS FORESTRY: both clans axe-fell actual CC0 trees to tiny CC0 log bundles; reset clears them.');
@@ -475,8 +484,8 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
  // Warcraft fog: unknown terrain is black, walking discovers it, memory persists,
  // and restarting clears every previously explored tile.
  const fogState=await evaluate('window.__fightersQA.snapshot().fog');
- check(fogState.activeFaction==='witch'&&fogState.size===224&&
-   fogState.bytes===602112&&fogState.visibleCells>0&&
+ check(fogState.activeFaction==='witch'&&fogState.size===332&&
+   fogState.bytes===1322688&&fogState.visibleCells>0&&
    fogState.exploredCells<fogState.cells/3,
    'Fog must use a compact, local starting discovery area: '+JSON.stringify(fogState));
  const hidden=await evaluate('window.__fightersQA.fogAt(22,21)');
@@ -680,9 +689,9 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
    'Neutral gold deposits must never be damaged, upgraded or attacked');
  await evaluate("window.__fightersQA.selectBuildingById('neutral-gold-mine-01')");
  check(await evaluate("document.querySelector('#command-info').textContent.includes('indestructible')&&"+
-   "!document.querySelector('#command-health').textContent.includes('PV')&&"+
+   "document.querySelector('#command-health').textContent.includes('Or restant : 8000 / 8000')&&"+
    "!Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.textContent.includes('Améliorer'))"),
-   'Natural deposit HUD must describe a neutral resource without health or upgrades');
+   'Natural deposit HUD must display remaining gold instead of building health');
  await evaluate("window.__fightersQA.setFaction('orc');window.__fightersQA.selectOrcBarrack()");
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.selectedBuilding==='barrack','Orc barrack contextual selection');
@@ -743,7 +752,7 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.buildings.every(b=>b.hitbox.shape==='polygon'&&b.hitbox.vertexCount>10),
    'Orc buildings must all use real GLB-projected multi-polygons');
- check(s.buildings.length===7&&s.buildings.filter(b=>b.type==='hut').length===2,
+ check(s.buildings.length===9&&s.buildings.filter(b=>b.type==='hut').length===2,
   'Second hut must be a unique placed building');
  check(s.orcFood.housingCap===16,
    'Second level-one hut must provide six more population slots');

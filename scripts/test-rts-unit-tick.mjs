@@ -11,7 +11,7 @@ const units=[];
 const deps={
   units,getPassiveKind:()=>passiveKind,
   orcDirector:{enabled:true},witchDirector:{enabled:true},
-  roles:{isWorker:actor=>actor.role==='worker'},
+  roles:{isWorker:actor=>actor.role==='worker',isFighter:actor=>actor.role!=='worker'},
   raiding:{retaliation:()=>null,end:actor=>{actor.raiding=false;calls.push('end raid');}},
   buildingContact:.78,
   cancelOrcFoodJob:actor=>{actor.orcFoodJob=null;calls.push('cancel food');},
@@ -38,6 +38,7 @@ const deps={
     calls.push(['navigate',mode]);return moveResult;
   },
   nearestHostile:()=>null,
+  findSafeGoal:point=>point,
   returnFromDefense:()=>{returnDefense=true;},
   approachBuilding:()=>({x:1,z:2}),
   fireBolt:()=>calls.push('bolt'),rand:()=>.6
@@ -97,6 +98,31 @@ moveResult='blocked';worker.destination={x:10,z:3};worker.navWatch={};
 tick(worker,.1);
 assert.equal(worker.destination,null);
 assert.equal(worker.navWatch,null);
+
+// A worker stops every economic task during danger, runs toward friendly
+// fighters and resumes the original task when its fear expires.
+const threatened=makeActor('worker'),guard=makeActor('melee');
+guard.root.position={x:4,z:0};
+const attacker={...makeActor('melee'),kind:'orc',root:{position:{x:2,z:1}}};
+units.push(threatened,guard,attacker);
+workStep='mine';moveResult='moving';calls.length=0;
+tick(threatened,.1);
+assert(threatened.fearTime>0&&threatened.fearGoal,
+  'A nearby hostile fighter makes an economic unit retreat');
+assert(threatened.fearGoal.x>guard.root.position.x,
+  'The shelter must be beyond the friendly fighter, away from the attacker');
+assert(calls.some(c=>Array.isArray(c)&&c[0]==='navigate'),
+  'Retreat overrides mining even with an active work order');
+attacker.dead=true;
+for(let i=0;i<20;i++)tick(threatened,.1);
+assert.equal(threatened.fearTime,0);
+assert.equal(threatened.fearGoal,null);
+calls.length=0;tick(threatened,.1);
+assert(!calls.some(c=>Array.isArray(c)&&c[0]==='navigate'),
+  'The interrupted mining task resumes after the threat is gone');
+workStep=null;
+units.splice(0,3);
+moveResult='blocked';
 
 // A blocked approach must clear an unreachable attack, including retaliation.
 const blocked=makeActor();const farHouse={id:'far',kind:'orc',hitbox:{},distance:10};

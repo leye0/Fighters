@@ -215,7 +215,7 @@
       const clan=building.clanId==='witch'?'witch':'orc';
       const gold=getGold(),wood=getWood();
       gold[clan]+=order.cost;wood[clan]+=order.woodCost||0;
-      if(index===0)building.progress=0;
+      if(index===0){building.progress=0;building.spawnBlocked=false;}
       return true;
     }
 
@@ -228,7 +228,11 @@
         building.progress=Math.max(0,building.progress-order.duration);
         building.queue.shift();
         if(order.kind==='upgrade')finishUpgrade(building);
-        else finishTraining(building,order.kind,order.role||'melee');
+        // Preserve the historical callback order (queue already shifted)
+        // while retaining a paid recruit if no forward exit is reachable.
+        else if(finishTraining(building,order.kind,order.role||'melee')===false){
+          building.queue.unshift(order);building.progress=order.duration;
+        }
       }
     }
 
@@ -248,7 +252,11 @@
 
     function finishTraining(building,kind,role='melee'){
       const position=safeSpawn(building);
-      if(!position){showBanner('SORTIE BLOQUÉE');return false;}
+      if(!position){
+        if(!building.spawnBlocked)showBanner('SORTIE BLOQUÉE');
+        building.spawnBlocked=true;return false;
+      }
+      building.spawnBlocked=false;
       const actor=spawnActor(kind,position,countActors(kind),role);
       if(building.rally)actor.destination=resolveRally(building.rally);
       if(kind==='orc'||kind==='witch')playCreationVoice(kind,actor);

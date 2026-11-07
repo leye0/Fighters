@@ -36,6 +36,7 @@ const actions=create({
   orderChop:(...args)=>{calls.push(['chop',...args]);return ok.chop;},
   orderCollectWood:(...args)=>{calls.push(['collect',...args]);return ok.collect;},
   selectUnits:issue('selectUnits'),selectBuilding:issue('selectBuilding'),
+  selectEnemy:issue('selectEnemy'),
   issueMove:issue('move'),clearSelection:issue('clear'),
   getUnits:()=>[witch,other,enemy],screenPoint:unit=>({x:unit.sx,y:unit.sy}),
   getViewportWidth:()=>viewportWidth
@@ -99,7 +100,11 @@ picks.friend=witch;
 assert.deepEqual(tap(true),[['selectUnits',[witch],true]]);
 picks.friend=null;picks.building=enemyHouse;selected.clear();
 assert.equal(kindsAfterTap().at(-1),'selectBuilding');
-picks.building=null;state.selectedRaven={id:'r1'};
+picks.building=null;picks.unit={id:'visible-foe',faction:'orcs'};
+assert.deepEqual(kindsAfterTap(),['selectEnemy'],
+  'An enemy tap without selected troops inspects the target, not the terrain');
+picks.unit=null;
+state.selectedRaven={id:'r1'};
 assert.deepEqual(kindsAfterTap(),['ravenMove']);
 state.selectedRaven=null;selected.add(witch);
 assert.deepEqual(kindsAfterTap(),['move']);

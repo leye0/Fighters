@@ -11,13 +11,14 @@
 
   function create(){
     let buildMode=null,attackMode=false,rallyMode=false,ravenMoveMode=false;
-    let constructionTab=false,selectedBuilding=null,selectedRaven=null;
+    let constructionTab=false,selectedBuilding=null,selectedRaven=null,selectedEnemy=null;
 
     function clearSelection(){
       // Historical behavior: clicking empty ground clears these three fields,
       // but deliberately does not cancel construction, attack or rally orders.
       ravenMoveMode=false;
       selectedRaven=null;
+      selectedEnemy=null;
       constructionTab=false;
       selectedBuilding=null;
     }
@@ -32,6 +33,15 @@
       rallyMode=false;
       constructionTab=false;
       attackMode=false;
+    }
+    function selectEnemy(actor){
+      clearSelection();
+      selectedEnemy=actor;
+      buildMode=null;rallyMode=false;attackMode=false;
+    }
+    function forgetEnemy(actor){
+      if(selectedEnemy!==actor)return false;
+      selectedEnemy=null;return true;
     }
     function forgetBuilding(building){
       if(selectedBuilding!==building)return false;
@@ -72,6 +82,7 @@
       cancelTransient();
       selectedBuilding=null;
       selectedRaven=null;
+      selectedEnemy=null;
     }
 
     return Object.freeze({
@@ -82,7 +93,8 @@
       get constructionTab(){return constructionTab;},
       get selectedBuilding(){return selectedBuilding;},
       get selectedRaven(){return selectedRaven;},
-      clearSelection,selectRaven,selectBuilding,forgetBuilding,
+      get selectedEnemy(){return selectedEnemy;},
+      clearSelection,selectRaven,selectBuilding,selectEnemy,forgetEnemy,forgetBuilding,
       beginRally,beginBuild,completeBuild,completeRally,
       beginAttack,completeAttack,beginRavenMove,completeRavenMove,
       openConstruction,closeConstruction,cancelTransient,reset
