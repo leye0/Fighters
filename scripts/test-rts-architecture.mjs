@@ -41,6 +41,7 @@ const boundaries=[
   ['rts-wood-cycle','FightersWoodCycle'],
   ['rts-garden-worker-cycle','FightersGardenWorkerCycle'],
   ['rts-berry-forager-cycle','FightersBerryForagerCycle'],
+  ['rts-construction-worker-cycle','FightersConstructionWorkerCycle'],
   ['rts-orders','FightersOrders'],
   ['rts-picking','FightersPicking'],
   ['rts-camera','FightersCamera'],

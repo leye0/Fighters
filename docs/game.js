@@ -2429,15 +2429,7 @@ function disposeConstructionPreview(job){
   job.preview=null;
 }
 function cancelConstruction(actor,refund=true){
-  const job=actor.constructJob;
-  if(!job)return false;
-  disposeConstructionPreview(job);
-  actor.constructJob=null;actor.route=null;actor.approachCache=null;
-  const index=pendingBuilds.indexOf(job);
-  if(index>=0)pendingBuilds.splice(index,1);
-  if(refund){matchResources.gold[actor.kind]+=job.cost;
-    matchResources.wood[actor.kind]+=job.woodCost;}
-  return true;
+  return constructionWorkerCycle.cancel(actor,refund);
 }
 const constructionOrders=window.FightersOrders.createConstructionOrders({
   units,selected,isWorker:roles.isWorker,pendingBuilds,
@@ -2465,54 +2457,7 @@ function scheduleBuild(type,x,z,{byAI=false,axis=null}={}){
   refreshHUD();return true;
 }
 function tickConstructWorker(actor,dt){
-  const job=actor.constructJob;
-  if(!job)return false;
-  const isGarden=job.type==='garden';
-  const enterSite=isGarden||job.type==='stone-circle';
-  const distance=enterSite?
-    Math.hypot(actor.root.position.x-job.x,actor.root.position.z-job.z):
-    window.FightersFootprints.distanceTo(actor.root.position,job.site.hitbox);
-  if(distance>(enterSite?.35:BUILDING_CONTACT)){
-    const goal=enterSite?{x:job.x,z:job.z}:approachBuilding(actor,job.site);
-    if(goal){
-      const result=navigateActor(actor,goal,dt,'engage');
-      if(result==='blocked'){markWorkBlocked(actor);cancelConstruction(actor);animation(actor,'Idle_Loop');return false;}
-      if(result!=='moving')animation(actor,'Idle_Loop');
-    }else{markWorkBlocked(actor);cancelConstruction(actor);animation(actor,'Idle_Loop');return false;}
-    return true;
-  }
-  if(isGarden){
-    faceDirection(actor,.6,.8);
-    animation(actor,FARM_PLANT);
-    job.soundTimer=(job.soundTimer||0)+dt;
-    if(job.soundTimer>=1.0){
-      job.soundTimer-=1.0;playEffect('garden',actor.root.position);
-    }
-  }else{
-    faceBuildingCenter(actor,job.site);
-    animation(actor,WORK_SWING);
-    const swingSeconds=Math.max(.35,actor.clipCatalog.get('Sword_Attack')?.duration||1);
-    actor.workHitTimer=(actor.workHitTimer||0)+dt;
-    if(actor.workHitTimer>=swingSeconds*.4){
-      actor.workHitTimer-=swingSeconds;
-      playConstructionHit(actor);
-    }
-  }
-  job.progress+=dt;
-  updateConstructionPreview(job);
-  if(job.progress>=BUILD_SECONDS){
-    cancelConstruction(actor,false);
-    const built=job.type==='witch-house'?buildWitchHouse(job.x,job.z,{prepaid:true}):
-      job.type==='garden'?buildGarden(job.x,job.z,{prepaid:true}):
-      job.type==='stone-circle'?buildStoneCircle(job.x,job.z,{prepaid:true}):
-      job.type==='wall'?buildWall(job.x,job.z,{prepaid:true,byAI:job.byAI,axis:job.axis}):
-      buildOrc(job.type,job.x,job.z,{prepaid:true,byAI:job.byAI});
-    if(!built){matchResources.gold[actor.kind]+=job.cost;
-      matchResources.wood[actor.kind]+=job.woodCost;}
-    else if(job.byAI)showBanner('CONSTRUCTION TERMINÉE');
-    refreshHUD();
-  }
-  return true;
+  return constructionWorkerCycle.tick(actor,dt);
 }
 function cancelRepair(actor){actor.repairJob=null;}
 function orderRepair(actors,building,{byAI=false}={}){
@@ -2974,6 +2919,16 @@ function nearestHostile(actor,maxDistance=Infinity){
   return nearest?{target:nearest,distance}:null;
 }
 const BUILDING_CONTACT=.78;
+const constructionWorkerCycle=window.FightersConstructionWorkerCycle.create({
+  pendingBuilds,getGold:()=>matchResources.gold,getWood:()=>matchResources.wood,
+  disposeConstructionPreview,updateConstructionPreview,
+  distanceToFootprint:window.FightersFootprints.distanceTo,
+  buildingContact:BUILDING_CONTACT,approachBuilding,navigateActor,
+  markWorkBlocked,animation,faceDirection,farmPlant:FARM_PLANT,
+  faceBuildingCenter,workSwing:WORK_SWING,playEffect,playConstructionHit,
+  buildSeconds:BUILD_SECONDS,buildWitchHouse,buildGarden,buildStoneCircle,
+  buildWall,buildOrc,showBanner,refreshHUD
+});
 function faceBuildingCenter(actor,building){
   const b=building.hitbox;
   faceDirection(actor,(b.minX+b.maxX)/2-actor.root.position.x,
