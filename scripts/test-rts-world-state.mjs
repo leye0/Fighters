@@ -7,7 +7,8 @@ const {create}=require('../docs/rts-world-state.js');
 const world=create();
 assert(Object.isFrozen(world));
 assert.deepEqual(Object.keys(world),[
-  'units','selected','buildingInstances','pendingBuilds','knownEnemyBuildings'
+  'units','selected','buildingInstances','pendingBuilds','knownEnemyBuildings',
+  'resetActors','resetConstruction','removeConstructedBuildings','resetVisibility'
 ]);
 assert.deepEqual(world.units,[]);
 assert(world.selected instanceof Set);
@@ -38,13 +39,20 @@ assert.strictEqual(pending[0],job);
 assert(memory.witch.has(building.id));
 assert(!memory.orc.has(building.id));
 
-// Match resets keep collection identities stable for injected systems.
-units.length=0;
-selected.clear();
-pending.length=0;
-buildings.clear();
-memory.witch.clear();
-memory.orc.clear();
+// Match resets keep collection identities stable for injected systems. The
+// renderer disposes each object before its owner drops the registry entry.
+const initial={id:'initial-barrack',initial:true};
+buildings.set(initial.id,initial);
+const removed=[];
+world.resetActors();
+world.resetConstruction();
+world.removeConstructedBuildings(value=>{
+  assert.strictEqual(buildings.get(value.id),value,'dispose before removal');
+  removed.push(value.id);
+});
+assert.deepEqual(removed,[building.id]);
+assert.strictEqual(buildings.get(initial.id),initial,'initial village survives');
+world.resetVisibility();
 assert.strictEqual(world.units,units);
 assert.strictEqual(world.selected,selected);
 assert.strictEqual(world.buildingInstances,buildings);
@@ -52,9 +60,11 @@ assert.strictEqual(world.pendingBuilds,pending);
 assert.strictEqual(world.knownEnemyBuildings,memory);
 assert.equal(world.units.length,0);
 assert.equal(world.pendingBuilds.length,0);
-assert.equal(world.buildingInstances.size,0);
+assert.equal(world.buildingInstances.size,1);
 assert.equal(world.knownEnemyBuildings.witch.size,0);
 assert.equal(world.knownEnemyBuildings.orc.size,0);
+world.removeConstructedBuildings(()=>assert.fail('initial building must not be disposed'));
+assert.equal(world.buildingInstances.size,1);
 
 // Each actual game instance gets independent entity registries.
 const other=create();

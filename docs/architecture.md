@@ -23,7 +23,7 @@ dans [`../refactor.md`](../refactor.md).
 | Système | Fichiers principaux | Vérification ciblée |
 |---|---|---|
 | Simulation et déplacements | `rts-simulation.js`, `rts-food-cycle.js`, `rts-raven-distraction.js`, `rts-healing-cycle.js`, `rts-soul-harvester.js`, `rts-unit-tick.js`, `rts-unit-physics.js`, `rts-navigation.js` | `test-rts-simulation.mjs`, `test-rts-food-cycle.mjs`, `test-rts-raven-distraction.mjs`, `test-rts-healing-cycle.mjs`, `test-rts-soul-harvester.mjs`, `test-rts-unit-tick.mjs`, `test-rts-unit-physics.mjs`, `test-rts-navigation.mjs` |
-| État de partie | `rts-session-state.js` (scalaires et reset par phase), `rts-match-state.js` (or, bois et magie), `rts-world-state.js` (collections d'entités), `rts-player-interaction.js` (modes et sélection bâtiment/corbeau) | `test-rts-session-state.mjs`, `test-rts-match-state.mjs`, `test-rts-world-state.mjs`, `test-rts-player-interaction.mjs`, Chrome `visual`, `economy`, `combat` |
+| État de partie | `rts-session-state.js` (scalaires, début/fin, reset par phase), `rts-match-state.js` (or, bois et magie), `rts-world-state.js` (collections d'entités et resets nommés), `rts-player-interaction.js` (modes et sélection bâtiment/corbeau) | `test-rts-session-state.mjs`, `test-rts-match-state.mjs`, `test-rts-world-state.mjs`, `test-rts-match-lifecycle.mjs`, `test-rts-player-interaction.mjs`, Chrome `visual` (dont `reset.mjs`), `economy`, `combat` |
 | Ordres et tâches, finalisation de production | `rts-orders.js` (files, transitions de formation/amélioration, coût, progression, PV et ordre des effets injectés), `rts-mining-cycle.js`, `rts-wood-cycle.js`, `rts-garden-worker-cycle.js`, `rts-berry-forager-cycle.js`, `rts-construction-worker-cycle.js`, `rts-orc-forager.js`, `rts-orc-hunt-planner.js`, règles `rts-repair.js`, `rts-farming.js` | `test-rts-orders.mjs`, `test-rts-mining-cycle.mjs`, `test-rts-wood-cycle.mjs`, `test-rts-garden-worker-cycle.mjs`, `test-rts-berry-forager-cycle.mjs`, `test-rts-construction-worker-cycle.mjs`, `test-rts-worker-orders.mjs`, `test-rts-orc-forager.mjs`, `test-rts-orc-hunt-planner.mjs`, `test-rts-construction-orders.mjs`, `test-rts-production-orders.mjs` |
 | IA | `orc-strategy.js`, `witch-strategy.js`, `rts-ai-observations.js`, `rts-ai-commands.js` | `test-orc-strategy.mjs`, `test-witch-strategy.mjs`, `test-rts-ai-observations.mjs`, `test-rts-ai-commands.mjs` |
 | Commandes joueur | `rts-picking.js`, `rts-camera.js`, `rts-gestures.js`, `rts-player-interaction.js`, `rts-player-actions.js` | `test-rts-picking.mjs`, `test-rts-camera.mjs`, `test-rts-gestures.mjs`, `test-rts-player-interaction.mjs`, `test-rts-player-actions.mjs`, QA Chrome tactile |
@@ -90,10 +90,20 @@ Le démarrage normal de Pages ou Chrome ne fait jamais `npm ci`.
   « Réparer » demeure immédiat : il n'existe aucun `repairMode` implicite.
 - `rts-world-state.js` possède les collections stables des unités, de la
   sélection, des bâtiments, des chantiers et des souvenirs ennemis par clan.
-  `game.js` conserve temporairement des alias vers ces collections ; elles
-  doivent être vidées **après** la libération des objets 3D/DOM, au moment
-  historique exact de la réinitialisation. Les autres variables mutables sont
+  `game.js` conserve des alias vers ces collections. `resetActors`,
+  `resetConstruction`, `removeConstructedBuildings` et `resetVisibility`
+  préservent leur identité et sont invoquées **après** la libération des objets
+  3D/DOM, aux points historiques exacts. Les bâtiments initiaux restent
+  enregistrés. `removeConstructedBuildings` appelle la libération du mesh
+  avant d'enlever l'entrée de la map. Les autres variables mutables sont
   encore progressivement à migrer vers un contexte explicite.
+- `rts-session-state.js` expose `endMatch` (arrêt immédiat sans changer
+  la pause) et `beginMatch` (restauration du statut et de la faction choisie).
+  Les services demeurent liés au même objet `state` tandis que
+  `rts-match-state.js` fournit des ressources **neuves** lues via getters à
+  chaque commande. `test-rts-match-lifecycle.mjs` contrôle trois cycles,
+  et la QA Chrome `visual` traverse réellement défaite, victoire et deux
+  redémarrages via l'écran de fin de partie.
 - `rts-mining-cycle.js` détient le choix automatique des mineurs, les phases
   `extract`/`carry` et l'annulation. Le transport d'or n'est payé qu'à la base ;
   le crédit de la nouvelle partie, les compteurs et les visuels 3D sont adaptés

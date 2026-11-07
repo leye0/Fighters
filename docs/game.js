@@ -2718,15 +2718,11 @@ function startSession(){
   soulEffects.length=0;matchResources.resetMagic();
   sessionOwner.resetSpells();soulHarvester.reset();
   for(const actor of units)releaseActor(actor);
-  units.length=0;selected.clear();interaction.reset();sessionOwner.resetActors();
+  matchWorld.resetActors();interaction.reset();sessionOwner.resetActors();
   for(const job of pendingBuilds)disposeConstructionPreview(job);
-  pendingBuilds.length=0;
+  matchWorld.resetConstruction();
   // Match reset removes constructed buildings while retaining the initial village.
-  for(const [id,building] of buildingInstances){
-    if(building.initial)continue;
-    releaseConstructedBuilding(building);
-    buildingInstances.delete(id);
-  }
+  matchWorld.removeConstructedBuildings(releaseConstructedBuilding);
   for(const building of [witchBuilding,...buildingInstances.values()]){
     if(building.destroyed){building.destroyed=false;
       if(building.clanId==='witch')scene.add(building.root);
@@ -2746,8 +2742,7 @@ function startSession(){
   sessionOwner.resetConstruction();healingCycle.reset();
   wildBerries.reset();berryForagerCycle.reset();syncBerryVisuals();
   sessionOwner.resetOrcSpawn();
-  fogOfWar.reset();knownEnemyBuildings.witch.clear();
-  knownEnemyBuildings.orc.clear();sessionOwner.resetVisibility();
+  fogOfWar.reset();matchWorld.resetVisibility();sessionOwner.resetVisibility();
   orcDirector.reset();witchDirector.reset();sessionOwner.resetStrategy();
   orcDirector.enabled=!qaMode&&session.chosenFaction==='witch';
   witchDirector.enabled=!qaMode&&session.chosenFaction==='orc';
@@ -3134,7 +3129,7 @@ function damageBuilding(building,amount,attacker){
   else if(interaction.selectedBuilding===building)refreshHUD();
 }
 function endBattle(victory){
-  session.running=false;
+  sessionOwner.endMatch();
   // QA can temporarily inspect the opposing faction without changing who
   // the human actually selected at the title screen.
   const playerWon=victory===(session.chosenFaction==='witch');

@@ -1,4 +1,5 @@
 import {runTouchQa} from './touch.mjs';
+import {runResetQa} from './reset.mjs';
 
 export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,findWitchSite}){
  let s;
@@ -788,4 +789,5 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
  await evaluate("window.__fightersQA.setFaction('witch');window.__fightersQA.selectHouse()");
  await screenshot('rts-witch-house-panel');
  await runTouchQa({evaluate,call,check,until,screenshot,sleep,findWitchSite});
+ await runResetQa({evaluate,check,findWitchSite});
 }

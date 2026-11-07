@@ -25,6 +25,9 @@ state.wallSerial=7;state.orcIncomeFraction=.5;state.strategyAccumulator=.26;
 state.witchStrategyAccumulator=.13;state.completedMiningCycles=4;
 state.totalMinedGold=78;state.spellDecisionElapsed=1.7;
 state.fogElapsed=.1;state.fogStarted=true;state.lastOrcAiVoice=4000;
+owner.endMatch();
+assert.equal(state.running,false,'finished matches stop the simulation');
+assert.equal(state.paused,true,'ending preserves the historical paused flag');
 
 // Named boundaries are individually observable: the game calls each one
 // at the original point in the 3D reset, not in one eager global reset.
@@ -59,11 +62,15 @@ assert.equal(state.qaPassiveKind,null);
 owner.resetMining();
 assert.equal(state.completedMiningCycles,0);
 assert.equal(state.totalMinedGold,0);
-assert.equal(state.running,true,'cleanup does not stop an old running game early');
+assert.equal(state.running,false,'cleanup preserves the previous end-of-battle state');
 assert.equal(state.paused,true,'cleanup does not resume before match begins');
 owner.beginMatch();
 assert.equal(state.activeFaction,'orc');
 assert.equal(state.paused,false);
+owner.endMatch();
+assert.equal(state.running,false);
+owner.beginMatch();
+assert.equal(state.running,true,'a finished match may start again');
 assert.equal(state.running,true);
 assert.equal(state,stable,'services keep a stable state identity across resets');
 
@@ -89,6 +96,7 @@ assert.deepEqual(owner.state,another.state,
 const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
 assert(game.includes('window.FightersSessionState.create()'));
 assert(game.includes('sessionOwner.beginMatch()'));
+assert(game.includes('sessionOwner.endMatch()'));
 for(const method of ['resetAudio','resetSpells','resetActors','resetFarming',
   'resetConstruction','resetOrcSpawn','resetVisibility','resetStrategy',
   'resetPassive','resetMining']){

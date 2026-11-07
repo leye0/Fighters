@@ -37,9 +37,10 @@
     function beginMatch(){
       state.activeFaction=state.chosenFaction;state.paused=false;state.running=true;
     }
+    function endMatch(){state.running=false;}
     return Object.freeze({state,reset,resetAudio,resetSpells,resetActors,
       resetFarming,resetConstruction,resetVisibility,resetStrategy,
-      resetOrcSpawn,resetPassive,resetMining,beginMatch});
+      resetOrcSpawn,resetPassive,resetMining,beginMatch,endMatch});
   }
   return Object.freeze({create});
 });

@@ -22,13 +22,17 @@ modules (`docs/rts-contracts.d.ts`).
   et cadences IA/sorts/brouillard) ; ses remises à zéro nommées sont appelées
   aux points historiques du reset, après les nettoyages visuels concernés.
   Les modes de clic et les sélections hors unités sont dans
-  `rts-player-interaction.js` (lot E2).
+  `rts-player-interaction.js` (lot E2). `beginMatch`/`endMatch` pilotent
+  explicitement le démarrage et l'arrêt de la simulation (lot E3).
 - `docs/rts-match-state.js` : propriétaire des ressources or/bois/magie d'une partie,
   avec réinitialisation en valeurs neuves ; les autres systèmes ne gardent
   jamais leurs références après une nouvelle partie.
 - `docs/rts-world-state.js` : propriétaire des conteneurs stables d'unités,
   bâtiments, chantiers et souvenirs du brouillard ; la remise à zéro des
   éléments 3D reste dans `game.js` pour préserver l'ordre de destruction.
+  Les méthodes `resetActors`, `resetConstruction`, `removeConstructedBuildings`
+  et `resetVisibility` effacent les registres **après** libération des meshes,
+  sans remplacer les références détenues par les services (lot E3).
 - `docs/rts-orc-forager.js` : exécution d'une chasse ou récupération de cadavre
   par un orc, avec poursuite réelle, réservation de proie, animation et
   restitution à l'économie injectées ; `rts-orc-hunt-planner.js` choisit la proie.
@@ -116,6 +120,10 @@ modules (`docs/rts-contracts.d.ts`).
   dans `game.js`. Les modèles non partagés ne sont jamais mis en cache.
 - `scripts/test-rts-model-assets.mjs` : assure l'initialisation Meshopt avant
   chargement, la distinction modèles partagés/frais et le parsing binaire.
+- `scripts/test-rts-match-lifecycle.mjs` et `scripts/browser-qa/reset.mjs` :
+  trois parties successives (witch → orc → witch), ordre de destruction,
+  références stables et trésors remplacés ; le navigateur passe réellement
+  par l'écran de défaite/victoire et le bouton « Nouvelle partie ».
 - `scripts/publish-generated-result.sh` : préserve les fichiers produits par les
   workflows sous `automation-results/<workflow>/<run>-<tentative>`, puis applique
   leur commit sur la tête actuelle de `main` sans force-push ni PR ; un conflit

@@ -90,6 +90,7 @@ on:
       - 'scripts/test-rts-session-state.mjs'
       - 'scripts/test-rts-match-state.mjs'
       - 'scripts/test-rts-world-state.mjs'
+      - 'scripts/test-rts-match-lifecycle.mjs'
       - 'scripts/test-rts-orders.mjs'
       - 'scripts/test-rts-worker-orders.mjs'
       - 'scripts/test-rts-construction-orders.mjs'
@@ -174,6 +175,7 @@ jobs:
           node scripts/test-rts-session-state.mjs
           node scripts/test-rts-match-state.mjs
           node scripts/test-rts-world-state.mjs
+          node scripts/test-rts-match-lifecycle.mjs
           node scripts/test-rts-orders.mjs
           node scripts/test-rts-worker-orders.mjs
           node scripts/test-rts-construction-orders.mjs
