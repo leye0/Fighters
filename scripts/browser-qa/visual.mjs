@@ -148,8 +148,8 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
    const ranger=g.parts.filter(p=>p.startsWith('Female_Ranger_'));
    if(g.role==='worker')return g.garmentMeshes===4&&g.hairMeshes===1&&
      peasant.length===4&&ranger.length===0;
-   if(g.role==='melee')return g.garmentMeshes===8&&g.hairMeshes===1&&
-     ranger.length===8&&!ranger.includes('Female_Ranger_Head_Hood');
+   if(g.role==='melee')return g.garmentMeshes===9&&g.hairMeshes===1&&
+     ranger.length===9&&!ranger.includes('Female_Ranger_Head_Hood');
    return g.role==='ranged'&&g.garmentMeshes===5&&g.hairMeshes===0&&
      peasant.length===4&&ranger.length===1&&ranger[0]==='Female_Ranger_Head_Hood';
  }),

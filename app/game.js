@@ -1290,11 +1290,15 @@ function costumeLayers(visual,kind,index,role,appearance=null){
       if(type==='garment')garmentMeshes++;else hairMeshes++;
     });
   }
+  // Ranger has nine authored pieces but two skin/material primitives in its
+  // Arms mesh; GLTFLoader exposes ten SkinnedMeshes. Hide its single hood for
+  // guards, keeping nine animated garment draws.
   const expectedGarments=kind==='witch'&&clothingRanger?
-    (role==='melee'?8:role==='ranged'?5:4):4;
+    (role==='melee'?9:role==='ranged'?5:4):4;
   const expectedHair=kind==='witch'&&role==='ranged'&&clothingRanger?0:1;
   if(garmentMeshes!==expectedGarments||hairMeshes!==expectedHair)
-    throw Error('Tenue modulaire incomplète : '+kind+'/'+role);
+    throw Error('Tenue modulaire incomplète : '+kind+'/'+role+
+      ' ('+garmentMeshes+'/'+expectedGarments+' habits, '+hairMeshes+'/'+expectedHair+' cheveux)');
   if(kind==='witch'&&expectedHair===1&&appearance.style==='ponytail')
     addPonytail(skeleton,appearance.color);
   return {garmentMeshes,hairMeshes,headTriangles:body.geometry.getIndex()?.count/3||0,
