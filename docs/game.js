@@ -373,7 +373,6 @@ const hareField=new orcFoodRules.Hares({halfSize:arena.worldHalf,
   walkable:(x,z)=>navigatorRTS.pointClear({x,z})});
 let farmSerial=0;
 const wildBerries=new window.FightersBerries.WildBerries(forestLayout,{map:arena});
-let berryAssignmentElapsed=0;
 const ROLE_IDS=roles.ROLE_IDS,ROLE_DEFINITIONS=roles.DEFINITIONS;
 const ORC_COSTS={barrack:180,hut:120,cauldron:200,factory:250,wall:32};
 // Deposits are fixed map resources, not structures that players or the AI can build.
@@ -2905,7 +2904,7 @@ function startSession(){
   farming.reset();farmSerial=0;gardenCycle.reset();
   orcFood.reset();orcHuntPlanner.reset();foodCycle.reset();
   stoneCircleSerial=0;wallSerial=0;healingCycle.reset();
-  wildBerries.reset();berryAssignmentElapsed=0;syncBerryVisuals();
+  wildBerries.reset();berryForagerCycle.reset();syncBerryVisuals();
   buildMode=null;orcSpawned=false;
   fogOfWar.reset();knownEnemyBuildings.witch.clear();
   knownEnemyBuildings.orc.clear();fogElapsed=0;fogStarted=true;
@@ -3599,57 +3598,14 @@ function assignGardenWorkers(dt){
 function tickGardenWorker(actor,dt){
   return gardenCycle.tick(actor,dt);
 }
-function assignBerryForagers(dt){
-  berryAssignmentElapsed+=dt;
-  if(berryAssignmentElapsed<.85)return;
-  berryAssignmentElapsed=0;
-  // Nearby idle witches (of any role) may eat. They never abandon explicit
-  // orders, garden work, mining, construction, tree felling or combat.
-  const candidates=units.filter(u=>u.kind==='witch'&&!u.dead&&!u.attack&&
-    !u.raiding&&!u.attackOrder&&!u.destination&&!u.constructJob&&!u.mineJob&&
-    !u.repairJob&&!u.treeJob&&!u.woodJob&&!u.farmJob&&!u.berryJob&&!u.soulJob&&
-    !u.workerRetryTime);
-  let jobs=units.filter(u=>u.berryJob&&!u.dead).length;
-  for(const bush of wildBerries.bushes){
-    if(jobs>=2)break;
-    if(bush.stage!==3||units.some(u=>u.berryJob?.index===bush.id&&!u.dead))continue;
-    let closest=null,dist=window.FightersBerries.FORAGE_SIGHT;
-    for(const actor of candidates){
-      if(actor.berryJob)continue;
-      const d=Math.hypot(actor.root.position.x-bush.x,actor.root.position.z-bush.z);
-      if(d>=dist)continue;
-      if(roles.isFighter(actor)&&nearestHostile(actor,actor.profile.sight)?.target)continue;
-      dist=d;closest=actor;
-    }
-    if(!closest)continue;
-    closest.berryJob={index:bush.id,progress:0};
-    closest.route=null;closest.approachCache=null;jobs++;
-  }
-}
-function tickBerryForager(actor,dt){
-  if(!actor.berryJob)return false;
-  const bush=wildBerries.bushes[actor.berryJob.index];
-  if(!bush||bush.stage!==3||actor.destination||actor.attackOrder||actor.woodJob||
-    (roles.isFighter(actor)&&nearestHostile(actor,actor.profile.sight)?.target)){
-    actor.berryJob=null;return false;
-  }
-  if(Math.hypot(actor.root.position.x-bush.x,actor.root.position.z-bush.z)>.67){
-    const status=navigateActor(actor,bush,dt,'engage');
-    if(status==='blocked'){markWorkBlocked(actor);actor.berryJob=null;}
-    if(status!=='moving')animation(actor,'Idle_Loop');
-    return true;
-  }
-  faceDirection(actor,bush.x-actor.root.position.x,bush.z-actor.root.position.z);
-  animation(actor,FARM_HARVEST);
-  actor.berryJob.progress+=dt;
-  if(actor.berryJob.progress>=window.FightersBerries.EAT_SECONDS){
-    const amount=wildBerries.eat(bush.id);
-    actor.berryJob=null;
-    if(amount){farming.forage(amount);syncBerryVisuals();refreshHUD();}
-    animation(actor,'Idle_Loop');
-  }
-  return true;
-}
+const berryForagerCycle=window.FightersBerryForagerCycle.create({
+  units,wildBerries,farming,roles,nearestHostile,navigateActor,
+  markWorkBlocked,animation,faceDirection,farmHarvest:FARM_HARVEST,
+  forageSight:window.FightersBerries.FORAGE_SIGHT,
+  eatSeconds:window.FightersBerries.EAT_SECONDS,syncBerryVisuals,refreshHUD
+});
+function assignBerryForagers(dt){return berryForagerCycle.assign(dt);}
+function tickBerryForager(actor,dt){return berryForagerCycle.tick(actor,dt);}
 function cancelOrcFoodJob(actor){
   return orcForager.cancel(actor);
 }

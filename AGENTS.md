@@ -54,6 +54,9 @@ modules (`docs/rts-contracts.d.ts`).
 - `docs/rts-garden-worker-cycle.js` : attribution cadencée des jardinières,
   réservation des rangs mûrs, récolte, transport physique du blé et livraison
   à une maison ; les animations, visuels et effets restent injectés par `game.js`.
+- `docs/rts-berry-forager-cycle.js` : attribution automatique de deux cueilleuses
+  au maximum, vigilance des combattantes, navigation et consommation sur place ;
+  l'économie des buissons et leur rendu restent injectés par `game.js`.
 - `docs/rts-unit-tick.js` : état et priorités des unités à chaque tick
   (attaque, cible, poursuite, tâches, déplacement), avec services de navigation,
   combat, animation et IA injectés une seule fois par `game.js`.
@@ -115,6 +118,8 @@ modules (`docs/rts-contracts.d.ts`).
   danger, coupe, ramassage, réservations, restitution, livraison et retry.
 - `scripts/test-rts-garden-worker-cycle.mjs` : cadence, reset, réservations,
   trajets bloqués, durée de récolte, effet sonore et livraison effective.
+- `scripts/test-rts-berry-forager-cycle.mjs` : cadence, proximité, sélection des
+  rôles, menaces, interruptions, chemin bloqué et paiement alimentaire.
 - `docs/rts-contracts.d.ts`, `scripts/contracts-smoke.ts` : contrats progressifs
   compilés en mode strict dans `contracts.yml`, déclenché uniquement si
   les déclarations ou ce workflow changent. Pas de TypeScript au runtime.
