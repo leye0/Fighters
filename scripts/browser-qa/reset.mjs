@@ -30,7 +30,7 @@ export async function runResetQa({evaluate,check,findWitchSite}){
   await evaluate("document.querySelector('#choose-orc').click();document.querySelector('#start').click()");
   s=await snapshot();
   const expectedSecond={running:true,activeFaction:'orc',chosenFaction:'orc',
-    houseHealth:1500,houseDestroyed:false,witches:3,orcs:4,buildings:6,
+    houseHealth:1500,houseDestroyed:false,witches:3,orcs:4,buildings:8,
     construction:0,constructionPreviews:0,enemyBaseKnownToOrcs:false,
     witchGold:2000,orcGold:900,witchWood:250,orcWood:350,
     witchMagic:0,orcMagic:0};
