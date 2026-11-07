@@ -127,10 +127,18 @@ de prolonger indéfiniment un axe.
       par `game.js`. Tests Node des seuils et priorités, garde d'architecture
       et QA Chrome `visual`, `economy`, `combat` verts : run 42394087454 ;
       Pages verte : run 42394087341. Commit runtime d5e98527.
-- [ ] **S5 — Visibilité** : séparer de `updateVision` les règles de révélation,
+- [x] **S5 — Visibilité** : séparer de `updateVision` les règles de révélation,
       mémoire et visibilité de l'affichage du brouillard et de la mini-carte.
       **Fini quand** le domaine est testable sans Three.js et que les deux
       factions, les corbeaux et les cibles restent visibles aux mêmes moments.
+      **Validé** : `rts-visibility-cycle.js` décide des sources terrestres
+      et aériennes, de la découverte en neuf points, du souvenir des bâtiments
+      adverses et de la visibilité des unités, bâtiments, barres et chantiers.
+      `rts-fog.js` conserve les grilles ; le shader, les meshes et la mini-carte
+      restent dans leurs adaptateurs. Tests Node des deux factions, corbeaux,
+      mémoire, reset et ordre des callbacks, garde d'architecture et Chrome
+      `visual`, `economy`, `combat` verts : run 42395524780 ;
+      Pages verte : run 42395524911. Commit runtime fbc5bfe1.
 
 ### W — Règles restantes d'ouvriers, unités et bâtiments (3 lots)
 
