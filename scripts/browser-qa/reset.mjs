@@ -29,13 +29,22 @@ export async function runResetQa({evaluate,check,findWitchSite}){
   // button used by a real user (also resets audio and visual effects).
   await evaluate("document.querySelector('#choose-orc').click();document.querySelector('#start').click()");
   s=await snapshot();
-  check(s.running&&s.activeFaction==='orc'&&s.chosenFaction==='orc'&&
-    s.house.health===1500&&!s.house.destroyed&&s.witches.length===3&&s.orcs.length===4&&
-    s.buildings.length===6&&s.construction.length===0&&
-    s.constructionPreviewCount===0&&s.fog.enemyBaseKnownToOrcs===false&&
-    s.gold.witch===2000&&s.gold.orc===900&&s.wood.witch===250&&s.wood.orc===350&&
-    s.souls.magic===0&&s.souls.orcMagic===0,
-    'The second match must fully restore units, 3D buildings, fog, jobs and resources');
+  const expectedSecond={running:true,activeFaction:'orc',chosenFaction:'orc',
+    houseHealth:1500,houseDestroyed:false,witches:3,orcs:4,buildings:6,
+    construction:0,constructionPreviews:0,enemyBaseKnownToOrcs:false,
+    witchGold:2000,orcGold:900,witchWood:250,orcWood:350,
+    witchMagic:0,orcMagic:0};
+  const actualSecond={running:s.running,activeFaction:s.activeFaction,
+    chosenFaction:s.chosenFaction,houseHealth:s.house.health,
+    houseDestroyed:s.house.destroyed,witches:s.witches.length,orcs:s.orcs.length,
+    buildings:s.buildings.length,construction:s.construction.length,
+    constructionPreviews:s.constructionPreviewCount,
+    enemyBaseKnownToOrcs:s.fog.enemyBaseKnownToOrcs,
+    witchGold:s.gold.witch,orcGold:s.gold.orc,witchWood:s.wood.witch,
+    orcWood:s.wood.orc,witchMagic:s.souls.magic,orcMagic:s.souls.orcMagic};
+  const mismatches=Object.entries(expectedSecond).filter(([field,value])=>actualSecond[field]!==value)
+    .map(([field,value])=>`${field}: expected ${value}, got ${actualSecond[field]}`);
+  check(!mismatches.length,'The second match must fully restore units, 3D buildings, fog, jobs and resources: '+mismatches.join('; '));
   check(await evaluate("document.querySelector('#overlay').hidden")===true&&
     s.selectedBuildingId!==null,'Restart must restore HUD selection and hide the overlay');
 
