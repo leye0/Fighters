@@ -2913,140 +2913,35 @@ const damageCycle=window.FightersDamageCycle.create({
   hideUnitSelection:actor=>{actor.selectionRing.visible=false;},
   animation,corpseSeconds:soulRules.CORPSE_SECONDS
 });
+const villageDefense=window.FightersVillageDefense.create({
+  units,isBuilding,enemyOf,
+  isFighter:actor=>roles.isFighter(actor),
+  isWorker:actor=>roles.isWorker(actor),
+  aiEnabled:kind=>kind==='orc'?orcDirector.enabled:witchDirector.enabled,
+  raidingAttacked:(ally,attacker)=>window.FightersRaiding.attacked(ally,attacker,enemyOf),
+  cancelSoulJob,cancelFoodJob:cancelOrcFoodJob,
+  liveBuildings,unitFaction,
+  distanceToBuilding:(point,hitbox)=>window.FightersFootprints.distanceTo(point,hitbox),
+  targetDistance,visibleAt:(x,z,kind)=>fogOfWar.visibleAt(x,z,kind),
+  findSafeGoal:point=>navigatorRTS.findSafeGoal(point),orderRepair
+});
 function destroyBuilding(building){
   return damageCycle.destroyBuilding(building);
 }
 function alertNearbyDefenders(victim,attacker){
-  if(!attacker||attacker.dead||victim.dead||!enemyOf(attacker,victim))return;
-  const kind=victim.kind,point=victim.root.position;
-  // Enemy counterattacks temporarily supersede a raid's building target.
-  // Nearby squadmates help, but nobody abandons the enemy village for home.
-  if(victim.raiding&&roles.isFighter(victim)){
-    for(const ally of units){
-      if(ally.kind!==kind||ally.dead||!roles.isFighter(ally)||!ally.raiding||
-        Math.hypot(ally.root.position.x-point.x,
-          ally.root.position.z-point.z)>8)continue;
-      window.FightersRaiding.attacked(ally,attacker,enemyOf);
-    }
-  }
-  const aiControlled=kind==='orc'?orcDirector.enabled:witchDirector.enabled;
-  const guards=units.filter(u=>u.kind===kind&&!u.dead&&roles.isFighter(u)&&
-    !u.raiding&&
-    Math.hypot(u.root.position.x-point.x,u.root.position.z-point.z)<=18&&
-    (aiControlled||(!u.destination&&!u.attackOrder)));
-  for(const guard of guards){
-    if(guard.attackOrder===attacker&&guard.defenseAnchor)continue;
-    const p=guard.root.position;
-    guard.defenseAnchor={x:point.x,z:point.z,radius:13,
-      returnPoint:{x:p.x,z:p.z}};
-    guard.defenseTime=Math.max(guard.defenseTime,18);
-    cancelSoulJob(guard);cancelOrcFoodJob(guard);
-    guard.ravenDistraction=null;guard.healJob=null;
-    guard.scouting=false;guard.attackOrder=attacker;
-    guard.destination=null;guard.route=null;guard.routeAge=0;guard.navWatch=null;
-    guard.approachCache=null;
-  }
-}
-const VILLAGE_DEFENSE_LEASH=18;
-function villageCenter(building){
-  return {x:(building.hitbox.minX+building.hitbox.maxX)/2,
-    z:(building.hitbox.minZ+building.hitbox.maxZ)/2};
-}
-function defenseTargetPosition(target){
-  return isBuilding(target)?villageCenter(target):target.root.position;
+  return villageDefense.alertNearbyDefenders(victim,attacker);
 }
 function localDefensePost(actor,threat){
-  let nearby=null,distance=12;
-  for(const building of liveBuildings()){
-    if(building.clanId!==unitFaction(actor))continue;
-    const d=window.FightersFootprints.distanceTo(threat,building.hitbox);
-    if(d<distance){nearby=building;distance=d;}
-  }
-  const origin=nearby?villageCenter(nearby):{x:threat.x,z:threat.z};
-  return {...origin,buildingId:nearby?.id||null,
-    radius:nearby?VILLAGE_DEFENSE_LEASH:13,
-    returnPoint:{x:actor.root.position.x,z:actor.root.position.z}};
+  return villageDefense.localDefensePost(actor,threat);
 }
 function returnFromDefense(actor){
-  const anchor=actor.defenseAnchor;
-  if(!anchor)return;
-  actor.attackOrder=null;actor.route=null;actor.navWatch=null;
-  actor.approachCache=null;
-  actor.destination=anchor.returnPoint||{x:actor.root.position.x,z:actor.root.position.z};
-  actor.defenseAnchor=null;
+  return villageDefense.returnFromDefense(actor);
 }
 function updateVillageDefense(actor){
-  const anchor=actor.defenseAnchor;
-  if(!anchor)return;
-  const target=actor.attackOrder;
-  const position=target&&enemyOf(actor,target)?defenseTargetPosition(target):null;
-  if(position&&Math.hypot(position.x-anchor.x,position.z-anchor.z)<=anchor.radius)return;
-  if(position){
-    actor.unreachableTarget=target;
-    actor.unreachableTime=Math.max(actor.unreachableTime,5);
-  }
-  // A fleeing raider must not drag the entire garrison across the map.
-  // If another visible raider remains inside the village, defend that one.
-  const next=units.filter(other=>enemyOf(actor,other)&&
-    (other!==actor.unreachableTarget||actor.unreachableTime<=0)&&
-    Math.hypot(other.root.position.x-anchor.x,
-      other.root.position.z-anchor.z)<=anchor.radius&&
-    fogOfWar.visibleAt(other.root.position.x,other.root.position.z,actor.kind))
-    .sort((a,b)=>targetDistance(actor,a)-targetDistance(actor,b))[0];
-  if(next){
-    actor.attackOrder=next;actor.destination=null;actor.route=null;
-    actor.navWatch=null;return;
-  }
-  returnFromDefense(actor);
+  return villageDefense.updateVillageDefense(actor);
 }
-// A building hit is a village-wide alarm, not a local vision check: guards
-// can be on patrol or raiding far from home when their base needs defending.
 function alertVillageUnderAttack(building,attacker){
-  if(!attacker||attacker.dead||building.health<=0||
-    !enemyOf(attacker,building))return;
-  const clan=building.clanId==='orcs'?'orc':'witch';
-  const aiControlled=clan==='orc'?orcDirector.enabled:witchDirector.enabled;
-  const center=villageCenter(building);
-  const guards=units.filter(u=>u.kind===clan&&!u.dead&&roles.isFighter(u)&&
-    !u.raiding&&
-    // Never overwrite an explicit player move/attack order. Idle player
-    // defenders still respond, even without the autonomous clan director.
-    (aiControlled||(!u.destination&&(!u.attackOrder||u.defenseAnchor))));
-  guards.sort((a,b)=>targetDistance(a,building)-targetDistance(b,building));
-  const headquarters=building.type==='barrack'||building.type==='witch-house';
-  for(const guard of guards.slice(0,headquarters?8:6)){
-    guard.defenseTime=45;
-    // A pre-existing defense for this exact building keeps its original post.
-    // A new building alarm may legitimately relocate that defensive post.
-    if(guard.attackOrder===attacker&&guard.defenseAnchor?.buildingId===building.id)continue;
-    const p=guard.root.position;
-    const local=Math.hypot(p.x-center.x,p.z-center.z)<VILLAGE_DEFENSE_LEASH-4;
-    const previous=guard.defenseAnchor?.buildingId===building.id?guard.defenseAnchor:null;
-    const approach={x:center.x+Math.cos(guard.id*2.399963)*4,
-      z:center.z+Math.sin(guard.id*2.399963)*4};
-    guard.defenseAnchor={...center,buildingId:building.id,radius:VILLAGE_DEFENSE_LEASH,
-      returnPoint:previous?.returnPoint||(local?{x:p.x,z:p.z}:
-        (navigatorRTS.findSafeGoal(approach)||{x:p.x,z:p.z}))};
-    cancelSoulJob(guard);cancelOrcFoodJob(guard);
-    guard.ravenDistraction=null;guard.healJob=null;
-    guard.scouting=false;guard.attackOrder=attacker;
-    guard.destination=null;guard.route=null;guard.routeAge=0;guard.navWatch=null;
-    guard.approachCache=null;
-  }
-  // A serious attack interrupts ordinary mining/farming so workers can save
-  // threatened buildings. Repairs finish normally once the building is safe.
-  const ratio=building.health/building.maxHealth;
-  if(ratio>.72)return;
-  const needed=ratio<.4?2:1;
-  const repairing=units.filter(u=>u.kind===clan&&!u.dead&&
-    u.repairJob?.buildingId===building.id).length;
-  if(repairing>=needed)return;
-  const workers=units.filter(u=>u.kind===clan&&!u.dead&&roles.isWorker(u)&&
-    !u.repairJob&&!u.workerRetryTime&&(ratio<.3||!u.constructJob));
-  workers.sort((a,b)=>Number(!!a.constructJob)-Number(!!b.constructJob)||
-    targetDistance(a,building)-targetDistance(b,building));
-  for(const worker of workers.slice(0,needed-repairing))
-    orderRepair([worker],building,{byAI:true});
+  return villageDefense.alertVillageUnderAttack(building,attacker);
 }
 function damageBuilding(building,amount,attacker){
   return damageCycle.damageBuilding(building,amount,attacker);

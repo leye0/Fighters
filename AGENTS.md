@@ -38,6 +38,10 @@ modules (`docs/rts-contracts.d.ts`).
   destruction des bâtiments, nettoyage des commandes et tâches, sélection,
   disparition et conditions de victoire. Les effets visuels, sons, suppression
   3D et HUD sont injectés ; l'ordre historique des callbacks est contractuel.
+- `docs/rts-village-defense.js` : contre-attaques locales, postes et rayons
+  défensifs, retours au poste, alarmes de bâtiments et choix des réparateurs
+  d'urgence. Brouillard, navigation, annulation des tâches et ordres sont
+  injectés ; préserver priorités, limites et ordre des interruptions.
 - `docs/rts-match-state.js` : propriétaire des ressources or/bois/magie d'une partie,
   avec réinitialisation en valeurs neuves ; les autres systèmes ne gardent
   jamais leurs références après une nouvelle partie.
@@ -146,6 +150,9 @@ modules (`docs/rts-contracts.d.ts`).
 - `scripts/test-rts-damage-cycle.mjs` : dégâts partiels, mort, récompenses
   de cadavre, mines protégées, annulations, destruction et victoire, en
   vérifiant l'ordre exact des callbacks avec des objets Node.
+- `scripts/test-rts-village-defense.mjs` : contre-attaque de raid, mobilisation
+  locale et globale, périmètres et retours, sélection des menaces visibles,
+  interventions urgentes des réparateurs et priorités, sans Three.js.
 - `scripts/publish-generated-result.sh` : préserve les fichiers produits par les
   workflows sous `automation-results/<workflow>/<run>-<tentative>`, puis applique
   leur commit sur la tête actuelle de `main` sans force-push ni PR ; un conflit
