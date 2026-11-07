@@ -1220,6 +1220,22 @@ function sharedRoleMaterial(original,key,configure){
   }
   return material;
 }
+function dyeWitchGarment(material,color){
+  // The Peasant GLB has a baked brown base-color texture. Multiplying it by
+  // white would leave it brown, so recolor its luminance in the shader while
+  // preserving the authored fabric folds, normals and material texture.
+  material.color.setHex(0xffffff);
+  material.userData.witchGarmentDye=color;
+  material.onBeforeCompile=shader=>{
+    shader.uniforms.witchGarmentDye={value:new THREE.Color(color)};
+    shader.fragmentShader='uniform vec3 witchGarmentDye;\n'+shader.fragmentShader;
+    shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',
+      '#include <map_fragment>\n'+
+      'float fabricShade=dot(diffuseColor.rgb,vec3(0.2126,0.7152,0.0722));\n'+
+      'diffuseColor.rgb=witchGarmentDye*(0.76+0.24*fabricShade);');
+  };
+  material.customProgramCacheKey=()=>`witch-garment-${color.toString(16)}`;
+}
 function costumeLayers(visual,kind,index,role,appearance=null){
   const bodyName=kind==='witch'?'Superhero_Female':'SuperHero_Male';
   let body=null;
@@ -1260,7 +1276,10 @@ function costumeLayers(visual,kind,index,role,appearance=null){
           kind+'-'+role+'-'+type+(type==='hair'?'-'+index%2:''),
         m=>{
           if(!m.color)return;
-          if(type==='garment')m.color.lerp(new THREE.Color(profile.garment),.72);
+          if(type==='garment'){
+            if(kind==='witch')dyeWitchGarment(m,profile.garment);
+            else m.color.lerp(new THREE.Color(profile.garment),.72);
+          }
           else if(kind==='witch')m.color.setHex(appearance.color.hex);
           else m.color.multiply(new THREE.Color(index%2?0x302a28:0x63452e));
         }));
@@ -3990,6 +4009,16 @@ if(qaMode)window.__fightersQA={
       outfitGeometryShared:meshes.every(m=>m.garment?.geometry===meshes[0]?.garment?.geometry),
       uniqueOutfitMaterials:new Set(meshes.map(m=>m.garment?.material)).size};
   },
+  auditWitchGarmentDyes:()=>units.filter(a=>a.kind==='witch'&&!a.dead).map(actor=>{
+    const garments=[];
+    actor.visual.traverse(o=>{
+      if(o.userData.costumeLayer==='garment')garments.push(o);
+    });
+    return {role:actor.role,garmentMeshes:garments.length,
+      colors:[...new Set(garments.map(o=>o.material.userData.witchGarmentDye))],
+      dyeShaders:garments.every(o=>o.material.customProgramCacheKey()
+        .startsWith('witch-garment-'))};
+  }),
   auditOrcAppearance:()=>units.filter(a=>a.kind==='orc'&&!a.dead).map(actor=>{
     let body=null;const garments=[];
     actor.visual.traverse(o=>{
