@@ -34,6 +34,8 @@ async function run(){
  const context={call,evaluate,until,screenshot,sleep,check,findWitchSite,errors};
  await call('Page.navigate',{url:root+'?qa=1'});
  await until('window.__fightersQA?.snapshot().running===true','RTS startup');
+ await until('window.__fightersQA.snapshot().orcs.length===4',
+   'all starting Orcs created with their native costume skins',12000);
  if(group==='dome'){await runDomeQa(context);return;}
  // Count full world resets independently from lightweight fixture cleanup.
  // This is deliberately a report, not a brittle cap on future test coverage.

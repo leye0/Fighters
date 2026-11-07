@@ -4,3 +4,5 @@
 v2
 # Rebuild v3 with the CC0 Standard Ranger outfit and native 65-bone binding.
 v3-ranger-standard
+# Retry v3 after strict SkinnedMesh counts include multi-primitive male arms.
+v3-ranger-primitive-count

@@ -1293,8 +1293,8 @@ function costumeLayers(visual,kind,index,role,appearance=null){
   // Ranger has nine authored pieces but two skin/material primitives in its
   // Arms mesh; GLTFLoader exposes ten SkinnedMeshes. Hide its single hood for
   // guards, keeping nine animated garment draws.
-  const expectedGarments=kind==='witch'&&clothingRanger?
-    (role==='melee'?9:role==='ranged'?5:4):4;
+  const expectedGarments=kind==='witch'?
+    (clothingRanger?(role==='melee'?9:role==='ranged'?5:4):4):5;
   const expectedHair=kind==='witch'&&role==='ranged'&&clothingRanger?0:1;
   if(garmentMeshes!==expectedGarments||hairMeshes!==expectedHair)
     throw Error('Tenue modulaire incomplète : '+kind+'/'+role+
