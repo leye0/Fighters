@@ -85,10 +85,15 @@ de prolonger indéfiniment un axe.
 
 ### W — Règles restantes d'ouvriers, unités et bâtiments (3 lots)
 
-- [ ] **W1 — Réparation en cours** : transférer la décision/progression de
+- [x] **W1 — Réparation en cours** : transférer la décision/progression de
       `tickRepairWorker` dans le système de réparation, tout en gardant les
-      animations et effets injectés. **Fini quand** portées, cadence, coût,
-      interruptions et achèvement ont des tests Node et une QA Chrome verte.
+      animations et effets injectés. **Fini quand** portées, cadence, restauration
+      gratuite des PV, interruptions et achèvement ont des tests Node et une QA
+      Chrome verte.
+      Automate intégré à `rts-repair.js`, tests Node de navigation, blocages,
+      cadence, santé, annulation et cible fraîche après reset ; QA Chrome
+      `visual`, `economy`, `combat` verte : run 42329587893 ; Pages vert :
+      run 42329587750.
 - [ ] **W2 — Placement des bâtiments** : extraire `canAffordConstruction`,
       `builderAvailable`, `wallKeepsVillageExit` et `validBuildPosition` dans
       des règles indépendantes du rendu. **Fini quand** coûts, collisions,
