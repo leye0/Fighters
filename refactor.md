@@ -115,11 +115,18 @@ de prolonger indéfiniment un axe.
       garde d'architecture et Chrome `visual`, `economy`, `combat` verts :
       run 42380074120 ; Pages verte : run 42380074124.
       Commit runtime 25cf6840.
-- [ ] **S4 — Défense du village** : extraire les décisions de
+- [x] **S4 — Défense du village** : extraire les décisions de
       `alertNearbyDefenders`, `localDefensePost`, `returnFromDefense`,
       `updateVillageDefense` et `alertVillageUnderAttack`, y compris les
       priorités d'intervention. **Fini quand** attribution, interruption et
       retour des défenseurs sont déterministes et vérifiés sous Node/Chrome.
+      **Validé** : `rts-village-defense.js` conserve les ripostes locales des
+      escouades en raid, la mobilisation des gardes, leurs postes et leur
+      rayon de poursuite, les menaces visibles et les réparateurs d'urgence.
+      Brouillard, navigation, ordres et annulation des tâches sont injectés
+      par `game.js`. Tests Node des seuils et priorités, garde d'architecture
+      et QA Chrome `visual`, `economy`, `combat` verts : run 42394087454 ;
+      Pages verte : run 42394087341. Commit runtime d5e98527.
 - [ ] **S5 — Visibilité** : séparer de `updateVision` les règles de révélation,
       mémoire et visibilité de l'affichage du brouillard et de la mini-carte.
       **Fini quand** le domaine est testable sans Three.js et que les deux
