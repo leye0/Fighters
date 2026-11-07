@@ -67,6 +67,7 @@ on:
       - 'docs/rts-unit-physics.js'
       - 'docs/rts-simulation.js'
       - 'docs/rts-unit-tick.js'
+      - 'docs/rts-session-state.js'
       - 'docs/rts-match-state.js'
       - 'docs/rts-world-state.js'
       - 'docs/rts-orders.js'
@@ -85,6 +86,7 @@ on:
       - 'scripts/test-rts-unit-tick.mjs'
       - 'scripts/test-rts-architecture.mjs'
       - 'scripts/test-rts-chrome-retry.mjs'
+      - 'scripts/test-rts-session-state.mjs'
       - 'scripts/test-rts-match-state.mjs'
       - 'scripts/test-rts-world-state.mjs'
       - 'scripts/test-rts-orders.mjs'
@@ -167,6 +169,7 @@ jobs:
           node scripts/test-rts-unit-tick.mjs
           node scripts/test-rts-architecture.mjs
           node scripts/test-rts-chrome-retry.mjs
+          node scripts/test-rts-session-state.mjs
           node scripts/test-rts-match-state.mjs
           node scripts/test-rts-world-state.mjs
           node scripts/test-rts-orders.mjs

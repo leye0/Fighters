@@ -105,7 +105,8 @@ if(existsSync(htmlPath)){
   for(const event of ['hammer','mine','swordHit','swordSwing','magic','garden','wing','caw'])
     assert(html.includes(`playEffect('${event}'`),`${event} has no gameplay trigger`);
   assert(html.includes('effects.update()'),'spatial motion must update in the game loop');
-  assert(html.includes('effects.setPaused(paused)'),'pausing must silence effects');
+  assert(html.includes('effects.setPaused(session.paused)'),
+    'pausing via the current session state must silence effects');
   assert(html.includes('effects.reset()'),'restart must release all active sounds');
   assert(html.includes('contextFactory:()=>orcSound.context'),
     'dialogue and effects must share one mobile-friendly AudioContext');

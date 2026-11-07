@@ -29,6 +29,7 @@ assert(html.split('\n').length<180,'HTML bootstrap must remain small');
 const boundaries=[
   ['rts-simulation','FightersSimulation'],
   ['rts-unit-tick','FightersUnitTick'],
+  ['rts-session-state','FightersSessionState'],
   ['rts-match-state','FightersMatchState'],
   ['rts-world-state','FightersWorldState'],
   ['rts-orc-forager','FightersOrcForager'],

@@ -23,7 +23,7 @@ dans [`../refactor.md`](../refactor.md).
 | Système | Fichiers principaux | Vérification ciblée |
 |---|---|---|
 | Simulation et déplacements | `rts-simulation.js`, `rts-food-cycle.js`, `rts-raven-distraction.js`, `rts-healing-cycle.js`, `rts-soul-harvester.js`, `rts-unit-tick.js`, `rts-unit-physics.js`, `rts-navigation.js` | `test-rts-simulation.mjs`, `test-rts-food-cycle.mjs`, `test-rts-raven-distraction.mjs`, `test-rts-healing-cycle.mjs`, `test-rts-soul-harvester.mjs`, `test-rts-unit-tick.mjs`, `test-rts-unit-physics.mjs`, `test-rts-navigation.mjs` |
-| État de partie | `rts-match-state.js` (or, bois et magie), `rts-world-state.js` (collections d'entités), `game.js` (scalaires restants, transitoire) | `test-rts-match-state.mjs`, `test-rts-world-state.mjs`, Chrome `economy`, `combat` |
+| État de partie | `rts-session-state.js` (scalaires et reset par phase), `rts-match-state.js` (or, bois et magie), `rts-world-state.js` (collections d'entités), `game.js` (modes d'interaction, transitoire) | `test-rts-session-state.mjs`, `test-rts-match-state.mjs`, `test-rts-world-state.mjs`, Chrome `visual`, `economy`, `combat` |
 | Ordres et tâches, finalisation de production | `rts-orders.js` (files, transitions de formation/amélioration, coût, progression, PV et ordre des effets injectés), `rts-mining-cycle.js`, `rts-wood-cycle.js`, `rts-garden-worker-cycle.js`, `rts-berry-forager-cycle.js`, `rts-construction-worker-cycle.js`, `rts-orc-forager.js`, `rts-orc-hunt-planner.js`, règles `rts-repair.js`, `rts-farming.js` | `test-rts-orders.mjs`, `test-rts-mining-cycle.mjs`, `test-rts-wood-cycle.mjs`, `test-rts-garden-worker-cycle.mjs`, `test-rts-berry-forager-cycle.mjs`, `test-rts-construction-worker-cycle.mjs`, `test-rts-worker-orders.mjs`, `test-rts-orc-forager.mjs`, `test-rts-orc-hunt-planner.mjs`, `test-rts-construction-orders.mjs`, `test-rts-production-orders.mjs` |
 | IA | `orc-strategy.js`, `witch-strategy.js`, `rts-ai-observations.js`, `rts-ai-commands.js` | `test-orc-strategy.mjs`, `test-witch-strategy.mjs`, `test-rts-ai-observations.mjs`, `test-rts-ai-commands.mjs` |
 | Commandes joueur | `rts-picking.js`, `rts-camera.js`, `rts-gestures.js`, `rts-player-actions.js` | `test-rts-picking.mjs`, `test-rts-camera.mjs`, `test-rts-gestures.mjs`, `test-rts-player-actions.mjs`, QA Chrome tactile |
@@ -73,6 +73,15 @@ Le démarrage normal de Pages ou Chrome ne fait jamais `npm ci`.
   au moment de la commande afin de respecter le remplacement des ressources
   lors du démarrage d'une nouvelle partie. Les boutons n'appellent que le
   service de domaine et rafraîchissent ensuite le HUD.
+- `rts-session-state.js` détient les scalaires qui varient avec la partie :
+  identifiants, numéros de constructions, statistiques minières, accumulateurs
+  stratégiques, factions, phases de brouillard/sorts et drapeaux de session.
+  `startSession` appelle ses remises à zéro **aux anciens endroits** dans la
+  destruction visuelle et économique, et déclenche `beginMatch` après la
+  restauration des bâtiments. Le module n'alloue rien dans les ticks et son
+  objet `state` conserve son identité entre deux parties. Les accumulateurs
+  du rendu et les modes d'interaction demeurent dans `game.js` ; les modes
+  relèvent du lot E2.
 - `rts-world-state.js` possède les collections stables des unités, de la
   sélection, des bâtiments, des chantiers et des souvenirs ennemis par clan.
   `game.js` conserve temporairement des alias vers ces collections ; elles

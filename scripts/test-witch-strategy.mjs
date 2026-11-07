@@ -97,10 +97,10 @@ const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
 assert(html.includes('Orks &amp; Sorcières'),'The menu must show the exact new title');
 assert(html.includes('id="choose-orc"')&&html.includes('id="choose-witch"'),
  'The menu must expose both playable factions');
-assert(game.includes('witchDirector.enabled=!qaMode&&chosenFaction===\'orc\''),
+assert(game.includes('witchDirector.enabled=!qaMode&&session.chosenFaction===\'orc\''),
  'Witch AI must be the opponent when playing the orks');
-assert(game.includes('orcDirector.enabled=!qaMode&&chosenFaction===\'witch\''),
+assert(game.includes('orcDirector.enabled=!qaMode&&session.chosenFaction===\'witch\''),
  'Orc AI must be the opponent when playing the witches');
-assert(game.includes("const playerWon=victory===(chosenFaction==='witch')"),
+assert(game.includes("const playerWon=victory===(session.chosenFaction==='witch')"),
  'Victory must follow the chosen faction, not QA-only camera/faction switching');
 console.log('PASS witch strategy: food, training, research, buildings, repair/defense, fog, raids, faction choice.');

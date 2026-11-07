@@ -213,7 +213,7 @@ assert(game.includes('finishUpgrade:productionCompletions.finishUpgrade'));
 assert(game.includes('finishTraining:productionCompletions.finishTraining'));
 assert(!/function finish(?:Training|Upgrade)\(/.test(game),
   'production state transitions must not return to the rendering adapter');
-assert(game.includes('productionOrders.queue(building,kind,role,{running,paused})'));
+assert(game.includes('productionOrders.queue(building,kind,role,{running:session.running,paused:session.paused})'));
 assert(game.includes('productionOrders.cancel(building,index)'));
 assert(game.includes('productionOrders.step(dt)'));
 console.log('PASS production queues, costs, completion transitions, event order and reset');

@@ -17,6 +17,11 @@ modules (`docs/rts-contracts.d.ts`).
 - `docs/rts-simulation.js` : ordonnanceur déterministe à 60 Hz et budget de
   rattrapage ; les phases nommées sont assemblées dans `docs/game.js`.
   Préserver leur ordre exact et ne pas allouer d'objets à chaque tick.
+- `docs/rts-session-state.js` : propriétaire stable des scalaires de session
+  (faction, statut, identifiants, cycles, statistiques minières, événements
+  et cadences IA/sorts/brouillard) ; ses remises à zéro nommées sont appelées
+  aux points historiques du reset, après les nettoyages visuels concernés.
+  Les modes d'interaction restent provisoirement dans `game.js` (lot E2).
 - `docs/rts-match-state.js` : propriétaire des ressources or/bois/magie d'une partie,
   avec réinitialisation en valeurs neuves ; les autres systèmes ne gardent
   jamais leurs références après une nouvelle partie.
