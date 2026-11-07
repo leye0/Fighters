@@ -18,6 +18,8 @@ on:
       - 'app/rts-raiding.js'
       - 'app/rts-fog.js'
       - 'app/rts-sound.js'
+      - 'app/sounds/orcs/manifest.json'
+      - 'scripts/test-voice-catalog.mjs'
       - 'app/rts-effects.js'
       - 'app/sounds/effects/**'
       - 'app/rts-farming.js'
@@ -199,6 +201,7 @@ jobs:
           node scripts/test-rts-map.mjs
           node scripts/test-rts-fog.mjs
           node scripts/test-rts-sound.mjs
+          node scripts/test-voice-catalog.mjs
           node scripts/test-rts-effects.mjs
           node scripts/test-rts-unit-physics.mjs
           node scripts/test-rts-simulation.mjs

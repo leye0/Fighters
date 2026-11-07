@@ -44,7 +44,7 @@ jobs:
           import json
           from pathlib import Path
           root = Path("app/sounds/orcs")
-          data = json.loads((root / "manifest.json").read_text())
+          data = json.loads((root / "previews-manifest.json").read_text())
           sounds = data["sounds"]
           assert len(sounds) == 51, len(sounds)
           assert sorted(int(s["name"][4:6]) for s in sounds) == list(range(51))

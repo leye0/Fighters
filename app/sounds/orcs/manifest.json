@@ -1,91 +1,486 @@
 {
-  "author": "LittleRobotSoundFactory",
-  "pack_url": "https://freesound.org/people/LittleRobotSoundFactory/packs/17722/",
-  "license": "CC BY 4.0",
-  "license_url": "https://creativecommons.org/licenses/by/4.0/",
-  "format": "MP3 low-quality preview",
-  "criteria": {
-    "loud": "Top 22% loudness/low-crest score with low crest or clipping",
-    "long": "Not loud; duration >= 1.85 seconds",
-    "short": "Remaining sounds",
-    "loud_score_cutoff": -10.46,
-    "crest_cutoff_db": 10.1
-  },
-  "counts": {
-    "loud": 12,
-    "long": 17,
-    "short": 22
+  "generator": "qwen/qwen3-tts",
+  "generated_at": "2026-11-05T19:05:10.986515+00:00",
+  "faction": "orcs",
+  "voice_roles": [
+    "worker",
+    "warrior",
+    "shaman",
+    "brute"
+  ],
+  "categories": {
+    "creation": 20,
+    "interaction": 16,
+    "attack": 16
   },
   "sounds": [
     {
-      "name": "Orc_00.mp3",
-      "freesound_id": 316316,
-      "preview_url": "https://cdn.freesound.org/previews/316/316316_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316316/",
-      "duration_seconds": 1.963,
-      "active_rms_dbfs": -9.9,
-      "peak_dbfs": 0.0,
-      "crest_db": 9.9,
-      "near_clip_percent": 0.131,
-      "loud_score": -17.56,
-      "category": "long",
-      "path": "long/Orc_00.mp3"
+      "category": "creation",
+      "voice": "worker",
+      "path": "creation/worker_01.mp3",
+      "text": "Ready for duty!",
+      "duration_seconds": 1.2,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
     },
     {
-      "name": "Orc_01.mp3",
-      "freesound_id": 316315,
-      "preview_url": "https://cdn.freesound.org/previews/316/316315_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316315/",
+      "category": "creation",
+      "voice": "worker",
+      "path": "creation/worker_02.mp3",
+      "text": "Here I am!",
+      "duration_seconds": 0.8,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "creation",
+      "voice": "worker",
+      "path": "creation/worker_03.mp3",
+      "text": "At last!",
+      "duration_seconds": 1.04,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "creation",
+      "voice": "worker",
+      "path": "creation/worker_04.mp3",
+      "text": "The clan grows!",
+      "duration_seconds": 2.16,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "creation",
+      "voice": "worker",
+      "path": "creation/worker_05.mp3",
+      "text": "Ready to serve!",
+      "duration_seconds": 1.28,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "interaction",
+      "voice": "worker",
+      "path": "interaction/worker_01.mp3",
+      "text": "Yes, chief?",
+      "duration_seconds": 0.8,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "interaction",
+      "voice": "worker",
+      "path": "interaction/worker_02.mp3",
+      "text": "At your command!",
+      "duration_seconds": 1.04,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "interaction",
+      "voice": "worker",
+      "path": "interaction/worker_03.mp3",
+      "text": "What now?",
+      "duration_seconds": 0.88,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "interaction",
+      "voice": "worker",
+      "path": "interaction/worker_04.mp3",
+      "text": "I obey!",
+      "duration_seconds": 0.96,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "attack",
+      "voice": "worker",
+      "path": "attack/worker_01.mp3",
+      "text": "Crush them!",
+      "duration_seconds": 1.12,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
+    },
+    {
+      "category": "attack",
+      "voice": "worker",
+      "path": "attack/worker_02.mp3",
+      "text": "For the orcs!",
+      "duration_seconds": 1.2,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
+    },
+    {
+      "category": "attack",
+      "voice": "worker",
+      "path": "attack/worker_03.mp3",
+      "text": "Break their lines!",
+      "duration_seconds": 1.52,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
+    },
+    {
+      "category": "attack",
+      "voice": "worker",
+      "path": "attack/worker_04.mp3",
+      "text": "No mercy!",
+      "duration_seconds": 1.2,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
+    },
+    {
+      "category": "creation",
+      "voice": "warrior",
+      "path": "creation/warrior_01.mp3",
+      "text": "Ready for duty!",
+      "duration_seconds": 1.76,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "creation",
+      "voice": "warrior",
+      "path": "creation/warrior_02.mp3",
+      "text": "Here I am!",
+      "duration_seconds": 1.2,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "creation",
+      "voice": "warrior",
+      "path": "creation/warrior_03.mp3",
+      "text": "At last!",
+      "duration_seconds": 0.96,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "creation",
+      "voice": "warrior",
+      "path": "creation/warrior_04.mp3",
+      "text": "The clan grows!",
+      "duration_seconds": 1.92,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "creation",
+      "voice": "warrior",
+      "path": "creation/warrior_05.mp3",
+      "text": "Ready to serve!",
+      "duration_seconds": 1.52,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "interaction",
+      "voice": "warrior",
+      "path": "interaction/warrior_01.mp3",
+      "text": "Yes, chief?",
+      "duration_seconds": 0.96,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "interaction",
+      "voice": "warrior",
+      "path": "interaction/warrior_02.mp3",
+      "text": "At your command!",
+      "duration_seconds": 1.6,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "interaction",
+      "voice": "warrior",
+      "path": "interaction/warrior_03.mp3",
+      "text": "What now?",
+      "duration_seconds": 1.04,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "interaction",
+      "voice": "warrior",
+      "path": "interaction/warrior_04.mp3",
+      "text": "I obey!",
+      "duration_seconds": 1.44,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "attack",
+      "voice": "warrior",
+      "path": "attack/warrior_01.mp3",
+      "text": "Crush them!",
+      "duration_seconds": 0.72,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
+    },
+    {
+      "category": "attack",
+      "voice": "warrior",
+      "path": "attack/warrior_02.mp3",
+      "text": "For the orcs!",
+      "duration_seconds": 1.04,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
+    },
+    {
+      "category": "attack",
+      "voice": "warrior",
+      "path": "attack/warrior_03.mp3",
+      "text": "Break their lines!",
+      "duration_seconds": 4.16,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
+    },
+    {
+      "category": "attack",
+      "voice": "warrior",
+      "path": "attack/warrior_04.mp3",
+      "text": "No mercy!",
+      "duration_seconds": 1.52,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
+    },
+    {
+      "category": "creation",
+      "voice": "shaman",
+      "path": "creation/shaman_01.mp3",
+      "text": "Ready for duty!",
+      "duration_seconds": 1.44,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "creation",
+      "voice": "shaman",
+      "path": "creation/shaman_02.mp3",
+      "text": "Here I am!",
+      "duration_seconds": 2.08,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "creation",
+      "voice": "shaman",
+      "path": "creation/shaman_03.mp3",
+      "text": "At last!",
+      "duration_seconds": 1.12,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "creation",
+      "voice": "shaman",
+      "path": "creation/shaman_04.mp3",
+      "text": "The clan grows!",
+      "duration_seconds": 1.84,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "creation",
+      "voice": "shaman",
+      "path": "creation/shaman_05.mp3",
+      "text": "Ready to serve!",
+      "duration_seconds": 1.12,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "interaction",
+      "voice": "shaman",
+      "path": "interaction/shaman_01.mp3",
+      "text": "Yes, chief?",
+      "duration_seconds": 1.04,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "interaction",
+      "voice": "shaman",
+      "path": "interaction/shaman_02.mp3",
+      "text": "At your command!",
+      "duration_seconds": 1.36,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "interaction",
+      "voice": "shaman",
+      "path": "interaction/shaman_03.mp3",
+      "text": "What now?",
+      "duration_seconds": 1.28,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "interaction",
+      "voice": "shaman",
+      "path": "interaction/shaman_04.mp3",
+      "text": "I obey!",
+      "duration_seconds": 2.48,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "attack",
+      "voice": "shaman",
+      "path": "attack/shaman_01.mp3",
+      "text": "Crush them!",
+      "duration_seconds": 0.96,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
+    },
+    {
+      "category": "attack",
+      "voice": "shaman",
+      "path": "attack/shaman_02.mp3",
+      "text": "For the orcs!",
+      "duration_seconds": 1.6,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
+    },
+    {
+      "category": "attack",
+      "voice": "shaman",
+      "path": "attack/shaman_03.mp3",
+      "text": "Break their lines!",
+      "duration_seconds": 1.68,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
+    },
+    {
+      "category": "attack",
+      "voice": "shaman",
+      "path": "attack/shaman_04.mp3",
+      "text": "No mercy!",
+      "duration_seconds": 1.04,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
+    },
+    {
+      "category": "creation",
+      "voice": "brute",
+      "path": "creation/brute_01.mp3",
+      "text": "Ready for duty!",
+      "duration_seconds": 1.44,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "creation",
+      "voice": "brute",
+      "path": "creation/brute_02.mp3",
+      "text": "Here I am!",
+      "duration_seconds": 1.04,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "creation",
+      "voice": "brute",
+      "path": "creation/brute_03.mp3",
+      "text": "At last!",
+      "duration_seconds": 0.96,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "creation",
+      "voice": "brute",
+      "path": "creation/brute_04.mp3",
+      "text": "The clan grows!",
+      "duration_seconds": 1.84,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "creation",
+      "voice": "brute",
+      "path": "creation/brute_05.mp3",
+      "text": "Ready to serve!",
+      "duration_seconds": 0.96,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "interaction",
+      "voice": "brute",
+      "path": "interaction/brute_01.mp3",
+      "text": "Yes, chief?",
+      "duration_seconds": 1.2,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "interaction",
+      "voice": "brute",
+      "path": "interaction/brute_02.mp3",
+      "text": "At your command!",
+      "duration_seconds": 1.28,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
+    },
+    {
+      "category": "interaction",
+      "voice": "brute",
+      "path": "interaction/brute_03.mp3",
+      "text": "What now?",
       "duration_seconds": 2.24,
-      "active_rms_dbfs": -9.78,
-      "peak_dbfs": 0.0,
-      "crest_db": 9.78,
-      "near_clip_percent": 0.285,
-      "loud_score": -17.03,
-      "category": "long",
-      "path": "long/Orc_01.mp3"
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
     },
     {
-      "name": "Orc_02.mp3",
-      "freesound_id": 316314,
-      "preview_url": "https://cdn.freesound.org/previews/316/316314_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316314/",
-      "duration_seconds": 2.133,
-      "active_rms_dbfs": -11.52,
-      "peak_dbfs": 0.0,
-      "crest_db": 11.52,
-      "near_clip_percent": 0.073,
-      "loud_score": -20.59,
-      "category": "long",
-      "path": "long/Orc_02.mp3"
+      "category": "interaction",
+      "voice": "brute",
+      "path": "interaction/brute_04.mp3",
+      "text": "I obey!",
+      "duration_seconds": 1.04,
+      "model": "qwen/qwen3-tts",
+      "performance": "role-directed-voice-design"
     },
     {
-      "name": "Orc_03.mp3",
-      "freesound_id": 316313,
-      "preview_url": "https://cdn.freesound.org/previews/316/316313_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316313/",
-      "duration_seconds": 2.581,
-      "active_rms_dbfs": -10.8,
-      "peak_dbfs": 0.0,
-      "crest_db": 10.8,
-      "near_clip_percent": 0.274,
-      "loud_score": -18.89,
-      "category": "long",
-      "path": "long/Orc_03.mp3"
+      "category": "attack",
+      "voice": "brute",
+      "path": "attack/brute_01.mp3",
+      "text": "Crush them!",
+      "duration_seconds": 0.96,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
     },
     {
-      "name": "Orc_04.mp3",
-      "freesound_id": 316320,
-      "preview_url": "https://cdn.freesound.org/previews/316/316320_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316320/",
-      "duration_seconds": 0.853,
-      "active_rms_dbfs": -8.05,
-      "peak_dbfs": 0.0,
-      "crest_db": 8.05,
-      "near_clip_percent": 0.667,
-      "loud_score": -13.16,
-      "category": "short",
-      "path": "short/Orc_04.mp3"
+      "category": "attack",
+      "voice": "brute",
+      "path": "attack/brute_02.mp3",
+      "text": "For the orcs!",
+      "duration_seconds": 1.12,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
+    },
+    {
+      "category": "attack",
+      "voice": "brute",
+      "path": "attack/brute_03.mp3",
+      "text": "Break their lines!",
+      "duration_seconds": 1.44,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
+    },
+    {
+      "category": "attack",
+      "voice": "brute",
+      "path": "attack/brute_04.mp3",
+      "text": "No mercy!",
+      "duration_seconds": 0.96,
+      "model": "qwen/qwen3-tts",
+      "performance": "direct-voice-design-battle-cry"
     },
     {
       "name": "Orc_05.mp3",
@@ -100,34 +495,6 @@
       "loud_score": -8.7,
       "category": "loud",
       "path": "loud/Orc_05.mp3"
-    },
-    {
-      "name": "Orc_06.mp3",
-      "freesound_id": 316318,
-      "preview_url": "https://cdn.freesound.org/previews/316/316318_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316318/",
-      "duration_seconds": 0.896,
-      "active_rms_dbfs": -8.78,
-      "peak_dbfs": 0.0,
-      "crest_db": 8.78,
-      "near_clip_percent": 0.642,
-      "loud_score": -14.52,
-      "category": "short",
-      "path": "short/Orc_06.mp3"
-    },
-    {
-      "name": "Orc_07.mp3",
-      "freesound_id": 316317,
-      "preview_url": "https://cdn.freesound.org/previews/316/316317_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316317/",
-      "duration_seconds": 2.027,
-      "active_rms_dbfs": -8.3,
-      "peak_dbfs": 0.0,
-      "crest_db": 8.3,
-      "near_clip_percent": 0.598,
-      "loud_score": -13.74,
-      "category": "long",
-      "path": "long/Orc_07.mp3"
     },
     {
       "name": "Orc_08.mp3",
@@ -158,20 +525,6 @@
       "path": "loud/Orc_09.mp3"
     },
     {
-      "name": "Orc_10.mp3",
-      "freesound_id": 316347,
-      "preview_url": "https://cdn.freesound.org/previews/316/316347_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316347/",
-      "duration_seconds": 1.237,
-      "active_rms_dbfs": -6.81,
-      "peak_dbfs": 0.0,
-      "crest_db": 6.81,
-      "near_clip_percent": 0.682,
-      "loud_score": -10.89,
-      "category": "short",
-      "path": "short/Orc_10.mp3"
-    },
-    {
       "name": "Orc_11.mp3",
       "freesound_id": 316346,
       "preview_url": "https://cdn.freesound.org/previews/316/316346_5123851-lq.mp3",
@@ -184,90 +537,6 @@
       "loud_score": -10.02,
       "category": "loud",
       "path": "loud/Orc_11.mp3"
-    },
-    {
-      "name": "Orc_12.mp3",
-      "freesound_id": 316345,
-      "preview_url": "https://cdn.freesound.org/previews/316/316345_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316345/",
-      "duration_seconds": 2.283,
-      "active_rms_dbfs": -6.51,
-      "peak_dbfs": -0.0,
-      "crest_db": 6.51,
-      "near_clip_percent": 0.189,
-      "loud_score": -11.34,
-      "category": "long",
-      "path": "long/Orc_12.mp3"
-    },
-    {
-      "name": "Orc_13.mp3",
-      "freesound_id": 316344,
-      "preview_url": "https://cdn.freesound.org/previews/316/316344_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316344/",
-      "duration_seconds": 3.285,
-      "active_rms_dbfs": -8.9,
-      "peak_dbfs": 0.0,
-      "crest_db": 8.9,
-      "near_clip_percent": 0.468,
-      "loud_score": -15.08,
-      "category": "long",
-      "path": "long/Orc_13.mp3"
-    },
-    {
-      "name": "Orc_14.mp3",
-      "freesound_id": 316351,
-      "preview_url": "https://cdn.freesound.org/previews/316/316351_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316351/",
-      "duration_seconds": 1.365,
-      "active_rms_dbfs": -11.3,
-      "peak_dbfs": 0.0,
-      "crest_db": 11.3,
-      "near_clip_percent": 0.092,
-      "loud_score": -20.16,
-      "category": "short",
-      "path": "short/Orc_14.mp3"
-    },
-    {
-      "name": "Orc_15.mp3",
-      "freesound_id": 316350,
-      "preview_url": "https://cdn.freesound.org/previews/316/316350_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316350/",
-      "duration_seconds": 1.579,
-      "active_rms_dbfs": -13.32,
-      "peak_dbfs": -0.1,
-      "crest_db": 13.21,
-      "near_clip_percent": 0.016,
-      "loud_score": -23.86,
-      "category": "short",
-      "path": "short/Orc_15.mp3"
-    },
-    {
-      "name": "Orc_16.mp3",
-      "freesound_id": 316349,
-      "preview_url": "https://cdn.freesound.org/previews/316/316349_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316349/",
-      "duration_seconds": 1.685,
-      "active_rms_dbfs": -10.85,
-      "peak_dbfs": 0.0,
-      "crest_db": 10.85,
-      "near_clip_percent": 0.063,
-      "loud_score": -19.4,
-      "category": "short",
-      "path": "short/Orc_16.mp3"
-    },
-    {
-      "name": "Orc_17.mp3",
-      "freesound_id": 316348,
-      "preview_url": "https://cdn.freesound.org/previews/316/316348_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316348/",
-      "duration_seconds": 1.28,
-      "active_rms_dbfs": -11.68,
-      "peak_dbfs": -0.01,
-      "crest_db": 11.67,
-      "near_clip_percent": 0.02,
-      "loud_score": -20.98,
-      "category": "short",
-      "path": "short/Orc_17.mp3"
     },
     {
       "name": "Orc_18.mp3",
@@ -284,90 +553,6 @@
       "path": "loud/Orc_18.mp3"
     },
     {
-      "name": "Orc_19.mp3",
-      "freesound_id": 316352,
-      "preview_url": "https://cdn.freesound.org/previews/316/316352_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316352/",
-      "duration_seconds": 1.557,
-      "active_rms_dbfs": -7.2,
-      "peak_dbfs": 0.0,
-      "crest_db": 7.2,
-      "near_clip_percent": 0.433,
-      "loud_score": -12.09,
-      "category": "short",
-      "path": "short/Orc_19.mp3"
-    },
-    {
-      "name": "Orc_20.mp3",
-      "freesound_id": 316334,
-      "preview_url": "https://cdn.freesound.org/previews/316/316334_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316334/",
-      "duration_seconds": 2.496,
-      "active_rms_dbfs": -14.69,
-      "peak_dbfs": -0.53,
-      "crest_db": 14.16,
-      "near_clip_percent": 0.0,
-      "loud_score": -26.02,
-      "category": "long",
-      "path": "long/Orc_20.mp3"
-    },
-    {
-      "name": "Orc_21.mp3",
-      "freesound_id": 316335,
-      "preview_url": "https://cdn.freesound.org/previews/316/316335_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316335/",
-      "duration_seconds": 3.413,
-      "active_rms_dbfs": -12.38,
-      "peak_dbfs": 0.0,
-      "crest_db": 12.38,
-      "near_clip_percent": 0.165,
-      "loud_score": -21.95,
-      "category": "long",
-      "path": "long/Orc_21.mp3"
-    },
-    {
-      "name": "Orc_22.mp3",
-      "freesound_id": 316332,
-      "preview_url": "https://cdn.freesound.org/previews/316/316332_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316332/",
-      "duration_seconds": 1.643,
-      "active_rms_dbfs": -9.8,
-      "peak_dbfs": -0.02,
-      "crest_db": 9.77,
-      "near_clip_percent": 0.046,
-      "loud_score": -17.52,
-      "category": "short",
-      "path": "short/Orc_22.mp3"
-    },
-    {
-      "name": "Orc_23.mp3",
-      "freesound_id": 316333,
-      "preview_url": "https://cdn.freesound.org/previews/316/316333_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316333/",
-      "duration_seconds": 1.024,
-      "active_rms_dbfs": -9.95,
-      "peak_dbfs": 0.0,
-      "crest_db": 9.95,
-      "near_clip_percent": 0.287,
-      "loud_score": -17.34,
-      "category": "short",
-      "path": "short/Orc_23.mp3"
-    },
-    {
-      "name": "Orc_24.mp3",
-      "freesound_id": 316338,
-      "preview_url": "https://cdn.freesound.org/previews/316/316338_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316338/",
-      "duration_seconds": 3.456,
-      "active_rms_dbfs": -8.1,
-      "peak_dbfs": 0.0,
-      "crest_db": 8.1,
-      "near_clip_percent": 0.324,
-      "loud_score": -13.93,
-      "category": "long",
-      "path": "long/Orc_24.mp3"
-    },
-    {
       "name": "Orc_25.mp3",
       "freesound_id": 316339,
       "preview_url": "https://cdn.freesound.org/previews/316/316339_5123851-lq.mp3",
@@ -380,34 +565,6 @@
       "loud_score": -4.23,
       "category": "loud",
       "path": "loud/Orc_25.mp3"
-    },
-    {
-      "name": "Orc_26.mp3",
-      "freesound_id": 316336,
-      "preview_url": "https://cdn.freesound.org/previews/316/316336_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316336/",
-      "duration_seconds": 1.963,
-      "active_rms_dbfs": -10.16,
-      "peak_dbfs": 0.0,
-      "crest_db": 10.16,
-      "near_clip_percent": 0.096,
-      "loud_score": -18.1,
-      "category": "long",
-      "path": "long/Orc_26.mp3"
-    },
-    {
-      "name": "Orc_27.mp3",
-      "freesound_id": 316337,
-      "preview_url": "https://cdn.freesound.org/previews/316/316337_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316337/",
-      "duration_seconds": 1.557,
-      "active_rms_dbfs": -7.61,
-      "peak_dbfs": 0.0,
-      "crest_db": 7.61,
-      "near_clip_percent": 0.843,
-      "loud_score": -12.01,
-      "category": "short",
-      "path": "short/Orc_27.mp3"
     },
     {
       "name": "Orc_28.mp3",
@@ -452,132 +609,6 @@
       "path": "loud/Orc_30.mp3"
     },
     {
-      "name": "Orc_31.mp3",
-      "freesound_id": 316356,
-      "preview_url": "https://cdn.freesound.org/previews/316/316356_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316356/",
-      "duration_seconds": 2.155,
-      "active_rms_dbfs": -10.4,
-      "peak_dbfs": 0.0,
-      "crest_db": 10.4,
-      "near_clip_percent": 0.238,
-      "loud_score": -18.24,
-      "category": "long",
-      "path": "long/Orc_31.mp3"
-    },
-    {
-      "name": "Orc_32.mp3",
-      "freesound_id": 316359,
-      "preview_url": "https://cdn.freesound.org/previews/316/316359_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316359/",
-      "duration_seconds": 1.152,
-      "active_rms_dbfs": -7.67,
-      "peak_dbfs": -0.0,
-      "crest_db": 7.67,
-      "near_clip_percent": 0.098,
-      "loud_score": -13.61,
-      "category": "short",
-      "path": "short/Orc_32.mp3"
-    },
-    {
-      "name": "Orc_33.mp3",
-      "freesound_id": 316358,
-      "preview_url": "https://cdn.freesound.org/previews/316/316358_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316358/",
-      "duration_seconds": 1.067,
-      "active_rms_dbfs": -7.09,
-      "peak_dbfs": -0.1,
-      "crest_db": 6.98,
-      "near_clip_percent": 0.141,
-      "loud_score": -12.39,
-      "category": "short",
-      "path": "short/Orc_33.mp3"
-    },
-    {
-      "name": "Orc_34.mp3",
-      "freesound_id": 316361,
-      "preview_url": "https://cdn.freesound.org/previews/316/316361_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316361/",
-      "duration_seconds": 0.576,
-      "active_rms_dbfs": -16.35,
-      "peak_dbfs": 0.0,
-      "crest_db": 16.35,
-      "near_clip_percent": 0.022,
-      "loud_score": -29.39,
-      "category": "short",
-      "path": "short/Orc_34.mp3"
-    },
-    {
-      "name": "Orc_35.mp3",
-      "freesound_id": 316360,
-      "preview_url": "https://cdn.freesound.org/previews/316/316360_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316360/",
-      "duration_seconds": 3.755,
-      "active_rms_dbfs": -9.32,
-      "peak_dbfs": 0.0,
-      "crest_db": 9.32,
-      "near_clip_percent": 0.26,
-      "loud_score": -16.26,
-      "category": "long",
-      "path": "long/Orc_35.mp3"
-    },
-    {
-      "name": "Orc_36.mp3",
-      "freesound_id": 316363,
-      "preview_url": "https://cdn.freesound.org/previews/316/316363_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316363/",
-      "duration_seconds": 0.939,
-      "active_rms_dbfs": -7.66,
-      "peak_dbfs": 0.0,
-      "crest_db": 7.66,
-      "near_clip_percent": 0.326,
-      "loud_score": -13.14,
-      "category": "short",
-      "path": "short/Orc_36.mp3"
-    },
-    {
-      "name": "Orc_37.mp3",
-      "freesound_id": 316362,
-      "preview_url": "https://cdn.freesound.org/previews/316/316362_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316362/",
-      "duration_seconds": 0.832,
-      "active_rms_dbfs": -9.41,
-      "peak_dbfs": 0.0,
-      "crest_db": 9.41,
-      "near_clip_percent": 0.316,
-      "loud_score": -16.31,
-      "category": "short",
-      "path": "short/Orc_37.mp3"
-    },
-    {
-      "name": "Orc_38.mp3",
-      "freesound_id": 316355,
-      "preview_url": "https://cdn.freesound.org/previews/316/316355_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316355/",
-      "duration_seconds": 0.853,
-      "active_rms_dbfs": -8.51,
-      "peak_dbfs": 0.0,
-      "crest_db": 8.51,
-      "near_clip_percent": 0.322,
-      "loud_score": -14.67,
-      "category": "short",
-      "path": "short/Orc_38.mp3"
-    },
-    {
-      "name": "Orc_39.mp3",
-      "freesound_id": 316354,
-      "preview_url": "https://cdn.freesound.org/previews/316/316354_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316354/",
-      "duration_seconds": 3.221,
-      "active_rms_dbfs": -10.75,
-      "peak_dbfs": 0.0,
-      "crest_db": 10.75,
-      "near_clip_percent": 0.12,
-      "loud_score": -19.11,
-      "category": "long",
-      "path": "long/Orc_39.mp3"
-    },
-    {
       "name": "Orc_40.mp3",
       "freesound_id": 316324,
       "preview_url": "https://cdn.freesound.org/previews/316/316324_5123851-lq.mp3",
@@ -590,20 +621,6 @@
       "loud_score": -6.8,
       "category": "loud",
       "path": "loud/Orc_40.mp3"
-    },
-    {
-      "name": "Orc_41.mp3",
-      "freesound_id": 316325,
-      "preview_url": "https://cdn.freesound.org/previews/316/316325_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316325/",
-      "duration_seconds": 0.896,
-      "active_rms_dbfs": -16.89,
-      "peak_dbfs": -2.63,
-      "crest_db": 14.26,
-      "near_clip_percent": 0.0,
-      "loud_score": -28.3,
-      "category": "short",
-      "path": "short/Orc_41.mp3"
     },
     {
       "name": "Orc_42.mp3",
@@ -620,62 +637,6 @@
       "path": "loud/Orc_42.mp3"
     },
     {
-      "name": "Orc_43.mp3",
-      "freesound_id": 316341,
-      "preview_url": "https://cdn.freesound.org/previews/316/316341_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316341/",
-      "duration_seconds": 1.131,
-      "active_rms_dbfs": -13.53,
-      "peak_dbfs": -0.0,
-      "crest_db": 13.53,
-      "near_clip_percent": 0.017,
-      "loud_score": -24.32,
-      "category": "short",
-      "path": "short/Orc_43.mp3"
-    },
-    {
-      "name": "Orc_44.mp3",
-      "freesound_id": 316328,
-      "preview_url": "https://cdn.freesound.org/previews/316/316328_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316328/",
-      "duration_seconds": 1.216,
-      "active_rms_dbfs": -10.14,
-      "peak_dbfs": 0.0,
-      "crest_db": 10.14,
-      "near_clip_percent": 0.154,
-      "loud_score": -17.94,
-      "category": "short",
-      "path": "short/Orc_44.mp3"
-    },
-    {
-      "name": "Orc_45.mp3",
-      "freesound_id": 316329,
-      "preview_url": "https://cdn.freesound.org/previews/316/316329_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316329/",
-      "duration_seconds": 1.451,
-      "active_rms_dbfs": -9.3,
-      "peak_dbfs": -0.0,
-      "crest_db": 9.3,
-      "near_clip_percent": 0.073,
-      "loud_score": -16.59,
-      "category": "short",
-      "path": "short/Orc_45.mp3"
-    },
-    {
-      "name": "Orc_46.mp3",
-      "freesound_id": 316330,
-      "preview_url": "https://cdn.freesound.org/previews/316/316330_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316330/",
-      "duration_seconds": 1.856,
-      "active_rms_dbfs": -9.93,
-      "peak_dbfs": 0.0,
-      "crest_db": 9.93,
-      "near_clip_percent": 0.172,
-      "loud_score": -17.53,
-      "category": "long",
-      "path": "long/Orc_46.mp3"
-    },
-    {
       "name": "Orc_47.mp3",
       "freesound_id": 316331,
       "preview_url": "https://cdn.freesound.org/previews/316/316331_5123851-lq.mp3",
@@ -690,46 +651,25 @@
       "path": "loud/Orc_47.mp3"
     },
     {
-      "name": "Orc_48.mp3",
-      "freesound_id": 316342,
-      "preview_url": "https://cdn.freesound.org/previews/316/316342_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316342/",
-      "duration_seconds": 3.264,
-      "active_rms_dbfs": -9.03,
-      "peak_dbfs": 0.0,
-      "crest_db": 9.03,
-      "near_clip_percent": 0.182,
-      "loud_score": -15.89,
-      "category": "long",
-      "path": "long/Orc_48.mp3"
-    },
-    {
-      "name": "Orc_49.mp3",
-      "freesound_id": 316343,
-      "preview_url": "https://cdn.freesound.org/previews/316/316343_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316343/",
-      "duration_seconds": 1.045,
-      "active_rms_dbfs": -7.21,
-      "peak_dbfs": 0.0,
-      "crest_db": 7.21,
-      "near_clip_percent": 0.741,
-      "loud_score": -11.5,
-      "category": "short",
-      "path": "short/Orc_49.mp3"
-    },
-    {
-      "name": "Orc_50.mp3",
-      "freesound_id": 316340,
-      "preview_url": "https://cdn.freesound.org/previews/316/316340_5123851-lq.mp3",
-      "source_url": "https://freesound.org/s/316340/",
-      "duration_seconds": 2.581,
-      "active_rms_dbfs": -10.18,
-      "peak_dbfs": -0.08,
-      "crest_db": 10.1,
-      "near_clip_percent": 0.019,
-      "loud_score": -18.22,
-      "category": "long",
-      "path": "long/Orc_50.mp3"
+      "name": "Hammer.mp3",
+      "category": "work",
+      "path": "work/Hammer.mp3",
+      "author": "VishwaJai",
+      "title": "Blacksmith's Hammer",
+      "source_url": "https://opengameart.org/content/blacksmiths-hammer",
+      "license": "CC0"
     }
-  ]
+  ],
+  "dialogue_processing": {
+    "method": "ffmpeg-rubberband",
+    "pitch_factor": 0.75,
+    "tempo_factor": 1.0,
+    "processed_clips": 52,
+    "categories": [
+      "attack",
+      "creation",
+      "interaction"
+    ],
+    "original_revision": "9b8239db721835042a5a217006256dfb4d4cb675"
+  }
 }

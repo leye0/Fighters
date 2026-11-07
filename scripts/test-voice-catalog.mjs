@@ -59,4 +59,19 @@ for(const [faction,voices] of Object.entries(expected)){
     }
   }
 }
+// The Freesound previews are research material, not replacement unit voices.
+// Preserve both manifests: the importer must never overwrite the active one.
+const previewsDir=join('app','sounds','orcs');
+const previews=JSON.parse(readFileSync(join(previewsDir,'previews-manifest.json'),'utf8'));
+assert.equal(previews.sounds.length,51,'all Freesound previews must stay available');
+assert.equal(new Set(previews.sounds.map(sound=>sound.path)).size,51);
+for(const sound of previews.sounds){
+  assert(sound.source_url?.startsWith('https://freesound.org/s/'));
+  assert(statSync(join(previewsDir,sound.path)).size>1500);
+}
+const importer=readFileSync(join('scripts','import-orc-voices.py'),'utf8');
+assert(importer.includes('(dest / "previews-manifest.json").write_text'),
+  'The importer must write its own preview catalogue');
+assert(!importer.includes('(dest / "manifest.json").write_text'),
+  'The importer must never replace the active role-voice catalogue');
 console.log('PASS 104 pre-generated role-based voices (5 creation, 4 selection, 4 attack × 4 voices × 2 factions)');

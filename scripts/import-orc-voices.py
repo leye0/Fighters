@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Download and classify the 51 Voices - Orcs Freesound MP3 previews.
 
+The preview catalogue is distinct from the playable game's role-based
+manifest.json: classification must never overwrite active unit voices.
+
 python3 scripts/import-orc-voices.py download --output /tmp/orc-previews
 python3 scripts/import-orc-voices.py classify --input /tmp/orc-previews --output app/sounds/orcs
 """
@@ -158,7 +161,7 @@ def classify(src, dest):
             if path.relative_to(dest).as_posix() not in expected:
                 path.unlink()
 
-    (dest / "manifest.json").write_text(json.dumps({
+    (dest / "previews-manifest.json").write_text(json.dumps({
         "author": AUTHOR, "pack_url": PACK_URL, "license": "CC BY 4.0",
         "license_url": LICENSE_URL, "format": "MP3 low-quality preview",
         "criteria": {
