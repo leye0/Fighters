@@ -2,3 +2,5 @@
 # Future source changes auto-rebuild; changing this file requests a rebuild
 # without altering the model sources. Never overwrite a published release.
 v2
+# Rebuild v3 with the CC0 Standard Ranger outfit and native 65-bone binding.
+v3-ranger-standard
