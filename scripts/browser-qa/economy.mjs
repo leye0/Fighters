@@ -328,14 +328,15 @@ export async function runEconomyQa({evaluate,call,check,until,screenshot,sleep,f
  await evaluate("window.__fightersQA.moveUnitTo('witch',1,18.5,21)");
  check((await evaluate('window.__fightersQA.fogAt(22,21)')).visible>.2,
    'Scout next to enemy hut must reveal the target');
- await evaluate("window.__fightersQA.tap("+targetPoint.x+","+targetPoint.y+")");
+ const attackPing=await evaluate("(()=>{window.__fightersQA.tap("+
+   targetPoint.x+","+targetPoint.y+");return document.querySelector('.order-ping.attack')!==null})()");
  tapState=await evaluate('window.__fightersQA.snapshot()');
  check(tapState.witches.find(u=>u.id===tapState.selectedIds[0])?.attackTargetId===hutId,
    'Second tap did not order witch to destroy enemy building: '+
      JSON.stringify({selected:tapState.selectedIds,
        witches:tapState.witches.map(u=>({id:u.id,role:u.role,attack:u.attackTargetId})),
        building:tapState.selectedBuildingId}));
- check(await evaluate("document.querySelector('.order-ping.attack')!==null"),
+ check(attackPing,
    'Attack order needs a red fading reticle');
  await until("window.__fightersQA.snapshot().ui.activePings===0",'red order reticle cleanup',10000);
 

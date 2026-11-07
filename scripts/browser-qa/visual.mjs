@@ -647,9 +647,9 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
    'Initial hut must house six extra orcs and cauldron must unlock mages');
  const deposits=s.buildings.filter(b=>b.type==='mine');
  check(s.buildings.filter(b=>b.clanId==='orcs').length===4&&
-  deposits.length===2&&deposits.every(b=>b.clanId==='neutral'&&
+  deposits.length===4&&deposits.every(b=>b.clanId==='neutral'&&
     !b.destructible&&!b.destroyed&&b.healthbarParent===null&&b.queue.length===0),
-  'Both natural deposits must be neutral, permanent resources outside clan infrastructure');
+  'All four natural deposits must be neutral, permanent resources outside clan infrastructure');
  check(s.buildings.every(b=>b.hitbox.maxX>b.hitbox.minX&&b.hitbox.maxZ>b.hitbox.minZ),
   'Every orc structure must have a real 3D collider');
  check(s.buildings.every(b=>b.hitbox.maxX-b.hitbox.minX<5&&
