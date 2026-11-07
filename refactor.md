@@ -48,12 +48,18 @@ de prolonger indéfiniment un axe.
       statistiques minières). Tests Node de deux parties et états indépendants ;
       QA Chrome `visual`, `economy`, `combat` verte : run 42333881695 ;
       Pages verte : run 42333881676. Les modes de clic sont réservés à E2.
-- [ ] **E2 — Modes d'interaction du joueur** : regrouper les modes construction,
+- [x] **E2 — Modes d'interaction du joueur** : regrouper les modes construction,
       attaque, réparation, corbeau et ralliement ainsi que les sélections
       associées, avec accès contrôlé depuis HUD, gestes et commandes.
       **Fini quand** aucun de ces modes n'est un drapeau dispersé dans
       `game.js` et que clics, gestes tactiles et changements de sélection sont
       testés sans régression.
+      Réalisé dans `rts-player-interaction.js` : transitions nommées des modes
+      construction, attaque, ralliement et corbeau, sélection bâtiment/corbeau
+      et onglets du HUD. La réparation reste un ordre direct, non un drapeau.
+      Tests Node des transitions, des clics, de la priorité de réparation, du
+      reset et des adaptateurs gestes/commandes ; QA Chrome `visual`, `economy`,
+      `combat` verte : run 42334924707 ; Pages verte : run 42334924679.
 - [ ] **E3 — Fermeture du cycle de reset** : auditer les références vers l'état
       de partie, y compris les alias de `rts-world-state.js` et les objets
       remplacés par `rts-match-state.js` ; ajouter des tests de démarrage,
