@@ -29,6 +29,11 @@ modules (`docs/rts-contracts.d.ts`).
   et priorité des sorts défensifs IA (huttes orcs avant maison sorcière).
   Il lit la magie courante via une fonction, sans Three.js, DOM ni allocation
   par tick ; `game.js` conserve les animations GPU, sons et morts réelles.
+- `docs/rts-actor-navigation.js` : sélection et partage de positions autour
+  des bâtiments, caches des recherches impossibles, replanification A*,
+  simplification des chemins, seuils d'arrivée et reprises après blocage.
+  `game.js` injecte les silhouettes, A*, physique de foule, orientation et
+  animation ; préserver les rayons, délais et ordres d'appels historiques.
 - `docs/rts-match-state.js` : propriétaire des ressources or/bois/magie d'une partie,
   avec réinitialisation en valeurs neuves ; les autres systèmes ne gardent
   jamais leurs références après une nouvelle partie.
@@ -131,6 +136,9 @@ modules (`docs/rts-contracts.d.ts`).
   par l'écran de défaite/victoire et le bouton « Nouvelle partie ».
 - `scripts/test-rts-spell-cycle.mjs` : cadence, interruption, sélection et
   ordre des sorts automatiques, avec état de magie frais après reset.
+- `scripts/test-rts-actor-navigation.mjs` : choix des périmètres, entraide
+  entre attaquants, caches, seuils d'arrivée, replanification et reprises
+  après blocage, sans scène Three.js.
 - `scripts/publish-generated-result.sh` : préserve les fichiers produits par les
   workflows sous `automation-results/<workflow>/<run>-<tentative>`, puis applique
   leur commit sur la tête actuelle de `main` sans force-push ni PR ; un conflit

@@ -22,7 +22,7 @@ dans [`../refactor.md`](../refactor.md).
 
 | Système | Fichiers principaux | Vérification ciblée |
 |---|---|---|
-| Simulation et déplacements | `rts-simulation.js`, `rts-spell-cycle.js`, `rts-food-cycle.js`, `rts-raven-distraction.js`, `rts-healing-cycle.js`, `rts-soul-harvester.js`, `rts-unit-tick.js`, `rts-unit-physics.js`, `rts-navigation.js` | `test-rts-simulation.mjs`, `test-rts-spell-cycle.mjs`, `test-rts-food-cycle.mjs`, `test-rts-raven-distraction.mjs`, `test-rts-healing-cycle.mjs`, `test-rts-soul-harvester.mjs`, `test-rts-unit-tick.mjs`, `test-rts-unit-physics.mjs`, `test-rts-navigation.mjs` |
+| Simulation et déplacements | `rts-simulation.js`, `rts-spell-cycle.js`, `rts-actor-navigation.js`, `rts-food-cycle.js`, `rts-raven-distraction.js`, `rts-healing-cycle.js`, `rts-soul-harvester.js`, `rts-unit-tick.js`, `rts-unit-physics.js`, `rts-navigation.js` | `test-rts-simulation.mjs`, `test-rts-spell-cycle.mjs`, `test-rts-actor-navigation.mjs`, `test-rts-food-cycle.mjs`, `test-rts-raven-distraction.mjs`, `test-rts-healing-cycle.mjs`, `test-rts-soul-harvester.mjs`, `test-rts-unit-tick.mjs`, `test-rts-unit-physics.mjs`, `test-rts-navigation.mjs` |
 | État de partie | `rts-session-state.js` (scalaires, début/fin, reset par phase), `rts-match-state.js` (or, bois et magie), `rts-world-state.js` (collections d'entités et resets nommés), `rts-player-interaction.js` (modes et sélection bâtiment/corbeau) | `test-rts-session-state.mjs`, `test-rts-match-state.mjs`, `test-rts-world-state.mjs`, `test-rts-match-lifecycle.mjs`, `test-rts-player-interaction.mjs`, Chrome `visual` (dont `reset.mjs`), `economy`, `combat` |
 | Ordres et tâches, finalisation de production | `rts-orders.js` (files, transitions de formation/amélioration, coût, progression, PV et ordre des effets injectés), `rts-mining-cycle.js`, `rts-wood-cycle.js`, `rts-garden-worker-cycle.js`, `rts-berry-forager-cycle.js`, `rts-construction-worker-cycle.js`, `rts-orc-forager.js`, `rts-orc-hunt-planner.js`, règles `rts-repair.js`, `rts-farming.js` | `test-rts-orders.mjs`, `test-rts-mining-cycle.mjs`, `test-rts-wood-cycle.mjs`, `test-rts-garden-worker-cycle.mjs`, `test-rts-berry-forager-cycle.mjs`, `test-rts-construction-worker-cycle.mjs`, `test-rts-worker-orders.mjs`, `test-rts-orc-forager.mjs`, `test-rts-orc-hunt-planner.mjs`, `test-rts-construction-orders.mjs`, `test-rts-production-orders.mjs` |
 | IA | `orc-strategy.js`, `witch-strategy.js`, `rts-ai-observations.js`, `rts-ai-commands.js` | `test-orc-strategy.mjs`, `test-witch-strategy.mjs`, `test-rts-ai-observations.mjs`, `test-rts-ai-commands.mjs` |
@@ -90,6 +90,13 @@ Le démarrage normal de Pages ou Chrome ne fait jamais `npm ci`.
   interrompt le parcours. L'état de cadence vient du propriétaire de session,
   la magie est obtenue à chaque décision via un getter ; la libération des
   géométries, sons et morts appartient toujours à `game.js`.
+- `rts-actor-navigation.js` possède la politique de navigation d'acteur :
+  choix des positions proches du contour exact d'un bâtiment, évitement des
+  collègues et réutilisation des caches, chemin direct/A*, simplification des
+  étapes, seuils d'arrivée et trois essais avant blocage définitif. Le moteur
+  A* (`rts-navigation.js`) et la collision/foule (`rts-unit-physics.js`)
+  demeurent inchangés ; `game.js` injecte leurs fonctions, les sites calculés
+  sur les empreintes 3D, l'orientation et la boucle de marche.
 - `rts-player-interaction.js` conserve les modes de construction, attaque,
   ralliement et déplacement de corbeau, l'onglet du HUD et la sélection
   bâtiment/corbeau. La sélection des unités reste dans `rts-world-state.js`.

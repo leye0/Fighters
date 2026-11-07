@@ -31,6 +31,7 @@ const boundaries=[
   ['rts-unit-tick','FightersUnitTick'],
   ['rts-session-state','FightersSessionState'],
   ['rts-spell-cycle','FightersSpellCycle'],
+  ['rts-actor-navigation','FightersActorNavigation'],
   ['rts-match-state','FightersMatchState'],
   ['rts-world-state','FightersWorldState'],
   ['rts-orc-forager','FightersOrcForager'],
