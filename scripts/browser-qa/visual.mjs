@@ -144,8 +144,9 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
  const witchPalette={worker:0x46b965,melee:0xee8a32,ranged:0xf3f3ed};
  check(witchGarments.length===3&&witchGarments.every(g=>
    g.garmentMeshes===4&&g.dyeShaders&&g.colors.length===1&&
-   g.colors[0]===witchPalette[g.role]),
-   'Witch clothing must be uniformly dyed green/orange/white by role: '+
+   g.colors[0]===witchPalette[g.role]&&g.originalTexturePreserved&&
+   g.tintStrength>.15&&g.tintStrength<.30),
+   'Witch original clothing texture must remain dominant under a subtle role tint: '+
    JSON.stringify(witchGarments));
  check(s.assets.sharedMaterials<120,
   'Too many cosmetic materials: '+s.assets.sharedMaterials);

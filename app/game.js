@@ -1220,19 +1220,21 @@ function sharedRoleMaterial(original,key,configure){
   }
   return material;
 }
+const WITCH_GARMENT_TINT_STRENGTH=.22;
 function dyeWitchGarment(material,color){
-  // The Peasant GLB has a baked brown base-color texture. Multiplying it by
-  // white would leave it brown, so recolor its luminance in the shader while
-  // preserving the authored fabric folds, normals and material texture.
+  // Keep the original multicolored Peasant texture dominant. A subtle color
+  // balance, including a little brightening for white, must never replace the
+  // texture with a solid uniform (which looked like a jumpsuit).
   material.color.setHex(0xffffff);
   material.userData.witchGarmentDye=color;
   material.onBeforeCompile=shader=>{
     shader.uniforms.witchGarmentDye={value:new THREE.Color(color)};
-    shader.fragmentShader='uniform vec3 witchGarmentDye;\n'+shader.fragmentShader;
+    shader.uniforms.witchGarmentStrength={value:WITCH_GARMENT_TINT_STRENGTH};
+    shader.fragmentShader='uniform vec3 witchGarmentDye;\n'+
+      'uniform float witchGarmentStrength;\n'+shader.fragmentShader;
     shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',
       '#include <map_fragment>\n'+
-      'float fabricShade=dot(diffuseColor.rgb,vec3(0.2126,0.7152,0.0722));\n'+
-      'diffuseColor.rgb=witchGarmentDye*(0.76+0.24*fabricShade);');
+      'diffuseColor.rgb=mix(diffuseColor.rgb,witchGarmentDye,witchGarmentStrength);');
   };
   material.customProgramCacheKey=()=>`witch-garment-${color.toString(16)}`;
 }
@@ -4014,8 +4016,13 @@ if(qaMode)window.__fightersQA={
     actor.visual.traverse(o=>{
       if(o.userData.costumeLayer==='garment')garments.push(o);
     });
+    const probe={uniforms:{},fragmentShader:'#include <map_fragment>'};
+    garments[0]?.material.onBeforeCompile(probe);
     return {role:actor.role,garmentMeshes:garments.length,
       colors:[...new Set(garments.map(o=>o.material.userData.witchGarmentDye))],
+      tintStrength:probe.uniforms.witchGarmentStrength?.value,
+      originalTexturePreserved:garments.every(o=>!!o.material.map)&&
+        probe.fragmentShader.includes('mix(diffuseColor.rgb,witchGarmentDye,witchGarmentStrength)'),
       dyeShaders:garments.every(o=>o.material.customProgramCacheKey()
         .startsWith('witch-garment-'))};
   }),
