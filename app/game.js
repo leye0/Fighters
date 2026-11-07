@@ -1092,7 +1092,7 @@ function animation(actor,name,force=false){
   showWorkerTool(actor,name);
   const locomotion=name==='Walk_Loop'||name==='Jog_Fwd_Loop';
   // Keep accelerated panic movement and its leg cadence in step as well.
-  const locomotionRate=WALK_ANIMATION_RATE*(actor.fearTime>0?1.75:1);
+  const locomotionRate=WALK_ANIMATION_RATE*(actor.fearTime>0?1.5:1);
   if(!force&&actor.current===name){
     if(locomotion&&actor.action?.getEffectiveTimeScale()!==locomotionRate)
       actor.action.setEffectiveTimeScale(locomotionRate);

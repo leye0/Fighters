@@ -60,8 +60,8 @@ for(const [mode,radius] of [['engage',.055],['pursuit',1.35],['order',.36]]){
   const {api,events}=harness();
   const fleeing=actor();fleeing.fearTime=1;
   api.navigateActor(fleeing,{x:10,z:0},.1,'order');
-  assert(Math.abs(events.steps[0][2]-.875)<1e-9,
-    'A frightened worker walks 75% faster than its ordinary 5m/s pace');
+  assert(Math.abs(events.steps[0][2]-.75)<1e-9,
+    'A frightened worker walks 50% faster than its ordinary 5m/s pace');
 }
 
 // Failed-route caching: a first impossible goal triggers only one A* call;

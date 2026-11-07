@@ -40,6 +40,10 @@
       const treeIndex=state.selected.size?pickTree(x,y):null;
       const logIndex=state.selected.size?pickLogBundle(x,y):null;
       const faction=state.activeFaction==='witch'?'witch':'orcs';
+      // A ground click inside an allied building belongs to that building,
+      // even if a nearby enemy's generous screen-space hit radius overlaps it.
+      // Explicit attack mode still targets the hostile silhouette.
+      const alliedBuilding=building&&targetFaction(building)===faction;
       // A selected unit's order on a hostile building takes precedence over
       // selecting a friendly silhouette that overlaps the building footprint.
       if(state.selected.size){
@@ -48,12 +52,15 @@
         if(building?.type==='garden'&&orderHarvest([...state.selected],building))return;
         if(building&&targetFaction(building)!==faction&&
           targetFaction(building)!=='neutral'&&orderAttack([...state.selected],building))return;
-        if(unit&&targetFaction(unit)!==faction){orderAttack([...state.selected],unit);return;}
+        if(unit&&targetFaction(unit)!==faction&&(!alliedBuilding||state.attackMode)){
+          orderAttack([...state.selected],unit);return;
+        }
         if(treeIndex!==null&&orderChop([...state.selected],treeIndex))return;
         if(logIndex!==null&&orderCollectWood([...state.selected],logIndex))return;
       }
       if(state.attackMode){showBanner('CIBLE ENNEMIE REQUISE');return;}
       if(friend){selectUnits([friend],append);return;}
+      if(alliedBuilding){selectBuilding(building);return;}
       if(unit&&targetFaction(unit)!==faction){selectEnemy(unit);return;}
       if(building){selectBuilding(building);return;}
       if(state.selectedRaven){issueRavenMove(pos);return;}

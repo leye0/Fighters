@@ -99,6 +99,24 @@ tick(worker,.1);
 assert.equal(worker.destination,null);
 assert.equal(worker.navWatch,null);
 
+// A worker ignores enemies outside the immediate 3.5-unit danger radius.
+const nearEdge=makeActor('worker');
+const distantEnemy={...makeActor('melee'),kind:'orc',root:{position:{x:3.6,z:0}}};
+units.push(nearEdge,distantEnemy);
+workStep='mine';moveResult='moving';calls.length=0;
+tick(nearEdge,.1);
+assert.equal(nearEdge.fearTime||0,0,
+  'Workers must keep working rather than flee enemies several steps away');
+assert(!calls.some(c=>Array.isArray(c)&&c[0]==='navigate'));
+distantEnemy.root.position.x=3.4;
+nearEdge.fearScan=0;calls.length=0;
+tick(nearEdge,.1);
+assert(nearEdge.fearTime>0&&nearEdge.fearGoal,
+  'A hostile fighter just inside the danger radius must trigger flight');
+assert(calls.some(c=>Array.isArray(c)&&c[0]==='navigate'),
+  'Flight must interrupt economic jobs at close range');
+units.splice(0,2);
+
 // A worker stops every economic task during danger, runs toward friendly
 // fighters and resumes the original task when its fear expires.
 const threatened=makeActor('worker'),guard=makeActor('melee');

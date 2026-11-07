@@ -98,7 +98,20 @@ assert.equal(calls[0][1],'CIBLE ENNEMIE REQUISE');
 state.attackMode=false;
 picks.friend=witch;
 assert.deepEqual(tap(true),[['selectUnits',[witch],true]]);
-picks.friend=null;picks.building=enemyHouse;selected.clear();
+picks.friend=null;selected.clear();
+const friendlyHouse={id:'witch-house',clanId:'witch',type:'witch-house'};
+picks.building=friendlyHouse;picks.unit={id:'overlapping-orc',faction:'orcs'};
+assert.deepEqual(kindsAfterTap(),['selectBuilding'],
+  'A hostile silhouette must not steal a click inside the allied house');
+assert.equal(calls[0][1],friendlyHouse);
+selected.add(witch);
+assert.deepEqual(kindsAfterTap(),['repair','selectBuilding'],
+  'With troops selected, an allied building must still beat an overlapping enemy');
+state.attackMode=true;
+assert.deepEqual(kindsAfterTap(),['repair','attack'],
+  'Explicit attack mode must still target the hostile unit');
+state.attackMode=false;
+selected.clear();picks.unit=null;picks.building=enemyHouse;
 assert.equal(kindsAfterTap().at(-1),'selectBuilding');
 picks.building=null;picks.unit={id:'visible-foe',faction:'orcs'};
 assert.deepEqual(kindsAfterTap(),['selectEnemy'],

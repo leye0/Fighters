@@ -120,7 +120,7 @@
         if(stalls>=3){actor.navWatch=null;return 'blocked';}
         return 'retrying';
       }
-      const speed=actor.speed*(actor.fearTime>0?1.75:1)*dt;
+      const speed=actor.speed*(actor.fearTime>0?1.5:1)*dt;
       const budget=Math.max(0,Math.min(gap-(actor.route?0:arrival),speed));
       const next=stepPhysics(from,waypoint,budget,actor,units,navigatorRTS,unitRadius);
       if(!next){

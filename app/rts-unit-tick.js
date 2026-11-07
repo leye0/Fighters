@@ -8,7 +8,7 @@
   else root.FightersUnitTick=api;
 })(typeof globalThis==='object'?globalThis:this,function(){
   'use strict';
-  const WORKER_DANGER_RADIUS=9;
+  const WORKER_DANGER_RADIUS=3.5;
 
   function create({units,getPassiveKind,orcDirector,witchDirector,roles,raiding,
     buildingContact,cancelOrcFoodJob,enemyOf,isBuilding,faceBuildingCenter,
