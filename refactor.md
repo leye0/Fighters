@@ -104,11 +104,16 @@ de prolonger indéfiniment un axe.
       tests Node des géométries, terrains, remparts et sorties orcs ; run
       42331856175 : QA Chrome `visual`, `economy`, `combat` verte ; Pages
       run 42331856332 vert.
-- [ ] **W3 — Fin de formation et amélioration** : séparer les transitions de
+- [x] **W3 — Fin de formation et amélioration** : séparer les transitions de
       `finishTraining` et `finishUpgrade` de l'apparition des modèles et des
       effets de niveau. **Fini quand** files, unités produites, bâtiments,
       coûts et ordre des événements sont testés sans DOM/Three.js et que le
       jeu conserve ses animations et timings.
+      Transitions intégrées à `rts-orders.js` (apparition, ralliement, rôle,
+      voix, niveaux, PV et ordre d'effets), sans dépendance DOM/Three.js ;
+      tests Node des files, paiements, annulations, sorties bloquées et
+      callbacks verts. QA Chrome `visual`, `economy`, `combat` :
+      run 42332631566 vert ; Pages : run 42332631617 vert.
 
 **Critères communs de clôture des axes** : `A` est clos lorsque `A1` l'est ;
 `E` lorsque `E1–E3` le sont ; `S` lorsque `S1–S5` le sont ; `W` lorsque
