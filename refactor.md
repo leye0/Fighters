@@ -153,6 +153,12 @@ qu'après modification, vérification et intégration dans `main`.
       des bûches, ramassage, restitution après interruption et livraison sans
       crédit anticipé. Tests Node et QA Chrome `visual`, `economy`, `combat`
       verts : run 42312604304 ; publication Pages également verte.
+- [x] Extraire le cycle des jardinières dans `rts-garden-worker-cycle.js` :
+      attribution automatique cadencée, réservations de plants mûrs, récolte
+      physique avec animation et son, transport jusqu'à une maison de sorcières,
+      paiement à la livraison, interruptions, trajets bloqués et reset.
+      Tests Node et QA Chrome `visual`, `economy`, `combat` verts :
+      run 42320598280 ; Pages vert : run 42320598368.
 - [x] Séparer la décision stratégique des deux IA de l'exécution des commandes :
       directeurs `*-strategy.js`, exécution `rts-ai-commands.js`.
 - [x] Valider en Chrome l'exécution des actions Orc/Sorcière extraite dans
