@@ -3,7 +3,7 @@ import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 
 const require=createRequire(import.meta.url);
-const {createProductionOrders}=require('../docs/rts-orders.js');
+const {createProductionOrders,createProductionCompletions}=require('../docs/rts-orders.js');
 
 let gold={witch:500,orc:500},wood={witch:120,orc:120};
 let arcanist=false,orcMage=false;
@@ -100,9 +100,120 @@ assert(Math.abs(witch.progress)<1e-8);
 orders.step(.5);
 assert.equal(witch.progress,0,'no production order accumulates progress');
 
+// Completion transitions are domain operations: no DOM, scene, GLB or voices
+// are needed to verify their decisions and the historical callback order.
+const events=[];
+let blocked=false,witchPopulation=2;
+const completedActors=[];
+const completions=createProductionCompletions({
+  safeSpawn:building=>{
+    events.push(['safeSpawn',building.type]);
+    return blocked?null:{x:4,z:8};
+  },
+  countActors:kind=>{events.push(['count',kind]);return witchPopulation;},
+  spawnActor:(kind,position,index,role)=>{
+    events.push(['spawn',kind,position.x,position.z,index,role]);
+    const actor={};completedActors.push(actor);witchPopulation++;return actor;
+  },
+  resolveRally:point=>{events.push(['resolveRally',point.x]);return {x:point.x+1,z:0};},
+  playCreationVoice:(kind,actor)=>events.push(['voice',kind,actor]),
+  profile:(kind,role)=>{events.push(['profile',kind,role]);return {name:'Arcaniste'};},
+  showBanner:message=>events.push(['banner',message]),
+  witchHouseHealth:1500,
+  orcLevelHealth:(type,level)=>{events.push(['levelHealth',type,level]);return level===2?2200:2900;},
+  updateHealthBar:building=>events.push(['healthBar',building.health,building.level]),
+  showOrcLevelModel:(building,level)=>events.push(['model',building.type,level]),
+  refreshHUD:()=>events.push(['hud'])
+});
+
+blocked=true;
+assert.equal(completions.finishTraining(witch,'witch','melee'),false);
+assert.deepEqual(events,[['safeSpawn','witch-house'],['banner','SORTIE BLOQUÉE']],
+  'blocked training consumes the queued order without spawning an actor');
+events.length=0;blocked=false;
+witch.rally={x:14,z:5};
+assert.equal(completions.finishTraining(witch,'witch','ranged'),true);
+assert.deepEqual(events,[
+  ['safeSpawn','witch-house'],['count','witch'],['spawn','witch',4,8,2,'ranged'],
+  ['resolveRally',14],['voice','witch',completedActors[0]],
+  ['profile','witch','ranged'],['banner','ARCANISTE FORMÉ(E)']
+]);
+assert.deepEqual(completedActors[0].destination,{x:15,z:0});
+events.length=0;
+assert.equal(completions.finishTraining(orc,'orc','melee'),true);
+assert.deepEqual(events,[
+  ['safeSpawn','barrack'],['count','orc'],['spawn','orc',4,8,3,'melee'],
+  ['voice','orc',completedActors[1]],['banner','ORC FORMÉ']
+]);
+assert.equal(completedActors[1].destination,undefined,'no rally stays unset');
+
+// Reject ineligible upgrades without rendering, mutating health or showing HUD.
+for(const invalid of [building('neutral','barrack'),building('witch','mine'),
+  building('witch','garden'),building('witch','stone-circle'),building('witch','witch-house',3)]){
+  invalid.health=700;invalid.maxHealth=900;
+  events.length=0;
+  assert.equal(completions.finishUpgrade(invalid),false);
+  assert.equal(invalid.health,700);
+  assert.equal(invalid.level,invalid.type==='witch-house'?3:1);
+  assert.deepEqual(events,[]);
+}
+
+const house=building('witch','witch-house');
+house.health=1200;house.maxHealth=1500;house.healthBar={};
+events.length=0;
+assert.equal(completions.finishUpgrade(house),true);
+assert.equal(house.level,2);
+assert.equal(house.maxHealth,2250);
+assert.equal(house.health,1950,'upgrade preserves existing damage');
+assert.deepEqual(events,[['healthBar',1950,2],['banner','AMÉLIORATION NIVEAU 2'],['hud']]);
+house.health=2249;house.healthBar=null;
+events.length=0;
+assert.equal(completions.finishUpgrade(house),true);
+assert.equal(house.maxHealth,3000);
+assert.equal(house.health,2999,'health remains capped to the new maximum');
+assert.deepEqual(events,[['banner','AMÉLIORATION NIVEAU 3'],['hud']]);
+
+const barrack=building('orcs','barrack');
+barrack.health=900;barrack.maxHealth=1200;barrack.healthBar={};
+events.length=0;
+assert.equal(completions.finishUpgrade(barrack),true);
+assert.equal(barrack.level,2);
+assert.equal(barrack.maxHealth,2200);
+assert.equal(barrack.health,1900);
+assert.deepEqual(events,[['levelHealth','barrack',2],['healthBar',1900,2],
+  ['model','barrack',2],['banner','AMÉLIORATION NIVEAU 2'],['hud']]);
+
+// A queue step removes the paid order before calling completion. No second
+// payment or spontaneous refund is introduced by the extracted transition.
+const endEvents=[];
+const paid={witch:100,orc:100},timber={witch:40,orc:40};
+const producer=building('witch','witch-house');
+const finished=createProductionOrders({
+  roles:{profile:()=>({cost:50})},trainingDuration:()=>1,upgradeCost:()=>60,
+  arcanistUnlocked:()=>true,canTrainOrcRole:()=>true,maxQueue:8,
+  getGold:()=>paid,getWood:()=>timber,liveBuildings:()=>[producer],
+  finishTraining:(...args)=>{
+    endEvents.push(['before',producer.queue.length,paid.witch]);
+    completions.finishTraining(...args);
+  },
+  finishUpgrade:building=>completions.finishUpgrade(building)
+});
+assert.equal(finished.queue(producer,'witch','worker',ready),true);
+assert.equal(paid.witch,50);
+blocked=true;
+finished.step(1);
+assert.deepEqual(endEvents,[['before',0,50]]);
+assert.equal(producer.queue.length,0);
+assert.equal(paid.witch,50,'blocked exit does not create an implicit refund');
+
 const game=readFileSync(new URL('../docs/game.js',import.meta.url),'utf8');
 assert(game.includes('window.FightersOrders.createProductionOrders('));
+assert(game.includes('window.FightersOrders.createProductionCompletions('));
+assert(game.includes('finishUpgrade:productionCompletions.finishUpgrade'));
+assert(game.includes('finishTraining:productionCompletions.finishTraining'));
+assert(!/function finish(?:Training|Upgrade)\(/.test(game),
+  'production state transitions must not return to the rendering adapter');
 assert(game.includes('productionOrders.queue(building,kind,role,{running,paused})'));
 assert(game.includes('productionOrders.cancel(building,index)'));
 assert(game.includes('productionOrders.step(dt)'));
-console.log('PASS production queues, training gates, refunds, upgrades and reset');
+console.log('PASS production queues, costs, completion transitions, event order and reset');

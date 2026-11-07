@@ -72,8 +72,9 @@ modules (`docs/rts-contracts.d.ts`).
   combat, animation et IA injectés une seule fois par `game.js`.
 - `docs/rts-orders.js` : transitions de commandes d'unités (déplacement,
   attaque, arrêt, réparations, mines, bois, coupes, récoltes, constructions, entraînement,
-  améliorations, remboursements et progression des files de production) sans
-  UI ni Three.js ;
+  améliorations, remboursements et progression des files de production), ainsi
+  que la finalisation des entraînements et des niveaux de bâtiment (apparition,
+  ralliement, PV et ordre des callbacks injectés), sans UI ni Three.js ;
   `docs/game.js` adapte les événements et services sans recopier les mutations.
 - `docs/rts-picking.js` : sélection des silhouettes en coordonnées écran,
   corbeaux, arbres, bois et emprises de bâtiments ; dépendances injectées

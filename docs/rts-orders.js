@@ -235,6 +235,48 @@
     return Object.freeze({queue,cancel,step});
   }
 
+  // A completed order changes domain state here. The world adapter alone
+  // chooses a collision-free spawn, creates 3D actors and applies visuals,
+  // sounds and notifications. Callback order matches the historical game.
+  function createProductionCompletions({safeSpawn,spawnActor,countActors,
+    resolveRally,playCreationVoice,profile,showBanner,witchHouseHealth,
+    orcLevelHealth,updateHealthBar,showOrcLevelModel,refreshHUD}){
+    const services=[safeSpawn,spawnActor,countActors,resolveRally,playCreationVoice,
+      profile,showBanner,orcLevelHealth,updateHealthBar,showOrcLevelModel,refreshHUD];
+    if(services.some(service=>typeof service!=='function')||
+      !Number.isFinite(witchHouseHealth))throw Error('Missing production completion service');
+
+    function finishTraining(building,kind,role='melee'){
+      const position=safeSpawn(building);
+      if(!position){showBanner('SORTIE BLOQUÉE');return false;}
+      const actor=spawnActor(kind,position,countActors(kind),role);
+      if(building.rally)actor.destination=resolveRally(building.rally);
+      if(kind==='orc'||kind==='witch')playCreationVoice(kind,actor);
+      showBanner(role==='melee'?(kind==='witch'?'SORCIÈRE FORMÉE':'ORC FORMÉ'):
+        profile(kind,role).name.toUpperCase()+' FORMÉ(E)');
+      return true;
+    }
+
+    function finishUpgrade(building){
+      if(['mine','garden','stone-circle'].includes(building.type)||
+        building.clanId==='neutral'||building.level>=3)return false;
+      const previousHealth=building.maxHealth;
+      building.level++;
+      building.maxHealth=building.clanId==='witch'?
+        witchHouseHealth+750*(building.level-1):
+        orcLevelHealth(building.type,building.level);
+      building.health=Math.min(building.maxHealth,
+        building.health+(building.maxHealth-previousHealth));
+      if(building.healthBar)updateHealthBar(building);
+      if(building.clanId==='orcs')showOrcLevelModel(building,building.level);
+      showBanner('AMÉLIORATION NIVEAU '+building.level);
+      refreshHUD();
+      return true;
+    }
+
+    return Object.freeze({finishTraining,finishUpgrade});
+  }
+
   return Object.freeze({create,createWorkerOrders,createConstructionOrders,
-    createProductionOrders});
+    createProductionOrders,createProductionCompletions});
 });

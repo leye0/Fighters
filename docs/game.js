@@ -1667,10 +1667,26 @@ function upgradeCost(building){
   if(!building||['mine','garden','stone-circle','wall'].includes(building.type)||building.clanId==='neutral')return null;
   return building.level>=3?null:(building.clanId==='witch'?230:160)+building.level*100;
 }
+const productionCompletions=window.FightersOrders.createProductionCompletions({
+  safeSpawn:safeSpawnNear,
+  countActors:kind=>units.filter(u=>u.kind===kind).length,
+  spawnActor:(kind,position,index,role)=>spawnUnit(kind,position.x,position.z,index,role),
+  resolveRally:point=>navigatorRTS.findSafeGoal(point),
+  playCreationVoice:(kind,actor)=>kind==='orc'?
+    playOrcVoice('creation',actor):playWitchVoice('creation',actor),
+  profile:(kind,role)=>roles.profile(kind,role),
+  showBanner,witchHouseHealth:WITCH_HOUSE_HEALTH,
+  orcLevelHealth:(type,level)=>BUILDING_TYPES[type].levels[level].maxHealth,
+  updateHealthBar,
+  showOrcLevelModel:(building,level)=>useOrcLevelModel(building,level)
+    .catch(err=>console.warn('Upgrade GLB:',err)),
+  refreshHUD
+});
 const productionOrders=window.FightersOrders.createProductionOrders({
   roles,trainingDuration,upgradeCost,arcanistUnlocked,canTrainOrcRole,
   maxQueue:MAX_QUEUE,getGold:()=>matchResources.gold,getWood:()=>matchResources.wood,
-  liveBuildings,finishUpgrade,finishTraining
+  liveBuildings,finishUpgrade:productionCompletions.finishUpgrade,
+  finishTraining:productionCompletions.finishTraining
 });
 function queueOrder(building,kind,role='melee'){
   const queued=productionOrders.queue(building,kind,role,{running,paused});
@@ -1742,16 +1758,6 @@ function safeSpawnNear(building){
   });
   return fallback&&navigatorRTS.plan(fallback,hub)?fallback:null;
 }
-function finishTraining(building,kind,role='melee'){
-  const position=safeSpawnNear(building);
-  if(!position){showBanner('SORTIE BLOQUÉE');return;}
-  const actor=spawnUnit(kind,position.x,position.z,units.filter(u=>u.kind===kind).length,role);
-  if(building.rally)actor.destination=navigatorRTS.findSafeGoal(building.rally);
-  if(kind==='orc')playOrcVoice('creation',actor);
-  else if(kind==='witch')playWitchVoice('creation',actor);
-  showBanner(role==='melee'?(kind==='witch'?'SORCIÈRE FORMÉE':'ORC FORMÉ'):
-    roles.profile(kind,role).name.toUpperCase()+' FORMÉ(E)');
-}
 async function useOrcLevelModel(building,level){
   const key=building.type+':'+level,entry=orcLevelEntries.get(key);
   if(!entry)throw Error('GLB de niveau manquant : '+key);
@@ -1781,17 +1787,6 @@ async function useOrcLevelModel(building,level){
   building.footprintProjection=projection;
   building.visualHitbox=buildingVisualBounds(offset);building.visualLevel=level;
   updateNavObstacles();drawBuildingSelection();refreshHUD();
-}
-function finishUpgrade(building){
-  if(['mine','garden','stone-circle'].includes(building.type)||building.clanId==='neutral'||building.level>=3)return;
-  const prev=building.maxHealth;building.level++;
-  building.maxHealth=building.clanId==='witch'?WITCH_HOUSE_HEALTH+750*(building.level-1):
-    BUILDING_TYPES[building.type].levels[building.level].maxHealth;
-  building.health=Math.min(building.maxHealth,building.health+(building.maxHealth-prev));
-  if(building.healthBar)updateHealthBar(building);
-  if(building.clanId==='orcs')
-    useOrcLevelModel(building,building.level).catch(err=>console.warn('Upgrade GLB:',err));
-  showBanner('AMÉLIORATION NIVEAU '+building.level);refreshHUD();
 }
 function stepProduction(dt){
   productionOrders.step(dt);
