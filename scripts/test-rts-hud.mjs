@@ -31,6 +31,17 @@ assert.equal(getElement('ai-status').textContent,'ORCS · Assaut');
 hud.overview({...values,faction:'orc',food:2.1,magic:5,aiEnabled:false});
 assert.equal(getElement('hud-food-label').textContent,'🍖 VIANDE');
 assert.equal(getElement('ai-status').textContent,'IA · En attente');
+assert.equal(getElement('hud-units-label').textContent,'👹 POP.');
+assert.equal(getElement('unit-count').textContent,'5 / 18');
+hud.overview({...values,faction:'orc',orcCount:9,orcPopulationCommitted:10,
+  orcHousingCap:10});
+assert.equal(getElement('unit-count').textContent,'10 / 10',
+  'The Orc population must display trained plus queued units against housing');
+assert.match(getElement('hud-units-chip').title,/Population pleine/);
+hud.overview(values);
+assert.equal(getElement('hud-units-label').textContent,'⚔️ UNITÉS');
+assert.equal(getElement('unit-count').textContent,'8 : 5');
+assert.equal(getElement('ai-status').textContent,'ORCS · Assaut');
 
 let clicked=0,stopped=0;
 const parent=element();
@@ -65,4 +76,7 @@ const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 assert(game.includes('window.FightersHud.create('));
 assert(game.includes('hudRenderer.commandButton(buttons,...args)'));
 assert(html.includes('src="./rts-hud.js"'));
+assert(html.includes('id="hud-units-label"'));
+assert(game.includes('orc-population-status'),
+  'Selected Orc housing and barracks must explicitly show their population');
 console.log('PASS independent HUD resources, buttons, click handling and HP bars');

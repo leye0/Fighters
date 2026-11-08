@@ -13,7 +13,7 @@
     }
 
     function overview({faction,gold,wood,food,magic,maxMagic,witchCount,orcCount,
-      orcHousingCap,aiEnabled,aiMode}){
+      orcHousingCap,orcPopulationCommitted=orcCount,aiEnabled,aiMode}){
       setText('hud-gold',gold);setText('hud-wood',wood);
       setText('hud-food',Math.ceil(food));
       setText('hud-food-label',faction==='witch'?'🌾 VIVRES':'🍖 VIANDE');
@@ -27,9 +27,13 @@
         'Magie des orcs · récupère 5 points toutes les 30 secondes';
       getElement('hud-gold-chip').title='Or des '+(faction==='witch'?'sorcières':'orcs');
       getElement('hud-wood-chip').title='Bois des '+(faction==='witch'?'sorcières':'orcs');
-      setText('unit-count',witchCount+' : '+orcCount);
-      getElement('hud-units-chip').title='Sorcières : orcs · capacité orc : '+orcHousingCap+
-        ' (augmenter avec des huttes)';
+      setText('hud-units-label',faction==='orc'?'👹 POP.':'⚔️ UNITÉS');
+      setText('unit-count',faction==='orc'?orcPopulationCommitted+' / '+orcHousingCap:
+        witchCount+' : '+orcCount);
+      getElement('hud-units-chip').title='Sorcières : '+witchCount+' · Orcs : '+
+        orcPopulationCommitted+' / '+orcHousingCap+
+        (orcPopulationCommitted>=orcHousingCap?' · Population pleine : construire ou améliorer une hutte':
+          ' · Augmenter la capacité avec des huttes');
       setText('faction-title',faction==='witch'?'SORCIÈRES':'ORCS');
       setText('ai-status',aiEnabled?(faction==='witch'?'ORCS':'SORCIÈRES')+' · '+({
         develop:'Expansion',defend:'Défense',attack:'Assaut',recover:'Regroupement'

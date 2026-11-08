@@ -17,6 +17,10 @@ for(const type of ['garden','stone-circle','witch-house']){
 }
 assert.equal(planSite('garden',[house],()=>false),null,'Never build without a valid site');
 assert.equal(planSite('mine',[house],valid),null,'Natural mines are not constructible');
+const narrowSite=planSite('garden',[house],(x,z)=>
+ x>-17&&x<-15&&Math.abs(z+17)<.1);
+assert(narrowSite&&Math.abs(narrowSite.z+17)<.1,
+ 'The Witch AI must find narrow legal building gaps that a sparse grid misses');
 
 const fog=new FogGrid();
 fog.update('witch',[{x:-18,z:-15}]);
@@ -52,9 +56,23 @@ assert(!actions.some(a=>a.type==='build'&&a.building==='garden'),
  'A garden already under construction must not be duplicated');
 state.pendingBuilds=[];state.buildings.push({id:'garden',type:'garden',x:-17,z:-10,
  level:1,queue:[],health:180,maxHealth:180});
+director.clock=40;
+actions=director.update(3,state,valid);
+assert(actions.some(a=>a.type==='build'&&a.building==='garden'),
+ 'A developed Witch village must expand its food production beyond one garden');
+state.pendingBuilds=[{type:'garden'}];
 for(let i=0;i<4;i++)actions=director.update(3,state,valid);
 assert(director.snapshot().decisions.some(a=>a.type==='upgrade'&&a.buildingId==='home'),
  'AI should unlock the sanctuary through a house upgrade');
+state.pendingBuilds=[];state.buildings.push({id:'second-garden',type:'garden',x:-9,z:-12,
+ level:1,queue:[],health:180,maxHealth:180});
+director.clock=50;
+const houseExpansion=[];
+for(let i=0;i<8;i++)houseExpansion.push(...director.update(3,state,valid));
+assert(houseExpansion.some(a=>a.type==='build'&&a.building==='witch-house'),
+ 'A Witch opponent must expand to a second house during a real match');
+state.buildings.push({id:'expanded-home',type:'witch-house',x:-16,z:-21,level:1,
+ queue:[],health:500,maxHealth:500});
 
 house.level=2;state.circleUnlocked=true;state.food=15;
 state.buildings.push({id:'garden2',type:'garden',x:-9,z:-13,level:1,
@@ -65,8 +83,9 @@ assert(actions.some(a=>a.type==='build'&&a.building==='stone-circle'),
 state.buildings.push({id:'circle',type:'stone-circle',x:-12,z:-15,level:1,
  queue:[],health:280,maxHealth:280});
 state.arcanistUnlocked=true;state.food=50;
-actions=director.update(3,state,valid);
-assert(actions.some(a=>a.type==='train'&&a.role==='ranged'),
+const mageTraining=[];
+for(let i=0;i<6;i++)mageTraining.push(...director.update(3,state,valid));
+assert(mageTraining.some(a=>a.type==='train'&&a.role==='ranged'),
  'AI should recruit arcanists after unlocking the circle');
 
 state.witches.push(guard(5),guard(6),guard(7));

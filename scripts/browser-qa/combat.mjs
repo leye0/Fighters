@@ -433,11 +433,25 @@ export async function runCombatQa({evaluate,call,check,until,screenshot,sleep,fi
  check(s.activeFaction==='orc'&&s.chosenFaction==='orc'&&s.orcs.length===4&&
    s.cameraCenter.x>10&&s.selectedBuildingId?.startsWith('orc-barrack'),
    'Starting as orcs must reveal their own base and select their barrack');
+ check(await evaluate("document.querySelector('#hud-units-label').textContent==='👹 POP.'&&"+
+   "document.querySelector('#unit-count').textContent==='4 / 10'&&"+
+   "document.querySelector('.orc-population-status')?.textContent.includes('4 / 10')"),
+   'Orc players must see their housing capacity directly, including on barracks');
  await evaluate('window.__fightersQA.enableWitchAI(true);window.__fightersQA.advance(12)');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.witchAI.decisions.some(a=>a.type==='train'||a.type==='build')&&
    s.witchAI.decisions.some(a=>a.type==='scout'),
    'Real witch director must independently recruit/build and scout');
+ // The strategy must lead to finished, physical buildings, not only planned
+ // intentions. This exercises real terrain/forest clearance, available
+ // workers, construction travel, production and the opposing faction mode.
+ await evaluate('window.__fightersQA.advance(85)');
+ s=await evaluate('window.__fightersQA.snapshot()');
+ const witchExpansion=s.buildings.filter(b=>b.clanId==='witch'&&!b.initial&&!b.destroyed);
+ check(witchExpansion.length>=2&&witchExpansion.some(b=>b.type==='garden'),
+   'Enemy Witch AI must actually construct multiple buildings while playing Orcs: '+
+   JSON.stringify({buildings:witchExpansion,construction:s.construction,
+     decisions:s.witchAI.decisions,gold:s.gold.witch,wood:s.wood.witch}));
  await evaluate("document.querySelector('#overlay').hidden=false;"+
    "document.querySelector('#choose-witch').click();document.querySelector('#start').click()");
  s=await evaluate('window.__fightersQA.snapshot()');

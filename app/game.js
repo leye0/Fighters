@@ -2475,7 +2475,8 @@ function refreshHUD(){
     magic:matchResources.magic[session.activeFaction],maxMagic:soulRules.MAX_MAGIC,
     witchCount:units.filter(u=>u.kind==='witch'&&!u.dead).length,
     orcCount:units.filter(u=>u.kind==='orc'&&!u.dead).length,
-    orcHousingCap:orcHousingCap(),aiEnabled:director.enabled,aiMode:director.mode});
+    orcHousingCap:orcHousingCap(),orcPopulationCommitted:orcPopulationCommitted(),
+    aiEnabled:director.enabled,aiMode:director.mode});
 
   const b=interaction.selectedBuilding,enemy=interaction.selectedEnemy,
     alive=[...selected].filter(u=>!u.dead),
@@ -2537,6 +2538,10 @@ function refreshHUD(){
       }else{
         hudRenderer.healthTrack(health,'Niv. '+b.level+' · PV '+Math.ceil(b.health)+' / '+b.maxHealth,
           100*b.health/b.maxHealth);
+      }
+      if(friendly&&b.clanId==='orcs'&&(b.type==='barrack'||b.type==='hut')){
+        const population=document.createElement('span');
+        population.className='orc-population-status';health.append(population);
       }
       if(friendly&&(b.type==='witch-house'||b.type==='barrack')){
         const clan=b.clanId==='witch'?'witch':'orc';
@@ -2668,6 +2673,13 @@ function refreshHUD(){
       (b.queue.length?' · ⏳ '+Math.floor(100*clamp(b.progress/b.queue[0].duration,0,1))+'%':'');
     if(hp?.nodeType===Node.TEXT_NODE&&hp.textContent!==text)hp.textContent=text;
     if(fill)fill.style.width=(100*b.health/b.maxHealth)+'%';
+    const status=health.querySelector('.orc-population-status');
+    if(status){
+      const committed=orcPopulationCommitted(),cap=orcHousingCap();
+      status.textContent='👹 Population : '+committed+' / '+cap+
+        (committed>=cap?' · LOGIS PLEINS':'');
+      status.classList.toggle('full',committed>=cap);
+    }
   }else if(enemy&&!enemy.dead){
     const fill=health.querySelector('.hp-fill');
     if(health.firstChild?.nodeType===Node.TEXT_NODE)
@@ -2685,9 +2697,22 @@ function refreshHUD(){
     let disabled=session.paused;
     const role=b&&['witch','orcs'].includes(b.clanId)?
       ROLE_IDS.find(id=>roles.profile(faction,id).name===action):null;
-    if(role)disabled||=matchResources.gold[faction]<roles.profile(faction,role).cost||b?.queue.length>=MAX_QUEUE||
-      (faction==='witch'&&role==='ranged'&&!arcanistUnlocked())||
-      (faction==='orc'&&!canTrainOrcRole(role));
+    if(role){
+      const committed=orcPopulationCommitted(),cap=orcHousingCap();
+      const shortGold=matchResources.gold[faction]<roles.profile(faction,role).cost;
+      const fullQueue=b?.queue.length>=MAX_QUEUE;
+      const fullHousing=faction==='orc'&&committed>=cap;
+      const lockedMage=faction==='orc'&&role==='ranged'&&!orcMageUnlocked();
+      disabled||=shortGold||fullQueue||fullHousing||lockedMage||
+        (faction==='witch'&&role==='ranged'&&!arcanistUnlocked());
+      const reason=fullHousing?'Population pleine ('+committed+'/'+cap+
+        ') · Construisez ou améliorez une hutte':
+        lockedMage?'Chaudron requis':fullQueue?'File de production pleine':
+        shortGold?'Or insuffisant':
+        faction==='witch'&&role==='ranged'&&!arcanistUnlocked()?'Cercle de roches requis':'';
+      button.title=reason||'Former '+roles.profile(faction,role).name;
+      button.setAttribute('aria-label',button.title);
+    }
     else if(action==='Améliorer')disabled||=upgradeCost(b)===null||
       b?.queue.some(item=>item.kind==='upgrade')||
       matchResources.gold[faction]<upgradeCost(b)||matchResources.wood[faction]<40||b?.queue.length>=MAX_QUEUE;

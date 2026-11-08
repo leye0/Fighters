@@ -22,15 +22,31 @@
   if(!COST[type]||typeof valid!=='function')return null;
   const occupied=buildings.filter(b=>!b.destroyed).map(b=>({...center(b),type:b.type}));
   const sites=[];
-  for(let z=-23;z<=19;z+=3.8)for(let x=-24;x<=-4;x+=3.8){
-   const p={x:Math.round(x*10)/10,z:Math.round((z+((Math.floor(-x/3.8)%2)*1.3))*10)/10};
-   if(!valid(p.x,p.z,type))continue;
-   const nearest=occupied.reduce((best,b)=>Math.min(best,distance(p,b)),20);
-   const cluster=occupied.filter(b=>distance(p,b)<11).length;
-   const gardenBonus=type==='garden'?distance(p,{x:-16,z:-16})*.5:0;
-   const score=Math.abs(nearest-7)*1.6+(cluster===0?12:cluster===1?0:cluster*1.5)+
-     distance(p,{x:-17,z:-15})*.23+gardenBonus;
-   sites.push({...p,score});
+  const homes=occupied.filter(b=>b.type==='witch-house');
+  // Real garden/house footprints and the forest leave narrow viable gaps.
+  // Scan rings around the *actual* village rather than a sparse hardcoded
+  // grid that can miss every legal site after map/forest changes.
+  const anchors=[...homes,...occupied.filter(b=>b.type!=='witch-house')];
+  const seen=new Set();
+  search:for(const anchor of anchors){
+   for(const r of [7,8.5,10,11.5,13,14.5,16]){
+    for(let i=0;i<40;i++){
+     const angle=i*2*Math.PI/40;
+     const p={x:Math.round((anchor.x+r*Math.cos(angle))*4)/4,
+      z:Math.round((anchor.z+r*Math.sin(angle))*4)/4};
+     const key=p.x+','+p.z;
+     if(seen.has(key))continue;
+     seen.add(key);
+     if(!valid(p.x,p.z,type))continue;
+     const nearest=occupied.reduce((best,b)=>Math.min(best,distance(p,b)),20);
+     const cluster=occupied.filter(b=>distance(p,b)<11).length;
+     const gardenBonus=type==='garden'?distance(p,{x:-16,z:-16})*.5:0;
+     const score=Math.abs(nearest-7)*1.6+(cluster===0?12:cluster===1?0:cluster*1.5)+
+       distance(p,{x:-17,z:-15})*.23+gardenBonus;
+     sites.push({...p,score});
+     if(sites.length>=20)break search;
+    }
+   }
   }
   sites.sort((a,b)=>a.score-b.score||a.z-b.z||a.x-b.x);
   return sites[0]?{x:sites[0].x,z:sites[0].z}:null;
@@ -74,7 +90,7 @@
    if(canTrain&&workerCount<2&&canBuy(75))actions.push({type:'train',
     buildingId:home.id,role:'worker',reason:'restore_economy'});
    if(workerCount&&gardens.length+pending.filter(b=>b.type==='garden').length<
-     (state.food<18?2:1)&&
+     (state.food<18||this.clock>35?2:1)&&
      canBuy(COST.garden,0,80)){
     const site=planSite('garden',buildings,valid);
     if(site)actions.push({type:'build',building:'garden',...site,reason:'food_security'});
@@ -92,7 +108,7 @@
     if(site)actions.push({type:'build',building:'stone-circle',...site,
      reason:'unlock_arcanists_and_healing'});
    }
-   if(home&&workerCount&&houses.length<2&&!pending.some(b=>b.type==='witch-house')&&this.clock>65&&
+   if(home&&workerCount&&houses.length<2&&!pending.some(b=>b.type==='witch-house')&&this.clock>45&&
      canBuy(COST['witch-house'],75,230)){
     const site=planSite('witch-house',buildings,valid);
     if(site)actions.push({type:'build',building:'witch-house',...site,

@@ -150,6 +150,8 @@ background:#141e2ee8;color:#f9deb5;padding:8px 13px;border-radius:6px;border:1px
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 .command-panel .command-info{display:none}
 .command-panel .command-health{font:700 10px/1.2 monospace;color:#dce3cc;margin-top:4px}
+.orc-population-status{display:block;margin-top:4px;color:#dce3cc}
+.orc-population-status.full{color:#ffb074}
 .command-panel .hp-track{height:5px;margin-top:3px;width:100%;border:1px solid #948968}
 .command-panel .command-operations{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
 .command-panel .quick-commands{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
