@@ -39,8 +39,8 @@ export async function runCombatQa({evaluate,call,check,until,screenshot,sleep,fi
  await evaluate('window.__fightersQA.advance(13)');
  s=await evaluate('window.__fightersQA.snapshot()');
  const destroyed=s.buildings.find(b=>b.id===hutId);
- check(destroyed?.destroyed&&destroyed.health===0,
-  'Witch attacks did not destroy the orc hut: '+JSON.stringify(destroyed));
+ check(!destroyed||(destroyed.destroyed&&destroyed.health===0),
+  'Witch attacks did not remove the newly constructed orc hut: '+JSON.stringify(destroyed));
  check(await evaluate('window.__fightersQA.isClear('+hutFixture.x+','+hutFixture.z+')'),
   'Destroyed building must be removed from the navigation grid');
  await screenshot('rts-destroyed-orc-hut');

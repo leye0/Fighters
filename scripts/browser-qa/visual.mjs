@@ -796,7 +796,7 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
   'Colliding building placement must be refused');
  check(!await evaluate('window.__fightersQA.isClear('+hutSite.x+','+hutSite.z+')'),
   'Real solid building collider must block its centre');
- const newHut=s.buildings.find(b=>!b.initial);
+ const newHut=s.buildings.filter(b=>b.type==='hut'&&!b.initial).at(-1);
  check(newHut?.hitbox.minX<hutSite.x&&newHut.hitbox.maxX>hutSite.x,
    'Constructed hut hitbox does not cover mesh');
  const house=s.house.hitbox;
@@ -817,7 +817,7 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
 
  // Tap the projected real ground polygon, never the oversized 3D roof AABB.
  await evaluate('window.__fightersQA.centerCamera('+hutSite.x+','+hutSite.z+')');
- const clicked=await evaluate("(function(){const s=window.__fightersQA.snapshot();const b=s.buildings.find(b=>!b.initial);const p=window.__fightersQA.buildingScreenPoint(b.id);window.__fightersQA.tap(p.x,p.y);return window.__fightersQA.snapshot().selectedBuildingId===b.id})()");
+ const clicked=await evaluate("(function(){const s=window.__fightersQA.snapshot();const b=s.buildings.filter(b=>b.type==='hut'&&!b.initial).at(-1);const p=window.__fightersQA.buildingScreenPoint(b.id);window.__fightersQA.tap(p.x,p.y);return window.__fightersQA.snapshot().selectedBuildingId===b.id})()");
  check(clicked,'Exact building X/Z polygon picking failed');
  await screenshot('rts-orc-building-panel');
 
