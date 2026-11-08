@@ -1,3 +1,5 @@
+import {addOrcBuilding} from './orc-fixtures.mjs';
+
 // The real autonomous cast path: upgrade a genuine building, expose a clearly
 // superior visible enemy army, then let the game's 60 Hz spell phase choose.
 export async function runSpellQa({evaluate,check}){
@@ -29,7 +31,7 @@ export async function runSpellQa({evaluate,check}){
   // Orc director responds independently with fire rain from a level-three hut.
   await evaluate(`${qa}.reset()`);
   s=await snapshot();
-  const hut=s.buildings.find(b=>b.type==='hut'&&!b.destroyed);
+  const hut=await addOrcBuilding(evaluate,'hut');
   check(hut,'No real hut available for autonomous fire-rain QA');
   check(await evaluate(`${qa}.upgradeBuilding(${JSON.stringify(hut.id)})&&`+
     `${qa}.upgradeBuilding(${JSON.stringify(hut.id)})`),

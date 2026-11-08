@@ -1012,6 +1012,10 @@ async function loadOrcVillage(limit=3){
       entry:entries[i],source:model.clone(true),clips:buildingClips,
       footprint,projection,collisionLocal:physicalPrototype
     });
+    // Both factions start with one headquarters. Other Orc models remain
+    // available as construction blueprints, not free infrastructure.
+    // Neutral mines still spawn as shared world resources.
+    if(type!=='barrack'&&type!=='mine')continue;
     const target=3.9;
     anchor.scale.setScalar(target/footprint);
     const p=ORC_VILLAGE.positions[type];
@@ -3479,7 +3483,7 @@ function stepOrcStrategy(dt){
     }):null;
   const context=window.FightersAiObservations.orc({
     running:session.running,paused:session.paused,gold:matchResources.gold.orc,wood:matchResources.wood.orc,
-    buildingInstances,aliveOrcs,units,fogOfWar,enemyBaseKnown,scoutTarget,
+    buildingInstances,pendingBuilds,aliveOrcs,units,fogOfWar,enemyBaseKnown,scoutTarget,
     unitCap:orcHousingCap,populationCommitted:orcPopulationCommitted,
     cauldronAvailable:orcMageUnlocked
   });

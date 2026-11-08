@@ -23,6 +23,27 @@ assert.equal(planSite('mine',starting,valid),null,
  'Mines are fixed natural deposits and cannot be planned or constructed');
 assert(!Object.hasOwn(COST,'mine'),'Build cost catalog must not list mines');
 
+// Symmetric opening: one Orc barrack versus one Witch home, with no free hut.
+// A capped population must lead to a genuine housing construction immediately.
+const opening=new Director();
+const openingState={ready:true,running:true,paused:false,gold:900,wood:350,
+ buildings:[starting[0]],pendingBuilds:[],orcs:[
+  {id:1,role:'worker',dead:false},{id:2,role:'melee',dead:false},
+  {id:3,role:'ranged',dead:false},{id:4,role:'melee',dead:false}],
+ witches:[],enemyBaseKnown:false,scoutTarget:null,unitCap:4,
+ populationCommitted:4,cauldronAvailable:false};
+const openingOrders=opening.update(3,openingState,valid);
+assert(openingOrders.some(o=>o.type==='build'&&o.building==='hut'),
+ 'Orc AI must construct its first hut without waiting 18 seconds');
+assert(!openingOrders.some(o=>o.type==='train'),
+ 'Orc AI must not recruit beyond the starting housing limit');
+openingState.pendingBuilds=[{type:'hut'}];
+assert(!opening.decide(openingState,valid).some(o=>o.type==='build'&&o.building==='hut'),
+ 'Pending hut must not be scheduled repeatedly before workers finish it');
+openingState.pendingBuilds=[];openingState.wood=20;
+assert(!opening.decide(openingState,valid).some(o=>o.type==='build'&&o.building==='hut'),
+ 'Orc AI must not plan a building without the required timber');
+
 // A hut creates a real supply ceiling; the director may not queue beyond it.
 const capDirector=new Director();
 const cappedState={ready:true,running:true,paused:false,gold:900,
@@ -75,7 +96,8 @@ const director=new Director();
 let state={
  ready:true,running:true,paused:false,gold:900,buildings:starting,
  orcs:Array.from({length:4},(_,i)=>({id:i+1,x:18+i,z:16,
-  health:100,maxHealth:100,attackOrder:false,dead:false})),
+  health:100,maxHealth:100,attackOrder:false,dead:false,
+  role:i===0?'worker':'melee'})),
  witches:[],enemyBaseKnown:false,scoutTarget:{x:7,z:7},unitCap:16
 };
 const feedingDirector=new Director();

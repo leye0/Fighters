@@ -9,11 +9,13 @@
 })(typeof globalThis==='object'?globalThis:this,function(){
   'use strict';
 
-  function orc({running,paused,gold,wood,buildingInstances,aliveOrcs,units,
+  function orc({running,paused,gold,wood,buildingInstances,pendingBuilds=[],aliveOrcs,units,
     fogOfWar,enemyBaseKnown,scoutTarget,unitCap,populationCommitted,
     cauldronAvailable}){
     return {
       ready:true,running,paused,gold,wood,
+      pendingBuilds:pendingBuilds.filter(job=>['hut','barrack','cauldron','factory','wall']
+        .includes(job.type)).map(job=>({type:job.type})),
       buildings:[...buildingInstances.values()].filter(b=>!b.destroyed&&b.clanId==='orcs').map(b=>({
         id:b.id,type:b.type,level:b.level,queue:b.queue.map(j=>({kind:j.kind})),
         health:b.health,maxHealth:b.maxHealth,hitbox:b.hitbox,destroyed:b.destroyed,

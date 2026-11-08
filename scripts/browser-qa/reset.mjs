@@ -30,7 +30,7 @@ export async function runResetQa({evaluate,check,findWitchSite}){
   await evaluate("document.querySelector('#choose-orc').click();document.querySelector('#start').click()");
   s=await snapshot();
   const expectedSecond={running:true,activeFaction:'orc',chosenFaction:'orc',
-    houseHealth:1500,houseDestroyed:false,witches:3,orcs:4,buildings:8,
+    houseHealth:1500,houseDestroyed:false,witches:3,orcs:4,buildings:5,
     construction:0,constructionPreviews:0,enemyBaseKnownToOrcs:false,
     witchGold:2000,orcGold:900,witchWood:250,orcWood:350,
     witchMagic:0,orcMagic:0};
@@ -57,7 +57,7 @@ export async function runResetQa({evaluate,check,findWitchSite}){
   s=await snapshot();
   check(s.running&&s.activeFaction==='witch'&&s.chosenFaction==='witch'&&
     s.house.health===1500&&!s.house.destroyed&&s.witches.length===3&&s.orcs.length===4&&
-    s.buildings.length===8&&s.construction.length===0&&s.constructionPreviewCount===0&&
+    s.buildings.length===5&&s.construction.length===0&&s.constructionPreviewCount===0&&
     s.gold.witch===2000&&s.wood.witch===250&&s.souls.magic===0&&
     !s.paused&&s.mining.completedMiningCycles===0,
     'The third match must start cleanly again without stale world or economy state');

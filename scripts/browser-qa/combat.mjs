@@ -1,4 +1,5 @@
 import {runSpellQa} from './spells.mjs';
+import {addOrcBuilding} from './orc-fixtures.mjs';
 
 export async function runCombatQa({evaluate,call,check,until,screenshot,sleep,findWitchSite}){
  let s;
@@ -6,15 +7,16 @@ export async function runCombatQa({evaluate,call,check,until,screenshot,sleep,fi
    'Real Orc building models for combat QA',100000);
  await until('window.__fightersQA.snapshot().hares.loaded',
    'Real hares for combat QA',30000);
- const hutId=(await evaluate('window.__fightersQA.snapshot()')).buildings
-   .find(b=>b.type==='hut'&&!b.destroyed).id;
  await runSpellQa({evaluate,check});
  await evaluate('window.__fightersQA.reset()');
+ const hutFixture=await addOrcBuilding(evaluate,'hut');
+ check(hutFixture,'Cannot construct a test hut for the Orc siege scenarios');
+ const hutId=hutFixture.id;
 
  // Real native animation, target acquisition, damage and destruction.
  await evaluate("window.__fightersQA.passive('orc');window.__fightersQA.selectUnit('witch',0)");
 
- await evaluate("window.__fightersQA.moveUnitTo('witch',0,18.5,21)");
+ await evaluate("window.__fightersQA.moveUnitTo('witch',0,"+(hutFixture.x-3.5)+","+hutFixture.z+")");
  // This fixture tests death/removal, not siege duration: a full-health hut
  // now deliberately takes far longer to demolish than the original 100-HP one.
  await evaluate('window.__fightersQA.setBuildingHealth('+JSON.stringify(hutId)+',60)');
@@ -39,7 +41,7 @@ export async function runCombatQa({evaluate,call,check,until,screenshot,sleep,fi
  const destroyed=s.buildings.find(b=>b.id===hutId);
  check(destroyed?.destroyed&&destroyed.health===0,
   'Witch attacks did not destroy the orc hut: '+JSON.stringify(destroyed));
- check(await evaluate('window.__fightersQA.isClear(22,21)'),
+ check(await evaluate('window.__fightersQA.isClear('+hutFixture.x+','+hutFixture.z+')'),
   'Destroyed building must be removed from the navigation grid');
  await screenshot('rts-destroyed-orc-hut');
 
@@ -56,6 +58,8 @@ export async function runCombatQa({evaluate,call,check,until,screenshot,sleep,fi
  // proves the approach is navigable, rather than simulating 17–37 seconds
  // after the first hit for every direction.
  await evaluate("window.__fightersQA.reset();window.__fightersQA.passive('orc')");
+ check(await addOrcBuilding(evaluate,'hut'),
+   'Cannot construct a test hut for multi-angle approach scenarios');
  let attempted=0;
  for(const from of sides){
   const target=(await evaluate('window.__fightersQA.snapshot()')).buildings
@@ -178,7 +182,7 @@ export async function runCombatQa({evaluate,call,check,until,screenshot,sleep,fi
   'Orc director never planned a village expansion: '+JSON.stringify(s.orcAI));
  check(s.orcAI.decisions.some(a=>a.type==='train'),
   'Orc director never recruited troops');
- check(s.buildings.filter(b=>!b.destroyed).length>=6,
+ check(s.buildings.filter(b=>!b.destroyed&&b.clanId==='orcs').length>=2,
   'Orc village did not grow: '+JSON.stringify(s.buildings.map(b=>b.type)));
  check(s.buildings.filter(b=>!b.destroyed&&b.type!=='mine')
   .every(b=>b.healthbarParent==='scene'),
@@ -417,7 +421,7 @@ export async function runCombatQa({evaluate,call,check,until,screenshot,sleep,fi
  await evaluate('window.__fightersQA.enableOrcAI(false)');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.witches.length===3&&s.orcs.length===4&&
-  s.buildings.filter(b=>!b.destroyed).length===8,'Reset after AI restores starting match');
+  s.buildings.filter(b=>!b.destroyed).length===5,'Reset after AI restores starting match');
  // The playable faction comes from the start overlay, not the test-only
  // setFaction helper. Launch an actual orc match, then exercise the enemy AI.
  check(await evaluate("document.title==='Orks & Sorcières'"),
@@ -434,8 +438,8 @@ export async function runCombatQa({evaluate,call,check,until,screenshot,sleep,fi
    s.cameraCenter.x>10&&s.selectedBuildingId?.startsWith('orc-barrack'),
    'Starting as orcs must reveal their own base and select their barrack');
  check(await evaluate("document.querySelector('#hud-units-label').textContent==='👹 POP.'&&"+
-   "document.querySelector('#unit-count').textContent==='4 / 10'&&"+
-   "document.querySelector('.orc-population-status')?.textContent.includes('4 / 10')"),
+   "document.querySelector('#unit-count').textContent==='4 / 4'&&"+
+   "document.querySelector('.orc-population-status')?.textContent.includes('4 / 4')"),
    'Orc players must see their housing capacity directly, including on barracks');
  await evaluate('window.__fightersQA.enableWitchAI(true);window.__fightersQA.advance(12)');
  s=await evaluate('window.__fightersQA.snapshot()');
@@ -465,9 +469,10 @@ export async function runCombatQa({evaluate,call,check,until,screenshot,sleep,fi
  check(s.orcFood.food===0&&s.orcs[0].health<orcHealth,
    'Starving orcs must lose HP even when witch food is available');
  await evaluate('window.__fightersQA.reset()');
- const cauldron=(await evaluate('window.__fightersQA.snapshot()')).buildings
-   .find(b=>b.type==='cauldron');
- check(cauldron,'Starting orc cauldron missing');
+ const cauldron=await addOrcBuilding(evaluate,'cauldron');
+ check(cauldron,'Cannot build test Orc cauldron');
+ check((await evaluate('window.__fightersQA.snapshot()')).orcFood.mageUnlocked,
+   'Constructed cauldron must unlock mage production');
  await evaluate('window.__fightersQA.damageBuilding('+JSON.stringify(cauldron.id)+',99999)');
  s=await evaluate('window.__fightersQA.snapshot()');
  check(!s.orcFood.mageUnlocked&&

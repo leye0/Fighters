@@ -34,19 +34,21 @@ const fogOfWar={
 let cap=15;
 const orcArgs={
   running:true,paused:false,gold:50,wood:25,buildingInstances,
+  pendingBuilds:[{type:'hut',x:12},{type:'garden',x:-10}],
   aliveOrcs:[orc,hiddenOrc],units:all,fogOfWar,enemyBaseKnown:false,
   scoutTarget:{x:10,z:11},unitCap:()=>cap,
   populationCommitted:()=>5,cauldronAvailable:()=>true
 };
 const orcState=observations.orc(orcArgs);
 assert.deepEqual(Object.keys(orcState),[
-  'ready','running','paused','gold','wood','buildings','orcs','witches',
+  'ready','running','paused','gold','wood','pendingBuilds','buildings','orcs','witches',
   'enemyBaseKnown','scoutTarget','unitCap','populationCommitted','cauldronAvailable'
 ]);
 assert.deepEqual(orcState.buildings,[{
   id:11,type:'barrack',level:2,queue:[{kind:'melee'}],health:90,
   maxHealth:120,hitbox:orcBuilding.hitbox,destroyed:false,x:12,z:18,axis:'x'
 }]);
+assert.deepEqual(orcState.pendingBuilds,[{type:'hut'}]);
 assert.deepEqual(orcState.orcs,[
   {id:1,x:2,z:3,health:70,maxHealth:100,dead:false,role:'melee',
    attackOrder:false,mining:false,scouting:false,destination:false,foraging:false},

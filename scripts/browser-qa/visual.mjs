@@ -1,5 +1,6 @@
 import {runTouchQa} from './touch.mjs';
 import {runResetQa} from './reset.mjs';
+import {addOrcBuilding} from './orc-fixtures.mjs';
 
 export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,findWitchSite}){
  let s;
@@ -102,7 +103,8 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
  await evaluate('window.__fightersQA.enableWitchAI(false);window.__fightersQA.enableOrcAI(true)');
  check(await evaluate('window.__fightersQA.placeUnit("orc",0,0,0)'),
    'Could not position a distant orc defender');
- const emergencyHut=(await evaluate('window.__fightersQA.snapshot()')).buildings.find(b=>b.type==='hut');
+ const emergencyHut=await addOrcBuilding(evaluate,'hut');
+ check(emergencyHut,'Could not build the hut for emergency-defense QA');
  check(await evaluate('window.__fightersQA.placeUnitBesideBuilding("witch",0,'+
    JSON.stringify(emergencyHut.id)+')'),
    'Could not position a witch raider at the orc hut');
@@ -192,7 +194,8 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
    u.attackTargetId!==playerAlarm.orcs[0].id&&!u.defenseAnchor),
    'Defenders must release a raider that flees far beyond the village leash');
  await evaluate('window.__fightersQA.enableOrcAI(false)');
- const playerHut=(await evaluate('window.__fightersQA.snapshot()')).buildings.find(b=>b.type==='hut');
+ const playerHut=await addOrcBuilding(evaluate,'hut');
+ check(playerHut,'Could not build the hut for player-defense QA');
  check(await evaluate('window.__fightersQA.placeUnitBesideBuilding("witch",0,'+
    JSON.stringify(playerHut.id)+')'),
    'Could not place the attacker at the player orcs village');
@@ -258,7 +261,10 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
  // The witch repair cancellation has not touched Orc structures or troops.
  await evaluate('window.__fightersQA.setFaction("orc")');
  s=await evaluate('window.__fightersQA.snapshot()');
- const orcHut=s.buildings.find(b=>b.type==='hut');
+ const orcHut=await addOrcBuilding(evaluate,'hut');
+ check(orcHut,'Could not build the hut for Orc repair QA');
+ const orcHutHealth=(await evaluate('window.__fightersQA.snapshot()')).buildings
+   .find(b=>b.id===orcHut.id).maxHealth;
  await evaluate('window.__fightersQA.setBuildingHealth('+JSON.stringify(orcHut.id)+',30);'+
    'window.__fightersQA.centerCamera(22,20);window.__fightersQA.selectUnit("orc",1)');
  const hutTap=await evaluate('window.__fightersQA.buildingScreenPoint('+JSON.stringify(orcHut.id)+')');
@@ -268,7 +274,7 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
    'Orc worker must repair a damaged allied hut by tap and become deselected');
  await evaluate('window.__fightersQA.advance(10)');
  s=await evaluate('window.__fightersQA.snapshot()');
- check(s.buildings.find(b=>b.id===orcHut.id).health===orcHut.maxHealth&&
+ check(s.buildings.find(b=>b.id===orcHut.id).health===orcHutHealth&&
    !s.repairs.length,'Orc worker must finish repairing the hut');
  check(!await evaluate('window.__fightersQA.orderRepair("orc",1,"witch-house-01")')&&
    !await evaluate('window.__fightersQA.orderRepair("orc",0,'+JSON.stringify(orcHut.id)+')')&&
@@ -669,10 +675,10 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
  check(hareAnimation.highest>.16&&hareAnimation.landings>0,
    'Running hares must visibly jump, stretch and land instead of sliding: '+
    JSON.stringify(hareAnimation));
- check(s.orcFood.housingCap===10&&s.orcFood.mageUnlocked,
-   'Initial hut must house six extra orcs and cauldron must unlock mages');
+ check(s.orcFood.housingCap===4&&!s.orcFood.mageUnlocked,
+   'Orcs must start with no free housing or cauldron unlock');
  const deposits=s.buildings.filter(b=>b.type==='mine');
- check(s.buildings.filter(b=>b.clanId==='orcs').length===4&&
+ check(s.buildings.filter(b=>b.clanId==='orcs').length===1&&
   deposits.length===4&&deposits.every(b=>b.clanId==='neutral'&&
     !b.destructible&&!b.destroyed&&b.healthbarParent===null&&b.queue.length===0),
   'All four natural deposits must be neutral, permanent resources outside clan infrastructure');
@@ -689,7 +695,7 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
    'Orc HP bars must be above building top');
  // Enemy HP must drain from the right. Its left edge must never move,
  // and a damaged building in the enemy's unseen territory cannot leak intel.
- const hpBuilding=s.buildings.find(b=>b.type==='hut');
+ const hpBuilding=s.buildings.find(b=>b.type==='barrack');
  await evaluate("window.__fightersQA.setBuildingHealth("+
    JSON.stringify(hpBuilding.id)+","+hpBuilding.maxHealth/2+")");
  const damagedBar=(await evaluate('window.__fightersQA.snapshot()')).buildings.find(
@@ -723,6 +729,10 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
  check(s.selectedBuilding==='barrack','Orc barrack contextual selection');
  check(await evaluate("['Ouvrier','Guerrier','Lanceur-mage'].every(name=>Array.from(document.querySelectorAll('#command-buttons button')).some(b=>b.textContent.includes(name)))"),
   'Orc barrack must produce all three role types');
+ check(!await evaluate('window.__fightersQA.trainOrc()'),
+   'At the new one-building start, training must wait for a constructed hut');
+ check(await addOrcBuilding(evaluate,'hut'),
+   'Could not build the first hut needed to begin recruiting orcs');
  check(await evaluate("window.__fightersQA.trainOrc()"),'Orc production refused');
  await evaluate('window.__fightersQA.advance(4.6)');
  check((await evaluate('window.__fightersQA.snapshot()')).orcs.length===5,
@@ -778,7 +788,7 @@ export async function runVisualQa({evaluate,call,check,until,screenshot,sleep,fi
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.buildings.every(b=>b.hitbox.shape==='polygon'&&b.hitbox.vertexCount>10),
    'Orc buildings must all use real GLB-projected multi-polygons');
- check(s.buildings.length===9&&s.buildings.filter(b=>b.type==='hut').length===2,
+ check(s.buildings.length===7&&s.buildings.filter(b=>b.type==='hut').length===2,
   'Second hut must be a unique placed building');
  check(s.orcFood.housingCap===16,
    'Second level-one hut must provide six more population slots');

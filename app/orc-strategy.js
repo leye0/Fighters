@@ -12,6 +12,7 @@
  'use strict';
  const TYPES=['barrack','hut','cauldron','factory'];
  const COST={barrack:180,hut:120,cauldron:200,factory:250};
+ const WOOD_COST={barrack:95,hut:55,cauldron:80,factory:130};
  const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
  const near=(a,b,r)=>dist(a,b)<=r;
  function boxCentre(b){
@@ -69,6 +70,9 @@
    const buildings=state.buildings.filter(b=>!b.destroyed);
    const structures=buildings.filter(b=>b.type!=='wall');
    const ramparts=buildings.filter(b=>b.type==='wall');
+   const pending=state.pendingBuilds||[];
+   const countPlanned=type=>structures.filter(b=>b.type===type).length+
+     pending.filter(b=>b.type===type).length;
    const own=state.orcs.filter(u=>!u.dead),enemy=state.witches.filter(u=>!u.dead);
    const workers=own.filter(u=>u.role==='worker');
    const fighters=own.filter(u=>u.role!=='worker');
@@ -85,14 +89,16 @@
    else this.mode=this.clock-this.lastThreat<10?'recover':
      enemyBaseKnown?'develop':'explore';
    const orders=[];
-   const canSpend=(cost,reserve=0)=>state.gold>=cost+reserve;
+   const canSpend=(cost,reserve=0,wood=0)=>state.gold>=cost+reserve&&
+     (state.wood??Infinity)>=wood;
    const queueLength=b=>b?.queue?.length||0;
    // Tactical defense takes priority over an offensive raid.
    if(threatened&&fighters.length){
     orders.push({type:'defend',x:attackers[0].x,z:attackers[0].z,reason:'enemy_at_base'});
    }
    // Recover a destroyed barrack before trying to train.
-   if(!barrack&&canSpend(COST.barrack,40)){
+   if(!barrack&&!countPlanned('barrack')&&workers.length&&
+      canSpend(COST.barrack,40,WOOD_COST.barrack)){
     const site=planSite('barrack',structures,valid);
     if(site)orders.push({type:'build',building:'barrack',x:site.x,z:site.z,reason:'restore_recruitment'});
    }
@@ -111,12 +117,19 @@
    // upgrade an existing mine, but NEVER create or place an additional mine.
    const wishlist=['hut','barrack','cauldron','factory','hut'];
    const desired={hut:2,barrack:2,cauldron:2,factory:2};
-   if(this.clock>18&&structures.length<12){
+   // Without the former prebuilt village, four starting orcs fill the base
+   // housing limit. The first hut is a *bootstrap requirement*, not a
+   // discretionary expansion delayed until the midgame.
+   if(workers.length&&(this.clock>18||committed>=cap-1)&&
+      structures.length+pending.length<12){
     for(const type of wishlist){
-     if(structures.filter(b=>b.type===type).length>=desired[type])continue;
-     if(!canSpend(COST[type],type==='barrack'?100:160))continue;
+     if(pending.some(b=>b.type===type))continue;
+     if(countPlanned(type)>=desired[type])continue;
+     if(this.clock<=18&&type!=='hut')continue;
+     if(!canSpend(COST[type],type==='barrack'?100:160,WOOD_COST[type]))continue;
      const site=planSite(type,structures,valid);
-     if(site){orders.push({type:'build',building:type,x:site.x,z:site.z,reason:'planned_district'});break;}
+     if(site){orders.push({type:'build',building:type,x:site.x,z:site.z,
+       reason:type==='hut'&&committed>=cap-1?'unblock_housing':'planned_district'});break;}
     }
    }
    // Stone fortification is an *outer* ring, offset from the buildings to
@@ -124,14 +137,14 @@
    // space reserved for future huts. Its original footprint stays stable as
    // the economy expands: no wandering walls around each new building.
    if(walls&&this.clock>35&&ramparts.length<30&&
-      canSpend(32,220)&&state.wood>=10){
+      canSpend(32,220,10)&&structures.length>=2){
     if(!this.wallPerimeter)this.wallPerimeter=walls.perimeter(structures);
     const site=walls.planWall(buildings,valid,{perimeter:this.wallPerimeter});
     if(site)orders.push({type:'build',building:'wall',x:site.x,z:site.z,
       axis:site.axis,reason:'protect_village_'+site.side});
    }
    // Upgrade sustainably once a settlement is established.
-   if(this.clock>this.upgradeAt&&canSpend(270,170)){
+   if(this.clock>this.upgradeAt&&canSpend(270,170,40)){
     const target=structures.filter(b=>b.level<3&&!b.queue.some(o=>o.kind==='upgrade'))
       .sort((a,b)=>{
        const priorities={hut:0,barrack:1,mine:2,factory:3,cauldron:4};
@@ -145,10 +158,11 @@
    // stalls permanently. Upgrade only when no new building can be placed.
    // A fresh level-one hut is cheaper and provides more places than upgrading
    // an existing one. Do not spend the expansion budget on upgrades first.
-   if(committed>=cap-1&&cap<32&&!orders.some(o=>o.type==='build')){
+   if(committed>=cap-1&&cap<32&&!orders.some(o=>o.type==='build')&&
+      !pending.some(b=>b.type==='hut')){
     const hut=structures.filter(b=>b.type==='hut'&&b.level<3&&
       !b.queue.some(q=>q.kind==='upgrade')).sort((a,b)=>a.level-b.level)[0];
-    if(hut&&canSpend(160+hut.level*100,50))
+    if(hut&&canSpend(160+hut.level*100,50,40))
       orders.unshift({type:'upgrade',buildingId:hut.id,reason:'housing'});
    }
    // Reserve one real fighter to explore unknown terrain. The waypoint comes
@@ -190,6 +204,7 @@
    const upgrade=economic.find(o=>o.type==='upgrade');
    const committed=state.populationCommitted??state.orcs.filter(o=>!o.dead).length;
    const priorityBuild=build?.reason==='restore_recruitment'||build?.reason==='income'||
+     build?.reason==='unblock_housing'||
      (build?.building==='hut'&&committed>=(state.unitCap||15)-1);
    const housing=upgrade?.reason==='housing';
    const choice=priorityBuild?build:housing?upgrade:

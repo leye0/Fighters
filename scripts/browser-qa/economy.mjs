@@ -1,3 +1,5 @@
+import {addOrcBuilding} from './orc-fixtures.mjs';
+
 export async function runEconomyQa({evaluate,call,check,until,screenshot,sleep,findWitchSite}){
  let s;
  // These assets were awaited by the visual group in the serial version.
@@ -16,7 +18,9 @@ export async function runEconomyQa({evaluate,call,check,until,screenshot,sleep,f
  s=await evaluate('window.__fightersQA.snapshot()');
  check(s.gold.orc===noWorkerGold&&s.mining.totalMinedGold===0&&
    s.mining.workers.length===0,'Mine generated gold without any worker');
- check(s.house.level===1&&s.buildings.length===8,'Reset starting buildings');
+ check(s.house.level===1&&s.buildings.length===5&&
+   s.buildings.filter(b=>b.clanId==='orcs').map(b=>b.type).join(',')==='barrack',
+   'Both factions must start with a single headquarters');
  check(s.buildings.filter(b=>b.type==='mine').length===4&&
    s.buildings.filter(b=>b.type==='mine').every(b=>b.goldRemaining===8000),
    'Two finite 8,000-gold deposits must be available on each side');
@@ -26,7 +30,9 @@ export async function runEconomyQa({evaluate,call,check,until,screenshot,sleep,f
    'Each clan needs exactly two distinct mines near its starting headquarters');
  // A witch worker can mine a neutral deposit; soldiers cannot mine, and
  // workers cannot attack buildings. Collection requires physical contact.
- const hutForWorker=s.buildings.find(b=>b.type==='hut').id;
+ const hutFixture=await addOrcBuilding(evaluate,'hut');
+ check(hutFixture,'Could not construct a test hut for worker combat permissions');
+ const hutForWorker=hutFixture.id;
  await evaluate("window.__fightersQA.selectUnit('witch',1)");
  check(!await evaluate('window.__fightersQA.attackBuilding('+JSON.stringify(hutForWorker)+')'),
   'A worker must not be assigned combat orders');
@@ -101,7 +107,7 @@ export async function runEconomyQa({evaluate,call,check,until,screenshot,sleep,f
  console.log('PASS ECONOMIC ROLES: witch mined gold, constructed a shared-model house; soldiers cannot mine, workers cannot fight.');
  await evaluate('window.__fightersQA.reset()');
  s=await evaluate('window.__fightersQA.snapshot()');
- check(s.buildings.length===8,'Reset must remove the additional witch house');
+ check(s.buildings.length===5,'Reset must remove all constructed buildings');
  check(await evaluate('window.__fightersQA.isClear(8,-10)'),
   'Reset must remove constructed building hitboxes');
 
@@ -313,7 +319,9 @@ export async function runEconomyQa({evaluate,call,check,until,screenshot,sleep,f
 
 
  // First tap selects a witch, second tap directly attacks the enemy building.
- const hutId=(await evaluate('window.__fightersQA.snapshot()')).buildings.find(b=>b.type==='hut').id;
+ const hut=await addOrcBuilding(evaluate,'hut');
+ check(hut,'Could not construct an enemy hut for visibility and tap QA');
+ const hutId=hut.id;
  await evaluate("window.__fightersQA.centerCamera(-18,-14)");
  const witchPoint=await evaluate("window.__fightersQA.unitScreenPoint('witch',0)");
  check(witchPoint&&Number.isFinite(witchPoint.x),'Cannot project witch');
@@ -331,8 +339,8 @@ export async function runEconomyQa({evaluate,call,check,until,screenshot,sleep,f
    'Invisible enemy building must not be targetable through black fog');
  // Scout with a different witch. The selected melee fighter can remain
  // far away, so clicking the hut cannot accidentally select the scout.
- await evaluate("window.__fightersQA.moveUnitTo('witch',1,18.5,21)");
- check((await evaluate('window.__fightersQA.fogAt(22,21)')).visible>.2,
+ await evaluate("window.__fightersQA.moveUnitTo('witch',1,"+(hut.x-3.5)+","+hut.z+")");
+ check((await evaluate('window.__fightersQA.fogAt('+hut.x+','+hut.z+')')).visible>.2,
    'Scout next to enemy hut must reveal the target');
  const attackPing=await evaluate("(()=>{window.__fightersQA.tap("+
    targetPoint.x+","+targetPoint.y+");return document.querySelector('.order-ping.attack')!==null})()");
